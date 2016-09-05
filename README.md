@@ -22,6 +22,7 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 - Every supported platform must have a ```main_<OS_NAME>.cpp``` file in ```/src/Engine/Main/``` containing the main entry point.
 - Other platform specific code which is not part of the main file goes into ```/src/Engine/Platform/```.
 - Hiding platform specific code is done by using trivial ```#ifdefs```, meaning that the exact same codebase can instantly be compiled without any changes on different platforms.
+- I don't like relative includes, therefore _every single (sub)directory_ which is needed is added as an include path to the compiler.
 - Separate applications using the engine go into ```/src/App/```. The ```FrameworkTest``` app is hardcoded by default.
 - Every application must be started by including its header in ```/src/Engine/Engine.cpp``` as well as instantiating it in ```Engine::loadApp()``` atm.
 
@@ -36,6 +37,8 @@ For Windows, the build configuration to use would be either ```Windows Release``
 - Eclipse may complain that the ```Toolchain "MinGW GCC" is not detected```, just ignore it. As long as g++ and all the other tools are in your PATH, everything should work fine.
 
 - Make sure you create a correct ```Run Configuration```. The working directory must be ```${workspace_loc:McEngine\build}```, and the C/C++ Application path must be ```Windows Release/McEngine.exe``` (if this is a Windows release of course).
+
+If you don't want to use eclipse you'll have to create your own makefile. Microsoft Visual Studio and their compilers are not supported.
 
 ##Windows
 The Windows build needs mingw-w64 (i686 with Win32 threads), you can get it here:
