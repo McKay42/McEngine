@@ -36,7 +36,7 @@ For Windows, the build configuration to use would be either ```Windows Release``
 
 - Eclipse may complain that the ```Toolchain "MinGW GCC" is not detected```, just ignore it. As long as g++ and all the other tools are in your PATH, everything should work fine.
 
-- Make sure you create a correct ```Run Configuration```. The working directory must be ```${workspace_loc:McEngine\build}```, and the C/C++ Application path must be ```Windows Release/McEngine.exe``` (if this is a Windows release of course).
+- Make sure you create a correct ```Run Configuration```. The working directory must be ```${workspace_loc:McEngine/build}```, and the C/C++ Application path must be ```Windows Release/McEngine.exe``` (if this is a Windows release of course).
 
 If you don't want to use eclipse you'll have to create your own makefile. Microsoft Visual Studio and their compilers are not supported.
 
