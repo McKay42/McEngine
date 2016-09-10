@@ -26,6 +26,14 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 - Separate applications using the engine go into ```/src/App/```. The ```FrameworkTest``` app is hardcoded by default.
 - Every application must be started by including its header in ```/src/Engine/Engine.cpp``` as well as instantiating it in ```Engine::loadApp()``` atm.
 
+**Projects using the engine:**
+
+[https://github.com/McKay42/McOsu](https://github.com/McKay42/McOsu)
+
+[Yesterday (university course project, YouTube link)](https://www.youtube.com/watch?v=RbuP1dNG304)
+
+[Model Viewer for Metroid Prime Hunters (a Nintendo DS game, YouTube link)](https://youtu.be/BSn59ebjOnw?t=2m51s)
+
 ##Eclipse
 This is a preconfigured Eclipse CDT project, meaning that in the best case you only have to copy the McEngine folder (which contains src, libraries, build and the project files) to your workspace and import it in Eclipse as an existing project.
 
