@@ -33,6 +33,7 @@ ConVar r_globaloffset_y("r_globaloffset_y", 0.0f);
 ConVar r_debug_disable_cliprect("r_debug_disable_cliprect", false);
 ConVar r_debug_disable_3dscene("r_debug_disable_3dscene", false);
 ConVar r_debug_flush_drawstring("r_debug_flush_drawstring", false);
+ConVar r_debug_drawimage("r_debug_drawimage", false);
 
 OpenGLLegacyInterface::OpenGLLegacyInterface()
 {
@@ -384,6 +385,12 @@ void OpenGLLegacyInterface::drawImage(Image *image)
 	glEnd();
 
 	image->unbind();
+
+	if (r_debug_drawimage.getBool())
+	{
+		setColor(0xbbff00ff);
+		drawRect(x, y, width, height);
+	}
 }
 
 void OpenGLLegacyInterface::drawString(McFont *font, UString text)
@@ -758,6 +765,37 @@ void OpenGLLegacyInterface::setAntialiasing(bool aa)
 		glEnable(GL_MULTISAMPLE);
 	else
 		glDisable(GL_MULTISAMPLE);
+}
+
+std::vector<unsigned char> OpenGLLegacyInterface::getScreenshot()
+{
+	std::vector<unsigned char> result;
+	unsigned int width = m_vResolution.x;
+	unsigned int height = m_vResolution.y;
+
+	// sanity check
+	if (width > 65535 || height > 65535 || width < 1 || height < 1)
+	{
+		engine->showMessageError("Renderer Error", "getScreenshot() called with invalid arguments!");
+		return result;
+	}
+
+	unsigned int numElements = width*height*3;
+
+	// take screenshot
+	unsigned char *pixels = new unsigned char[numElements];
+	glFinish();
+	for (int y=0; y<height; y++) // flip it while reading
+	{
+		glReadPixels(0, height-(y+1), width, 1, GL_RGB, GL_UNSIGNED_BYTE, &(pixels[y*width*3]));
+	}
+
+	// copy to vector
+	result.reserve(numElements);
+	result.assign(pixels, pixels + numElements);
+	delete[] pixels;
+
+	return result;
 }
 
 UString OpenGLLegacyInterface::getVendor()

@@ -8,6 +8,8 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+#include <vector>
+
 class UString;
 class Vector2;
 class Matrix4;
@@ -107,6 +109,9 @@ public:
 	virtual void setCulling(bool enabled) = 0;
 	virtual void setVSync(bool enabled) = 0;
 	virtual void setAntialiasing(bool enabled) = 0;
+
+	// renderer actions
+	virtual std::vector<unsigned char> getScreenshot() = 0;
 
 	// renderer info
 	virtual Vector2 getResolution() const = 0;
