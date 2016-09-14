@@ -83,12 +83,15 @@ public:
 	virtual void rotate3DScene(float rotx, float roty, float rotz);
 	virtual void offset3DScene(float x, float y, float z);
 
-	// device settings
+	// renderer settings
 	virtual void setClipping(bool enabled);
 	virtual void setBlending(bool enabled);
 	virtual void setDepthBuffer(bool enabled);
 	virtual void setCulling(bool culling);
 	virtual void setAntialiasing(bool aa);
+
+	// renderer actions
+	virtual std::vector<unsigned char> getScreenshot();
 
 	// renderer info
 	virtual Vector2 getResolution() const {return m_vResolution;}
