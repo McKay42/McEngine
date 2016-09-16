@@ -352,8 +352,9 @@ unsigned long Sound::getLengthMS()
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	QWORD length = BASS_ChannelGetLength(m_HCHANNELBACKUP, BASS_POS_BYTE);
-	double lengthInSeconds = BASS_ChannelBytes2Seconds(m_HCHANNELBACKUP, length);
+	SOUNDHANDLE handle = getHandle();
+	QWORD length = BASS_ChannelGetLength(handle, BASS_POS_BYTE);
+	double lengthInSeconds = BASS_ChannelBytes2Seconds(handle, length);
 	double lengthInMilliSeconds = lengthInSeconds * 1000.0;
 
 	return static_cast<unsigned long>(lengthInMilliSeconds);
