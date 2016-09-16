@@ -139,8 +139,6 @@ SOUNDHANDLE Sound::getHandle()
 		else
 			BASS_ChannelSetAttribute(m_HCHANNEL, BASS_ATTRIB_VOL, m_fVolume);
 
-
-
 		// special behaviour for FX HSAMPLES
 		if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
 		{
@@ -157,9 +155,6 @@ SOUNDHANDLE Sound::getHandle()
 
 			BASS_ChannelSetAttribute(m_HCHANNEL, BASS_ATTRIB_VOL, m_fVolume);
 		}
-
-
-
 
 		return m_HCHANNEL;
 	}
@@ -272,7 +267,10 @@ void Sound::setPitch(float pitch)
 {
 #ifdef MCENGINE_FEATURE_SOUND
 
-	if (!m_bReady || pitch <= 0.0f) return;
+	if (!m_bReady) return;
+
+	pitch = clamp<float>(pitch, 0.0f, 2.0f);
+
 	/*
 	if (!m_bStream)
 	{
@@ -352,7 +350,7 @@ unsigned long Sound::getLengthMS()
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	SOUNDHANDLE handle = getHandle();
+	SOUNDHANDLE handle = m_bStream ? m_HSTREAM : m_HCHANNELBACKUP;
 	QWORD length = BASS_ChannelGetLength(handle, BASS_POS_BYTE);
 	double lengthInSeconds = BASS_ChannelBytes2Seconds(handle, length);
 	double lengthInMilliSeconds = lengthInSeconds * 1000.0;
