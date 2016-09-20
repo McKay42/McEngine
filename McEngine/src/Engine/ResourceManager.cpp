@@ -64,110 +64,72 @@ void ResourceManager::update()
 			debugLog("Resource Manager: %i active worker thread(s)\n", m_threads.size());
 	}
 
+	bool reLock = false;
 	g_resourceManagerMutex.lock();
 	{
-
-	/*
-	// wait for worker threads to finish, then call init()
-	for (int i=0; i<m_threads.size(); i++)
-	{
-		if (m_threads[i]->finished.atomic)
+		// handle load finish (and synchronous init())
+		for (int i=0; i<m_loadingWork.size(); i++)
 		{
-			if (debug_rm.getBool())
-				debugLog("Resource Manager: Worker thread #%i finished.\n", i);
-
-			m_threads[i]->resource->load();
-			pthread_detach(m_threads[i]->thread);
-
-			delete m_threads[i];
-			m_threads.erase(m_threads.begin()+i);
-			i--;
-			break; // only allow 1 thread to finish per tick
-		}
-	}
-	*/
-
-	// new method
-	for (int i=0; i<m_loadingWork.size(); i++)
-	{
-		if (m_loadingWork[i].second.atomic)
-		{
-			if (debug_rm.getBool())
-				debugLog("Resource Manager: Worker thread #%i finished.\n", i);
-
-			m_loadingWork[i].first->load();
-
-			g_resourceManagerLoadingWorkMutex.lock();
-				m_loadingWork.erase(m_loadingWork.begin()+i);
-			g_resourceManagerLoadingWorkMutex.unlock();
-			i--;
-
-			// stop the worker thread if everything has been loaded
-			if (m_loadingWork.size() < 1)
-				g_resourceManagerLoadingMutex.lock();
-
-			break; // only allow 1 work item to finish per tick
-		}
-	}
-
-	/*
-	// handle resources which were destroyed before their worker thread finished
-	for (int i=0; i<m_vAsyncDestroy.size(); i++)
-	{
-		bool canBeDestroyed = true;
-		for (int w=0; w<m_threads.size(); w++)
-		{
-			if (m_threads[w]->resource == m_vAsyncDestroy[i])
+			if (m_loadingWork[i].second.atomic)
 			{
 				if (debug_rm.getBool())
-					debugLog("Resource Manager: Waiting for async destroy of #%i ...\n", i);
+					debugLog("Resource Manager: Worker thread #%i finished.\n", i);
 
-				canBeDestroyed = false;
-				break;
+				// copy pointer, so we can stop everything before finishing
+				Resource *rs = m_loadingWork[i].first;
+
+				g_resourceManagerLoadingWorkMutex.lock();
+					m_loadingWork.erase(m_loadingWork.begin()+i);
+				g_resourceManagerLoadingWorkMutex.unlock();
+				i--;
+
+				// stop the worker thread if everything has been loaded
+				if (m_loadingWork.size() < 1)
+					g_resourceManagerLoadingMutex.lock();
+
+				// unlock. this allows resources to trigger "recursive" loads within init()
+				g_resourceManagerMutex.unlock();
+				reLock = true;
+
+				// finish (synchronous init())
+				rs->load();
+
+				break; // only allow 1 work item to finish per tick
 			}
 		}
 
-		if (canBeDestroyed)
-		{
-			if (debug_rm.getBool())
-				debugLog("Resource Manager: Async destroy of #%i\n", i);
-
-			m_vAsyncDestroy[i]->release();
-			delete m_vAsyncDestroy[i];
-			m_vAsyncDestroy.erase(m_vAsyncDestroy.begin()+i);
-			i--;
-		}
-	}
-	*/
-
-	// new method
-	for (int i=0; i<m_loadingWorkAsyncDestroy.size(); i++)
+	if (reLock)
 	{
-		bool canBeDestroyed = true;
-		for (int w=0; w<m_loadingWork.size(); w++)
+		g_resourceManagerMutex.lock();
+	}
+
+		// handle async destroy
+		for (int i=0; i<m_loadingWorkAsyncDestroy.size(); i++)
 		{
-			if (m_loadingWork[w].first == m_loadingWorkAsyncDestroy[i])
+			bool canBeDestroyed = true;
+			for (int w=0; w<m_loadingWork.size(); w++)
+			{
+				if (m_loadingWork[w].first == m_loadingWorkAsyncDestroy[i])
+				{
+					if (debug_rm.getBool())
+						debugLog("Resource Manager: Waiting for async destroy of #%i ...\n", i);
+
+					canBeDestroyed = false;
+					break;
+				}
+			}
+
+			if (canBeDestroyed)
 			{
 				if (debug_rm.getBool())
-					debugLog("Resource Manager: Waiting for async destroy of #%i ...\n", i);
+					debugLog("Resource Manager: Async destroy of #%i\n", i);
 
-				canBeDestroyed = false;
-				break;
+				m_loadingWorkAsyncDestroy[i]->release();
+				delete m_loadingWorkAsyncDestroy[i];
+				m_loadingWorkAsyncDestroy.erase(m_loadingWorkAsyncDestroy.begin()+i);
+				i--;
 			}
 		}
-
-		if (canBeDestroyed)
-		{
-			if (debug_rm.getBool())
-				debugLog("Resource Manager: Async destroy of #%i\n", i);
-
-			m_loadingWorkAsyncDestroy[i]->release();
-			delete m_loadingWorkAsyncDestroy[i];
-			m_loadingWorkAsyncDestroy.erase(m_loadingWorkAsyncDestroy.begin()+i);
-			i--;
-		}
-	}
-
 	}
 	g_resourceManagerMutex.unlock();
 }
@@ -198,26 +160,7 @@ void ResourceManager::destroyResource(Resource *rs)
 	{
 		if (m_vResources[i] == rs)
 		{
-			/*
-			// async destroy
-			for (int w=0; w<m_threads.size(); w++)
-			{
-				if (m_threads[w]->resource == rs)
-				{
-					if (debug_rm.getBool())
-						debugLog("Resource Manager: Scheduled async destroy of %s\n", rs->getName().toUtf8());
-
-					m_vAsyncDestroy.push_back(rs);
-					m_vResources.erase(m_vResources.begin()+i);
-
-					// HACKHACK: ugly
-					g_resourceManagerMutex.unlock();
-					return;
-				}
-			}
-			*/
-
-			// new method
+			// handle async destroy
 			for (int w=0; w<m_loadingWork.size(); w++)
 			{
 				if (m_loadingWork[w].first == rs)
@@ -431,46 +374,18 @@ void ResourceManager::loadResource(Resource *res, bool load)
 
 		g_resourceManagerMutex.lock();
 		{
+			// add work to loading thread
+			std::pair<Resource*, MobileAtomicBool> work;
+			work.first = res;
+			work.second = MobileAtomic<bool>(false);
 
-		/*
-		// load asynchronously
-		LOAD_THREAD *loader = new LOAD_THREAD();
-		loader->finished = MobileAtomic<bool>(false);
-		loader->resource = res;
+			g_resourceManagerLoadingWorkMutex.lock();
+			m_loadingWork.push_back(work);
 
-		// thread setup, lowest possible priority
-		pthread_t thread;
-		pthread_attr_t tattr;
-		pthread_attr_init(&tattr);
-		pthread_attr_setschedpolicy(&tattr, SCHED_MIN);
-		struct sched_param param;
-		pthread_attr_getschedparam(&tattr, &param);
-		param.sched_priority = sched_get_priority_min(SCHED_MIN);
-		pthread_attr_setschedparam(&tattr, &param);
-
-		int ret = pthread_create(&thread, &tattr, resourceLoadThread, (void*)loader);
-		loader->thread = thread;
-		if (ret)
-		{
-			delete loader;
-			engine->showMessageError("Resource Error", UString::format("pthread_create() returned %i!", ret));
-		}
-		else
-			m_threads.push_back(loader);
-		*/
-
-		// new method
-		std::pair<Resource*, MobileAtomicBool> work;
-		work.first = res;
-		work.second = MobileAtomic<bool>(false);
-
-		g_resourceManagerLoadingWorkMutex.lock();
-		m_loadingWork.push_back(work);
-		// let the loading thread run
-		if (m_loadingWork.size() == 1)
-			g_resourceManagerLoadingMutex.unlock();
-		g_resourceManagerLoadingWorkMutex.unlock();
-
+			// let the loading thread run
+			if (m_loadingWork.size() == 1)
+				g_resourceManagerLoadingMutex.unlock();
+			g_resourceManagerLoadingWorkMutex.unlock();
 		}
 		g_resourceManagerMutex.unlock();
 	}
