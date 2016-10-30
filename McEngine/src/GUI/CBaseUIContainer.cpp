@@ -96,7 +96,7 @@ void CBaseUIContainer::insertBaseUIElementBack(CBaseUIElement *element, CBaseUIE
 	{
 		if (m_vElements[i] == index)
 		{
-			m_vElements.insert(m_vElements.begin() + clamp<int>(i+1, 0, m_vElements.size()-1), element);
+			m_vElements.insert(m_vElements.begin() + clamp<int>(i+1, 0, m_vElements.size()), element);
 			return;
 		}
 	}
