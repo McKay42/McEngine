@@ -25,6 +25,7 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 - I don't like relative includes, therefore _every single (sub)directory_ which is needed is added as an include path to the compiler.
 - Separate applications using the engine go into ```/src/App/```. The ```FrameworkTest``` app is hardcoded by default.
 - Every application must be started by including its header in ```/src/Engine/Engine.cpp``` as well as instantiating it in ```Engine::loadApp()``` atm.
+- Not all libraries are necessary for every project, you can enable or disable certain libraries completely by using defines in ```/src/Engine/Main/EngineFeatures.h```, such as OpenCL, XInput, BASS or ENet.
 
 **Projects using the engine:**
 
