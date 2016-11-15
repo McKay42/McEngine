@@ -8,6 +8,8 @@
 #include "Camera.h"
 #include "Engine.h"
 
+// TODO: fix matrix calculations row major switch column major
+
 Matrix4 Camera::buildMatrixOrtho2D(float left, float right, float bottom, float top)
 {
 	const float zn = -1.0f;
@@ -19,7 +21,7 @@ Matrix4 Camera::buildMatrixOrtho2D(float left, float right, float bottom, float 
 	return Matrix4((2.0f*invX), 0, 			0,				(-(right + left)*invX),
 				   0, 			(2.0*invY), 0,				(-(top + bottom)*invY),
 				   0,			0,			(-2.0f*invZ),	(-(zf + zn)*invZ),
-				   0,			0,			0,			   	1);
+				   0,			0,			0,			   	1).transpose();
 }
 
 Matrix4 Camera::buildMatrixLookAt(Vector3 eye, Vector3 target, Vector3 up)
@@ -31,7 +33,7 @@ Matrix4 Camera::buildMatrixLookAt(Vector3 eye, Vector3 target, Vector3 up)
 	return Matrix4(xAxis.x, xAxis.y, xAxis.z, -xAxis.dot(eye),
 				   yAxis.x, yAxis.y, yAxis.z, -yAxis.dot(eye),
 				   zAxis.x, zAxis.y, zAxis.z, -zAxis.dot(eye),
-				   0,		0,		 0,		   1);
+				   0,		0,		 0,		   1).transpose();
 }
 
 Matrix4 Camera::buildMatrixPerspectiveFov(float fovRad, float aspect, float zn, float zf)
@@ -44,7 +46,7 @@ Matrix4 Camera::buildMatrixPerspectiveFov(float fovRad, float aspect, float zn, 
 	return Matrix4(f/aspect,0,		0, 		0,
 				   0, 		f, 		0,		0,
 				   0, 		0,		q,		qn,
-				   0,		0,		-1,		0);
+				   0,		0,		-1,		0).transpose();
 }
 
 Quaternion MatrixToQuaternion( Matrix4 &in )
@@ -102,6 +104,8 @@ Quaternion MatrixToQuaternion( Matrix4 &in )
 
 Vector3 Vector3TransformCoord( Vector3 &in, Matrix4 &mat )
 {
+	return mat * in;
+
 	Vector3 out;
 	float norm;
 
@@ -115,6 +119,7 @@ Vector3 Vector3TransformCoord( Vector3 &in, Matrix4 &mat )
 	}
 
 	return out;
+
 }
 
 
@@ -283,9 +288,8 @@ void Camera::lookAt(Vector3 eye, Vector3 target)
 	// https://stackoverflow.com/questions/1996957/conversion-euler-to-matrix-and-matrix-to-euler
 	// https://gamedev.stackexchange.com/questions/50963/how-to-extract-euler-angles-from-transformation-matrix
 
-	Matrix4 lookAtMatrix = buildMatrixLookAt(eye, target, m_vYAxis).getTranspose(); // transpose because of switch to native engine matrices (row major in engine vs column major in opengl)
+	Matrix4 lookAtMatrix = buildMatrixLookAt(eye, target, m_vYAxis);
 
-	// this logic still assumes opengl matrices, update indices sometime in the future
 	float yaw = std::atan2(-lookAtMatrix[8], lookAtMatrix[0]);
 	float pitch = std::asin(-lookAtMatrix[6]);
 	///float roll = atan2(lookAtMatrix[4], lookAtMatrix[5]);
@@ -354,15 +358,17 @@ void Camera::setRoll(float rollDeg)
 
 Vector3 Camera::getNextPosition(Vector3 velocity)
 {
-	return m_vPos + m_worldRotation*m_rotation * velocity;
+	return m_vPos + ((m_worldRotation * m_rotation) * velocity);
 }
 
-Vector3 Camera::getProjectedVector(Vector3 point, float screenWidth, float screenHeight, float x, float y, float viewportMinZ, float viewportMaxZ)
+Vector3 Camera::getProjectedVector(Vector3 point, float screenWidth, float screenHeight, float zn, float zf)
 {
+	// TODO: fix this shit
+
 	// build matrices
-	Matrix4 worldMatrix = Matrix4().translate(-m_vPos).transpose();
+	Matrix4 worldMatrix = Matrix4().translate(-m_vPos);
 	Matrix4 viewMatrix = m_rotation.getMatrix();
-	Matrix4 projectionMatrix = buildMatrixPerspectiveFov(m_fFov, screenWidth/screenHeight, 0.0f, 1.0f).transpose();
+	Matrix4 projectionMatrix = buildMatrixPerspectiveFov(m_fFov, screenWidth/screenHeight, zn, zf);
 
 	// complete matrix
 	Matrix4 worldViewProj = (worldMatrix * viewMatrix * projectionMatrix);
@@ -373,26 +379,24 @@ Vector3 Camera::getProjectedVector(Vector3 point, float screenWidth, float scree
 	// convert projected screen coordinates to real screen coordinates
 	point.x = screenWidth * ((point.x + 1.0f) / 2.0f);
 	point.y = screenHeight * ((point.y + 1.0f) / 2.0f);
-	point.z = viewportMinZ + point.z * ( viewportMaxZ - viewportMinZ );
+	point.z = zn + point.z * ( zf - zn );
 
 	return point;
 }
 
-Vector3 Camera::getUnProjectedVector(Vector2 point, float screenWidth, float screenHeight)
+Vector3 Camera::getUnProjectedVector(Vector2 point, float screenWidth, float screenHeight, float zn, float zf)
 {
-	float zmin = 0.1f;
-	float zfar = 1.0f;
-	Matrix4 projectionMatrix = buildMatrixPerspectiveFov(m_fFov, screenWidth/screenHeight, zmin, zfar).transpose();
+	Matrix4 projectionMatrix = buildMatrixPerspectiveFov(m_fFov, screenWidth/screenHeight, zn, zf);
 
 	// transform pick position from screen space into 3d space
 	Vector4 v;
 	v.x = ( ( 2.0f * point.x ) / screenWidth ) - 1.0f;
 	v.y = ( ( 2.0f * point.y ) / screenHeight ) - 1.0f;
-	v.z = (0.0f - zmin) / (zfar - zmin); // this is very important
+	v.z = (0.0f - zn) / (zf - zn); // this is very important
 	v.w = 1.0f;
 
-	Matrix4 inverseProjectionMatrix = projectionMatrix.transpose().invert();
-	Matrix4 inverseViewMatrix = m_rotation.getMatrix().transpose().invert();
+	Matrix4 inverseProjectionMatrix = projectionMatrix.invert();
+	Matrix4 inverseViewMatrix = m_rotation.getMatrix().invert();
 
 	v = inverseViewMatrix * inverseProjectionMatrix * v;
 

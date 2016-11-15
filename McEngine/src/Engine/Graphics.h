@@ -36,6 +36,15 @@ public:
 		DRAWPIXELS_FLOAT
 	};
 
+	enum MULTISAMPLE_TYPE
+	{
+		MULTISAMPLE_0X,
+		MULTISAMPLE_2X,
+		MULTISAMPLE_4X,
+		MULTISAMPLE_8X,
+		MULTISAMPLE_16X
+	};
+
 	// scene
 	virtual void beginScene() = 0;
 	virtual void endScene() = 0;

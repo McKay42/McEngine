@@ -21,6 +21,7 @@ class SoundEngine;
 class ContextMenu;
 class NetworkHandler;
 class OpenCLInterface;
+class OpenVRInterface;
 class VulkanInterface;
 class ResourceManager;
 class AnimationHandler;
@@ -118,10 +119,11 @@ public:
 	inline bool hasFocus() const {return m_bHasFocus;}
 	inline bool isDrawing() const {return m_bDrawing;}
 
-	// console
+	// debugging/console
 	inline ConsoleBox *getConsoleBox() {return m_consoleBox;}
 	inline Console *getConsole() {return m_console;}
 	void setConsole(Console *console) {m_console = console;}
+	inline CBaseUIContainer *getGUI() {return m_guiContainer;}
 
 private:
 	// interfaces
@@ -129,6 +131,7 @@ private:
 	Graphics *m_graphics;
 	SoundEngine *m_sound;
 	OpenCLInterface *m_openCL;
+	OpenVRInterface *m_openVR;
 	VulkanInterface *m_vulkan;
 	ContextMenu *m_contextMenu;
 	Environment *m_environment;

@@ -53,7 +53,6 @@ public:
 
 	inline float getFov() const {return rad2deg(m_fFov);}
 	inline float getFovRad() const {return m_fFov;}
-
 	inline float getOrbitDistance() const {return m_fOrbitDistance;}
 
 	inline Vector3 getWorldXAxis() const {return m_worldRotation*m_vXAxis;}
@@ -70,8 +69,8 @@ public:
 
 	inline Quaternion getRotation() {return m_rotation;}
 
-	Vector3 getProjectedVector(Vector3 point, float screenWidth, float screenHeight, float x = 0.0f, float y = 0.0f, float viewportMinZ = 0.1f, float viewportMaxZ = 1.0f);
-	Vector3 getUnProjectedVector(Vector2 point, float screenWidth, float screenHeight);
+	Vector3 getProjectedVector(Vector3 point, float screenWidth, float screenHeight, float zn = 0.1f, float zf = 1.0f);
+	Vector3 getUnProjectedVector(Vector2 point, float screenWidth, float screenHeight, float zn = 0.1f, float zf = 1.0f);
 
 	bool isPointVisibleFrustum(Vector3 point); // within our viewing frustum
 	bool isPointVisiblePlane(Vector3 point); // just in front of the camera plane

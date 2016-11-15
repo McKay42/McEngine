@@ -112,25 +112,10 @@ void Console::processCommand(UString command)
 	// handle multiple commands separated by semicolons
 	if (command.find(";") != -1 && command.find("echo") == -1)
 	{
-		int count = 0;
-		for (int i=0; i<command.length(); i++)
+		std::vector<UString> commands = command.split(";");
+		for (int i=0; i<commands.size(); i++)
 		{
-			if (command.find(";", i-1, i) != -1 && count < 1)
-			{
-				count++;
-
-				UString toexec = command.substr(0,i);
-				if (toexec.length() > 0)
-					processCommand(toexec);
-
-				UString rest = " ";
-
-				if (command.length()-i > 1)
-					rest = command.substr(i+1,command.length());
-
-				if (UString::format(rest.toUtf8()).length() > 1)
-					processCommand(UString::format(rest.toUtf8()));
-			}
+			processCommand(commands[i]);
 		}
 		return;
 	}
@@ -162,18 +147,11 @@ void Console::processCommand(UString command)
 		return;
 	}
 
-	// handle concommands without arguments
-	var->exec();
-
-	// handle concommands with arguments
-	if (commandValue.length() > 0)
-		var->execArgs(commandValue);
-	else // no arguments, execute with empty string
-		var->execArgs(UString(""));
-
-	// set new value
+	// set new value (this handles all callbacks internally)
 	if (commandValue.length() > 0)
 		var->setValue(commandValue);
+	else
+		var->exec();
 
 	// log
 	if (console_logging.getBool())
