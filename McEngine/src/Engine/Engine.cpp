@@ -26,6 +26,7 @@
 #include "VulkanGraphicsInterface.h"
 
 #include "OpenCLInterface.h"
+#include "OpenVRInterface.h"
 #include "VulkanInterface.h"
 #include "SoundEngine.h"
 #include "ResourceManager.h"
@@ -46,8 +47,17 @@
 //	Include App here  //
 //********************//
 
-//#include "Osu.h"
-//#include "Tetris.h"
+#include "MetaRay.h"
+#include "GUITest.h"
+#include "CGProject.h"
+#include "McDeathmatch.h"
+#include "MetroidModelViewer.h"
+#include "GUICoherenceMode.h"
+#include "VolumeTheory.h"
+#include "Tetris.h"
+#include "LFEMTracer.h"
+#include "NetworkTest.h"
+#include "Osu.h"
 #include "FrameworkTest.h"
 
 #include <cstdarg>
@@ -66,7 +76,7 @@ void __host_timescale( UString oldValue, UString newValue )
 	}
 }
 ConVar epilepsy("epilepsy", false);
-ConVar debug_engine("debug_engine", false);
+ConVar debug_engine("debug_engine", true);
 
 
 
@@ -116,7 +126,7 @@ Engine::Engine(Environment *environment)
 
 	// window
 	m_bBlackout = false;
-	m_bHasFocus = true;
+	m_bHasFocus = false;
 	m_bIsMinimized = false;
 
 	// screen
@@ -130,6 +140,19 @@ Engine::Engine(Environment *environment)
 	m_bDrawing = false;
 
 	// initialize all engine subsystems (the order does matter!)
+
+	// input devices
+	m_mouse = new Mouse();
+	m_inputDevices.push_back(m_mouse);
+	m_mice.push_back(m_mouse);
+
+	m_keyboard = new Keyboard();
+	m_inputDevices.push_back(m_keyboard);
+	m_keyboards.push_back(m_keyboard);
+
+	m_gamepad = new XInputGamepad();
+	m_inputDevices.push_back(m_gamepad);
+	m_gamepads.push_back(m_gamepad);
 
 	m_vulkan = NULL;
 	///m_vulkan = new VulkanInterface();
@@ -150,24 +173,12 @@ Engine::Engine(Environment *environment)
 #endif
 
 	// and the rest
-	m_openCL = new OpenCLInterface();
-	m_sound = new SoundEngine();
 	m_resourceManager = new ResourceManager();
+	m_sound = new SoundEngine();
 	m_animationHandler = new AnimationHandler();
+	m_openCL = new OpenCLInterface();
+	m_openVR = new OpenVRInterface();
 	m_networkHandler = new NetworkHandler();
-
-	// input devices
-	m_mouse = new Mouse();
-	m_inputDevices.push_back(m_mouse);
-	m_mice.push_back(m_mouse);
-
-	m_keyboard = new Keyboard();
-	m_inputDevices.push_back(m_keyboard);
-	m_keyboards.push_back(m_keyboard);
-
-	m_gamepad = new XInputGamepad();
-	m_inputDevices.push_back(m_gamepad);
-	m_gamepads.push_back(m_gamepad);
 
 	// default launch options/changes
 	m_graphics->setVSync(false);
@@ -199,6 +210,9 @@ Engine::~Engine()
 
 	debugLog("Engine: Freeing OpenCL...\n");
 	SAFE_DELETE(m_openCL);
+
+	debugLog("Engine: Freeing OpenVR...\n");
+	SAFE_DELETE(m_openVR);
 
 	debugLog("Engine: Freeing Vulkan...\n");
 	SAFE_DELETE(m_vulkan);
@@ -264,16 +278,36 @@ void Engine::loadApp()
 	//	Load App here  //
 	//*****************//
 
-	//m_app = new Osu();
+	//m_app = new MetaRay();
+
+	//m_app = new Editor();
+
+	//m_app = new GUITest();
+
+	//m_app = new CGProject();
+
+	//m_app = new MetroidModelViewer();
+
+	//m_app = new GUICoherenceMode();
+
+	//m_app = new VolumeTheory();
 
 	//m_app = new Tetris();
+
+	//m_app = new McDeathmatch();
+
+	//m_app = new NetworkTest();
+
+	//m_app = new LFEMTracer();
+
+	//m_app = new Osu();
 
 	m_app = new FrameworkTest();
 
 
 
 	// start listening to the default keyboard input (engine gui comes first)
-	m_keyboard->addListener(m_guiContainer);
+	m_keyboard->addListener(m_guiContainer, true);
 	m_keyboard->addListener(m_app);
 }
 
@@ -334,6 +368,9 @@ void Engine::onUpdate()
 	{
 		m_inputDevices[i]->update();
 	}
+
+	// update openvr (this also includes input devices)
+	m_openVR->update();
 
 	// update animations
 	anim->update();
@@ -449,6 +486,8 @@ void Engine::onResolutionChange(Vector2 newResolution)
 	m_vScreenSize = newResolution;
 	if (m_graphics != NULL)
 		m_graphics->onResolutionChange(newResolution);
+	if (m_openVR != NULL)
+		m_openVR->onResolutionChange(newResolution);
 	if (m_app != NULL)
 		m_app->onResolutionChanged(newResolution);
 }

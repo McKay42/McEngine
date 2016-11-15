@@ -15,6 +15,7 @@
 
 #include "VertexArrayObject.h"
 #include "VertexBuffer.h"
+
 #include "OpenGLHeaders.h"
 
 #define GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX          0x9047
@@ -72,13 +73,12 @@ void OpenGLLegacyInterface::init()
 	}
 
 	// check GL version again
-	if (!glewIsSupported("GL_VERSION_2_1"))
-		engine->showMessageWarning("OpenGL Warning", "Your computer does not support OpenGL version 2.1!\nThe engine will try to continue, but probably crash.");
+	if (!glewIsSupported("GL_VERSION_3_0"))
+		engine->showMessageWarning("OpenGL Warning", "Your GPU does not support OpenGL version 3.0!\nThe engine will try to continue, but probably crash.");
 
 	// enable
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
-	///glEnable(GL_NORMALIZE); // why was this enabled again?
 	glEnable(GL_COLOR_MATERIAL);
 
 	// disable
@@ -123,11 +123,7 @@ void OpenGLLegacyInterface::beginScene()
 	//glClearColor(1, 1, 1, 1);
 	//glClearColor(0.9568f, 0.9686f, 0.9882f, 1);
 	glClearColor(0, 0, 0, 0.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// toggles
-	if (m_bAntiAliasing)
-		glEnable(GL_MULTISAMPLE);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// display any errors of previous frames
 	handleGLErrors();
@@ -707,10 +703,10 @@ void OpenGLLegacyInterface::updateTransform()
 		}
 
 		glMatrixMode(GL_PROJECTION);
-		glLoadMatrixf(projectionMatrixTemp.getTranspose());
+		glLoadMatrixf(projectionMatrixTemp.get());
 
 		glMatrixMode(GL_MODELVIEW);
-		glLoadMatrixf(worldMatrixTemp.getTranspose());
+		glLoadMatrixf(worldMatrixTemp.get());
 
 		m_bTransformUpToDate = true;
 	}

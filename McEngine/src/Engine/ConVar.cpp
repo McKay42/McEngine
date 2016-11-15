@@ -204,12 +204,15 @@ void ConVar::setValue(float value)
 	m_fValue = value;
 	m_sValue = UString::format("%g", m_fValue);
 
-	// possible convar callback
+	// possible void callback
+	exec();
+
+	// possible change callback
 	if (m_changecallback != NULL)
 		m_changecallback(UString::format("%g", oldValue), UString::format("%g", value));
 
-	if (m_callbackfuncargs != NULL)
-		m_callbackfuncargs(UString::format("%g", value));
+	// possible arg callback
+	execArgs(UString::format("%g", value));
 }
 
 void ConVar::setValue(UString sValue)
@@ -217,16 +220,21 @@ void ConVar::setValue(UString sValue)
 	// backup previous value
 	UString oldValue = sValue;
 
+	// possible void callback
+	exec();
+
 	// then set the new value
 	m_sValue = sValue;
-	m_fValue = sValue.toFloat();
 
-	// possible string convar callback
+	if (sValue.length() > 0)
+		m_fValue = sValue.toFloat();
+
+	// possible change callback
 	if (m_changecallback != NULL)
 		m_changecallback(oldValue, sValue);
 
-	if (m_callbackfuncargs != NULL)
-		m_callbackfuncargs(sValue);
+	// possible arg callback
+	execArgs(sValue);
 }
 
 void ConVar::setCallback(NativeConVarCallback callback)

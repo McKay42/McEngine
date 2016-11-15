@@ -33,4 +33,9 @@
  */
 //#define MCENGINE_FEATURE_VULKAN
 
+/*
+ * OpenVR
+ */
+//#define MCENGINE_FEATURE_OPENVR
+
 #endif

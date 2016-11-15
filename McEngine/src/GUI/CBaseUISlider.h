@@ -47,9 +47,9 @@ public:
 	inline float getFloat() {return m_fCurValue;}
 	inline int getInt() {return (int)m_fCurValue;}
 	inline bool getBool() {return (bool)m_fCurValue;}
-	inline Vector2 *getBlockPos() {return &m_vBlockPos;}
 	inline float getMax() {return m_fMaxValue;}
 	inline float getMin() {return m_fMinValue;}
+	float getPercent();
 
 	// TODO: DEPRECATED, don't use this function anymore, use setChangeCallback() instead
 	bool hasChanged();
