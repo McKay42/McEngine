@@ -42,17 +42,17 @@ void CBaseUISlider::draw(Graphics *g)
 {
 	if (!m_bVisible) return;
 
+	// draw background
 	if (m_bDrawBackground)
 	{
 		g->setColor(m_backgroundColor);
 		g->fillRect(m_vPos.x,m_vPos.y,m_vSize.x,m_vSize.y);
 	}
 
+	// draw frame
 	g->setColor(m_frameColor);
 	if (m_bDrawFrame)
-	{
 		g->drawRect(m_vPos.x,m_vPos.y,m_vSize.x,m_vSize.y+1);
-	}
 
 	// draw sliding line
 	if (!m_bHorizontal)
@@ -65,14 +65,17 @@ void CBaseUISlider::draw(Graphics *g)
 
 void CBaseUISlider::drawBlock(Graphics *g)
 {
+	// TODO: m_vBlockSize is fucked, vertical sliders are also fucked
+
 	// draw block
-	Vector2 center = m_vPos + m_vBlockPos + m_vBlockSize/2;
+	Vector2 center = m_vPos + Vector2(m_vBlockSize.x/2 + (m_vSize.x-m_vBlockSize.x)*getPercent(), m_vSize.y/2);
 	Vector2 topLeft = center - m_vBlockSize/2;
 	Vector2 topRight = center + Vector2(m_vBlockSize.x/2 + 1, -m_vBlockSize.y/2);
 	Vector2 halfLeft = center + Vector2(-m_vBlockSize.x/2, 1);
 	Vector2 halfRight = center + Vector2(m_vBlockSize.x/2 + 1, 1);
-	Vector2 bottomLeft = center + Vector2(-m_vBlockSize.x/2, m_vBlockSize.y/2 + 2);
-	Vector2 bottomRight = center + Vector2(m_vBlockSize.x/2 + 1, m_vBlockSize.y/2 + 2);
+	Vector2 bottomLeft = center + Vector2(-m_vBlockSize.x/2, m_vBlockSize.y/2);
+	Vector2 bottomRight = center + Vector2(m_vBlockSize.x/2 + 1, m_vBlockSize.y/2);
+
 
 	g->drawQuad(topLeft,
 				topRight,
@@ -91,6 +94,7 @@ void CBaseUISlider::drawBlock(Graphics *g)
 				COLOR(255,225,225,225),
 				COLOR(255,255,255,255),
 				COLOR(255,255,255,255));
+
 
 	/*
 	g->drawQuad(Vector2(m_vPos.x+std::round(m_vBlockPos.x)+1, m_vPos.y+std::round(m_vBlockPos.y)+1),
@@ -226,7 +230,7 @@ void CBaseUISlider::setValue(float value, bool animate)
 	}
 
 	m_fCurValue = clamp<float>(value, m_fMinValue, m_fMaxValue);
-	float percent = clamp<float>((m_fCurValue-m_fMinValue) / (std::abs(m_fMaxValue-m_fMinValue)), 0.0f, 1.0f);
+	float percent = getPercent();
 
 	if (!m_bHorizontal)
 	{
@@ -252,13 +256,13 @@ void CBaseUISlider::setValue(float value, bool animate)
 void CBaseUISlider::setInitialValue(float value)
 {
 	m_fCurValue = clamp<float>(value, m_fMinValue, m_fMaxValue);
-	float percent = clamp<float>((m_fCurValue-m_fMinValue) / (std::abs(m_fMaxValue-m_fMinValue)), 0.0f, 1.0f);
+	float percent = getPercent();
 
 	if (m_fCurValue == m_fMaxValue)
 		percent = 1.0f;
 
 	if (!m_bHorizontal)
-		m_vBlockPos.y = (m_vSize.y-m_vBlockSize.x)*(1.0f-percent);
+		m_vBlockPos.y = (m_vSize.y-m_vBlockSize.y)*(1.0f-percent);
 	else
 		m_vBlockPos.x = (m_vSize.x-m_vBlockSize.x)*percent;
 
@@ -268,6 +272,11 @@ void CBaseUISlider::setInitialValue(float value)
 void CBaseUISlider::setBlockSize(float xSize, float ySize)
 {
 	m_vBlockSize = Vector2(xSize, ySize);
+}
+
+float CBaseUISlider::getPercent()
+{
+	return clamp<float>((m_fCurValue-m_fMinValue) / (std::abs(m_fMaxValue-m_fMinValue)), 0.0f, 1.0f);
 }
 
 bool CBaseUISlider::hasChanged()

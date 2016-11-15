@@ -61,11 +61,13 @@ bool g_bUpdate = true;
 bool g_bDraw = true;
 bool g_bDrawing = false;
 
-bool g_bMinimized = false; // for fps_max_minimized
+bool g_bMinimized = false; // for fps_max_background
+bool g_bHasFocus = false; // for fps_max_background
 bool g_bIsCursorVisible = true; // local variable
 
 ConVar fps_max("fps_max", 60.0f);
-ConVar fps_max_minimized("fps_max_minimized", 1.0f);
+ConVar fps_max_background("fps_max_background", 30.0f);
+ConVar fps_unlimited("fps_unlimited", false);
 
 
 
@@ -225,7 +227,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_ACTIVATE:
 			if (g_bRunning)
 			{
-				if (!HIWORD(wParam)) // are we minimized
+				if (!HIWORD(wParam)) // if we are not minimized
 				{
 					g_bUpdate = true;
 					g_bDraw = true;
@@ -234,12 +236,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				{
 					/// g_bUpdate = false;
 					g_bDraw = false;
+					g_bHasFocus = false;
 				}
 			}
 			break;
 
 		// focus
 		case WM_SETFOCUS:
+			g_bHasFocus = true;
 			if (g_bRunning && g_engine != NULL)
 			{
 				g_engine->onFocusGained();
@@ -247,6 +251,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case WM_KILLFOCUS:
+			g_bHasFocus = false;
 			if (g_bRunning && g_engine != NULL)
 			{
 				g_engine->onFocusLost();
@@ -731,6 +736,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     g_engine = new Engine(new WinEnvironment(hwnd, hInstance));
     g_engine->loadApp();
 
+    if (g_bHasFocus)
+    {
+    	g_engine->onFocusGained();
+    }
+
 	// main loop
 	while (g_bRunning)
 	{
@@ -762,24 +772,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		deltaTimer->update();
 
 		engine->setFrameTime(deltaTimer->getDelta());
-		double delayStart = frameTimer->getElapsedTime();
-		double delayTime;
-		if (g_bMinimized)
-			delayTime = (1.0 / (double)fps_max_minimized.getFloat()) - frameTimer->getDelta();
-		else
-			delayTime = (1.0 / (double)fps_max.getFloat()) - frameTimer->getDelta();
 
-		// more or less "busy" waiting, but giving away the rest of the timeslice at least
-		while (delayTime > 0.0)
+		if (!fps_unlimited.getBool() || g_bMinimized || !g_bHasFocus)
 		{
-			Sleep(0); // yes, there is a zero in there
+			double delayStart = frameTimer->getElapsedTime();
+			double delayTime;
+			if (g_bMinimized || !g_bHasFocus)
+				delayTime = (1.0 / (double)fps_max_background.getFloat()) - frameTimer->getDelta();
+			else
+				delayTime = (1.0 / (double)fps_max.getFloat()) - frameTimer->getDelta();
 
-			// decrease the delayTime by the time we spent in this loop
-			// if the loop is executed more than once, note how delayStart now gets the value of the previous iteration from getElapsedTime()
-			// this works because the elapsed time is only updated in update(). now we can easily calculate the time the Sleep() took and subtract it from the delayTime
-			delayStart = frameTimer->getElapsedTime();
-			frameTimer->update();
-			delayTime -= (frameTimer->getElapsedTime() - delayStart);
+			// more or less "busy" waiting, but giving away the rest of the timeslice at least
+			while (delayTime > 0.0)
+			{
+				Sleep(0); // yes, there is a zero in there
+
+				// decrease the delayTime by the time we spent in this loop
+				// if the loop is executed more than once, note how delayStart now gets the value of the previous iteration from getElapsedTime()
+				// this works because the elapsed time is only updated in update(). now we can easily calculate the time the Sleep() took and subtract it from the delayTime
+				delayStart = frameTimer->getElapsedTime();
+				frameTimer->update();
+				delayTime -= (frameTimer->getElapsedTime() - delayStart);
+			}
 		}
 	}
 
