@@ -47,17 +47,7 @@
 //	Include App here  //
 //********************//
 
-#include "MetaRay.h"
-#include "GUITest.h"
-#include "CGProject.h"
-#include "McDeathmatch.h"
-#include "MetroidModelViewer.h"
-#include "GUICoherenceMode.h"
-#include "VolumeTheory.h"
-#include "Tetris.h"
-#include "LFEMTracer.h"
-#include "NetworkTest.h"
-#include "Osu.h"
+//#include "Osu.h"
 #include "FrameworkTest.h"
 
 #include <cstdarg>
@@ -277,28 +267,6 @@ void Engine::loadApp()
 	//*****************//
 	//	Load App here  //
 	//*****************//
-
-	//m_app = new MetaRay();
-
-	//m_app = new Editor();
-
-	//m_app = new GUITest();
-
-	//m_app = new CGProject();
-
-	//m_app = new MetroidModelViewer();
-
-	//m_app = new GUICoherenceMode();
-
-	//m_app = new VolumeTheory();
-
-	//m_app = new Tetris();
-
-	//m_app = new McDeathmatch();
-
-	//m_app = new NetworkTest();
-
-	//m_app = new LFEMTracer();
 
 	//m_app = new Osu();
 

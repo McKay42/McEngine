@@ -20,9 +20,6 @@
 #include "CBaseUIContainer.h"
 #include "ConsoleBox.h"
 
-#include "ModelLoader.h"
-#include "OBJModel.h"
-
 ConVar vr_nearz("vr_nearz", 0.1f);
 ConVar vr_farz("vr_farz", 100.0f);
 ConVar vr_fake_camera_movement("vr_fake_camera_movement", false);
@@ -80,8 +77,6 @@ OpenVRInterface::OpenVRInterface()
 
 	m_bCaptureMouse = false;
 	m_fakeCamera = NULL;
-	m_testModel = NULL;
-	m_testMaterial = NULL;
 	m_controllerLeft = NULL;
 	m_controllerRight = NULL;
 	m_drawCallback = NULL;
@@ -190,10 +185,6 @@ OpenVRInterface::OpenVRInterface()
 	convar->getConVarByName("debug_shaders")->setValue(1.0f);
 	std::string strWindowTitle = "McEngine VR - " + m_strDriver + " " + m_strDisplay;
 	engine->getEnvironment()->setWindowTitle(strWindowTitle.c_str());
-
-	MDL mdl = ModelLoader::loadMDL("cake.mdl");
-	m_testModel = mdl.model;
-	m_testMaterial = mdl.material;
 
 	m_fakeCamera = new Camera();
 
@@ -650,8 +641,6 @@ void OpenVRInterface::renderScene(Graphics *g, vr::Hmd_Eye eye)
 		}
 
 		m_genericTexturedShader->setUniformMatrix4fv("matrix", m_matCurrentMVP);
-
-		m_testModel->draw(engine->getGraphics(), NULL);
 
 		// main draw callback
 		if (m_drawCallback != NULL)

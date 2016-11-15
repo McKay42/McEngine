@@ -30,6 +30,7 @@
 									<listOptionValue builtIn="false" value="__cplusplus=201103L"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1011133961" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/openvr/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bullet/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/xinput/include}&quot;"/>
@@ -78,6 +79,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.debug.733651606" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.debug"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.debug.673010526" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.debug">
 								<option id="gnu.cpp.link.option.libs.1074968535" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="openvr_api"/>
 									<listOptionValue builtIn="false" value="libcurl"/>
 									<listOptionValue builtIn="false" value="libxinput9_1_0"/>
 									<listOptionValue builtIn="false" value="libBulletSoftBody"/>
@@ -104,6 +106,7 @@
 									<listOptionValue builtIn="false" value="libjpeg"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.1174787854" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/openvr/lib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/lib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/xinput/lib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/enet/lib}&quot;"/>
@@ -161,6 +164,7 @@
 								<option id="gnu.cpp.compiler.option.dialect.std.1500769253" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.other.other.622623421" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -Wno-sign-compare -Wno-unused-local-typedefs -Wno-reorder -Wno-switch" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1812970339" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/openvr/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bullet/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/xinput/include}&quot;"/>
@@ -207,6 +211,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release.1568379547" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release.721244101" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release">
 								<option id="gnu.cpp.link.option.libs.1714008846" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="openvr_api"/>
 									<listOptionValue builtIn="false" value="libcurl"/>
 									<listOptionValue builtIn="false" value="libxinput9_1_0"/>
 									<listOptionValue builtIn="false" value="libBulletSoftBody"/>
@@ -233,6 +238,7 @@
 									<listOptionValue builtIn="false" value="libjpeg"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.425141102" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/openvr/lib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/lib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/xinput/lib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/enet/lib}&quot;"/>
@@ -283,7 +289,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.mingw.exe.release.1513391852" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.mingw.exe.release">
 								<option id="gnu.cpp.compiler.mingw.exe.release.option.optimization.level.536624698" name="Optimization Level" superClass="gnu.cpp.compiler.mingw.exe.release.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.mingw.exe.release.option.debugging.level.1700839731" name="Debug Level" superClass="gnu.cpp.compiler.mingw.exe.release.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
-								<option id="gnu.cpp.compiler.option.preprocessor.def.1689305244" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1689305244" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false"/>
 								<option id="gnu.cpp.compiler.option.dialect.std.806848702" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.other.other.1498046402" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -Wno-sign-compare -Wno-unused-local-typedefs -Wno-reorder -Wno-switch -fpermissive" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.paths.163729486" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
@@ -401,13 +407,15 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Windows Debug"/>
+		<configuration configurationName="Linux Release"/>
+		<configuration configurationName="Windows Release"/>
 		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/McEngine"/>
 		</configuration>
 		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/McEngine"/>
 		</configuration>
-		<configuration configurationName="Windows Release"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 </cproject>

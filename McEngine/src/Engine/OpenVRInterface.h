@@ -30,9 +30,6 @@ class RenderTarget;
 class OpenVRController;
 class CGLRenderModel;
 
-class OBJModel;
-class MDLMaterial;
-
 class OpenVRInterface : public KeyboardListener
 {
 public:
@@ -166,10 +163,6 @@ private:
 	RenderTarget *m_leftEye;
 	RenderTarget *m_rightEye;
 	RenderTarget *m_debugOverlay;
-
-	// debugging
-	OBJModel *m_testModel;
-	MDLMaterial *m_testMaterial;
 
 	Camera *m_fakeCamera;
 	bool m_bWDown;
