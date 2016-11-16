@@ -14,7 +14,7 @@
 #include <tchar.h>
 #include <string>
 
-// #define WINDOW_RESIZABLE
+#define WINDOW_RESIZABLE
 
 bool g_bCursorVisible = true;
 

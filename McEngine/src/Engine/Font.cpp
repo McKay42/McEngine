@@ -103,7 +103,7 @@ void McFont::init()
 	int atlasWidth = /*max((int)std::pow(2, ceil(log(rawMinWidth)/log(2))), defaultAtlasWidth)*/defaultAtlasWidth; // this must be defaultAtlasWidth as fallback (because we line wrap on overflowing widths during the size calculation)
 	int atlasHeight = std::max((int)std::pow(2, ceil(log(rawMinHeight)/log(2))), 64);
 
-	engine->getResourceManager()->destroyResource(m_textureAtlas);
+	SAFE_DELETE(m_textureAtlas); // unmanaged, must delete manually
 	engine->getResourceManager()->requestNextLoadUnmanaged();
 	m_textureAtlas = engine->getResourceManager()->createImage(atlasWidth, atlasHeight);
 	for (int x=0; x<m_textureAtlas->getWidth(); x++)
