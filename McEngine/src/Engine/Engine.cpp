@@ -66,7 +66,7 @@ void __host_timescale( UString oldValue, UString newValue )
 	}
 }
 ConVar epilepsy("epilepsy", false);
-ConVar debug_engine("debug_engine", true);
+ConVar debug_engine("debug_engine", false);
 
 
 
@@ -195,9 +195,6 @@ Engine::~Engine()
 	debugLog("Engine: Freeing resource manager...\n");
 	SAFE_DELETE(m_resourceManager);
 
-	debugLog("Engine: Freeing graphics...\n");
-	SAFE_DELETE(m_graphics);
-
 	debugLog("Engine: Freeing OpenCL...\n");
 	SAFE_DELETE(m_openCL);
 
@@ -228,6 +225,9 @@ Engine::~Engine()
 
 	debugLog("Engine: Freeing timer...\n");
 	SAFE_DELETE(m_timer);
+
+	debugLog("Engine: Freeing graphics...\n");
+	SAFE_DELETE(m_graphics);
 
 	debugLog("Engine: Freeing environment...\n");
 	SAFE_DELETE(m_environment);
