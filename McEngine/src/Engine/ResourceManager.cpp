@@ -136,11 +136,10 @@ void ResourceManager::update()
 
 void ResourceManager::destroyResources()
 {
-	for (int i=0; i<m_vResources.size(); i++)
+	while (m_vResources.size() > 0)
 	{
-		destroyResource(m_vResources[i]);
+		destroyResource(m_vResources[0]);
 	}
-
 	m_vResources.clear();
 }
 
