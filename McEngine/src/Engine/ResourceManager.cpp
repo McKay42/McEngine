@@ -155,34 +155,41 @@ void ResourceManager::destroyResource(Resource *rs)
 	g_resourceManagerMutex.lock();
 	{
 
+	bool isManagedResource = false;
+	int managedResourceIndex = -1;
 	for (int i=0; i<m_vResources.size(); i++)
 	{
 		if (m_vResources[i] == rs)
 		{
-			// handle async destroy
-			for (int w=0; w<m_loadingWork.size(); w++)
-			{
-				if (m_loadingWork[w].first == rs)
-				{
-					if (debug_rm.getBool())
-						debugLog("Resource Manager: Scheduled async destroy of %s\n", rs->getName().toUtf8());
-
-					m_loadingWorkAsyncDestroy.push_back(rs);
-					m_vResources.erase(m_vResources.begin()+i);
-
-					// HACKHACK: ugly
-					g_resourceManagerMutex.unlock();
-					return;
-				}
-			}
-
-			// standard destroy
-			rs->release();
-			SAFE_DELETE(rs);
-			m_vResources.erase(m_vResources.begin()+i);
+			isManagedResource = true;
+			managedResourceIndex = i;
 			break;
 		}
 	}
+
+	// handle async destroy
+	for (int w=0; w<m_loadingWork.size(); w++)
+	{
+		if (m_loadingWork[w].first == rs)
+		{
+			if (debug_rm.getBool())
+				debugLog("Resource Manager: Scheduled async destroy of %s\n", rs->getName().toUtf8());
+
+			m_loadingWorkAsyncDestroy.push_back(rs);
+			if (isManagedResource)
+				m_vResources.erase(m_vResources.begin()+managedResourceIndex);
+
+			// HACKHACK: ugly
+			g_resourceManagerMutex.unlock();
+			return; // we're done here
+		}
+	}
+
+	// standard destroy
+	rs->release();
+	SAFE_DELETE(rs);
+	if (isManagedResource)
+		m_vResources.erase(m_vResources.begin()+managedResourceIndex);
 
 	}
 	g_resourceManagerMutex.unlock();
