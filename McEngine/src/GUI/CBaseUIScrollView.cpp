@@ -395,20 +395,30 @@ void CBaseUIScrollView::scrollX(int delta, bool animated)
 
 void CBaseUIScrollView::scrollToX(int scrollPosX)
 {
-	if (!m_bHorizontalScrolling || m_bScrolling || m_vSize.x >= m_vScrollSize.x) return;
+	if (!m_bHorizontalScrolling || m_bScrolling) return;
+
+	float upperBounds = 1;
+	float lowerBounds = -m_vScrollSize.x+m_vSize.x;
+	if (lowerBounds >= upperBounds)
+		lowerBounds = upperBounds;
 
 	m_bAutoScrollingX = true;
-	float targetX = clamp<float>(scrollPosX, -m_vScrollSize.x+m_vSize.x, 1);
+	float targetX = clamp<float>(scrollPosX, lowerBounds, upperBounds);
 	m_vVelocity.x = targetX;
 	anim->moveQuadOut(&m_vScrollPos.x, targetX, 0.15f, 0.0f, true);
 }
 
 void CBaseUIScrollView::scrollToY(int scrollPosY)
 {
-	if (!m_bVerticalScrolling || m_bScrolling || m_vSize.y >= m_vScrollSize.y) return;
+	if (!m_bVerticalScrolling || m_bScrolling) return;
+
+	float upperBounds = 1;
+	float lowerBounds = -m_vScrollSize.y+m_vSize.y;
+	if (lowerBounds >= upperBounds)
+		lowerBounds = upperBounds;
 
 	m_bAutoScrollingY = true;
-	float targetY = clamp<float>(scrollPosY, -m_vScrollSize.y+m_vSize.y, 1);
+	float targetY = clamp<float>(scrollPosY, lowerBounds, upperBounds);
 	m_vVelocity.y = targetY;
 	anim->moveQuadOut(&m_vScrollPos.y, targetY, 0.15f, 0.0f, true);
 }
@@ -577,16 +587,11 @@ void CBaseUIScrollView::onResized()
 	m_container->setSize(m_vScrollSize);
 
 	// TODO: duplicate code
+	// HACKHACK: shit code
 	if (m_bVerticalScrolling && m_vScrollSize.y < m_vSize.y && m_vScrollPos.y != 1)
-	{
-		m_bAutoScrollingY = true;
-		anim->moveQuadOut(&m_vScrollPos.y, 1, 0.15f, 0.0f, true);
-	}
+		scrollToY(1);
 	if (m_bHorizontalScrolling && m_vScrollSize.x < m_vSize.x && m_vScrollPos.x != 1)
-	{
-		m_bAutoScrollingX = true;
-		anim->moveQuadOut(&m_vScrollPos.x, 1, 0.15f, 0.0f, true);
-	}
+		scrollToX(1);
 
 	updateScrollbars();
 }
