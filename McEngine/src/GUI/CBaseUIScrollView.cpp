@@ -503,7 +503,7 @@ void CBaseUIScrollView::setScrollSizeToContent(int border)
 
 	updateScrollbars();
 
-	////onResized(); // wtf, why is this here
+	onResized(); // wtf, why is this here // now I remember, to force the scrollPos into the new scrollsize
 }
 
 Vector2 CBaseUIScrollView::getVelocity()
