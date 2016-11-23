@@ -5,8 +5,6 @@
 // $NoKeywords: $anim
 //===============================================================================//
 
-// TODO: shit code, refactor this
-
 #include "AnimationHandler.h"
 
 #include "Engine.h"
@@ -70,15 +68,21 @@ void AnimationHandler::update()
 		// modify percentage
 		switch(anim->m_animType)
 		{
-		case MOVE_LINEAR:
+		case ANIMATION_TYPE::MOVE_LINEAR:
 			anim->m_fBase[0] = anim->m_fStartValue + percent*(anim->m_fTarget[0] - anim->m_fStartValue);
 			break;
-		case MOVE_SMOOTH_END:
+		case ANIMATION_TYPE::MOVE_SMOOTH_END:
 			percent = clamp<float>(1-std::pow(1-percent,anim->m_fFactor),0.0f,1.0f);
 			if ((int)(percent*(anim->m_fTarget[0] - anim->m_fStartValue) + anim->m_fStartValue) == (int)anim->m_fTarget[0])
 				percent = 1.0f;
 			break;
-		case MOVE_QUAD_INOUT:
+		case ANIMATION_TYPE::MOVE_QUAD_IN:
+			percent = percent*percent;
+			break;
+		case ANIMATION_TYPE::MOVE_QUAD_OUT:
+			percent = -percent*(percent-2);
+			break;
+		case ANIMATION_TYPE::MOVE_QUAD_INOUT:
 			if ((percent *= 2) < 1)
 				percent = 0.5f*percent*percent;
 			else
@@ -87,11 +91,19 @@ void AnimationHandler::update()
 				percent = -0.5f * ((percent)*(percent-2) - 1);
 			}
 			break;
-		case MOVE_QUAD_IN:
-			percent = percent*percent;
+		case ANIMATION_TYPE::MOVE_CUBIC_IN:
+			percent = percent*percent*percent;
 			break;
-		case MOVE_QUAD_OUT:
-			percent =  -percent*(percent-2);
+		case ANIMATION_TYPE::MOVE_CUBIC_OUT:
+			percent = percent - 1;
+			percent = percent*percent*percent + 1.0f;
+			break;
+		case ANIMATION_TYPE::MOVE_QUART_IN:
+			percent = percent*percent*percent*percent;
+			break;
+		case ANIMATION_TYPE::MOVE_QUART_OUT:
+			percent = percent -1;
+			percent = 1.0f - percent*percent*percent*percent;
 			break;
 		}
 
@@ -99,92 +111,62 @@ void AnimationHandler::update()
 		anim->m_fBase[0] = anim->m_fStartValue + percent*(anim->m_fTarget[0] - anim->m_fStartValue);
 	}
 
+	if (m_vAnimations.size() > 512)
+		debugLog("WARNING: AnimationHandler has %i animations!\n", m_vAnimations.size());
+
 	//printf("AnimStackSize = %i\n", m_vAnimations.size());
 }
 
 void AnimationHandler::moveLinear(float *base, float target, float duration, float delay, bool overrideExisting)
 {
-	if (overrideExisting)
-		overrideExistingAnimation(base);
-	float *_target = new float;
-	_target[0] = target;
-	Animation *anim = new Animation();
-
-	anim->m_fBase = base;
-	anim->m_fTarget = _target;
-	anim->m_fDuration = duration;
-	anim->m_fStartValue = base[0];
-	anim->m_fStartTime = engine->getTime()+delay;
-	anim->m_animType = MOVE_LINEAR;
-	anim->m_fFactor = 0.0f;
-	anim->m_bStarted = delay == 0.0f;
-
-	m_vAnimations.push_back( anim );
-}
-
-void AnimationHandler::moveSmoothEnd(float *base, float target, float duration, int smoothFactor, float delay)
-{
-	overrideExistingAnimation(base);
-	float *_target = new float;
-	_target[0] = target;
-	Animation *anim = new Animation();
-
-	anim->m_fBase = base;
-	anim->m_fTarget = _target;
-	anim->m_fDuration = duration;
-	anim->m_fStartValue = base[0];
-	anim->m_fStartTime = engine->getTime()+delay;
-	anim->m_animType = MOVE_SMOOTH_END;
-	anim->m_fFactor = smoothFactor;
-	anim->m_bStarted = delay == 0.0f;
-
-	m_vAnimations.push_back( anim );
-}
-
-void AnimationHandler::moveQuadInOut(float *base, float target, float duration, float delay, bool overrideExisting)
-{
-	if (overrideExisting)
-		overrideExistingAnimation(base);
-	float *_target = new float;
-	_target[0] = target;
-	Animation *anim = new Animation();
-
-	anim->m_fBase = base;
-	anim->m_fTarget = _target;
-	anim->m_fDuration = duration;
-	anim->m_fStartValue = base[0];
-	anim->m_fStartTime = engine->getTime()+delay;
-	anim->m_animType = MOVE_QUAD_INOUT;
-	anim->m_fFactor = 0.0f;
-	anim->m_bStarted = delay == 0.0f;
-
-	m_vAnimations.push_back( anim );
+	addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_LINEAR);
 }
 
 void AnimationHandler::moveQuadIn(float *base, float target, float duration, float delay, bool overrideExisting)
 {
-	if (overrideExisting)
-		overrideExistingAnimation(base);
-	float *_target = new float;
-	_target[0] = target;
-	Animation *anim = new Animation();
-
-	anim->m_fBase = base;
-	anim->m_fTarget = _target;
-	anim->m_fDuration = duration;
-	anim->m_fStartValue = base[0];
-	anim->m_fStartTime = engine->getTime()+delay;
-	anim->m_animType = MOVE_QUAD_IN;
-	anim->m_fFactor = 0.0f;
-	anim->m_bStarted = delay == 0.0f;
-
-	m_vAnimations.push_back( anim );
+	addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUAD_IN);
 }
 
 void AnimationHandler::moveQuadOut(float *base, float target, float duration, float delay, bool overrideExisting)
 {
+	addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUAD_OUT);
+}
+
+void AnimationHandler::moveQuadInOut(float *base, float target, float duration, float delay, bool overrideExisting)
+{
+	addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUAD_INOUT);
+}
+
+void AnimationHandler::moveCubicIn(float *base, float target, float duration, float delay, bool overrideExisting)
+{
+	addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_CUBIC_IN);
+}
+
+void AnimationHandler::moveCubicOut(float *base, float target, float duration, float delay, bool overrideExisting)
+{
+	addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_CUBIC_OUT);
+}
+
+void AnimationHandler::moveQuartIn(float *base, float target, float duration, float delay, bool overrideExisting)
+{
+	addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUART_IN);
+}
+
+void AnimationHandler::moveQuartOut(float *base, float target, float duration, float delay, bool overrideExisting)
+{
+	addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUART_OUT);
+}
+
+void AnimationHandler::moveSmoothEnd(float *base, float target, float duration, int smoothFactor, float delay)
+{
+	addAnimation(base, target, duration, delay, true, ANIMATION_TYPE::MOVE_SMOOTH_END, smoothFactor);
+}
+
+void AnimationHandler::addAnimation(float *base, float target, float duration, float delay, bool overrideExisting, AnimationHandler::ANIMATION_TYPE type, float smoothFactor)
+{
 	if (overrideExisting)
 		overrideExistingAnimation(base);
+
 	float *_target = new float;
 	_target[0] = target;
 	Animation *anim = new Animation();
@@ -193,12 +175,12 @@ void AnimationHandler::moveQuadOut(float *base, float target, float duration, fl
 	anim->m_fTarget = _target;
 	anim->m_fDuration = duration;
 	anim->m_fStartValue = base[0];
-	anim->m_fStartTime = engine->getTime()+delay;
-	anim->m_animType = MOVE_QUAD_OUT;
-	anim->m_fFactor = 0.0f;
+	anim->m_fStartTime = engine->getTime() + delay;
+	anim->m_animType = type;
+	anim->m_fFactor = smoothFactor;
 	anim->m_bStarted = delay == 0.0f;
 
-	m_vAnimations.push_back( anim );
+	m_vAnimations.push_back(anim);
 }
 
 void AnimationHandler::overrideExistingAnimation(float *base)
