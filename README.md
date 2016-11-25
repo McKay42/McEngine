@@ -52,9 +52,9 @@ If you don't want to use eclipse you'll have to create your own makefile. Micros
 ##Windows
 The Windows build needs mingw-w64 (i686 with Win32 threads), you can get it here:
 
-[https://mingw-w64.org/doku.php/](https://mingw-w64.org/doku.php/)
+Project: [https://mingw-w64.org/doku.php/](https://mingw-w64.org/doku.php/)
 
-[https://sourceforge.net/projects/mingw-w64/](https://sourceforge.net/projects/mingw-w64/)
+Installer: [https://sourceforge.net/projects/mingw-w64/](https://sourceforge.net/projects/mingw-w64/)
 
 Make sure you add the mingw directory to your PATH after the installation is finished.
 
