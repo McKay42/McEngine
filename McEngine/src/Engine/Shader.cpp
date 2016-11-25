@@ -49,7 +49,6 @@ Shader::~Shader()
 void Shader::compile(UString vertexShader, UString fragmentShader, bool source)
 {
 	m_bReady = false;
-	m_vUniformCache.clear();
 
 	// load & compile shaders
 	m_iVertexShader = source ? createShaderFromString(vertexShader, GL_VERTEX_SHADER_ARB) : createShaderFromFile(vertexShader, GL_VERTEX_SHADER_ARB);
@@ -198,22 +197,9 @@ void Shader::recompile()
 void Shader::setUniform1f(UString name, float value)
 {
 	if (!m_bReady) return;
-
-	// check cache first
-	auto it = m_vUniformCache.find(name.toUtf8());
-	if (it != m_vUniformCache.end())
-	{
-		glUniform1fARB(it->second, value);
-		return;
-	}
-
-	// couldn't find in cache. get and store
 	int id = glGetUniformLocationARB(m_iProgram, name.toUtf8());
 	if (id != -1)
-	{
-		m_vUniformCache[name.toUtf8()] = id;
 		glUniform1fARB(id, value);
-	}
 	else if (debug_shaders.getBool())
 		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
@@ -221,22 +207,9 @@ void Shader::setUniform1f(UString name, float value)
 void Shader::setUniform1fv(UString name, int count, float *values)
 {
 	if (!m_bReady) return;
-
-	// check cache first
-	auto it = m_vUniformCache.find(name.toUtf8());
-	if (it != m_vUniformCache.end())
-	{
-		glUniform1fvARB(it->second, count, values);
-		return;
-	}
-
-	// couldn't find in cache. get and store
 	int id = glGetUniformLocationARB(m_iProgram, name.toUtf8());
 	if (id != -1)
-	{
-		m_vUniformCache[name.toUtf8()] = id;
 		glUniform1fvARB(id, count, values);
-	}
 	else if (debug_shaders.getBool())
 		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
@@ -244,22 +217,9 @@ void Shader::setUniform1fv(UString name, int count, float *values)
 void Shader::setUniform1i(UString name, int value)
 {
 	if (!m_bReady) return;
-
-	// check cache first
-	auto it = m_vUniformCache.find(name.toUtf8());
-	if (it != m_vUniformCache.end())
-	{
-		glUniform1iARB(it->second, value);
-		return;
-	}
-
-	// couldn't find in cache. get and store
 	int id = glGetUniformLocationARB(m_iProgram, name.toUtf8());
 	if (id != -1)
-	{
-		m_vUniformCache[name.toUtf8()] = id;
 		glUniform1iARB(id, value);
-	}
 	else if (debug_shaders.getBool())
 		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
@@ -267,22 +227,9 @@ void Shader::setUniform1i(UString name, int value)
 void Shader::setUniform2f(UString name, float value1, float value2)
 {
 	if (!m_bReady) return;
-
-	// check cache first
-	auto it = m_vUniformCache.find(name.toUtf8());
-	if (it != m_vUniformCache.end())
-	{
-		glUniform2fARB(it->second, value1, value2);
-		return;
-	}
-
-	// couldn't find in cache. get and store
 	int id = glGetUniformLocationARB(m_iProgram, name.toUtf8());
 	if (id != -1)
-	{
-		m_vUniformCache[name.toUtf8()] = id;
 		glUniform2fARB(id, value1, value2);
-	}
 	else if (debug_shaders.getBool())
 		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
@@ -290,22 +237,9 @@ void Shader::setUniform2f(UString name, float value1, float value2)
 void Shader::setUniform3f(UString name, float x, float y, float z)
 {
 	if (!m_bReady) return;
-
-	// check cache first
-	auto it = m_vUniformCache.find(name.toUtf8());
-	if (it != m_vUniformCache.end())
-	{
-		glUniform3fARB(it->second, x, y, z);
-		return;
-	}
-
-	// couldn't find in cache. get and store
 	int id = glGetUniformLocationARB(m_iProgram, name.toUtf8());
 	if (id != -1)
-	{
-		m_vUniformCache[name.toUtf8()] = id;
 		glUniform3fARB(id, x, y, z);
-	}
 	else if (debug_shaders.getBool())
 		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
