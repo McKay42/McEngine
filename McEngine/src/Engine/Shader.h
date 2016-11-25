@@ -48,8 +48,6 @@ private:
 	int m_iVertexShader;
 	int m_iFragmentShader;
 	int m_iProgram;
-
-	std::unordered_map<std::string, int> m_vUniformCache;
 };
 
 #endif
