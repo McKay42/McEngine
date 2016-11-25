@@ -36,7 +36,7 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 [Model Viewer for Metroid Prime Hunters (a Nintendo DS game, YouTube link)](https://youtu.be/BSn59ebjOnw?t=2m51s)
 
 ##Eclipse
-This is a preconfigured Eclipse CDT project, meaning that in the best case you only have to copy the McEngine folder (which contains src, libraries, build and the project files) to your workspace and import it in Eclipse as an existing project.
+This is a preconfigured Eclipse CDT (C/C++) project, meaning that in the best case you only have to copy the McEngine folder (which contains src, libraries, build and the project files) to your workspace and import it in Eclipse as an existing project.
 
 [https://www.eclipse.org/downloads/eclipse-packages/](https://www.eclipse.org/downloads/eclipse-packages/)
 
