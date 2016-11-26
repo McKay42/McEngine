@@ -14,21 +14,28 @@
 #include "Shader.h"
 #include "Keyboard.h"
 #include "Mouse.h"
+#include "OpenVRController.h"
 #include "Camera.h"
 #include "RenderTarget.h"
+#include "VertexArrayObject.h"
 
 #include "CBaseUIContainer.h"
 #include "ConsoleBox.h"
 
+//#include "ModelLoader.h"
+//#include "OBJModel.h"
+
 ConVar vr_nearz("vr_nearz", 0.1f);
-ConVar vr_farz("vr_farz", 100.0f);
+ConVar vr_farz("vr_farz", 200.0f);
 ConVar vr_fake_camera_movement("vr_fake_camera_movement", false);
 ConVar vr_draw_hmd_to_window("vr_draw_hmd_to_window", true);
 ConVar vr_noclip_walk_speed("vr_noclip_speed", 25.0f);
 ConVar vr_noclip_sprint_speed("vr_noclip_sprint_speed", 50.0f);
 ConVar vr_noclip_crouch_speed("vr_noclip_crouch_speed", 5.0f);
 ConVar vr_mousespeed("vr_mousespeed", 0.18f);
-ConVar vr_gui_z("vr_gui_z", 0.5f);
+ConVar vr_debug_overlay_x("vr_debug_overlay_x", -0.3f);
+ConVar vr_debug_overlay_y("vr_debug_overlay_y", 0.2f);
+ConVar vr_debug_overlay_z("vr_debug_overlay_z", 0.75f);
 
 OpenVRInterface *openvr = NULL;
 
@@ -69,7 +76,19 @@ OpenVRInterface::OpenVRInterface()
 	openvr = this;
 	m_bReady = false;
 
-#ifdef MCENGINE_FEATURE_OPENVR
+	return;
+
+#ifndef MCENGINE_FEATURE_OPENVR
+
+	// initialize controllers
+	m_controllerLeft = new OpenVRController();
+	m_controllerRight = new OpenVRController();
+	m_controller = m_controllerRight;
+
+#else
+
+	//m_testModel = NULL;
+	//m_testMaterial = NULL;
 
 	// convar callbacks
 	vr_nearz.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onClippingPlaneChange));
@@ -97,12 +116,9 @@ OpenVRInterface::OpenVRInterface()
 
 	m_pRenderModels = NULL;
 
-	m_unLensVAO = 0;
-
 	m_glControllerVertBuffer = 0;
 	m_unControllerVAO = 0;
 
-	m_lensDistortionShader = NULL;
 	m_renderModelShader = NULL;
 	m_controllerAxisShader = NULL;
 	m_genericTexturedShader = NULL;
@@ -111,6 +127,11 @@ OpenVRInterface::OpenVRInterface()
 	m_rightEye = NULL;
 
 	memset(m_rDevClassChar, 0, sizeof(m_rDevClassChar));
+
+	// initialize controllers
+	m_controllerLeft = new OpenVRController(m_pHMD, OpenVRController::ROLE::ROLE_LEFTHAND);
+	m_controllerRight = new OpenVRController(m_pHMD, OpenVRController::ROLE::ROLE_RIGHTHAND);
+	m_controller = m_controllerRight;
 
 	// check if openvr runtime is installed
 	if (!vr::VR_IsRuntimeInstalled())
@@ -169,10 +190,6 @@ OpenVRInterface::OpenVRInterface()
 		return;
 	}
 
-	// initialize controllers
-	m_controllerLeft = new OpenVRController(m_pHMD, vr::ETrackedControllerRole::TrackedControllerRole_LeftHand);
-	m_controllerRight = new OpenVRController(m_pHMD, vr::ETrackedControllerRole::TrackedControllerRole_RightHand);
-
 	// get device strings
 	m_strDriver = "No Driver";
 	m_strDisplay = "No Display";
@@ -185,6 +202,10 @@ OpenVRInterface::OpenVRInterface()
 	convar->getConVarByName("debug_shaders")->setValue(1.0f);
 	std::string strWindowTitle = "McEngine VR - " + m_strDriver + " " + m_strDisplay;
 	engine->getEnvironment()->setWindowTitle(strWindowTitle.c_str());
+
+	//MDL mdl = ModelLoader::loadMDL("cake.mdl");
+	//m_testModel = mdl.model;
+	//m_testMaterial = mdl.material;
 
 	m_fakeCamera = new Camera();
 
@@ -218,23 +239,21 @@ OpenVRInterface::~OpenVRInterface()
 	SAFE_DELETE(m_genericTexturedShader);
 	SAFE_DELETE(m_controllerAxisShader);
 	SAFE_DELETE(m_renderModelShader);
-	SAFE_DELETE(m_lensDistortionShader);
-
-	// index buffers
-	glDeleteBuffers(1, &m_glIDVertBuffer);
-	glDeleteBuffers(1, &m_glIDIndexBuffer);
 
 	// frame buffers
 	SAFE_DELETE(m_leftEye);
 	SAFE_DELETE(m_rightEye);
 
 	// vertex buffers
-	if (m_unLensVAO != 0)
-		glDeleteVertexArrays(1, &m_unLensVAO);
 	if (m_unControllerVAO != 0)
 		glDeleteVertexArrays(1, &m_unControllerVAO);
 
 #endif
+
+	// controllers
+	SAFE_DELETE(m_controllerLeft);
+	SAFE_DELETE(m_controllerRight);
+	m_controller = NULL;
 
 	openvr = NULL;
 }
@@ -249,8 +268,6 @@ bool OpenVRInterface::initRenderer()
 	updateStaticMatrices();
 	debugLog("OpenVR: Creating rendertargets ...\n");
 	initRenderTargets();
-	debugLog("OpenVR: Creating distortion ...\n");
-	initDistortion();
 	debugLog("OpenVR: Creating rendermodels ...\n");
 	initRenderModels();
 
@@ -262,138 +279,6 @@ bool OpenVRInterface::initCompositor()
 	if (!vr::VRCompositor())
 		return false;
 	return true;
-}
-
-void OpenVRInterface::initDistortion()
-{
-	if (!m_pHMD)
-		return;
-
-	GLushort m_iLensGridSegmentCountH = 43;
-	GLushort m_iLensGridSegmentCountV = 43;
-
-	float w = (float)(1.0/float(m_iLensGridSegmentCountH-1));
-	float h = (float)(1.0/float(m_iLensGridSegmentCountV-1));
-
-	float u, v = 0;
-
-	std::vector<VertexDataLens> vVerts(0);
-	VertexDataLens vert;
-
-	// left eye distortion verts
-	float Xoffset = -1;
-	for (int y=0; y<m_iLensGridSegmentCountV; y++)
-	{
-		for (int x=0; x<m_iLensGridSegmentCountH; x++)
-		{
-			u = x*w; v = 1-y*h;
-			vert.position = Vector2(Xoffset+u, -1+2*y*h);
-
-			vr::DistortionCoordinates_t dc0 = m_pHMD->ComputeDistortion(vr::Eye_Left, u, v);
-
-			vert.texCoordRed = Vector2(dc0.rfRed[0], 1 - dc0.rfRed[1]);
-			vert.texCoordGreen =  Vector2(dc0.rfGreen[0], 1 - dc0.rfGreen[1]);
-			vert.texCoordBlue = Vector2(dc0.rfBlue[0], 1 - dc0.rfBlue[1]);
-
-			vVerts.push_back(vert);
-		}
-	}
-
-	// right eye distortion verts
-	Xoffset = 0;
-	for (int y=0; y<m_iLensGridSegmentCountV; y++)
-	{
-		for (int x=0; x<m_iLensGridSegmentCountH; x++)
-		{
-			u = x*w; v = 1-y*h;
-			vert.position = Vector2(Xoffset+u, -1+2*y*h);
-
-			vr::DistortionCoordinates_t dc0 = m_pHMD->ComputeDistortion(vr::Eye_Right, u, v);
-
-			vert.texCoordRed = Vector2(dc0.rfRed[0], 1 - dc0.rfRed[1]);
-			vert.texCoordGreen = Vector2(dc0.rfGreen[0], 1 - dc0.rfGreen[1]);
-			vert.texCoordBlue = Vector2(dc0.rfBlue[0], 1 - dc0.rfBlue[1]);
-
-			vVerts.push_back(vert);
-		}
-	}
-
-	std::vector<GLushort> vIndices;
-	GLushort a,b,c,d;
-
-	GLushort offset = 0;
-	for (GLushort y=0; y<m_iLensGridSegmentCountV-1; y++)
-	{
-		for (GLushort x=0; x<m_iLensGridSegmentCountH-1; x++)
-		{
-			a = m_iLensGridSegmentCountH*y+x +offset;
-			b = m_iLensGridSegmentCountH*y+x+1 +offset;
-			c = (y+1)*m_iLensGridSegmentCountH+x+1 +offset;
-			d = (y+1)*m_iLensGridSegmentCountH+x +offset;
-
-			vIndices.push_back(a);
-			vIndices.push_back(b);
-			vIndices.push_back(c);
-
-			vIndices.push_back(a);
-			vIndices.push_back(c);
-			vIndices.push_back(d);
-		}
-	}
-
-	offset = (m_iLensGridSegmentCountH)*(m_iLensGridSegmentCountV);
-	for (GLushort y=0; y<m_iLensGridSegmentCountV-1; y++)
-	{
-		for (GLushort x=0; x<m_iLensGridSegmentCountH-1; x++)
-		{
-			a = m_iLensGridSegmentCountH*y+x +offset;
-			b = m_iLensGridSegmentCountH*y+x+1 +offset;
-			c = (y+1)*m_iLensGridSegmentCountH+x+1 +offset;
-			d = (y+1)*m_iLensGridSegmentCountH+x +offset;
-
-			vIndices.push_back(a);
-			vIndices.push_back(b);
-			vIndices.push_back(c);
-
-			vIndices.push_back(a);
-			vIndices.push_back(c);
-			vIndices.push_back(d);
-		}
-	}
-	m_uiIndexSize = vIndices.size();
-
-	glGenVertexArrays(1, &m_unLensVAO);
-	glBindVertexArray(m_unLensVAO);
-
-	glGenBuffers(1, &m_glIDVertBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, m_glIDVertBuffer);
-	glBufferData(GL_ARRAY_BUFFER, vVerts.size()*sizeof(VertexDataLens), &vVerts[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &m_glIDIndexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIDIndexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, vIndices.size()*sizeof(GLushort), &vIndices[0], GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataLens), (void *)offsetof(VertexDataLens, position));
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataLens), (void *)offsetof(VertexDataLens, texCoordRed));
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataLens), (void *)offsetof(VertexDataLens, texCoordGreen));
-
-	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataLens), (void *)offsetof(VertexDataLens, texCoordBlue));
-
-	glBindVertexArray(0);
-
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(2);
-	glDisableVertexAttribArray(3);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void OpenVRInterface::initRenderModels()
@@ -505,65 +390,20 @@ bool OpenVRInterface::initShaders()
 			"	gl_Position = matrix * vec4(position.xyz, 1);\n"
 			"}\n",
 
-			//fragment shader
+			// fragment shader
 			"#version 410 core\n"
 			"uniform sampler2D diffuse;\n"
 			"in vec2 v2TexCoord;\n"
 			"out vec4 outputColor;\n"
 			"void main()\n"
 			"{\n"
-			"   outputColor = texture( diffuse, v2TexCoord);\n"
+			"   outputColor = texture(diffuse, v2TexCoord);\n"
 			"}\n",
 
 			true
 	);
 
-	m_lensDistortionShader = new Shader(
-
-			// vertex shader
-			"#version 410 core\n"
-			"layout(location = 0) in vec4 position;\n"
-			"layout(location = 1) in vec2 v2UVredIn;\n"
-			"layout(location = 2) in vec2 v2UVGreenIn;\n"
-			"layout(location = 3) in vec2 v2UVblueIn;\n"
-			"noperspective  out vec2 v2UVred;\n"
-			"noperspective  out vec2 v2UVgreen;\n"
-			"noperspective  out vec2 v2UVblue;\n"
-			"void main()\n"
-			"{\n"
-			"	v2UVred = v2UVredIn;\n"
-			"	v2UVgreen = v2UVGreenIn;\n"
-			"	v2UVblue = v2UVblueIn;\n"
-			"	gl_Position = position;\n"
-			"}\n",
-
-			// fragment shader
-			"#version 410 core\n"
-			"uniform sampler2D mytexture;\n"
-
-			"noperspective  in vec2 v2UVred;\n"
-			"noperspective  in vec2 v2UVgreen;\n"
-			"noperspective  in vec2 v2UVblue;\n"
-
-			"out vec4 outputColor;\n"
-
-			"void main()\n"
-			"{\n"
-			"	float fBoundsCheck = ( (dot( vec2( lessThan( v2UVgreen.xy, vec2(0.05, 0.05)) ), vec2(1.0, 1.0))+dot( vec2( greaterThan( v2UVgreen.xy, vec2( 0.95, 0.95)) ), vec2(1.0, 1.0))) );\n"
-			"	if( fBoundsCheck > 1.0 )\n"
-			"	{ outputColor = vec4( 0, 0, 0, 1.0 ); }\n"
-			"	else\n"
-			"	{\n"
-			"		float red = texture(mytexture, v2UVred).x;\n"
-			"		float green = texture(mytexture, v2UVgreen).y;\n"
-			"		float blue = texture(mytexture, v2UVblue).z;\n"
-			"		outputColor = vec4( red, green, blue, 1.0  ); }\n"
-			"}\n",
-
-			true
-	);
-
-	return m_genericTexturedShader->isReady() && m_controllerAxisShader->isReady() && m_renderModelShader->isReady() && m_lensDistortionShader->isReady();
+	return m_genericTexturedShader->isReady() && m_controllerAxisShader->isReady() && m_renderModelShader->isReady();
 }
 
 #endif
@@ -576,7 +416,7 @@ void OpenVRInterface::draw(Graphics *g)
 
 	if (m_pHMD)
 	{
-		updateHMDMatrixPose();
+		updateMatrixPoses();
 		updateControllerAxes();
 
 		// draw 2d debug overlay
@@ -590,8 +430,10 @@ void OpenVRInterface::draw(Graphics *g)
 		g->setDepthBuffer(false);
 
 		// viewer window
+		g->setColor(0xffffffff);
+		g->drawPixel(1, 1);
 		if (vr_draw_hmd_to_window.getBool())
-			renderStereoToWindow();
+			renderStereoToWindow(g);
 
 		// push to hmd
 		vr::Texture_t leftEyeTexture = {(void*)m_leftEye->getResolveTexture(), vr::API_OpenGL, vr::ColorSpace_Gamma};
@@ -611,6 +453,7 @@ void OpenVRInterface::renderScene(Graphics *g, vr::Hmd_Eye eye)
 
 	// TODO:
 	// render stencil mesh
+	/*
 	g->pushStencil();
 	g->setCulling(false);
 	{
@@ -627,11 +470,12 @@ void OpenVRInterface::renderScene(Graphics *g, vr::Hmd_Eye eye)
 	}
 	g->fillStencil(false);
 	///g->setCulling(true);
+	*/
 
-	// draw stuff
+	// draw
 	m_genericTexturedShader->enable();
 	{
-		m_matCurrentMVP = getCurrentViewProjectionMatrix(eye);
+		m_matCurrentMVP = getCurrentModelViewProjectionMatrix(eye);
 
 		if (vr_fake_camera_movement.getBool())
 		{
@@ -642,6 +486,8 @@ void OpenVRInterface::renderScene(Graphics *g, vr::Hmd_Eye eye)
 
 		m_genericTexturedShader->setUniformMatrix4fv("matrix", m_matCurrentMVP);
 
+		//m_testModel->draw(engine->getGraphics(), NULL);
+
 		// main draw callback
 		if (m_drawCallback != NULL)
 			m_drawCallback();
@@ -649,20 +495,22 @@ void OpenVRInterface::renderScene(Graphics *g, vr::Hmd_Eye eye)
 		// draw engine debug gui
 		g->setDepthBuffer(false);
 		{
-			// TODO: finish this
+			// TODO: make this more beautiful
 			m_genericTexturedShader->disable();
 			m_genericTexturedShader->enable();
+
+			const float scaleFactor = 100.0f;
 			float aspectRatio = m_debugOverlay->getWidth() / m_debugOverlay->getHeight();
-			Matrix4 projectionMatrix = Camera::buildMatrixPerspectiveFov(deg2rad(110), aspectRatio, 0.1f, 1000.0f);
+
 			Matrix4 translation;
-			translation.translate(-0.3f, 0.20f, -vr_gui_z.getFloat());
-			projectionMatrix = getCurrentEyePosMatrix(eye) * projectionMatrix * translation;
+			translation.translate(vr_debug_overlay_x.getFloat()*scaleFactor, vr_debug_overlay_y.getFloat()*scaleFactor, -vr_debug_overlay_z.getFloat()*scaleFactor);
+			Matrix4 projectionMatrix = getCurrentEyePosMatrix(eye) * getCurrentViewProjectionMatrix(eye) * translation;
 			m_genericTexturedShader->setUniformMatrix4fv("matrix", projectionMatrix);
 
 			float x = 0;
 			float y = 0;
-			float width = aspectRatio;
-			float height = 1;
+			float width = aspectRatio*scaleFactor;
+			float height = 1.0f*scaleFactor;
 
 			VertexArrayObject vao;
 
@@ -692,12 +540,12 @@ void OpenVRInterface::renderScene(Graphics *g, vr::Hmd_Eye eye)
 	}
 	m_genericTexturedShader->disable();
 
+	// draw the controller axis lines
 	if (!bIsInputCapturedByAnotherProcess)
 	{
-		// draw the controller axis lines
 		m_controllerAxisShader->enable();
 		{
-			Matrix4 eyeViewProjectionMatrix = getCurrentViewProjectionMatrix(eye);
+			Matrix4 eyeViewProjectionMatrix = getCurrentModelViewProjectionMatrix(eye);
 			m_controllerAxisShader->setUniformMatrix4fv("matrix", eyeViewProjectionMatrix);
 			glBindVertexArray(m_unControllerVAO);
 			glDrawArrays(GL_LINES, 0, m_uiControllerVertcount);
@@ -722,7 +570,7 @@ void OpenVRInterface::renderScene(Graphics *g, vr::Hmd_Eye eye)
 				continue;
 
 			const Matrix4 & matDeviceToTracking = m_rmat4DevicePose[unTrackedDevice];
-			Matrix4 matMVP = getCurrentViewProjectionMatrix(eye) * matDeviceToTracking;
+			Matrix4 matMVP = getCurrentModelViewProjectionMatrix(eye) * matDeviceToTracking;
 
 			m_renderModelShader->setUniformMatrix4fv("matrix", matMVP);
 			m_rTrackedDeviceToRenderModel[unTrackedDevice]->draw();
@@ -730,7 +578,7 @@ void OpenVRInterface::renderScene(Graphics *g, vr::Hmd_Eye eye)
 	}
 	m_renderModelShader->disable();
 
-	g->popStencil();
+	//g->popStencil();
 }
 
 void OpenVRInterface::renderStereoTargets(Graphics *g)
@@ -751,7 +599,7 @@ void OpenVRInterface::renderStereoTargets(Graphics *g)
 	// right Eye
     g->setAntialiasing(true);
 	{
-		g->onResolutionChange(m_leftEye->getSize()); // force engine resolution
+		g->onResolutionChange(m_rightEye->getSize()); // force engine resolution
     	m_rightEye->enable();
 			renderScene(g, vr::Eye_Right);
 		m_rightEye->disable();
@@ -762,37 +610,19 @@ void OpenVRInterface::renderStereoTargets(Graphics *g)
     g->onResolutionChange(resolutionBackup);
 }
 
-void OpenVRInterface::renderStereoToWindow()
+void OpenVRInterface::renderStereoToWindow(Graphics *g)
 {
-	glBindVertexArray(m_unLensVAO);
-	m_lensDistortionShader->enable();
+	g->setBlending(false);
 	{
-		// render left lens (first half of index array)
-		m_leftEye->bind();
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glDrawElements(GL_TRIANGLES, m_uiIndexSize/2, GL_UNSIGNED_SHORT, 0);
-		m_leftEye->unbind();
-
-		// render right lens (second half of index array)
-		m_rightEye->bind();
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glDrawElements(GL_TRIANGLES, m_uiIndexSize/2, GL_UNSIGNED_SHORT, (const void *)(m_uiIndexSize));
-		m_rightEye->unbind();
-
-		glBindVertexArray(0);
+		m_leftEye->draw(engine->getGraphics(), 0, 0, engine->getScreenWidth()/2, engine->getScreenHeight());
+		m_rightEye->draw(engine->getGraphics(), engine->getScreenWidth()/2, 0, engine->getScreenWidth()/2, engine->getScreenHeight());
 	}
-	m_lensDistortionShader->disable();
+	g->setBlending(true);
 }
 
 void OpenVRInterface::updateControllerAxes()
 {
-	// don't draw controllers if somebody else has input focus
+	// don't update controller axis lines if we don't have input focus
 	if (m_pHMD->IsInputFocusCapturedByAnotherProcess())
 		return;
 
@@ -883,10 +713,7 @@ void OpenVRInterface::updateControllerAxes()
 
 	// set vertex data if we have some
 	if (vertdataarray.size() > 0)
-	{
-		//$ TODO: Use glBufferSubData for this...
 		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertdataarray.size(), &vertdataarray[0], GL_STREAM_DRAW);
-	}
 }
 
 #endif
@@ -924,12 +751,18 @@ void OpenVRInterface::update()
 		vr::VRControllerState_t state;
 		if (m_pHMD->GetControllerState(unDevice, &state))
 		{
-			if (unDevice == m_pHMD->GetTrackedDeviceIndexForControllerRole(m_controllerLeft->getRole()))
+			if (unDevice == m_pHMD->GetTrackedDeviceIndexForControllerRole(OpenVRController::roleIdToOpenVR(m_controllerLeft->getRole())))
 				m_controllerLeft->update(state.ulButtonPressed, state.ulButtonTouched, state.rAxis);
-			else if (unDevice == m_pHMD->GetTrackedDeviceIndexForControllerRole(m_controllerRight->getRole()))
+			else if (unDevice == m_pHMD->GetTrackedDeviceIndexForControllerRole(OpenVRController::roleIdToOpenVR(m_controllerRight->getRole())))
 				m_controllerRight->update(state.ulButtonPressed, state.ulButtonTouched, state.rAxis);
 		}
 	}
+
+	// automatically switch primary/default controller on trigger pressed (for games which only need 1 controller)
+	if (m_controllerRight->getTrigger() > 0.3f)
+		m_controller = m_controllerRight;
+	else if (m_controllerLeft->getTrigger() > 0.3f)
+		m_controller = m_controllerLeft;
 
 	// debugging
 	if (vr_fake_camera_movement.getBool())
@@ -989,6 +822,7 @@ void OpenVRInterface::onKeyDown(KeyboardEvent &e)
 	if (e == KEY_CONTROL)
 		m_bCtrlDown = true;
 
+	// toggle fake camera on ALT + C
 	if (e == KEY_C && engine->getKeyboard()->isAltDown())
 	{
 		m_bCaptureMouse = !m_bCaptureMouse;
@@ -1050,7 +884,7 @@ void OpenVRInterface::updateStaticMatrices()
 	m_mat4eyePosRight = getHMDMatrixPoseEye(vr::Eye_Right);
 }
 
-void OpenVRInterface::updateHMDMatrixPose()
+void OpenVRInterface::updateMatrixPoses()
 {
 	if (!m_bReady) return;
 
@@ -1068,15 +902,43 @@ void OpenVRInterface::updateHMDMatrixPose()
 			{
 				switch (m_pHMD->GetTrackedDeviceClass(nDevice))
 				{
-				case vr::TrackedDeviceClass_Controller:        m_rDevClassChar[nDevice] = 'C'; break;
-				case vr::TrackedDeviceClass_HMD:               m_rDevClassChar[nDevice] = 'H'; break;
-				case vr::TrackedDeviceClass_Invalid:           m_rDevClassChar[nDevice] = 'I'; break;
-				case vr::TrackedDeviceClass_Other:             m_rDevClassChar[nDevice] = 'O'; break;
-				case vr::TrackedDeviceClass_TrackingReference: m_rDevClassChar[nDevice] = 'T'; break;
-				default:                                       m_rDevClassChar[nDevice] = '?'; break;
+				case vr::TrackedDeviceClass_Controller:
+					m_rDevClassChar[nDevice] = 'C';
+					break;
+				case vr::TrackedDeviceClass_HMD:
+					m_rDevClassChar[nDevice] = 'H';
+					break;
+				case vr::TrackedDeviceClass_Invalid:
+					m_rDevClassChar[nDevice] = 'I';
+					break;
+				case vr::TrackedDeviceClass_Other:
+					m_rDevClassChar[nDevice] = 'O';
+					break;
+				case vr::TrackedDeviceClass_TrackingReference:
+					m_rDevClassChar[nDevice] = 'T';
+					break;
+				default:
+					m_rDevClassChar[nDevice] = '?';
+					break;
 				}
 			}
 			m_strPoseClasses += m_rDevClassChar[nDevice];
+
+			// update controller matrices
+			if (m_pHMD->IsTrackedDeviceConnected(nDevice) && m_pHMD->GetTrackedDeviceClass(nDevice) == vr::TrackedDeviceClass_Controller)
+			{
+				if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
+				{
+					if (nDevice == m_pHMD->GetTrackedDeviceIndexForControllerRole(OpenVRController::roleIdToOpenVR(m_controllerLeft->getRole())))
+					{
+						m_controllerLeft->updateMatrixPose(m_rmat4DevicePose[nDevice]);
+					}
+					else if (nDevice == m_pHMD->GetTrackedDeviceIndexForControllerRole(OpenVRController::roleIdToOpenVR(m_controllerRight->getRole())))
+					{
+						m_controllerRight->updateMatrixPose(m_rmat4DevicePose[nDevice]);
+					}
+				}
+			}
 		}
 	}
 
@@ -1205,7 +1067,7 @@ Matrix4 OpenVRInterface::getHMDMatrixPoseEye(vr::Hmd_Eye eye)
 	return matrixObj.invert();
 }
 
-Matrix4 OpenVRInterface::getCurrentViewProjectionMatrix(vr::Hmd_Eye eye)
+Matrix4 OpenVRInterface::getCurrentModelViewProjectionMatrix(vr::Hmd_Eye eye)
 {
 	Matrix4 matMVP;
 	if (eye == vr::Eye_Left)
@@ -1213,6 +1075,16 @@ Matrix4 OpenVRInterface::getCurrentViewProjectionMatrix(vr::Hmd_Eye eye)
 	else if (eye == vr::Eye_Right)
 		matMVP = m_mat4ProjectionRight * m_mat4eyePosRight * m_mat4HMDPose;
 	return matMVP;
+}
+
+Matrix4 OpenVRInterface::getCurrentViewProjectionMatrix(vr::Hmd_Eye eye)
+{
+	Matrix4 matVP;
+	if (eye == vr::Eye_Left)
+		matVP = m_mat4ProjectionLeft * m_mat4eyePosLeft;
+	else if (eye == vr::Eye_Right)
+		matVP = m_mat4ProjectionRight * m_mat4eyePosRight;
+	return matVP;
 }
 
 Matrix4 OpenVRInterface::getCurrentEyePosMatrix(vr::Hmd_Eye eye)
@@ -1330,60 +1202,6 @@ bool CGLRenderModel::init(const vr::RenderModel_t &vrModel, const vr::RenderMode
 	m_unVertexCount = vrModel.unTriangleCount * 3;
 
 	return true;
-}
-
-#endif
-
-
-
-#ifdef MCENGINE_FEATURE_OPENVR
-
-OpenVRController::OpenVRController(vr::IVRSystem *hmd, vr::ETrackedControllerRole role)
-{
-	m_hmd = hmd;
-	m_role = role;
-
-	m_ulButtonPressed = 0;
-	m_ulButtonTouched = 0;
-
-	for (int i=0; i<vr::k_unControllerStateAxisCount; i++)
-	{
-		m_rAxis[i].x = 0.0f;
-		m_rAxis[i].y = 0.0f;
-	}
-}
-
-void OpenVRController::update(uint64_t buttonPressed, uint64_t buttonTouched, vr::VRControllerAxis_t axes[vr::k_unControllerStateAxisCount])
-{
-	m_ulButtonPressed = buttonPressed;
-	m_ulButtonTouched = buttonTouched;
-
-	for (int i=0; i<vr::k_unControllerStateAxisCount; i++)
-	{
-		m_rAxis[i] = axes[i];
-	}
-}
-
-void OpenVRController::triggerHapticPulse(unsigned short durationMicroSec, vr::EVRButtonId buttonId)
-{
-	if (m_hmd == NULL) return;
-
-	m_hmd->TriggerHapticPulse(m_hmd->GetTrackedDeviceIndexForControllerRole(m_role), vr::EVRButtonId::k_EButton_SteamVR_Touchpad, durationMicroSec);
-}
-
-bool OpenVRController::isButtonPressed(vr::EVRButtonId button)
-{
-	return m_ulButtonPressed & ButtonMaskFromId(button);
-}
-
-float OpenVRController::getTrigger()
-{
-	return m_rAxis[vr::EVRButtonId::k_EButton_SteamVR_Trigger].x;
-}
-
-Vector2 OpenVRController::getTouchpad()
-{
-	return Vector2(m_rAxis[vr::EVRButtonId::k_EButton_SteamVR_Touchpad].x, m_rAxis[vr::EVRButtonId::k_EButton_SteamVR_Touchpad].y);
 }
 
 #endif
