@@ -43,6 +43,7 @@ bool g_bDraw = true;
 bool g_bDrawing = false;
 
 ConVar fps_max("fps_max", 60.0f);
+ConVar fps_unlimited("fps_unlimited", false);
 
 Display                 *dpy;
 Window                  root;
@@ -353,16 +354,20 @@ int main(int argc, char *argv[])
 		deltaTimer->update();
 
 		engine->setFrameTime(deltaTimer->getDelta());
-		double delayStart = frameTimer->getElapsedTime();
-		double delayTime = (1.0 / (double)fps_max.getFloat()) - frameTimer->getDelta();
 
-		// more accurate "busy" waiting, but giving away the rest of the timeslice
-		while (delayTime > 0.0)
+		if (!fps_unlimited.getBool())
 		{
-			usleep(1);
-			delayStart = frameTimer->getElapsedTime();
-			frameTimer->update();
-			delayTime -= (frameTimer->getElapsedTime() - delayStart);
+			double delayStart = frameTimer->getElapsedTime();
+			double delayTime = (1.0 / (double)fps_max.getFloat()) - frameTimer->getDelta();
+
+			// more accurate "busy" waiting, but giving away the rest of the timeslice
+			while (delayTime > 0.0)
+			{
+				usleep(1);
+				delayStart = frameTimer->getElapsedTime();
+				frameTimer->update();
+				delayTime -= (frameTimer->getElapsedTime() - delayStart);
+			}
 		}
     }
 

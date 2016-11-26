@@ -199,7 +199,7 @@
 #define KEY_ENTER			XK_Return
 #define KEY_SHIFT			XK_Shift_L
 #define KEY_CONTROL			XK_Control_L
-#define KEY_ALT				XK_Menu
+#define KEY_ALT				XK_Caps_Lock // HACKHACK: using caps lock for now
 #define KEY_ESCAPE			XK_Escape
 #define KEY_SPACE			XK_space
 #define KEY_BACKSPACE		XK_BackSpace
