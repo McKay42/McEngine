@@ -76,14 +76,14 @@ OpenVRInterface::OpenVRInterface()
 	openvr = this;
 	m_bReady = false;
 
-	return;
-
 #ifndef MCENGINE_FEATURE_OPENVR
 
 	// initialize controllers
 	m_controllerLeft = new OpenVRController();
 	m_controllerRight = new OpenVRController();
 	m_controller = m_controllerRight;
+
+	return;
 
 #else
 
