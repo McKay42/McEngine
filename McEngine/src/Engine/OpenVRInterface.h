@@ -30,6 +30,9 @@ class RenderTarget;
 class OpenVRController;
 class CGLRenderModel;
 
+//class OBJModel;
+//class MDLMaterial;
+
 class OpenVRInterface : public KeyboardListener
 {
 public:
@@ -50,6 +53,7 @@ public:
 
 	inline Matrix4 getCurrentModelViewProjectionMatrix() {return m_matCurrentMVP;}
 
+	inline OpenVRController *getController() {return m_controller;}
 	inline OpenVRController *getLeftController() {return m_controllerLeft;}
 	inline OpenVRController *getRightController() {return m_controllerRight;}
 
@@ -61,23 +65,23 @@ private:
 
 	bool initRenderer();
 	bool initCompositor();
-	void initDistortion();
 	void initRenderModels();
 	bool initRenderTargets();
 	bool initShaders();
 
 	void renderStereoTargets(Graphics *g);
 	void renderScene(Graphics *g, vr::Hmd_Eye eye);
-	void renderStereoToWindow();
+	void renderStereoToWindow(Graphics *g);
 	void updateControllerAxes();
 
 	void updateStaticMatrices(); // eye position offset and projection
-	void updateHMDMatrixPose(); // pose matrices
+	void updateMatrixPoses(); // pose matrices
 	void updateRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	CGLRenderModel *findOrLoadRenderModel(const char *pchRenderModelName);
 
 	Matrix4 getHMDMatrixProjectionEye(vr::Hmd_Eye eye);
 	Matrix4 getHMDMatrixPoseEye(vr::Hmd_Eye eye);
+	Matrix4 getCurrentModelViewProjectionMatrix(vr::Hmd_Eye eye);
 	Matrix4 getCurrentViewProjectionMatrix(vr::Hmd_Eye eye);
 	Matrix4 getCurrentEyePosMatrix(vr::Hmd_Eye eye);
 
@@ -104,6 +108,7 @@ private:
 
 	bool m_bReady;
 
+	OpenVRController *m_controller;
 	OpenVRController *m_controllerLeft;
 	OpenVRController *m_controllerRight;
 
@@ -123,7 +128,6 @@ private:
 	Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
 
 	// shaders
-	Shader *m_lensDistortionShader;
 	Shader *m_renderModelShader;
 	Shader *m_controllerAxisShader;
 	Shader *m_genericTexturedShader;
@@ -137,11 +141,6 @@ private:
 	char m_rDevClassChar[ vr::k_unMaxTrackedDeviceCount ];   // for each device, a character representing its class
 
 	// mesh buffers
-	GLuint m_unLensVAO;
-	GLuint m_glIDVertBuffer;
-	GLuint m_glIDIndexBuffer;
-	unsigned int m_uiIndexSize;
-
 	GLuint m_glControllerVertBuffer;
 	GLuint m_unControllerVAO;
 	unsigned int m_uiControllerVertcount;
@@ -163,6 +162,10 @@ private:
 	RenderTarget *m_leftEye;
 	RenderTarget *m_rightEye;
 	RenderTarget *m_debugOverlay;
+
+	// debugging
+	//OBJModel *m_testModel;
+	//MDLMaterial *m_testMaterial;
 
 	Camera *m_fakeCamera;
 	bool m_bWDown;
@@ -202,33 +205,5 @@ private:
 
 	std::string m_sModelName;
 };
-
-#ifdef MCENGINE_FEATURE_OPENVR
-
-class OpenVRController
-{
-public:
-	OpenVRController(vr::IVRSystem *hmd, vr::ETrackedControllerRole role);
-
-	void update(uint64_t buttonPressed, uint64_t buttonTouched, vr::VRControllerAxis_t axes[vr::k_unControllerStateAxisCount]);
-
-	void triggerHapticPulse(unsigned short durationMicroSec = 500, vr::EVRButtonId buttonId = vr::EVRButtonId::k_EButton_SteamVR_Touchpad);
-
-	bool isButtonPressed(vr::EVRButtonId button);
-
-	inline vr::ETrackedControllerRole getRole() const {return m_role;}
-	float getTrigger();
-	Vector2 getTouchpad();
-
-private:
-	vr::IVRSystem *m_hmd;
-	vr::ETrackedControllerRole m_role;
-
-	uint64_t m_ulButtonPressed;
-	uint64_t m_ulButtonTouched;
-	vr::VRControllerAxis_t m_rAxis[vr::k_unControllerStateAxisCount];
-};
-
-#endif
 
 #endif

@@ -33,6 +33,8 @@ private:
 	bool m_bHasAlphaChannel;
 	bool m_bAlignRawDataToBytes;
 	unsigned int m_iNumChannels;
+
+	unsigned int m_iTextureUnitBackup;
 };
 
 #endif
