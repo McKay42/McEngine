@@ -43,6 +43,8 @@ OpenGLImage::OpenGLImage(ResourceManager *loader, UString filepath, bool mipmapp
 	m_bHasAlphaChannel = true;
 	m_bAlignRawDataToBytes = false;
 	m_iNumChannels = 4;
+
+	m_iTextureUnitBackup = 0;
 }
 
 OpenGLImage::OpenGLImage(int width, int height, bool clampToEdge) : Image(width, height, clampToEdge)
@@ -53,6 +55,8 @@ OpenGLImage::OpenGLImage(int width, int height, bool clampToEdge) : Image(width,
 	m_bAlignRawDataToBytes = false;
 	m_bAsyncReady = true;
 	m_iNumChannels = 4;
+
+	m_iTextureUnitBackup = 0;
 }
 
 OpenGLImage::~OpenGLImage()
@@ -235,7 +239,7 @@ void OpenGLImage::initAsync()
 			for (int i=0; i<m_iHeight; ++i)
 			{
 				j = (&m_rawImage[0] + (i * m_iWidth * m_iNumChannels));
-				jpeg_read_scanlines (&cinfo, &j, 1);
+				jpeg_read_scanlines(&cinfo, &j, 1);
 			}
 
 			jpeg_finish_decompress(&cinfo);
@@ -273,8 +277,10 @@ void OpenGLImage::bind(unsigned int textureUnit)
 {
 	if (!m_bReady) return;
 
+	m_iTextureUnitBackup = textureUnit;
+
 	// switch texture units before enabling+binding
-	glActiveTexture(GL_TEXTURE0 + textureUnit);
+	glActiveTexture(GL_TEXTURE0 + m_iTextureUnitBackup);
 
 	// set texture
 	glBindTexture(GL_TEXTURE_2D, m_GLTexture);
@@ -287,10 +293,10 @@ void OpenGLImage::unbind()
 {
 	if (!m_bReady) return;
 
-	// restore default texture unit
-	glActiveTexture(GL_TEXTURE0);
+	// restore texture unit (just in case)
+	glActiveTexture(GL_TEXTURE0 + m_iTextureUnitBackup);
 
-	// restore to no texture (0)
+	// restore texture unit to no texture (0)
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
