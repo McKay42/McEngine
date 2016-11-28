@@ -108,75 +108,54 @@ Vector2 OpenVRController::getTouchpad()
 
 vr::EVRButtonId OpenVRController::buttonIdToOpenVR(OpenVRController::BUTTON buttonId)
 {
-	vr::EVRButtonId openvrButtonId = vr::EVRButtonId::k_EButton_Max;
-
 	switch (buttonId)
 	{
 	case OpenVRController::BUTTON::BUTTON_SYSTEM:
-		openvrButtonId = vr::EVRButtonId::k_EButton_System;
-		break;
+		return vr::EVRButtonId::k_EButton_System;
 	case OpenVRController::BUTTON::BUTTON_APPLICATIONMENU:
-		openvrButtonId = vr::EVRButtonId::k_EButton_ApplicationMenu;
-		break;
+		return vr::EVRButtonId::k_EButton_ApplicationMenu;
 	case OpenVRController::BUTTON::BUTTON_GRIP:
-		openvrButtonId = vr::EVRButtonId::k_EButton_Grip;
-		break;
+		return vr::EVRButtonId::k_EButton_Grip;
 	case OpenVRController::BUTTON::BUTTON_DPAD_LEFT:
-		openvrButtonId = vr::EVRButtonId::k_EButton_DPad_Left;
-		break;
+		return vr::EVRButtonId::k_EButton_DPad_Left;
 	case OpenVRController::BUTTON::BUTTON_DPAD_UP:
-		openvrButtonId = vr::EVRButtonId::k_EButton_DPad_Up;
-		break;
+		return vr::EVRButtonId::k_EButton_DPad_Up;
 	case OpenVRController::BUTTON::BUTTON_DPAD_RIGHT:
-		openvrButtonId = vr::EVRButtonId::k_EButton_DPad_Right;
-		break;
+		return vr::EVRButtonId::k_EButton_DPad_Right;
 	case OpenVRController::BUTTON::BUTTON_DPAD_DOWN:
-		openvrButtonId = vr::EVRButtonId::k_EButton_DPad_Down;
-		break;
+		return vr::EVRButtonId::k_EButton_DPad_Down;
 	case OpenVRController::BUTTON::BUTTON_A:
-		openvrButtonId = vr::EVRButtonId::k_EButton_A;
-		break;
+		return vr::EVRButtonId::k_EButton_A;
 	case OpenVRController::BUTTON::BUTTON_PROXIMITYSENSOR:
-		openvrButtonId = vr::EVRButtonId::k_EButton_ProximitySensor;
-		break;
+		return vr::EVRButtonId::k_EButton_ProximitySensor;
 	case OpenVRController::BUTTON::BUTTON_AXIS0:
-		openvrButtonId = vr::EVRButtonId::k_EButton_Axis0;
-		break;
+		return vr::EVRButtonId::k_EButton_Axis0;
 	case OpenVRController::BUTTON::BUTTON_AXIS1:
-		openvrButtonId = vr::EVRButtonId::k_EButton_Axis1;
-		break;
+		return vr::EVRButtonId::k_EButton_Axis1;
 	case OpenVRController::BUTTON::BUTTON_AXIS2:
-		openvrButtonId = vr::EVRButtonId::k_EButton_Axis2;
-		break;
+		return vr::EVRButtonId::k_EButton_Axis2;
 	case OpenVRController::BUTTON::BUTTON_AXIS3:
-		openvrButtonId = vr::EVRButtonId::k_EButton_Axis3;
-		break;
+		return vr::EVRButtonId::k_EButton_Axis3;
 	case OpenVRController::BUTTON::BUTTON_AXIS4:
-		openvrButtonId = vr::EVRButtonId::k_EButton_Axis4;
-		break;
+		return vr::EVRButtonId::k_EButton_Axis4;
 	}
 
-	return openvrButtonId;
+	return vr::EVRButtonId::k_EButton_Max;
 }
 
 vr::ETrackedControllerRole OpenVRController::roleIdToOpenVR(OpenVRController::ROLE roleId)
 {
-	vr::ETrackedControllerRole openvrRoleId = vr::ETrackedControllerRole::TrackedControllerRole_Invalid;
-
 	switch (roleId)
 	{
 	case OpenVRController::ROLE::ROLE_INVALID:
-		openvrRoleId = vr::ETrackedControllerRole::TrackedControllerRole_Invalid;
-		break;
+		return vr::ETrackedControllerRole::TrackedControllerRole_Invalid;
 	case OpenVRController::ROLE::ROLE_LEFTHAND:
-		openvrRoleId = vr::ETrackedControllerRole::TrackedControllerRole_LeftHand;
-		break;
+		return vr::ETrackedControllerRole::TrackedControllerRole_LeftHand;
 	case OpenVRController::ROLE::ROLE_RIGHTHAND:
-		openvrRoleId = vr::ETrackedControllerRole::TrackedControllerRole_RightHand;
-		break;
+		return vr::ETrackedControllerRole::TrackedControllerRole_RightHand;
 	}
 
-	return openvrRoleId;
+	return vr::ETrackedControllerRole::TrackedControllerRole_Invalid;
 }
 
 #endif

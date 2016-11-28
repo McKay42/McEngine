@@ -7,9 +7,10 @@
 
 #include "VertexArrayObject.h"
 
-VertexArrayObject::VertexArrayObject()
+VertexArrayObject::VertexArrayObject(VertexArrayObject::PRIMITIVE primitive, VertexArrayObject::USAGE usage)
 {
-	m_type = TYPE_TRIANGLES;
+	m_primitive = primitive;
+	m_usage = usage;
 }
 
 VertexArrayObject::~VertexArrayObject()
@@ -64,6 +65,11 @@ void VertexArrayObject::addNormal(float x, float y, float z)
 void VertexArrayObject::addColor(Color color)
 {
 	m_colors.push_back(color);
+}
+
+void VertexArrayObject::setType(VertexArrayObject::PRIMITIVE primitive)
+{
+	m_primitive = primitive;
 }
 
 void VertexArrayObject::updateTexcoordArraySize(unsigned int textureUnit)

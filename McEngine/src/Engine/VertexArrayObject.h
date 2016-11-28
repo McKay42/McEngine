@@ -13,19 +13,24 @@
 class VertexArrayObject
 {
 public:
-	enum TYPE
+	enum class PRIMITIVE
 	{
-		TYPE_TRIANGLES,
-		TYPE_TRIANGLE_FAN,
-		TYPE_QUADS
+		PRIMITIVE_TRIANGLES,
+		PRIMITIVE_TRIANGLE_FAN,
+		PRIMITIVE_QUADS
 	};
 
-	VertexArrayObject();
+	enum class USAGE
+	{
+		USAGE_STATIC,
+		USAGE_DYNAMIC,
+		USAGE_STREAM
+	};
+
+	VertexArrayObject(VertexArrayObject::PRIMITIVE primitive = VertexArrayObject::PRIMITIVE::PRIMITIVE_TRIANGLES, VertexArrayObject::USAGE usage = VertexArrayObject::USAGE::USAGE_STATIC);
 	virtual ~VertexArrayObject();
 
 	void clear();
-
-	void setType(TYPE type) {m_type = type;}
 
 	void addVertex(Vector2 v);
 	void addVertex(Vector3 v);
@@ -39,7 +44,10 @@ public:
 
 	void addColor(Color color);
 
-	inline TYPE getType() {return m_type;}
+	void setType(VertexArrayObject::PRIMITIVE primitive);
+
+	inline PRIMITIVE getPrimitive() {return m_primitive;}
+	inline USAGE getUsage() {return m_usage;}
 
 	const std::vector<Vector3> &getVertices() const {return m_vertices;}
 	const std::vector<std::vector<Vector2>> &getTexcoords() const {return m_texcoords;}
@@ -49,7 +57,8 @@ public:
 private:
 	void updateTexcoordArraySize(unsigned int textureUnit);
 
-	TYPE m_type;
+	PRIMITIVE m_primitive;
+	USAGE m_usage;
 
 	std::vector<Vector3> m_vertices;
 	std::vector<std::vector<Vector2>> m_texcoords;
