@@ -336,10 +336,12 @@ void McFont::drawString(Graphics *g, UString text)
 	m_textureAtlas->bind();
 	m_worldMatrixBackup = g->getWorldMatrix();
 	g->pushTransform();
+	{
 		for (int i=0; i<text.length(); i++)
 		{
 			drawAtlasGlyph(g, text[i]);
 		}
+	}
 	g->popTransform();
 }
 
@@ -366,8 +368,7 @@ void McFont::drawAtlasGlyph(Graphics *g, wchar_t ch)
 		const float sy = gm.size.y/m_textureAtlas->getHeight();
 
 		// draw it
-		VertexArrayObject vao;
-		vao.setType(VertexArrayObject::TYPE_QUADS);
+		VertexArrayObject vao(VertexArrayObject::PRIMITIVE::PRIMITIVE_QUADS);
 
 		vao.addTexcoord(x, y);
 		vao.addVertex(0, gm.rows);

@@ -12,25 +12,23 @@
 
 #include "OpenGLHeaders.h"
 
-VertexBuffer::VertexBuffer()
+VertexBuffer::VertexBuffer(VertexArrayObject::PRIMITIVE primitive, VertexArrayObject::USAGE usage)
 {
-	debugLog("Building VertexBuffer ...\n");
-
 	m_bReady = false;
+	m_primitive = primitive;
+	m_usage = usage;
+
+	debugLog("Building VertexBuffer ...\n");
 
 	m_iNumVertices = 0;
 	m_GLVertices = 0;
 	m_GLTextureCoordinates0 = 0;
 
 	// generate & bind vertex buffer
-	{
-		glGenBuffersARB(1, &m_GLVertices);
-	}
+	glGenBuffersARB(1, &m_GLVertices);
 
-	m_bHasTexture0 = true;
-	{
-		glGenBuffersARB(1, &m_GLTextureCoordinates0);
-	}
+	m_bHasTexture0 = false;
+	glGenBuffersARB(1, &m_GLTextureCoordinates0);
 
 	m_bReady = true;
 }
@@ -49,7 +47,7 @@ void VertexBuffer::set(std::vector<Vector3> *vertices, std::vector<Vector2> *tex
 		m_iNumVertices = vertices->size();
 
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_GLVertices);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, m_iNumVertices*3*sizeof(float), &(*vertices)[0], GL_STATIC_DRAW_ARB);
+		glBufferDataARB(GL_ARRAY_BUFFER_ARB, m_iNumVertices*3*sizeof(float), &(*vertices)[0], usageToOpenGL(m_usage));
 	}
 
 	if (textureCoordinates0 != NULL)
@@ -57,7 +55,7 @@ void VertexBuffer::set(std::vector<Vector3> *vertices, std::vector<Vector2> *tex
 		m_bHasTexture0 = true;
 
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_GLTextureCoordinates0);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, m_iNumVertices*2*sizeof(float), &(*textureCoordinates0)[0], GL_STATIC_DRAW_ARB);
+		glBufferDataARB(GL_ARRAY_BUFFER_ARB, m_iNumVertices*2*sizeof(float), &(*textureCoordinates0)[0], usageToOpenGL(m_usage));
 	}
 	else
 		m_bHasTexture0 = false;
@@ -97,7 +95,7 @@ void VertexBuffer::draw(Graphics *g)
 	}
 
 	// render it
-	glDrawArrays(GL_TRIANGLE_FAN, 0, m_iNumVertices);
+	glDrawArrays(primitiveToOpenGL(m_primitive), 0, m_iNumVertices);
 
 	// disable everything
 	if (m_bHasTexture0)
@@ -106,3 +104,32 @@ void VertexBuffer::draw(Graphics *g)
 	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
+unsigned int VertexBuffer::primitiveToOpenGL(VertexArrayObject::PRIMITIVE primitive)
+{
+	switch (primitive)
+	{
+	case VertexArrayObject::PRIMITIVE::PRIMITIVE_TRIANGLES:
+		return GL_TRIANGLES;
+	case VertexArrayObject::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN:
+		return GL_TRIANGLE_FAN;
+	case VertexArrayObject::PRIMITIVE::PRIMITIVE_QUADS:
+		return GL_QUADS;
+	}
+
+	return GL_TRIANGLES;
+}
+
+unsigned int VertexBuffer::usageToOpenGL(VertexArrayObject::USAGE usage)
+{
+	switch (usage)
+	{
+	case VertexArrayObject::USAGE::USAGE_STATIC:
+		return GL_STATIC_DRAW_ARB;
+	case VertexArrayObject::USAGE::USAGE_DYNAMIC:
+		return GL_DYNAMIC_DRAW_ARB;
+	case VertexArrayObject::USAGE::USAGE_STREAM:
+		return GL_STREAM_DRAW_ARB;
+	}
+
+	return GL_STATIC_DRAW_ARB;
+}

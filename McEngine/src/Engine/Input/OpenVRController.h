@@ -68,11 +68,13 @@ public:
 	bool isButtonPressed(OpenVRController::BUTTON button);
 
 	inline OpenVRController::ROLE getRole() const {return m_role;}
+
 	inline Matrix4 getMatrixPose() const {return m_matrix;}
 	inline Vector3 getPosition() const {return m_vPos;}
 	inline Vector3 getDirection() const {return m_vDir;}
 	inline Vector3 getUp() const {return m_vUp;}
 	inline Vector3 getRight() const {return m_vRight;}
+
 	float getTrigger();
 	Vector2 getTouchpad();
 

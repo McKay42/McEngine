@@ -417,9 +417,9 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao)
 	updateTransform();
 
 	GLenum type = GL_TRIANGLES;
-	if (vao->getType() == VertexArrayObject::TYPE_TRIANGLE_FAN)
+	if (vao->getPrimitive() == VertexArrayObject::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN)
 		type = GL_TRIANGLE_FAN;
-	else if (vao->getType() == VertexArrayObject::TYPE_QUADS)
+	else if (vao->getPrimitive() == VertexArrayObject::PRIMITIVE::PRIMITIVE_QUADS)
 		type = GL_QUADS;
 
 	glBegin(type);
