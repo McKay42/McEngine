@@ -28,9 +28,10 @@ public:
 		FILTER_MODE_MIPMAP
 	};
 
-	Image(ResourceManager *loader, UString filepath, bool mipmapped = false);
+public:
+	Image(UString filepath, bool mipmapped = false);
 	Image(int width, int height, bool clampToEdge = true); // TODO: HACKHACK: backwards compatibility for CGProject; remove sometime in the future
-	virtual ~Image();
+	virtual ~Image() {;}
 
 	virtual void bind(unsigned int textureUnit = 0) = 0;
 	virtual void unbind() = 0;
@@ -55,12 +56,13 @@ protected:
 	virtual void initAsync() = 0;
 	virtual void destroy() = 0;
 
-	unsigned int m_iWidth;
-	unsigned int m_iHeight;
+	int m_iWidth; // do NOT make these unsigned, it will fuck shit up
+	int m_iHeight;
 
 	bool m_bMipmapped;
 	bool m_bCreatedImage;
 	bool m_bClampToEdge;
+
 	std::vector<unsigned char> m_rawImage;
 };
 
