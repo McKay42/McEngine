@@ -13,11 +13,12 @@
 class UString;
 class Vector2;
 class Matrix4;
-class Image;
 class Rect;
 
-class McFont;
 class Image;
+class McFont;
+class RenderTarget;
+class Shader;
 
 class VertexArrayObject;
 class VertexBuffer;
@@ -132,6 +133,13 @@ public:
 
 	// callbacks
 	virtual void onResolutionChange(Vector2 newResolution) = 0;
+
+	// factory
+	virtual Image *createImage(UString filePath, bool mipmapped) = 0;
+	virtual Image *createImage(int width, int height, bool clampToEdge) = 0;
+	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType) = 0;
+	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath) = 0;
+	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader) = 0;
 
 protected:
 	virtual void init() = 0; // must be called after the OS implementation constructor

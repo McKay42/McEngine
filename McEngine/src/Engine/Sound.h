@@ -15,8 +15,8 @@ typedef unsigned long SOUNDHANDLE;
 class Sound : public Resource
 {
 public:
-	Sound(ResourceManager *loader, UString filepath, bool stream, bool threeD, bool loop);
-	/*virtual ~Sound() {destroy();}*/
+	Sound(UString filepath, bool stream, bool threeD, bool loop);
+	virtual ~Sound() {destroy();}
 
 	void setPosition(double percent);
 	void setPositionMS(unsigned long ms);

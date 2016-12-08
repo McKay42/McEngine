@@ -16,8 +16,8 @@ protected:
 	const wchar_t UNKNOWN_CHAR = 63; // ascii '?'
 
 public:
-	McFont(ResourceManager *loader, UString filepath, unsigned int fontSize, bool antialiasing = true);
-	virtual ~McFont();
+	McFont(UString filepath, unsigned int fontSize, bool antialiasing = true);
+	virtual ~McFont() {destroy();}
 
 	void drawString(Graphics *g, UString text);
 	void drawTextureAtlas(Graphics *g);

@@ -27,7 +27,7 @@ void Image::saveToImage(unsigned char *data, unsigned int width, unsigned int he
 	}
 }
 
-Image::Image(ResourceManager *loader, UString filepath, bool mipmapped) : Resource(loader,filepath)
+Image::Image(UString filepath, bool mipmapped) : Resource(filepath)
 {
 	m_bMipmapped = mipmapped;
 	m_bClampToEdge = false;
@@ -55,11 +55,6 @@ Image::Image(int width, int height, bool clampToEdge) : Resource()
 	}
 
 	m_bReady = true;
-}
-
-Image::~Image()
-{
-	m_rawImage = std::vector<unsigned char>();
 }
 
 void Image::setPixel(int x, int y, Color color)

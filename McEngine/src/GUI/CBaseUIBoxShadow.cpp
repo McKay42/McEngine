@@ -11,6 +11,7 @@
 
 #include "Engine.h"
 #include "ConVar.h"
+#include "ResourceManager.h"
 
 #include "Shader.h"
 #include "RenderTarget.h"
@@ -137,17 +138,18 @@ GaussianBlur::GaussianBlur(int x, int y, int width, int height, int kernelSize, 
 	m_fRadius = radius;
 
 	m_kernel = new GaussianBlurKernel(kernelSize, radius, width, height);
-	m_rt = new RenderTarget(x, y, width, height);
-	m_rt2 = new RenderTarget(x, y, width, height);
-	m_blurShader = new Shader("blur.vsh", "blur.fsh");
+	m_rt = engine->getResourceManager()->createRenderTarget(x, y, width, height);
+	m_rt2 = engine->getResourceManager()->createRenderTarget(x, y, width, height);
+	m_blurShader = engine->getResourceManager()->loadShader("blur.vsh", "blur.fsh", "gblur");
 }
 
 GaussianBlur::~GaussianBlur()
 {
+	engine->getResourceManager()->destroyResource(m_rt);
+	m_rt = NULL;
+	engine->getResourceManager()->destroyResource(m_rt2);
+	m_rt2 = NULL;
 	SAFE_DELETE(m_kernel);
-	SAFE_DELETE(m_rt);
-	SAFE_DELETE(m_rt2);
-	SAFE_DELETE(m_blurShader);
 }
 
 void GaussianBlur::draw(Graphics *g, int x, int y)
@@ -201,10 +203,8 @@ void GaussianBlur::setSize(Vector2 size)
 	m_vSize = size;
 
 	SAFE_DELETE(m_kernel);
-	SAFE_DELETE(m_rt);
-	SAFE_DELETE(m_rt2);
-
 	m_kernel = new GaussianBlurKernel(m_iKernelSize, m_fRadius, m_vSize.x, m_vSize.y);
-	m_rt = new RenderTarget(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
-	m_rt2 = new RenderTarget(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
+
+	m_rt->rebuild(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
+	m_rt2->rebuild(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
 }

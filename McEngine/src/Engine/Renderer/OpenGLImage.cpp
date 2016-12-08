@@ -36,7 +36,7 @@ void jpegErrorExit (j_common_ptr cinfo)
 	longjmp(err->setjmp_buffer, 1);
 }
 
-OpenGLImage::OpenGLImage(ResourceManager *loader, UString filepath, bool mipmapped) : Image(loader, filepath, mipmapped)
+OpenGLImage::OpenGLImage(UString filepath, bool mipmapped) : Image(filepath, mipmapped)
 {
 	m_GLTexture = 0;
 
@@ -57,11 +57,6 @@ OpenGLImage::OpenGLImage(int width, int height, bool clampToEdge) : Image(width,
 	m_iNumChannels = 4;
 
 	m_iTextureUnitBackup = 0;
-}
-
-OpenGLImage::~OpenGLImage()
-{
-	destroy();
 }
 
 void OpenGLImage::init()
@@ -247,7 +242,11 @@ void OpenGLImage::initAsync()
 		}
 		else if (isPNG)
 		{
-			unsigned error = lodepng::decode(m_rawImage, m_iWidth, m_iHeight, (unsigned char*)data, file.getFileSize());
+			unsigned int width = 0; // yes, these are here on purpose
+			unsigned int height = 0;
+			unsigned error = lodepng::decode(m_rawImage, width, height, (unsigned char*)data, file.getFileSize());
+			m_iWidth = width;
+			m_iHeight = height;
 			if (error)
 			{
 				printf("Image Error: PNG error %i (%s) on file %s\n", error, lodepng_error_text(error), m_sFilePath.toUtf8());
@@ -293,11 +292,13 @@ void OpenGLImage::unbind()
 {
 	if (!m_bReady) return;
 
-	// restore texture unit (just in case)
+	// restore texture unit (just in case) and set to no texture
 	glActiveTexture(GL_TEXTURE0 + m_iTextureUnitBackup);
-
-	// restore texture unit to no texture (0)
 	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// restore default texture unit
+	if (m_iTextureUnitBackup != 0)
+		glActiveTexture(GL_TEXTURE0);
 }
 
 void OpenGLImage::setFilterMode(FILTER_MODE filterMode)
@@ -306,23 +307,23 @@ void OpenGLImage::setFilterMode(FILTER_MODE filterMode)
 		return;
 
 	bind();
-
-	switch (filterMode)
 	{
-	case FILTER_MODE_NONE:
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		break;
-	case FILTER_MODE_LINEAR:
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		break;
-	case FILTER_MODE_MIPMAP:
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		break;
+		switch (filterMode)
+		{
+		case FILTER_MODE_NONE:
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			break;
+		case FILTER_MODE_LINEAR:
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			break;
+		case FILTER_MODE_MIPMAP:
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			break;
+		}
 	}
-
 	unbind();
 }
 
@@ -332,18 +333,18 @@ void OpenGLImage::setWrapMode(WRAP_MODE wrapMode)
 		return;
 
 	bind();
-
-	switch (wrapMode)
 	{
-	case WRAP_MODE_CLAMP: // NOTE: there is also GL_CLAMP, which works a bit differently concerning the border color
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		break;
-	case WRAP_MODE_REPEAT:
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		break;
+		switch (wrapMode)
+		{
+		case WRAP_MODE_CLAMP: // NOTE: there is also GL_CLAMP, which works a bit differently concerning the border color
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			break;
+		case WRAP_MODE_REPEAT:
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			break;
+		}
 	}
-
 	unbind();
 }

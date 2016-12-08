@@ -9,10 +9,8 @@
 #include "Engine.h"
 #include "Environment.h"
 
-Resource::Resource(ResourceManager *loader, UString filepath)
+Resource::Resource(UString filepath)
 {
-	if (loader == NULL)
-		engine->showMessageError("Resource Error", "Do not create resources without using a ResourceManager, you idiot >:(");
 	if (filepath.length() > 0 && !env->fileExists(filepath))
 	{
 		UString errorMessage = "File does not exist: ";
@@ -21,7 +19,6 @@ Resource::Resource(ResourceManager *loader, UString filepath)
 		///engine->showMessageError("Resource Error", errorMessage);
 	}
 
-	m_resourceManager = loader;
 	m_sFilePath = filepath;
 	m_bReady = false;
 	m_bAsyncReady = false;
@@ -29,7 +26,6 @@ Resource::Resource(ResourceManager *loader, UString filepath)
 
 Resource::Resource()
 {
-	m_resourceManager = NULL;
 	m_bReady = false;
 	m_bAsyncReady = false;
 }
