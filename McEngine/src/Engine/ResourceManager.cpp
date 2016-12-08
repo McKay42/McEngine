@@ -13,11 +13,13 @@
 #include <mutex>
 #include "WinMinGW.Mutex.h"
 
+// HACKHACK:
 #include "OpenGLImage.h"
 
 #define RM_IMAGE_FOLDER "materials/"
 #define RM_FONT_FOLDER "fonts/"
 #define RM_SOUND_FOLDER "sounds/"
+#define RM_SHADER_FOLDER "shaders/"
 
 ConVar rm_warnings("rm_warnings", false);
 ConVar rm_async_rand_delay("rm_async_rand_delay", 0.0f);
@@ -53,7 +55,7 @@ ResourceManager::~ResourceManager()
 
 	if (m_loadingWork.size() < 1)
 		g_resourceManagerLoadingMutex.unlock(); // let it exit
-	pthread_join(m_loadingThread, NULL); // TODO: not the best solution. will block shutdown until the current element is loaded
+	pthread_join(m_loadingThread, NULL); // TODO: not the best solution. will block shutdown until all loading work is done
 }
 
 void ResourceManager::update()
@@ -124,8 +126,7 @@ void ResourceManager::update()
 				if (debug_rm.getBool())
 					debugLog("Resource Manager: Async destroy of #%i\n", i);
 
-				m_loadingWorkAsyncDestroy[i]->release();
-				delete m_loadingWorkAsyncDestroy[i];
+				delete m_loadingWorkAsyncDestroy[i]; // implicitly calls release() through the Resource destructor
 				m_loadingWorkAsyncDestroy.erase(m_loadingWorkAsyncDestroy.begin()+i);
 				i--;
 			}
@@ -152,45 +153,45 @@ void ResourceManager::destroyResource(Resource *rs)
 		return;
 	}
 
+	if (debug_rm.getBool())
+		debugLog("ResourceManager: Destroying %s\n", rs->getName().toUtf8());
+
 	g_resourceManagerMutex.lock();
 	{
-
-	bool isManagedResource = false;
-	int managedResourceIndex = -1;
-	for (int i=0; i<m_vResources.size(); i++)
-	{
-		if (m_vResources[i] == rs)
+		bool isManagedResource = false;
+		int managedResourceIndex = -1;
+		for (int i=0; i<m_vResources.size(); i++)
 		{
-			isManagedResource = true;
-			managedResourceIndex = i;
-			break;
+			if (m_vResources[i] == rs)
+			{
+				isManagedResource = true;
+				managedResourceIndex = i;
+				break;
+			}
 		}
-	}
 
-	// handle async destroy
-	for (int w=0; w<m_loadingWork.size(); w++)
-	{
-		if (m_loadingWork[w].first == rs)
+		// handle async destroy
+		for (int w=0; w<m_loadingWork.size(); w++)
 		{
-			if (debug_rm.getBool())
-				debugLog("Resource Manager: Scheduled async destroy of %s\n", rs->getName().toUtf8());
+			if (m_loadingWork[w].first == rs)
+			{
+				if (debug_rm.getBool())
+					debugLog("Resource Manager: Scheduled async destroy of %s\n", rs->getName().toUtf8());
 
-			m_loadingWorkAsyncDestroy.push_back(rs);
-			if (isManagedResource)
-				m_vResources.erase(m_vResources.begin()+managedResourceIndex);
+				m_loadingWorkAsyncDestroy.push_back(rs);
+				if (isManagedResource)
+					m_vResources.erase(m_vResources.begin()+managedResourceIndex);
 
-			// HACKHACK: ugly
-			g_resourceManagerMutex.unlock();
-			return; // we're done here
+				// HACKHACK: ugly
+				g_resourceManagerMutex.unlock();
+				return; // we're done here
+			}
 		}
-	}
 
-	// standard destroy
-	rs->release();
-	SAFE_DELETE(rs);
-	if (isManagedResource)
-		m_vResources.erase(m_vResources.begin()+managedResourceIndex);
-
+		// standard destroy
+		SAFE_DELETE(rs); // implicitly calls release() through the Resource destructor
+		if (isManagedResource)
+			m_vResources.erase(m_vResources.begin()+managedResourceIndex);
 	}
 	g_resourceManagerMutex.unlock();
 }
@@ -224,7 +225,7 @@ Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool m
 
 	// create instance and load it
 	filepath.insert(0, RM_IMAGE_FOLDER);
-	Image *img = new OpenGLImage(this, filepath, mipmapped);
+	Image *img = new OpenGLImage(filepath, mipmapped);
 	img->setName(resourceName);
 
 	loadResource(img, true);
@@ -242,7 +243,7 @@ Image *ResourceManager::loadImageAbs(UString absoluteFilepath, UString resourceN
 	}
 
 	// create instance and load it
-	Image *img = new OpenGLImage(this, absoluteFilepath, mipmapped);
+	Image *img = new OpenGLImage(absoluteFilepath, mipmapped);
 	img->setName(resourceName);
 
 	loadResource(img, true);
@@ -250,7 +251,7 @@ Image *ResourceManager::loadImageAbs(UString absoluteFilepath, UString resourceN
 	return img;
 }
 
-Image *ResourceManager::createImage(int width, int height, bool clampToEdge)
+Image *ResourceManager::createImage(unsigned int width, unsigned int height, bool clampToEdge)
 {
 	if (width < 1 || height < 1 || width > 4096 || height > 4096)
 	{
@@ -278,7 +279,7 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, unsign
 
 	// create instance and load it
 	filepath.insert(0, RM_FONT_FOLDER);
-	McFont *fnt = new McFont(this, filepath, fontSize, antialiasing);
+	McFont *fnt = new McFont(filepath, fontSize, antialiasing);
 	fnt->setName(resourceName);
 
 	loadResource(fnt, true);
@@ -297,7 +298,7 @@ Sound *ResourceManager::loadSound(UString filepath, UString resourceName, bool s
 
 	// create instance and load it
 	filepath.insert(0, RM_SOUND_FOLDER);
-	Sound *snd = new Sound(this, filepath, stream, threeD, loop);
+	Sound *snd = new Sound(filepath, stream, threeD, loop);
 	snd->setName(resourceName);
 
 	loadResource(snd, true);
@@ -315,12 +316,88 @@ Sound *ResourceManager::loadSoundAbs(UString filepath, UString resourceName, boo
 	}
 
 	// create instance and load it
-	Sound *snd = new Sound(this, filepath, stream, threeD, loop);
+	Sound *snd = new Sound(filepath, stream, threeD, loop);
 	snd->setName(resourceName);
 
 	loadResource(snd, true);
 
 	return snd;
+}
+
+Shader *ResourceManager::loadShader(UString vertexShaderFilePath, UString fragmentShaderFilePath, UString resourceName)
+{
+	// check if it already exists
+	{
+		Resource *temp = exists(resourceName);
+		if (temp != NULL)
+			return dynamic_cast<Shader*>(temp);
+	}
+
+	// create instance and load it
+	vertexShaderFilePath.insert(0, RM_SHADER_FOLDER);
+	fragmentShaderFilePath.insert(0, RM_SHADER_FOLDER);
+	Shader *shader = engine->getGraphics()->createShaderFromFile(vertexShaderFilePath, fragmentShaderFilePath);
+	shader->setName(resourceName);
+
+	loadResource(shader, true);
+
+	return shader;
+}
+
+Shader *ResourceManager::loadShader(UString vertexShaderFilePath, UString fragmentShaderFilePath)
+{
+	// create instance and load it
+	vertexShaderFilePath.insert(0, RM_SHADER_FOLDER);
+	fragmentShaderFilePath.insert(0, RM_SHADER_FOLDER);
+	Shader *shader = engine->getGraphics()->createShaderFromFile(vertexShaderFilePath, fragmentShaderFilePath);
+
+	loadResource(shader, true);
+
+	return shader;
+}
+
+Shader *ResourceManager::createShader(UString vertexShader, UString fragmentShader, UString resourceName)
+{
+	// check if it already exists
+	{
+		Resource *temp = exists(resourceName);
+		if (temp != NULL)
+			return dynamic_cast<Shader*>(temp);
+	}
+
+	// create instance and load it
+	Shader *shader = engine->getGraphics()->createShaderFromSource(vertexShader, fragmentShader);
+	shader->setName(resourceName);
+
+	loadResource(shader, true);
+
+	return shader;
+}
+
+Shader *ResourceManager::createShader(UString vertexShader, UString fragmentShader)
+{
+	// create instance and load it
+	Shader *shader = engine->getGraphics()->createShaderFromSource(vertexShader, fragmentShader);
+
+	loadResource(shader, true);
+
+	return shader;
+}
+
+RenderTarget *ResourceManager::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
+{
+	// create instance and load it
+	RenderTarget *rt = engine->getGraphics()->createRenderTarget(x, y, width, height, multiSampleType);
+	rt->setName(UString::format("<RT_(%ix%i)>", width, height));
+
+	loadResource(rt, true);
+
+	return rt;
+}
+
+RenderTarget *ResourceManager::createRenderTarget(int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
+{
+	return createRenderTarget(0, 0, width, height, multiSampleType);
 }
 
 Image *ResourceManager::getImage(UString resourceName)
@@ -353,6 +430,18 @@ Sound *ResourceManager::getSound(UString resourceName)
 	{
 		if (m_vResources[i]->getName() == resourceName)
 			return dynamic_cast<Sound*>(m_vResources[i]);
+	}
+
+	doesntExistWarning(resourceName);
+	return NULL;
+}
+
+Shader *ResourceManager::getShader(UString resourceName)
+{
+	for (int i=0; i<m_vResources.size(); i++)
+	{
+		if (m_vResources[i]->getName() == resourceName)
+			return dynamic_cast<Shader*>(m_vResources[i]);
 	}
 
 	doesntExistWarning(resourceName);

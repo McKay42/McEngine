@@ -47,8 +47,10 @@
 //	Include App here  //
 //********************//
 
-//#include "Osu.h"
 #include "FrameworkTest.h"
+#include "Tetris.h"
+//#include "Osu.h"
+//#include "VRSandbox.h"
 
 #include <cstdarg>
 
@@ -270,7 +272,12 @@ void Engine::loadApp()
 
 	//m_app = new Osu();
 
+	//m_app = new VRSandbox();
+
 	m_app = new FrameworkTest();
+
+	//m_app = new Tetris();
+
 
 
 

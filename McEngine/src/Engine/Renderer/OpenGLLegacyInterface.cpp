@@ -5,13 +5,15 @@
 // $NoKeywords: $lgli
 //===============================================================================//
 
-#include <OpenGLLegacyInterface.h>
+#include "OpenGLLegacyInterface.h"
 #include "Engine.h"
 #include "ConVar.h"
 #include "Camera.h"
 
-#include "Image.h"
 #include "Font.h"
+#include "OpenGLImage.h"
+#include "OpenGLRenderTarget.h"
+#include "OpenGLShader.h"
 
 #include "VertexArrayObject.h"
 #include "VertexBuffer.h"
@@ -449,6 +451,32 @@ void OpenGLLegacyInterface::drawVB(VertexBuffer *vb)
 	vb->draw(this);
 }
 
+void OpenGLLegacyInterface::pushTransform()
+{
+	m_worldTransformStack.push(Matrix4(m_worldTransformStack.top()));
+	m_projectionTransformStack.push(Matrix4(m_projectionTransformStack.top()));
+}
+
+void OpenGLLegacyInterface::popTransform()
+{
+	if (m_worldTransformStack.size() < 2)
+	{
+		engine->showMessageErrorFatal("World Transform Stack Underflow", "Too many pop*()s!");
+		engine->shutdown();
+		return;
+	}
+	if (m_projectionTransformStack.size() < 2)
+	{
+		engine->showMessageErrorFatal("Projection Transform Stack Underflow", "Too many pop*()s!");
+		engine->shutdown();
+		return;
+	}
+
+	m_worldTransformStack.pop();
+	m_projectionTransformStack.pop();
+	m_bTransformUpToDate = false;
+}
+
 void OpenGLLegacyInterface::translate(float x, float y, float z)
 {
 	m_worldTransformStack.top().translate(x, y, z);
@@ -497,32 +525,6 @@ Matrix4 OpenGLLegacyInterface::getWorldMatrix()
 Matrix4 OpenGLLegacyInterface::getProjectionMatrix()
 {
 	return m_projectionTransformStack.top();
-}
-
-void OpenGLLegacyInterface::pushTransform()
-{
-	m_worldTransformStack.push(Matrix4(m_worldTransformStack.top()));
-	m_projectionTransformStack.push(Matrix4(m_projectionTransformStack.top()));
-}
-
-void OpenGLLegacyInterface::popTransform()
-{
-	if (m_worldTransformStack.size() < 2)
-	{
-		engine->showMessageErrorFatal("World Transform Stack Underflow", "Too many pop*()s!");
-		engine->shutdown();
-		return;
-	}
-	if (m_projectionTransformStack.size() < 2)
-	{
-		engine->showMessageErrorFatal("Projection Transform Stack Underflow", "Too many pop*()s!");
-		engine->shutdown();
-		return;
-	}
-
-	m_worldTransformStack.pop();
-	m_projectionTransformStack.pop();
-	m_bTransformUpToDate = false;
 }
 
 void OpenGLLegacyInterface::setClipRect(Rect clipRect)
@@ -688,37 +690,6 @@ void OpenGLLegacyInterface::offset3DScene(float x, float y, float z)
 	m_v3dSceneOffset = Vector3(x,y,z);
 }
 
-void OpenGLLegacyInterface::updateTransform()
-{
-	if (!m_bTransformUpToDate)
-	{
-		Matrix4 worldMatrixTemp = m_worldTransformStack.top();
-		Matrix4 projectionMatrixTemp = m_projectionTransformStack.top();
-
-		// 3d gui scenes
-		if (m_bIs3dScene)
-		{
-			worldMatrixTemp = m_3dSceneWorldMatrix * m_worldTransformStack.top();
-			projectionMatrixTemp = m_3dSceneProjectionMatrix;
-		}
-
-		glMatrixMode(GL_PROJECTION);
-		glLoadMatrixf(projectionMatrixTemp.get());
-
-		glMatrixMode(GL_MODELVIEW);
-		glLoadMatrixf(worldMatrixTemp.get());
-
-		m_bTransformUpToDate = true;
-	}
-}
-
-void OpenGLLegacyInterface::onResolutionChange(Vector2 newResolution)
-{
-	// rebuild viewport
-	m_vResolution = newResolution;
-	glViewport(0, 0, m_vResolution.x, m_vResolution.y);
-}
-
 void OpenGLLegacyInterface::setClipping(bool enabled)
 {
 	if (enabled)
@@ -842,6 +813,62 @@ int OpenGLLegacyInterface::getVRAMRemaining()
 		return atiMemory;
 	else
 		return nvidiaMemory;
+}
+
+void OpenGLLegacyInterface::onResolutionChange(Vector2 newResolution)
+{
+	// rebuild viewport
+	m_vResolution = newResolution;
+	glViewport(0, 0, m_vResolution.x, m_vResolution.y);
+}
+
+Image *OpenGLLegacyInterface::createImage(UString filePath, bool mipmapped)
+{
+	return new OpenGLImage(filePath, mipmapped);
+}
+
+Image *OpenGLLegacyInterface::createImage(int width, int height, bool clampToEdge)
+{
+	return new OpenGLImage(width, height, clampToEdge);
+}
+
+RenderTarget *OpenGLLegacyInterface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
+{
+	return new OpenGLRenderTarget(x, y, width, height, multiSampleType);
+}
+
+Shader *OpenGLLegacyInterface::createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath)
+{
+	return new OpenGLShader(vertexShaderFilePath, fragmentShaderFilePath, false);
+}
+
+Shader *OpenGLLegacyInterface::createShaderFromSource(UString vertexShader, UString fragmentShader)
+{
+	return new OpenGLShader(vertexShader, fragmentShader, true);
+}
+
+void OpenGLLegacyInterface::updateTransform()
+{
+	if (!m_bTransformUpToDate)
+	{
+		Matrix4 worldMatrixTemp = m_worldTransformStack.top();
+		Matrix4 projectionMatrixTemp = m_projectionTransformStack.top();
+
+		// 3d gui scenes
+		if (m_bIs3dScene)
+		{
+			worldMatrixTemp = m_3dSceneWorldMatrix * m_worldTransformStack.top();
+			projectionMatrixTemp = m_3dSceneProjectionMatrix;
+		}
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadMatrixf(projectionMatrixTemp.get());
+
+		glMatrixMode(GL_MODELVIEW);
+		glLoadMatrixf(worldMatrixTemp.get());
+
+		m_bTransformUpToDate = true;
+	}
 }
 
 void OpenGLLegacyInterface::handleGLErrors()
