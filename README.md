@@ -25,7 +25,7 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 - I don't like relative includes, therefore _every single (sub)directory_ which is needed is added as an include path to the compiler.
 - Separate applications using the engine go into ```/src/App/```. The ```FrameworkTest``` app is hardcoded by default.
 - Every application must be started by including its header in ```/src/Engine/Engine.cpp``` as well as instantiating it in ```Engine::loadApp()``` atm.
-- Not all libraries are necessary for every project, you can enable or disable certain libraries completely by using defines in ```/src/Engine/Main/EngineFeatures.h```, such as OpenCL, OpenVR, XInput, BASS or ENet.
+- Not all libraries are necessary for every project, you can enable or disable certain libraries completely by using defines in ```/src/Engine/Main/EngineFeatures.h```, such as OpenCL, OpenVR, XInput, BASS or ENet. Everything will always compile and run, even if you use features which are not enabled.
 
 **Projects using the engine:**
 
@@ -56,7 +56,8 @@ Project: [https://mingw-w64.org/doku.php/](https://mingw-w64.org/doku.php/)
 
 Installer: [https://sourceforge.net/projects/mingw-w64/](https://sourceforge.net/projects/mingw-w64/)
 
-Make sure you add the mingw directory to your PATH after the installation is finished.
+__Please use the installer__, since it just works™. The pre-built toolchains on the project page for mingw-w64 are apparently outdated and don't contain all the necessary files for a Windows build, while the installer supports up to g++ 6.2.0.
+Make sure you add the mingw directory to your PATH after the installation is finished. To test if everything works, try to enter the following command in a cmd window: `g++ --version`.
 
 
 ##Linux
