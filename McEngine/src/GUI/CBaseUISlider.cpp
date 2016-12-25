@@ -5,13 +5,12 @@
 // $NoKeywords: $
 //===============================================================================//
 
-// TODO: fix vertical sliders
-
 #include "CBaseUISlider.h"
 
 #include "Engine.h"
 #include "Mouse.h"
 #include "AnimationHandler.h"
+#include "Keyboard.h"
 
 CBaseUISlider::CBaseUISlider(float xPos, float yPos, float xSize, float ySize, UString name) : CBaseUIElement(xPos,yPos,xSize,ySize,name)
 {
@@ -30,6 +29,7 @@ CBaseUISlider::CBaseUISlider(float xPos, float yPos, float xSize, float ySize, U
 	m_fCurPercent = 0.0f;
 	m_fMinValue = 0.0f;
 	m_fMaxValue = 1.0f;
+	m_fKeyDelta = 0.1f;
 
 	m_vBlockSize = Vector2(xSize,10);
 
@@ -206,6 +206,25 @@ void CBaseUISlider::update()
 	}
 }
 
+void CBaseUISlider::onKeyDown(KeyboardEvent &e)
+{
+	if (!m_bVisible) return;
+
+	if (isMouseInside())
+	{
+		if (e == KEY_LEFT)
+		{
+			setValue(getFloat() - m_fKeyDelta, false);
+			e.consume();
+		}
+		else if (e == KEY_RIGHT)
+		{
+			setValue(getFloat() + m_fKeyDelta, false);
+			e.consume();
+		}
+	}
+}
+
 void CBaseUISlider::forceCallCallback()
 {
 	if (m_sliderChangeCallback != NULL)
@@ -218,6 +237,14 @@ void CBaseUISlider::updateBlockPos()
 		m_vBlockPos.x = m_vSize.x/2.0f - m_vBlockSize.x/2.0f;
 	else
 		m_vBlockPos.y = m_vSize.y/2.0f - m_vBlockSize.y/2.0f;
+}
+
+void CBaseUISlider::setBounds(float minValue, float maxValue)
+{
+	m_fMinValue = minValue;
+	m_fMaxValue = maxValue;
+
+	m_fKeyDelta = (m_fMaxValue - m_fMinValue) / 10.0f;
 }
 
 void CBaseUISlider::setValue(float value, bool animate)

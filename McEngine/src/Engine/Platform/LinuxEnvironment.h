@@ -25,6 +25,8 @@ public:
 
 	// os calls
 	void shutdown();
+	UString getUsername();
+	UString getUserDataPath();
 	bool fileExists(UString filename);
 	UString getClipBoardText();
 	void setClipBoardText(UString text);

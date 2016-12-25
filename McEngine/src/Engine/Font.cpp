@@ -20,7 +20,7 @@
 
 void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, Image *textureAtlas, bool antialiasing, std::unordered_map<wchar_t, McFont::GLYPH_METRICS> *glyphMetrics, int &curX, int &curY, int &maxX, int &maxY, bool calculateSizeOnly);
 
-McFont::McFont(ResourceManager *loader, UString filepath, unsigned int fontSize, bool antialiasing) : Resource(loader,filepath)
+McFont::McFont(UString filepath, unsigned int fontSize, bool antialiasing) : Resource(filepath)
 {
 	m_textureAtlas = NULL;
 	m_iFontSize = fontSize;
@@ -33,11 +33,6 @@ McFont::McFont(ResourceManager *loader, UString filepath, unsigned int fontSize,
 	m_errorGlyph.uv = Vector2(0,0);
 	m_errorGlyph.top = 10;
 	m_errorGlyph.width = 10;
-}
-
-McFont::~McFont()
-{
-	destroy();
 }
 
 void McFont::init()
@@ -100,8 +95,8 @@ void McFont::init()
 
 	//int rawMinWidth = maxX;
 	int rawMinHeight = curY + maxY;
-	int atlasWidth = /*max((int)std::pow(2, ceil(log(rawMinWidth)/log(2))), defaultAtlasWidth)*/defaultAtlasWidth; // this must be defaultAtlasWidth as fallback (because we line wrap on overflowing widths during the size calculation)
-	int atlasHeight = std::max((int)std::pow(2, ceil(log(rawMinHeight)/log(2))), 64);
+	int atlasWidth = /*max((int)std::pow(2, std::ceil(std::log(rawMinWidth)/log(2))), defaultAtlasWidth)*/defaultAtlasWidth; // this must be defaultAtlasWidth as fallback (because we line wrap on overflowing widths during the size calculation)
+	int atlasHeight = std::max((int)std::pow(2, std::ceil(std::log(rawMinHeight)/std::log(2))), 64);
 
 	SAFE_DELETE(m_textureAtlas); // unmanaged, must delete manually
 	engine->getResourceManager()->requestNextLoadUnmanaged();
@@ -133,9 +128,9 @@ void McFont::init()
 	m_textureAtlas->load();
 
 	if (m_bAntialiasing)
-		m_textureAtlas->setFilterMode(Image::FILTER_MODE_LINEAR);
+		m_textureAtlas->setFilterMode(Graphics::FILTER_MODE::FILTER_MODE_LINEAR);
 	else
-		m_textureAtlas->setFilterMode(Image::FILTER_MODE_NONE);
+		m_textureAtlas->setFilterMode(Graphics::FILTER_MODE::FILTER_MODE_NONE);
 
 
 	// calculate generic height
@@ -368,7 +363,7 @@ void McFont::drawAtlasGlyph(Graphics *g, wchar_t ch)
 		const float sy = gm.size.y/m_textureAtlas->getHeight();
 
 		// draw it
-		VertexArrayObject vao(VertexArrayObject::PRIMITIVE::PRIMITIVE_QUADS);
+		VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
 
 		vao.addTexcoord(x, y);
 		vao.addVertex(0, gm.rows);

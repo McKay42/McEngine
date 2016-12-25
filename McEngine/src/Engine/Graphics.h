@@ -13,14 +13,17 @@
 class UString;
 class Vector2;
 class Matrix4;
-class Image;
 class Rect;
 
-class McFont;
 class Image;
+class McFont;
+class RenderTarget;
+class Shader;
 
 class VertexArrayObject;
 class VertexBuffer;
+
+class ConVar;
 
 typedef unsigned long Color;
 
@@ -30,19 +33,42 @@ public:
 	Graphics() {}
 	virtual ~Graphics() {}
 
-	enum DRAWPIXELS_TYPE
+	enum class PRIMITIVE
+	{
+		PRIMITIVE_LINES,
+		PRIMITIVE_LINE_STRIP,
+		PRIMITIVE_TRIANGLES,
+		PRIMITIVE_TRIANGLE_FAN,
+		PRIMITIVE_TRIANGLE_STRIP,
+		PRIMITIVE_QUADS
+	};
+
+	enum class DRAWPIXELS_TYPE
 	{
 		DRAWPIXELS_UBYTE,
 		DRAWPIXELS_FLOAT
 	};
 
-	enum MULTISAMPLE_TYPE
+	enum class MULTISAMPLE_TYPE
 	{
 		MULTISAMPLE_0X,
 		MULTISAMPLE_2X,
 		MULTISAMPLE_4X,
 		MULTISAMPLE_8X,
 		MULTISAMPLE_16X
+	};
+
+	enum class WRAP_MODE
+	{
+		WRAP_MODE_CLAMP,
+		WRAP_MODE_REPEAT
+	};
+
+	enum class FILTER_MODE
+	{
+		FILTER_MODE_NONE,
+		FILTER_MODE_LINEAR,
+		FILTER_MODE_MIPMAP
 	};
 
 	// scene
@@ -57,7 +83,7 @@ public:
 	virtual void setAlpha(float alpha) = 0;
 
 	// 2d primitive drawing
-	virtual void drawPixels(int x, int y, int width, int height, DRAWPIXELS_TYPE type, const void *pixels) = 0;
+	virtual void drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type, const void *pixels) = 0;
 	virtual void drawPixel(int x, int y) = 0;
 	virtual void drawLine(int x1, int y1, int x2, int y2) = 0;
 	virtual void drawLine(Vector2 pos1, Vector2 pos2) = 0;
@@ -118,6 +144,7 @@ public:
 	virtual void setCulling(bool enabled) = 0;
 	virtual void setVSync(bool enabled) = 0;
 	virtual void setAntialiasing(bool enabled) = 0;
+	virtual void setWireframe(bool enabled) = 0;
 
 	// renderer actions
 	virtual std::vector<unsigned char> getScreenshot() = 0;
@@ -133,8 +160,23 @@ public:
 	// callbacks
 	virtual void onResolutionChange(Vector2 newResolution) = 0;
 
+	// factory
+	virtual Image *createImage(UString filePath, bool mipmapped) = 0;
+	virtual Image *createImage(int width, int height, bool clampToEdge) = 0;
+	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType) = 0;
+	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath) = 0;
+	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader) = 0;
+
 protected:
 	virtual void init() = 0; // must be called after the OS implementation constructor
+
+protected:
+	static ConVar *r_globaloffset_x;
+	static ConVar *r_globaloffset_y;
+	static ConVar *r_debug_disable_cliprect;
+	static ConVar *r_debug_disable_3dscene;
+	static ConVar *r_debug_flush_drawstring;
+	static ConVar *r_debug_drawimage;
 };
 
 #endif

@@ -8,27 +8,28 @@
 #ifndef RENDERTARGET_H
 #define RENDERTARGET_H
 
-#include "cbase.h"
+#include "Resource.h"
 
-class RenderTarget
+class ConVar;
+
+class RenderTarget : public Resource
 {
 public:
-	RenderTarget(int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X) : RenderTarget(0, 0, width, height, multiSampleType) {;}
 	RenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
-	~RenderTarget();
+	virtual ~RenderTarget() {;}
 
 	void draw(Graphics *g, int x, int y);
 	void draw(Graphics *g, int x, int y, int width, int height);
 	void drawRect(Graphics *g, int x, int y, int width, int height);
 
-	void enable();
-	void disable();
-
-	void bind(unsigned int textureUnit = 0);
-	void unbind();
-
-	void rebuild(int width, int height);
 	void rebuild(int x, int y, int width, int height);
+	void rebuild(int width, int height);
+
+	virtual void enable() = 0;
+	virtual void disable() = 0;
+
+	virtual void bind(unsigned int textureUnit = 0) = 0;
+	virtual void unbind() = 0;
 
 	// set
 	void setPos(int x, int y) {m_vPos.x = x; m_vPos.y = y;}
@@ -44,36 +45,26 @@ public:
 	inline Vector2 getSize() const {return m_vSize;}
 	inline Vector2 getPos() const {return m_vPos;}
 	inline Graphics::MULTISAMPLE_TYPE getMultiSampleType() const {return m_multiSampleType;}
-	inline unsigned int getFrameBuffer() const {return m_iFrameBuffer;}
-	inline unsigned int getRenderTexture() const {return m_iRenderTexture;}
-	inline unsigned int getResolveFrameBuffer() const {return m_iResolveFrameBuffer;}
-	inline unsigned int getResolveTexture() const {return m_iResolveTexture;}
 
 	inline bool isMultiSampled() {return m_multiSampleType != Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X;}
 
-private:
-	void release();
-	void build();
+protected:
+	static ConVar *debug_rt;
 
-	bool m_bReady;
+	virtual void init() = 0;
+	virtual void initAsync() = 0;
+	virtual void destroy() = 0;
+
 	bool m_bClearColorOnDraw;
 	bool m_bClearDepthOnDraw;
 
-	Vector2 m_vPos,m_vSize;
+	Vector2 m_vPos;
+	Vector2 m_vSize;
 
 	Graphics::MULTISAMPLE_TYPE m_multiSampleType;
 
 	Color m_color;
 	Color m_clearColor;
-
-	unsigned int m_iFrameBuffer;
-	unsigned int m_iRenderTexture;
-	unsigned int m_iDepthBuffer;
-	unsigned int m_iResolveFrameBuffer;
-	unsigned int m_iResolveTexture;
-
-	int m_iFrameBufferBackup;
-	Vector2 m_vGraphicsResolutionBackup;
 };
 
 #endif

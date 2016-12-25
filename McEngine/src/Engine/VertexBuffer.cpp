@@ -12,7 +12,7 @@
 
 #include "OpenGLHeaders.h"
 
-VertexBuffer::VertexBuffer(VertexArrayObject::PRIMITIVE primitive, VertexArrayObject::USAGE usage)
+VertexBuffer::VertexBuffer(Graphics::PRIMITIVE primitive, VertexArrayObject::USAGE usage)
 {
 	m_bReady = false;
 	m_primitive = primitive;
@@ -104,15 +104,15 @@ void VertexBuffer::draw(Graphics *g)
 	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
-unsigned int VertexBuffer::primitiveToOpenGL(VertexArrayObject::PRIMITIVE primitive)
+unsigned int VertexBuffer::primitiveToOpenGL(Graphics::PRIMITIVE primitive)
 {
 	switch (primitive)
 	{
-	case VertexArrayObject::PRIMITIVE::PRIMITIVE_TRIANGLES:
+	case Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES:
 		return GL_TRIANGLES;
-	case VertexArrayObject::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN:
+	case Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN:
 		return GL_TRIANGLE_FAN;
-	case VertexArrayObject::PRIMITIVE::PRIMITIVE_QUADS:
+	case Graphics::PRIMITIVE::PRIMITIVE_QUADS:
 		return GL_QUADS;
 	}
 
