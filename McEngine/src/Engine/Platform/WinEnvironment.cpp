@@ -11,6 +11,9 @@
 #include "Engine.h"
 #include "Mouse.h"
 
+#include <Lmcons.h>
+#include <Shlobj.h>
+
 #include <tchar.h>
 #include <string>
 
@@ -37,6 +40,23 @@ void WinEnvironment::update()
 void WinEnvironment::shutdown()
 {
 	SendMessage(m_hwnd, WM_CLOSE, 0, 0);
+}
+
+UString WinEnvironment::getUsername()
+{
+	DWORD username_len = UNLEN+1;
+	wchar_t username[username_len];
+	if (GetUserNameW(username, &username_len))
+		return UString(username);
+	return UString("");
+}
+
+UString WinEnvironment::getUserDataPath()
+{
+	wchar_t path[PATH_MAX];
+	if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, path)))
+		return UString(path);
+	return UString("");
 }
 
 bool WinEnvironment::fileExists(UString filename)

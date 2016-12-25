@@ -30,14 +30,6 @@
 #define TEXTURE_FREE_MEMORY_ATI                 0x87FC
 #define RENDERBUFFER_FREE_MEMORY_ATI            0x87FD
 
-ConVar r_globaloffset_x("r_globaloffset_x", 0.0f);
-ConVar r_globaloffset_y("r_globaloffset_y", 0.0f);
-
-ConVar r_debug_disable_cliprect("r_debug_disable_cliprect", false);
-ConVar r_debug_disable_3dscene("r_debug_disable_3dscene", false);
-ConVar r_debug_flush_drawstring("r_debug_flush_drawstring", false);
-ConVar r_debug_drawimage("r_debug_drawimage", false);
-
 OpenGLLegacyInterface::OpenGLLegacyInterface()
 {
 	// renderer
@@ -116,7 +108,7 @@ void OpenGLLegacyInterface::beginScene()
 	// push main transforms
 	pushTransform();
 	setProjectionMatrix(defaultProjectionMatrix);
-	translate(r_globaloffset_x.getFloat(), r_globaloffset_y.getFloat());
+	translate(r_globaloffset_x->getFloat(), r_globaloffset_y->getFloat());
 
 	// and apply them
 	updateTransform();
@@ -175,10 +167,10 @@ void OpenGLLegacyInterface::setAlpha(float alpha)
 	setColor(m_color);
 }
 
-void OpenGLLegacyInterface::drawPixels(int x, int y, int width, int height, DRAWPIXELS_TYPE type, const void *pixels)
+void OpenGLLegacyInterface::drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type, const void *pixels)
 {
 	glRasterPos2i(x, y+height); // '+height' because of opengl bottom left origin, but engine top left origin
-	glDrawPixels(width, height, GL_RGBA, (type == DRAWPIXELS_UBYTE ? GL_UNSIGNED_BYTE : GL_FLOAT), pixels);
+	glDrawPixels(width, height, GL_RGBA, (type == Graphics::DRAWPIXELS_TYPE::DRAWPIXELS_UBYTE ? GL_UNSIGNED_BYTE : GL_FLOAT), pixels);
 }
 
 void OpenGLLegacyInterface::drawPixel(int x, int y)
@@ -384,7 +376,7 @@ void OpenGLLegacyInterface::drawImage(Image *image)
 
 	image->unbind();
 
-	if (r_debug_drawimage.getBool())
+	if (r_debug_drawimage->getBool())
 	{
 		setColor(0xbbff00ff);
 		drawRect(x, y, width, height);
@@ -398,7 +390,7 @@ void OpenGLLegacyInterface::drawString(McFont *font, UString text)
 
 	updateTransform();
 
-	if (r_debug_flush_drawstring.getBool())
+	if (r_debug_flush_drawstring->getBool())
 	{
 		glFinish();
 		glFlush();
@@ -418,13 +410,7 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao)
 
 	updateTransform();
 
-	GLenum type = GL_TRIANGLES;
-	if (vao->getPrimitive() == VertexArrayObject::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN)
-		type = GL_TRIANGLE_FAN;
-	else if (vao->getPrimitive() == VertexArrayObject::PRIMITIVE::PRIMITIVE_QUADS)
-		type = GL_QUADS;
-
-	glBegin(type);
+	glBegin(primitiveToOpenGL(vao->getPrimitive()));
 	for (int i=0; i<vertices.size(); i++)
 	{
 		if (i < colors.size())
@@ -529,7 +515,7 @@ Matrix4 OpenGLLegacyInterface::getProjectionMatrix()
 
 void OpenGLLegacyInterface::setClipRect(Rect clipRect)
 {
-	if (r_debug_disable_cliprect.getBool()) return;
+	if (r_debug_disable_cliprect->getBool()) return;
 	//if (m_bIs3DScene) return; // HACKHACK:TODO:
 
 	// HACKHACK: compensate for viewport changes caused by RenderTargets!
@@ -591,7 +577,7 @@ void OpenGLLegacyInterface::popStencil()
 
 void OpenGLLegacyInterface::push3DScene(Rect region)
 {
-	if (r_debug_disable_3dscene.getBool()) return;
+	if (r_debug_disable_3dscene->getBool()) return;
 
 	// you can't yet stack 3d scenes!
 	if (m_3dSceneStack.top())
@@ -732,6 +718,14 @@ void OpenGLLegacyInterface::setAntialiasing(bool aa)
 		glEnable(GL_MULTISAMPLE);
 	else
 		glDisable(GL_MULTISAMPLE);
+}
+
+void OpenGLLegacyInterface::setWireframe(bool enabled)
+{
+	if (enabled)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	else
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 std::vector<unsigned char> OpenGLLegacyInterface::getScreenshot()
@@ -878,29 +872,23 @@ void OpenGLLegacyInterface::handleGLErrors()
 		debugLog("OpenGL Error: %i on frame %i\n",error,engine->getFrameCount());
 }
 
-
-
-//*************************************//
-//	OpenGLLegacyInterface ConCommands  //
-//*************************************//
-
-void _vsync(UString oldValue, UString newValue)
+int OpenGLLegacyInterface::primitiveToOpenGL(Graphics::PRIMITIVE primitive)
 {
-	if (newValue.length() < 1)
-		debugLog("Usage: 'vsync 1' to turn vsync on, 'vsync 0' to turn vsync off\n");
-	else
+	switch (primitive)
 	{
-		bool vsync = newValue.toFloat() > 0.0f;
-		engine->getGraphics()->setVSync(vsync);
+	case Graphics::PRIMITIVE::PRIMITIVE_LINES:
+		return GL_LINES;
+	case Graphics::PRIMITIVE::PRIMITIVE_LINE_STRIP:
+		return GL_LINE_STRIP;
+	case Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES:
+		return GL_TRIANGLES;
+	case Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN:
+		return GL_TRIANGLE_FAN;
+	case Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_STRIP:
+		return GL_TRIANGLE_STRIP;
+	case Graphics::PRIMITIVE::PRIMITIVE_QUADS:
+		return GL_QUADS;
 	}
-}
-void _mat_wireframe(UString oldValue, UString newValue)
-{
-	if (newValue.toFloat() > 0.0f)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	else
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-}
 
-ConVar __mat_wireframe("mat_wireframe", false, _mat_wireframe);
-ConVar __vsync("vsync", false, _vsync);
+	return GL_TRIANGLES;
+}

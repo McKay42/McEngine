@@ -773,19 +773,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		engine->setFrameTime(deltaTimer->getDelta());
 
-		if (!fps_unlimited.getBool() || g_bMinimized || !g_bHasFocus)
+		const bool inBackground = g_bMinimized || !g_bHasFocus;
+		if (!fps_unlimited.getBool() || inBackground)
 		{
 			double delayStart = frameTimer->getElapsedTime();
 			double delayTime;
-			if (g_bMinimized || !g_bHasFocus)
+			if (inBackground)
 				delayTime = (1.0 / (double)fps_max_background.getFloat()) - frameTimer->getDelta();
 			else
 				delayTime = (1.0 / (double)fps_max.getFloat()) - frameTimer->getDelta();
 
-			// more or less "busy" waiting, but giving away the rest of the timeslice at least
 			while (delayTime > 0.0)
 			{
-				Sleep(0); // yes, there is a zero in there
+				if (inBackground) // real waiting (very inaccurate, but very good for little background cpu utilization)
+					Sleep((int)((1.0f / fps_max_background.getFloat())*1000.0f));
+				else // more or less "busy" waiting, but giving away the rest of the timeslice at least
+					Sleep(0); // yes, there is a zero in there
 
 				// decrease the delayTime by the time we spent in this loop
 				// if the loop is executed more than once, note how delayStart now gets the value of the previous iteration from getElapsedTime()

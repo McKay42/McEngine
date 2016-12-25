@@ -1,21 +1,27 @@
 //================ Copyright (c) 2016, PG, All rights reserved. =================//
 //
-// Purpose:		raw legacy opengl graphics interface
+// Purpose:		software renderer, just for fun
 //
-// $NoKeywords: $lgli
+// $NoKeywords: $swi
 //===============================================================================//
 
-#ifndef LEGACYOPENGLINTERFACE_H
-#define LEGACYOPENGLINTERFACE_H
+#ifndef SWGRAPHICSINTERFACE_H
+#define SWGRAPHICSINTERFACE_H
 
 #include "Graphics.h"
 #include "cbase.h"
 
-class OpenGLLegacyInterface : public Graphics
+class SWGraphicsInterface : public Graphics
 {
 public:
-	OpenGLLegacyInterface();
-	virtual ~OpenGLLegacyInterface();
+	struct PIXEL
+	{
+		unsigned char b,g,r,a;
+	};
+
+public:
+	SWGraphicsInterface();
+	virtual ~SWGraphicsInterface();
 
 	// scene
 	virtual void beginScene();
@@ -115,19 +121,22 @@ public:
 protected:
 	void init();
 
-private:
-	static int primitiveToOpenGL(Graphics::PRIMITIVE primitive);
+	inline PIXEL *getBackBuffer() const {return m_backBuffer;}
 
+private:
 	void updateTransform();
-	void handleGLErrors();
+	PIXEL getColorPixel(const Color &color);
 
 	// renderer
 	Vector2 m_vResolution;
+	PIXEL *m_backBuffer;
 
 	// transforms
 	bool m_bTransformUpToDate;
 	std::stack<Matrix4> m_worldTransformStack;
 	std::stack<Matrix4> m_projectionTransformStack;
+	Matrix4 m_worldMatrix;
+	Matrix4 m_projectionMatrix;
 
 	// persistent vars
 	bool m_bAntiAliasing;

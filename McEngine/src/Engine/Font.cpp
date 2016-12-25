@@ -128,9 +128,9 @@ void McFont::init()
 	m_textureAtlas->load();
 
 	if (m_bAntialiasing)
-		m_textureAtlas->setFilterMode(Image::FILTER_MODE_LINEAR);
+		m_textureAtlas->setFilterMode(Graphics::FILTER_MODE::FILTER_MODE_LINEAR);
 	else
-		m_textureAtlas->setFilterMode(Image::FILTER_MODE_NONE);
+		m_textureAtlas->setFilterMode(Graphics::FILTER_MODE::FILTER_MODE_NONE);
 
 
 	// calculate generic height
@@ -363,7 +363,7 @@ void McFont::drawAtlasGlyph(Graphics *g, wchar_t ch)
 		const float sy = gm.size.y/m_textureAtlas->getHeight();
 
 		// draw it
-		VertexArrayObject vao(VertexArrayObject::PRIMITIVE::PRIMITIVE_QUADS);
+		VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
 
 		vao.addTexcoord(x, y);
 		vao.addVertex(0, gm.rows);
