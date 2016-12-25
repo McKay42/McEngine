@@ -15,7 +15,7 @@
 class VertexBuffer
 {
 public:
-	VertexBuffer(VertexArrayObject::PRIMITIVE vertexType = VertexArrayObject::PRIMITIVE::PRIMITIVE_TRIANGLES, VertexArrayObject::USAGE usage = VertexArrayObject::USAGE::USAGE_STATIC);
+	VertexBuffer(Graphics::PRIMITIVE vertexType = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, VertexArrayObject::USAGE usage = VertexArrayObject::USAGE::USAGE_STATIC);
 	~VertexBuffer();
 
 	void free();
@@ -25,10 +25,10 @@ public:
 	void set(std::vector<Vector3> *vertices, std::vector<Vector2> *textureCoordinates0);
 
 private:
-	static unsigned int primitiveToOpenGL(VertexArrayObject::PRIMITIVE primitive);
+	static unsigned int primitiveToOpenGL(Graphics::PRIMITIVE primitive);
 	static unsigned int usageToOpenGL(VertexArrayObject::USAGE usage);
 
-	VertexArrayObject::PRIMITIVE m_primitive;
+	Graphics::PRIMITIVE m_primitive;
 	VertexArrayObject::USAGE m_usage;
 	unsigned int m_iNumVertices;
 

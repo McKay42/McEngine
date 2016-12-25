@@ -43,6 +43,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bassfx/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libjpeg/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Engine/Main}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/VRSandbox}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/Osu}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/FrameworkTest}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/VolumeTheory}&quot;"/>
@@ -177,6 +178,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bassfx/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libjpeg/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Engine/Main}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/VRSandbox}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/Osu}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/FrameworkTest}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/VolumeTheory}&quot;"/>

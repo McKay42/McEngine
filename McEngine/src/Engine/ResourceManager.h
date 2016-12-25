@@ -13,6 +13,8 @@
 #include "Image.h"
 #include "Font.h"
 #include "Sound.h"
+#include "Shader.h"
+#include "RenderTarget.h"
 
 #include "pthread.h"
 #include <atomic>
@@ -33,18 +35,33 @@ public:
 	void requestNextLoadAsync();
 	void requestNextLoadUnmanaged();
 
+	// images
 	Image *loadImage(UString filepath, UString resourceName, bool mipmapped = false);
 	Image *loadImageAbs(UString absoluteFilepath, UString resourceName, bool mipmapped = false);
-	Image *createImage(int width, int height, bool clampToEdge = true);
+	Image *createImage(unsigned int width, unsigned int height, bool clampToEdge = true);
 
+	// fonts
 	McFont *loadFont(UString filepath, UString resourceName, unsigned int fontSize = 16, bool antialiasing = true);
 
+	// sounds
 	Sound *loadSound(UString filepath, UString resourceName, bool stream = false, bool threeD = false, bool loop = false);
 	Sound *loadSoundAbs(UString filepath, UString resourceName, bool stream = false, bool threeD = false, bool loop = false);
 
+	// shaders
+	Shader *loadShader(UString vertexShaderFilePath, UString fragmentShaderFilePath, UString resourceName);
+	Shader *loadShader(UString vertexShaderFilePath, UString fragmentShaderFilePath);
+	Shader *createShader(UString vertexShader, UString fragmentShader, UString resourceName);
+	Shader *createShader(UString vertexShader, UString fragmentShader);
+
+	// rendertargets
+	RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
+	RenderTarget *createRenderTarget(int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
+
+	// resource access by name // TODO: should probably use generics for this
 	Image *getImage(UString resourceName);
 	McFont *getFont(UString resourceName);
 	Sound *getSound(UString resourceName);
+	Shader *getShader(UString resourceName);
 
 	int getNumResources() const {return m_vResources.size();}
 	inline std::vector<Resource*> getResources() const {return m_vResources;}

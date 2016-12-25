@@ -78,7 +78,7 @@ CBaseUIWindow::CBaseUIWindow(float xPos, float yPos, float xSize, float ySize, U
 	m_bRoundedRectangle = false;
 
 	// test features
-	m_rt = new RenderTarget(m_vPos.x, m_vPos.y, m_vSize.x+1, m_vSize.y+1);
+	m_rt = engine->getResourceManager()->createRenderTarget(m_vPos.x, m_vPos.y, m_vSize.x+1, m_vSize.y+1);
 	//float shadowRadius = ui_window_shadow_radius.getInt();
 	///m_shadow = new CBaseUIBoxShadow(0xff000000, shadowRadius, m_vPos.x-shadowRadius, m_vPos.y-shadowRadius, m_vSize.x+shadowRadius*2, m_vSize.y+shadowRadius*2+4, "windowshadow");
 
@@ -94,10 +94,9 @@ CBaseUIWindow::CBaseUIWindow(float xPos, float yPos, float xSize, float ySize, U
 
 CBaseUIWindow::~CBaseUIWindow()
 {
-	///delete m_shadow;
-	delete m_rt;
-	delete m_container;
-	delete m_titleBarContainer;
+	///SAFE_DELETE(m_shadow);
+	SAFE_DELETE(m_container);
+	SAFE_DELETE(m_titleBarContainer);
 }
 
 void CBaseUIWindow::draw(Graphics *g)

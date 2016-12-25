@@ -16,7 +16,7 @@ class Resource
 {
 public:
 	Resource();
-	Resource(ResourceManager *loader, UString filepath);
+	Resource(UString filepath);
 	virtual ~Resource() {;}
 
 	virtual void load();
@@ -37,7 +37,6 @@ protected:
 	virtual void initAsync() = 0;
 	virtual void destroy() = 0;
 
-	ResourceManager *m_resourceManager;
 	UString m_sFilePath;
 	UString m_sName;
 
