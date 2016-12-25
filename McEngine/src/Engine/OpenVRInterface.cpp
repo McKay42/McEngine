@@ -135,7 +135,7 @@ OpenVRInterface::OpenVRInterface()
 	m_controllerRight = new OpenVRController(m_pHMD, OpenVRController::ROLE::ROLE_RIGHTHAND);
 	m_controller = m_controllerRight;
 
-	///return;
+	return;
 
 	// check if openvr runtime is installed
 	if (!vr::VR_IsRuntimeInstalled())

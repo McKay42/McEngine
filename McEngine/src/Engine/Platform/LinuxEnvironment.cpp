@@ -73,6 +73,18 @@ void LinuxEnvironment::shutdown()
 	XSendEvent(m_display, m_window, false, NoEventMask, &ev);
 }
 
+UString LinuxEnvironment::getUsername()
+{
+	// TODO:
+	return "";
+}
+
+UString LinuxEnvironment::getUserDataPath()
+{
+	// TODO:
+	return "";
+}
+
 bool LinuxEnvironment::fileExists(UString filename)
 {
 	return (bool)(std::ifstream(filename.toUtf8()));

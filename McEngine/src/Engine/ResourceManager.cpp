@@ -225,7 +225,7 @@ Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool m
 
 	// create instance and load it
 	filepath.insert(0, RM_IMAGE_FOLDER);
-	Image *img = new OpenGLImage(filepath, mipmapped);
+	Image *img = engine->getGraphics()->createImage(filepath, mipmapped);
 	img->setName(resourceName);
 
 	loadResource(img, true);
@@ -243,7 +243,7 @@ Image *ResourceManager::loadImageAbs(UString absoluteFilepath, UString resourceN
 	}
 
 	// create instance and load it
-	Image *img = new OpenGLImage(absoluteFilepath, mipmapped);
+	Image *img = engine->getGraphics()->createImage(absoluteFilepath, mipmapped);
 	img->setName(resourceName);
 
 	loadResource(img, true);
@@ -260,7 +260,7 @@ Image *ResourceManager::createImage(unsigned int width, unsigned int height, boo
 	}
 
 	// create instance and load it
-	Image *img = new OpenGLImage(width, height, clampToEdge);
+	Image *img = engine->getGraphics()->createImage(width, height, clampToEdge);
 	img->setName("<CREATED_IMAGE>");
 
 	loadResource(img, false);

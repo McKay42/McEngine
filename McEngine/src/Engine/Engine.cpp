@@ -10,7 +10,8 @@
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
-#include <WinGLLegacyInterface.h>
+#include "WinGLLegacyInterface.h"
+#include "WinSWGraphicsInterface.h"
 #include "WinContextMenu.h"
 #include "WinEnvironment.h"
 
@@ -47,10 +48,8 @@
 //	Include App here  //
 //********************//
 
-#include "FrameworkTest.h"
-#include "Tetris.h"
 //#include "Osu.h"
-//#include "VRSandbox.h"
+#include "FrameworkTest.h"
 
 #include <cstdarg>
 
@@ -154,6 +153,7 @@ Engine::Engine(Environment *environment)
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
 	m_graphics = new WinGLLegacyInterface(((WinEnvironment*)env)->getHwnd());
+	///m_graphics = new WinSWGraphicsInterface(((WinEnvironment*)env)->getHwnd());
 	///m_graphics = new VulkanGraphicsInterface();
 	m_contextMenu = new WinContextMenu();
 
@@ -272,11 +272,7 @@ void Engine::loadApp()
 
 	//m_app = new Osu();
 
-	//m_app = new VRSandbox();
-
 	m_app = new FrameworkTest();
-
-	//m_app = new Tetris();
 
 
 

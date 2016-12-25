@@ -36,6 +36,6 @@
 /*
  * OpenVR
  */
-#define MCENGINE_FEATURE_OPENVR
+//#define MCENGINE_FEATURE_OPENVR
 
 #endif

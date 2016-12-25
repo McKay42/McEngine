@@ -7,7 +7,7 @@
 
 #include "VertexArrayObject.h"
 
-VertexArrayObject::VertexArrayObject(VertexArrayObject::PRIMITIVE primitive, VertexArrayObject::USAGE usage)
+VertexArrayObject::VertexArrayObject(Graphics::PRIMITIVE primitive, VertexArrayObject::USAGE usage)
 {
 	m_primitive = primitive;
 	m_usage = usage;
@@ -67,7 +67,7 @@ void VertexArrayObject::addColor(Color color)
 	m_colors.push_back(color);
 }
 
-void VertexArrayObject::setType(VertexArrayObject::PRIMITIVE primitive)
+void VertexArrayObject::setType(Graphics::PRIMITIVE primitive)
 {
 	m_primitive = primitive;
 }
