@@ -11,11 +11,9 @@
 #include "cbase.h"
 #include "KeyboardListener.h"
 
-// HACKHACK:
+// HACKHACK: remove this header once a proper model wrapper exists
 #include "OpenGLHeaders.h"
-#include <stdio.h>
 #include <string>
-#include <cstdlib>
 
 #ifdef MCENGINE_FEATURE_OPENVR
 
@@ -29,9 +27,6 @@ class RenderTarget;
 
 class OpenVRController;
 class CGLRenderModel;
-
-//class OBJModel;
-//class MDLMaterial;
 
 class OpenVRInterface : public KeyboardListener
 {
@@ -48,9 +43,11 @@ public:
 
 	void onResolutionChange(Vector2 newResolution);
 
-	typedef fastdelegate::FastDelegate0<> DrawCallback;
+	typedef fastdelegate::FastDelegate1<Graphics*> DrawCallback;
 	void setDrawCallback(DrawCallback drawCallback) {m_drawCallback = drawCallback;}
 
+	inline Matrix4 getCurrentModelMatrix() {return m_matCurrentM;}
+	inline Matrix4 getCurrentViewProjectionMatrix() {return m_matCurrentVP;}
 	inline Matrix4 getCurrentModelViewProjectionMatrix() {return m_matCurrentMVP;}
 
 	inline OpenVRController *getController() {return m_controller;}
@@ -72,8 +69,8 @@ private:
 	void renderStereoTargets(Graphics *g);
 	void renderScene(Graphics *g, vr::Hmd_Eye eye);
 	void renderStereoToWindow(Graphics *g);
-	void updateControllerAxes();
 
+	void updateControllerAxes(); // for debugging
 	void updateStaticMatrices(); // eye position offset and projection
 	void updateMatrixPoses(); // pose matrices
 	void updateRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
@@ -83,8 +80,10 @@ private:
 	Matrix4 getHMDMatrixPoseEye(vr::Hmd_Eye eye);
 	Matrix4 getCurrentModelViewProjectionMatrix(vr::Hmd_Eye eye);
 	Matrix4 getCurrentViewProjectionMatrix(vr::Hmd_Eye eye);
+	Matrix4 getCurrentProjectionMatrix(vr::Hmd_Eye eye);
 	Matrix4 getCurrentEyePosMatrix(vr::Hmd_Eye eye);
 
+	void onSSChange(UString oldValue, UString newValue);
 	void onClippingPlaneChange(UString oldValue, UString newValue);
 
 #endif
@@ -98,14 +97,6 @@ private:
 
 #endif
 
-	struct VertexDataLens
-	{
-		Vector2 position;
-		Vector2 texCoordRed;
-		Vector2 texCoordGreen;
-		Vector2 texCoordBlue;
-	};
-
 	bool m_bReady;
 
 	OpenVRController *m_controller;
@@ -113,6 +104,34 @@ private:
 	OpenVRController *m_controllerRight;
 
 	DrawCallback m_drawCallback;
+
+	// matrices
+	Matrix4 m_mat4HMDPose;
+	Matrix4 m_mat4eyePosLeft;
+	Matrix4 m_mat4eyePosRight;
+
+	Matrix4 m_mat4ProjectionCenter;
+	Matrix4 m_mat4ProjectionLeft;
+	Matrix4 m_mat4ProjectionRight;
+
+	Matrix4 m_matCurrentM;
+	Matrix4 m_matCurrentVP;
+	Matrix4 m_matCurrentMVP;
+
+	// framebuffers
+	RenderTarget *m_leftEye;
+	RenderTarget *m_rightEye;
+	RenderTarget *m_debugOverlay;
+
+	// debugging
+	Camera *m_fakeCamera;
+	bool m_bWDown;
+	bool m_bADown;
+	bool m_bSDown;
+	bool m_bDDown;
+	bool m_bCaptureMouse;
+	bool m_bShiftDown;
+	bool m_bCtrlDown;
 
 #ifdef MCENGINE_FEATURE_OPENVR
 
@@ -146,35 +165,6 @@ private:
 	unsigned int m_uiControllerVertcount;
 
 #endif
-
-	// matrices
-	Matrix4 m_mat4HMDPose;
-	Matrix4 m_mat4eyePosLeft;
-	Matrix4 m_mat4eyePosRight;
-
-	Matrix4 m_mat4ProjectionCenter;
-	Matrix4 m_mat4ProjectionLeft;
-	Matrix4 m_mat4ProjectionRight;
-
-	Matrix4 m_matCurrentMVP;
-
-	// framebuffers
-	RenderTarget *m_leftEye;
-	RenderTarget *m_rightEye;
-	RenderTarget *m_debugOverlay;
-
-	// debugging
-	//OBJModel *m_testModel;
-	//MDLMaterial *m_testMaterial;
-
-	Camera *m_fakeCamera;
-	bool m_bWDown;
-	bool m_bADown;
-	bool m_bSDown;
-	bool m_bDDown;
-	bool m_bCaptureMouse;
-	bool m_bShiftDown;
-	bool m_bCtrlDown;
 };
 
 extern OpenVRInterface *openvr;

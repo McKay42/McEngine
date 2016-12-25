@@ -22,6 +22,8 @@ public:
 
 	// OS calls
 	virtual void shutdown() = 0;
+	virtual UString getUsername() = 0;
+	virtual UString getUserDataPath() = 0;
 	virtual bool fileExists(UString filename) = 0;
 	virtual UString getClipBoardText() = 0;
 	virtual void setClipBoardText(UString text) = 0;

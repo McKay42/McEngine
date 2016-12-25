@@ -5,13 +5,15 @@
 // $NoKeywords: $lgli
 //===============================================================================//
 
-#include <OpenGLLegacyInterface.h>
+#include "OpenGLLegacyInterface.h"
 #include "Engine.h"
 #include "ConVar.h"
 #include "Camera.h"
 
-#include "Image.h"
 #include "Font.h"
+#include "OpenGLImage.h"
+#include "OpenGLRenderTarget.h"
+#include "OpenGLShader.h"
 
 #include "VertexArrayObject.h"
 #include "VertexBuffer.h"
@@ -27,14 +29,6 @@
 #define VBO_FREE_MEMORY_ATI                     0x87FB
 #define TEXTURE_FREE_MEMORY_ATI                 0x87FC
 #define RENDERBUFFER_FREE_MEMORY_ATI            0x87FD
-
-ConVar r_globaloffset_x("r_globaloffset_x", 0.0f);
-ConVar r_globaloffset_y("r_globaloffset_y", 0.0f);
-
-ConVar r_debug_disable_cliprect("r_debug_disable_cliprect", false);
-ConVar r_debug_disable_3dscene("r_debug_disable_3dscene", false);
-ConVar r_debug_flush_drawstring("r_debug_flush_drawstring", false);
-ConVar r_debug_drawimage("r_debug_drawimage", false);
 
 OpenGLLegacyInterface::OpenGLLegacyInterface()
 {
@@ -114,7 +108,7 @@ void OpenGLLegacyInterface::beginScene()
 	// push main transforms
 	pushTransform();
 	setProjectionMatrix(defaultProjectionMatrix);
-	translate(r_globaloffset_x.getFloat(), r_globaloffset_y.getFloat());
+	translate(r_globaloffset_x->getFloat(), r_globaloffset_y->getFloat());
 
 	// and apply them
 	updateTransform();
@@ -173,10 +167,10 @@ void OpenGLLegacyInterface::setAlpha(float alpha)
 	setColor(m_color);
 }
 
-void OpenGLLegacyInterface::drawPixels(int x, int y, int width, int height, DRAWPIXELS_TYPE type, const void *pixels)
+void OpenGLLegacyInterface::drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type, const void *pixels)
 {
 	glRasterPos2i(x, y+height); // '+height' because of opengl bottom left origin, but engine top left origin
-	glDrawPixels(width, height, GL_RGBA, (type == DRAWPIXELS_UBYTE ? GL_UNSIGNED_BYTE : GL_FLOAT), pixels);
+	glDrawPixels(width, height, GL_RGBA, (type == Graphics::DRAWPIXELS_TYPE::DRAWPIXELS_UBYTE ? GL_UNSIGNED_BYTE : GL_FLOAT), pixels);
 }
 
 void OpenGLLegacyInterface::drawPixel(int x, int y)
@@ -382,7 +376,7 @@ void OpenGLLegacyInterface::drawImage(Image *image)
 
 	image->unbind();
 
-	if (r_debug_drawimage.getBool())
+	if (r_debug_drawimage->getBool())
 	{
 		setColor(0xbbff00ff);
 		drawRect(x, y, width, height);
@@ -396,7 +390,7 @@ void OpenGLLegacyInterface::drawString(McFont *font, UString text)
 
 	updateTransform();
 
-	if (r_debug_flush_drawstring.getBool())
+	if (r_debug_flush_drawstring->getBool())
 	{
 		glFinish();
 		glFlush();
@@ -416,13 +410,7 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao)
 
 	updateTransform();
 
-	GLenum type = GL_TRIANGLES;
-	if (vao->getPrimitive() == VertexArrayObject::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN)
-		type = GL_TRIANGLE_FAN;
-	else if (vao->getPrimitive() == VertexArrayObject::PRIMITIVE::PRIMITIVE_QUADS)
-		type = GL_QUADS;
-
-	glBegin(type);
+	glBegin(primitiveToOpenGL(vao->getPrimitive()));
 	for (int i=0; i<vertices.size(); i++)
 	{
 		if (i < colors.size())
@@ -447,6 +435,32 @@ void OpenGLLegacyInterface::drawVB(VertexBuffer *vb)
 	updateTransform();
 
 	vb->draw(this);
+}
+
+void OpenGLLegacyInterface::pushTransform()
+{
+	m_worldTransformStack.push(Matrix4(m_worldTransformStack.top()));
+	m_projectionTransformStack.push(Matrix4(m_projectionTransformStack.top()));
+}
+
+void OpenGLLegacyInterface::popTransform()
+{
+	if (m_worldTransformStack.size() < 2)
+	{
+		engine->showMessageErrorFatal("World Transform Stack Underflow", "Too many pop*()s!");
+		engine->shutdown();
+		return;
+	}
+	if (m_projectionTransformStack.size() < 2)
+	{
+		engine->showMessageErrorFatal("Projection Transform Stack Underflow", "Too many pop*()s!");
+		engine->shutdown();
+		return;
+	}
+
+	m_worldTransformStack.pop();
+	m_projectionTransformStack.pop();
+	m_bTransformUpToDate = false;
 }
 
 void OpenGLLegacyInterface::translate(float x, float y, float z)
@@ -499,35 +513,9 @@ Matrix4 OpenGLLegacyInterface::getProjectionMatrix()
 	return m_projectionTransformStack.top();
 }
 
-void OpenGLLegacyInterface::pushTransform()
-{
-	m_worldTransformStack.push(Matrix4(m_worldTransformStack.top()));
-	m_projectionTransformStack.push(Matrix4(m_projectionTransformStack.top()));
-}
-
-void OpenGLLegacyInterface::popTransform()
-{
-	if (m_worldTransformStack.size() < 2)
-	{
-		engine->showMessageErrorFatal("World Transform Stack Underflow", "Too many pop*()s!");
-		engine->shutdown();
-		return;
-	}
-	if (m_projectionTransformStack.size() < 2)
-	{
-		engine->showMessageErrorFatal("Projection Transform Stack Underflow", "Too many pop*()s!");
-		engine->shutdown();
-		return;
-	}
-
-	m_worldTransformStack.pop();
-	m_projectionTransformStack.pop();
-	m_bTransformUpToDate = false;
-}
-
 void OpenGLLegacyInterface::setClipRect(Rect clipRect)
 {
-	if (r_debug_disable_cliprect.getBool()) return;
+	if (r_debug_disable_cliprect->getBool()) return;
 	//if (m_bIs3DScene) return; // HACKHACK:TODO:
 
 	// HACKHACK: compensate for viewport changes caused by RenderTargets!
@@ -589,7 +577,7 @@ void OpenGLLegacyInterface::popStencil()
 
 void OpenGLLegacyInterface::push3DScene(Rect region)
 {
-	if (r_debug_disable_3dscene.getBool()) return;
+	if (r_debug_disable_3dscene->getBool()) return;
 
 	// you can't yet stack 3d scenes!
 	if (m_3dSceneStack.top())
@@ -688,37 +676,6 @@ void OpenGLLegacyInterface::offset3DScene(float x, float y, float z)
 	m_v3dSceneOffset = Vector3(x,y,z);
 }
 
-void OpenGLLegacyInterface::updateTransform()
-{
-	if (!m_bTransformUpToDate)
-	{
-		Matrix4 worldMatrixTemp = m_worldTransformStack.top();
-		Matrix4 projectionMatrixTemp = m_projectionTransformStack.top();
-
-		// 3d gui scenes
-		if (m_bIs3dScene)
-		{
-			worldMatrixTemp = m_3dSceneWorldMatrix * m_worldTransformStack.top();
-			projectionMatrixTemp = m_3dSceneProjectionMatrix;
-		}
-
-		glMatrixMode(GL_PROJECTION);
-		glLoadMatrixf(projectionMatrixTemp.get());
-
-		glMatrixMode(GL_MODELVIEW);
-		glLoadMatrixf(worldMatrixTemp.get());
-
-		m_bTransformUpToDate = true;
-	}
-}
-
-void OpenGLLegacyInterface::onResolutionChange(Vector2 newResolution)
-{
-	// rebuild viewport
-	m_vResolution = newResolution;
-	glViewport(0, 0, m_vResolution.x, m_vResolution.y);
-}
-
 void OpenGLLegacyInterface::setClipping(bool enabled)
 {
 	if (enabled)
@@ -761,6 +718,14 @@ void OpenGLLegacyInterface::setAntialiasing(bool aa)
 		glEnable(GL_MULTISAMPLE);
 	else
 		glDisable(GL_MULTISAMPLE);
+}
+
+void OpenGLLegacyInterface::setWireframe(bool enabled)
+{
+	if (enabled)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	else
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 std::vector<unsigned char> OpenGLLegacyInterface::getScreenshot()
@@ -844,6 +809,62 @@ int OpenGLLegacyInterface::getVRAMRemaining()
 		return nvidiaMemory;
 }
 
+void OpenGLLegacyInterface::onResolutionChange(Vector2 newResolution)
+{
+	// rebuild viewport
+	m_vResolution = newResolution;
+	glViewport(0, 0, m_vResolution.x, m_vResolution.y);
+}
+
+Image *OpenGLLegacyInterface::createImage(UString filePath, bool mipmapped)
+{
+	return new OpenGLImage(filePath, mipmapped);
+}
+
+Image *OpenGLLegacyInterface::createImage(int width, int height, bool clampToEdge)
+{
+	return new OpenGLImage(width, height, clampToEdge);
+}
+
+RenderTarget *OpenGLLegacyInterface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
+{
+	return new OpenGLRenderTarget(x, y, width, height, multiSampleType);
+}
+
+Shader *OpenGLLegacyInterface::createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath)
+{
+	return new OpenGLShader(vertexShaderFilePath, fragmentShaderFilePath, false);
+}
+
+Shader *OpenGLLegacyInterface::createShaderFromSource(UString vertexShader, UString fragmentShader)
+{
+	return new OpenGLShader(vertexShader, fragmentShader, true);
+}
+
+void OpenGLLegacyInterface::updateTransform()
+{
+	if (!m_bTransformUpToDate)
+	{
+		Matrix4 worldMatrixTemp = m_worldTransformStack.top();
+		Matrix4 projectionMatrixTemp = m_projectionTransformStack.top();
+
+		// 3d gui scenes
+		if (m_bIs3dScene)
+		{
+			worldMatrixTemp = m_3dSceneWorldMatrix * m_worldTransformStack.top();
+			projectionMatrixTemp = m_3dSceneProjectionMatrix;
+		}
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadMatrixf(projectionMatrixTemp.get());
+
+		glMatrixMode(GL_MODELVIEW);
+		glLoadMatrixf(worldMatrixTemp.get());
+
+		m_bTransformUpToDate = true;
+	}
+}
+
 void OpenGLLegacyInterface::handleGLErrors()
 {
 	int error = glGetError();
@@ -851,29 +872,23 @@ void OpenGLLegacyInterface::handleGLErrors()
 		debugLog("OpenGL Error: %i on frame %i\n",error,engine->getFrameCount());
 }
 
-
-
-//*************************************//
-//	OpenGLLegacyInterface ConCommands  //
-//*************************************//
-
-void _vsync(UString oldValue, UString newValue)
+int OpenGLLegacyInterface::primitiveToOpenGL(Graphics::PRIMITIVE primitive)
 {
-	if (newValue.length() < 1)
-		debugLog("Usage: 'vsync 1' to turn vsync on, 'vsync 0' to turn vsync off\n");
-	else
+	switch (primitive)
 	{
-		bool vsync = newValue.toFloat() > 0.0f;
-		engine->getGraphics()->setVSync(vsync);
+	case Graphics::PRIMITIVE::PRIMITIVE_LINES:
+		return GL_LINES;
+	case Graphics::PRIMITIVE::PRIMITIVE_LINE_STRIP:
+		return GL_LINE_STRIP;
+	case Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES:
+		return GL_TRIANGLES;
+	case Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN:
+		return GL_TRIANGLE_FAN;
+	case Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_STRIP:
+		return GL_TRIANGLE_STRIP;
+	case Graphics::PRIMITIVE::PRIMITIVE_QUADS:
+		return GL_QUADS;
 	}
-}
-void _mat_wireframe(UString oldValue, UString newValue)
-{
-	if (newValue.toFloat() > 0.0f)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	else
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-}
 
-ConVar __mat_wireframe("mat_wireframe", false, _mat_wireframe);
-ConVar __vsync("vsync", false, _vsync);
+	return GL_TRIANGLES;
+}

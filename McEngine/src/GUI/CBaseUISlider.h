@@ -6,6 +6,7 @@
 //===============================================================================//
 
 // TODO: fix vertical sliders
+// TODO: this entire class is a mess
 
 #ifndef CBASEUISLIDER_H
 #define CBASEUISLIDER_H
@@ -20,6 +21,8 @@ public:
 
 	virtual void draw(Graphics *g);
 	virtual void update();
+
+	virtual void onKeyDown(KeyboardEvent &e);
 
 	void forceCallCallback();
 
@@ -40,7 +43,8 @@ public:
 	void setAllowMouseWheel(bool allowMouseWheel) {m_bAllowMouseWheel = allowMouseWheel;}
 	void setAnimated(bool animated) {m_bAnimated = animated;}
 	void setLiveUpdate(bool liveUpdate) {m_bLiveUpdate = liveUpdate;}
-	void setBounds(float minValue, float maxValue) {m_fMinValue = minValue; m_fMaxValue = maxValue;}
+	void setBounds(float minValue, float maxValue);
+	void setKeyDelta(float keyDelta) {m_fKeyDelta = keyDelta;}
 	void setValue(float value, bool animate = true);
 	void setInitialValue(float value);
 
@@ -78,6 +82,8 @@ protected:
 
 	Vector2 m_vGrabBackup;
 	float m_fPrevValue;
+
+	float m_fKeyDelta;
 
 	SliderChangeCallback m_sliderChangeCallback;
 };

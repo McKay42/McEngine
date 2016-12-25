@@ -9,8 +9,29 @@
 #include "ResourceManager.h"
 #include "Environment.h"
 #include "Engine.h"
+#include "File.h"
 
 #include "lodepng.h"
+#include "jpeglib.h"
+
+#include <setjmp.h>
+
+struct jpegErrorManager
+{
+    // "public" fields
+    struct jpeg_error_mgr pub;
+
+    // for returning to the caller
+    jmp_buf setjmp_buffer;
+};
+
+char jpegLastErrorMsg[JMSG_LENGTH_MAX];
+void jpegErrorExit (j_common_ptr cinfo)
+{
+	jpegErrorManager *err = (jpegErrorManager*) cinfo->err;
+	( *(cinfo->err->format_message) ) (cinfo, jpegLastErrorMsg);
+	longjmp(err->setjmp_buffer, 1);
+}
 
 void Image::saveToImage(unsigned char *data, unsigned int width, unsigned int height, UString filepath)
 {
@@ -27,20 +48,26 @@ void Image::saveToImage(unsigned char *data, unsigned int width, unsigned int he
 	}
 }
 
-Image::Image(ResourceManager *loader, UString filepath, bool mipmapped) : Resource(loader,filepath)
+Image::Image(UString filepath, bool mipmapped) : Resource(filepath)
 {
 	m_bMipmapped = mipmapped;
-	m_bClampToEdge = false;
+	m_type = Image::TYPE::TYPE_PNG;
+	m_iNumChannels = 4;
 	m_iWidth = 0;
 	m_iHeight = 0;
+	m_bHasAlphaChannel = true;
 	m_bCreatedImage = false;
+	m_bClampToEdge = false;
 }
 
 Image::Image(int width, int height, bool clampToEdge) : Resource()
 {
 	m_bMipmapped = true;
+	m_type = Image::TYPE::TYPE_RGB;
+	m_iNumChannels = 4;
 	m_iWidth = width;
 	m_iHeight = height;
+	m_bHasAlphaChannel = true;
 	m_bCreatedImage = true;
 	m_bClampToEdge = clampToEdge;
 
@@ -54,17 +81,140 @@ Image::Image(int width, int height, bool clampToEdge) : Resource()
 		m_rawImage.push_back(255);
 	}
 
-	m_bReady = true;
+	m_bAsyncReady = true;
 }
 
-Image::~Image()
+bool Image::loadRawImage()
 {
-	m_rawImage = std::vector<unsigned char>();
+	// if it isn't a created image (created within the engine), load it from the corresponding file
+	if (!m_bCreatedImage)
+	{
+		if (!env->fileExists(m_sFilePath))
+		{
+			printf("Image Error: Couldn't find file %s !\n", m_sFilePath.toUtf8());
+			return false;
+		}
+
+		// load entire file
+		File file(m_sFilePath);
+		if (!file.canRead())
+		{
+			printf("Image Error: Couldn't canRead() %s !\n", m_sFilePath.toUtf8());
+			return false;
+		}
+		if (file.getFileSize() < 4)
+		{
+			printf("Image Error: FileSize is < 4 in %s !\n", m_sFilePath.toUtf8());
+			return false;
+		}
+		const char *data = file.readFile();
+		if (data == NULL)
+		{
+			printf("Image Error: Couldn't readFile() %s !\n", m_sFilePath.toUtf8());
+			return false;
+		}
+
+		// determine file type by magic number (png/jpg)
+		bool isJPEG = false;
+		bool isPNG = false;
+		unsigned char buf[4];
+		buf[0] = (unsigned char)data[0];
+		buf[1] = (unsigned char)data[1];
+		buf[2] = (unsigned char)data[2];
+		buf[3] = (unsigned char)data[3];
+		if (buf[0] == 0xff && buf[1] == 0xD8 && buf[2] == 0xff) // 0xFFD8FF
+			isJPEG = true;
+		else if (buf[0] == 0x89 && buf[1] == 0x50 && buf[2] == 0x4E && buf[3] == 0x47) // 0x89504E47 (%PNG)
+			isPNG = true;
+
+		// depending on the type, load either jpeg or png
+		if (isJPEG)
+		{
+			m_type = Image::TYPE::TYPE_JPG;
+
+			m_bHasAlphaChannel = false;
+
+			// decode jpeg
+			jpegErrorManager err;
+			jpeg_decompress_struct cinfo;
+
+			jpeg_create_decompress(&cinfo);
+			cinfo.err = jpeg_std_error(&err.pub); // FUCK YOU, PIECE OF SHIT LIBRARY, crashing due to a missing error handler ffs
+			err.pub.error_exit = jpegErrorExit;
+			if (setjmp(err.setjmp_buffer))
+			{
+			    jpeg_destroy_decompress(&cinfo);
+			    printf("Image Error: JPEG error (%s) on file %s\n", jpegLastErrorMsg, m_sFilePath.toUtf8());
+			    return false;
+			}
+
+			jpeg_mem_src(&cinfo, (unsigned char*)data, file.getFileSize());
+			int headerRes = jpeg_read_header(&cinfo, true);
+			if (headerRes != JPEG_HEADER_OK)
+			{
+				jpeg_destroy_decompress(&cinfo);
+				printf("Image Error: JPEG read_header() error %i on file %s\n", headerRes, m_sFilePath.toUtf8());
+				return false;
+			}
+
+			m_iWidth = cinfo.image_width;
+			m_iHeight = cinfo.image_height;
+			m_iNumChannels = cinfo.num_components;
+			if (m_iNumChannels == 4)
+				m_bHasAlphaChannel = true;
+
+			if (m_iWidth > 4096 || m_iHeight > 4096)
+			{
+				jpeg_destroy_decompress(&cinfo);
+				printf("Image Error: JPEG image size is too big (%i x %i)!\n", m_iWidth, m_iHeight);
+				return false;
+			}
+
+			//int rowStride = m_iWidth * m_iNumChannels;
+			//JSAMPARRAY buffer = (*cinfo.mem->alloc_sarray) ((j_common_ptr) &cinfo, JPOOL_IMAGE, rowStride, 1);
+
+			// extract each scanline of the image
+			jpeg_start_decompress(&cinfo);
+			m_rawImage.resize(m_iWidth*m_iHeight*m_iNumChannels);
+			JSAMPROW j;
+			for (int i=0; i<m_iHeight; ++i)
+			{
+				j = (&m_rawImage[0] + (i * m_iWidth * m_iNumChannels));
+				jpeg_read_scanlines(&cinfo, &j, 1);
+			}
+
+			jpeg_finish_decompress(&cinfo);
+			jpeg_destroy_decompress(&cinfo);
+		}
+		else if (isPNG)
+		{
+			m_type = Image::TYPE::TYPE_PNG;
+
+			unsigned int width = 0; // yes, these are here on purpose
+			unsigned int height = 0;
+			unsigned error = lodepng::decode(m_rawImage, width, height, (unsigned char*)data, file.getFileSize());
+			m_iWidth = width;
+			m_iHeight = height;
+			if (error)
+			{
+				printf("Image Error: PNG error %i (%s) on file %s\n", error, lodepng_error_text(error), m_sFilePath.toUtf8());
+				return false;
+			}
+		}
+		else
+		{
+			printf("Image Error, file %s it neither a PNG nor a JPEG image!\n", m_sFilePath.toUtf8());
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void Image::setPixel(int x, int y, Color color)
 {
-	if (!m_bReady || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1)) return;
+	if ((4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
+		return;
 
 	m_rawImage[4 * y * m_iWidth + 4 * x + 0] = COLOR_GET_Ri(color);
 	m_rawImage[4 * y * m_iWidth + 4 * x + 1] = COLOR_GET_Gi(color);
@@ -74,7 +224,8 @@ void Image::setPixel(int x, int y, Color color)
 
 Color Image::getPixel(int x, int y)
 {
-	if (!m_bReady || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1)) return 0xffffff00;
+	if ((4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
+		return 0xffffff00;
 
 	uint32_t r = m_rawImage[4 * y * m_iWidth + 4 * x + 0];
 	uint32_t g = m_rawImage[4 * y * m_iWidth + 4 * x + 1];

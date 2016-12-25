@@ -511,9 +511,14 @@ void CBaseUIScrollView::setScrollSizeToContent(int border)
 
 	m_container->setSize(m_vScrollSize);
 
-	updateScrollbars();
+	// TODO: duplicate code, ref onResized(), but can't call onResized() due to possible endless recursion if setScrollSizeToContent() within onResized()
+	// HACKHACK: shit code
+	if (m_bVerticalScrolling && m_vScrollSize.y < m_vSize.y && m_vScrollPos.y != 1)
+		scrollToY(1);
+	if (m_bHorizontalScrolling && m_vScrollSize.x < m_vSize.x && m_vScrollPos.x != 1)
+		scrollToX(1);
 
-	onResized(); // wtf, why is this here // now I remember, to force the scrollPos into the new scrollsize
+	updateScrollbars();
 }
 
 Vector2 CBaseUIScrollView::getVelocity()

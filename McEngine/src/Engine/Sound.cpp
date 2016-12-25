@@ -19,7 +19,7 @@
 
 DWORD CALLBACK soundFXCallbackProc(HSTREAM handle, void *buffer, DWORD length, void *user);
 
-Sound::Sound(ResourceManager *loader, UString filepath, bool stream, bool threeD, bool loop) : Resource(loader, filepath)
+Sound::Sound(UString filepath, bool stream, bool threeD, bool loop) : Resource(filepath)
 {
 	m_fVolume = 1.0f;
 	m_HSTREAM = 0;
@@ -178,8 +178,10 @@ void Sound::destroy()
 	}
 	else
 	{
-		BASS_ChannelStop(m_HCHANNEL);
-		BASS_SampleFree(m_HSTREAMBACKUP);
+		if (m_HCHANNEL)
+			BASS_ChannelStop(m_HCHANNEL);
+		if (m_HSTREAMBACKUP)
+			BASS_SampleFree(m_HSTREAMBACKUP);
 	}
 
 	m_HSTREAM = 0;
