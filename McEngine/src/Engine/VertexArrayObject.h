@@ -13,13 +13,6 @@
 class VertexArrayObject
 {
 public:
-	enum class PRIMITIVE
-	{
-		PRIMITIVE_TRIANGLES,
-		PRIMITIVE_TRIANGLE_FAN,
-		PRIMITIVE_QUADS
-	};
-
 	enum class USAGE
 	{
 		USAGE_STATIC,
@@ -27,7 +20,7 @@ public:
 		USAGE_STREAM
 	};
 
-	VertexArrayObject(VertexArrayObject::PRIMITIVE primitive = VertexArrayObject::PRIMITIVE::PRIMITIVE_TRIANGLES, VertexArrayObject::USAGE usage = VertexArrayObject::USAGE::USAGE_STATIC);
+	VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, VertexArrayObject::USAGE usage = VertexArrayObject::USAGE::USAGE_STATIC);
 	virtual ~VertexArrayObject();
 
 	void clear();
@@ -44,9 +37,9 @@ public:
 
 	void addColor(Color color);
 
-	void setType(VertexArrayObject::PRIMITIVE primitive);
+	void setType(Graphics::PRIMITIVE primitive);
 
-	inline PRIMITIVE getPrimitive() {return m_primitive;}
+	inline Graphics::PRIMITIVE getPrimitive() {return m_primitive;}
 	inline USAGE getUsage() {return m_usage;}
 
 	const std::vector<Vector3> &getVertices() const {return m_vertices;}
@@ -57,7 +50,7 @@ public:
 private:
 	void updateTexcoordArraySize(unsigned int textureUnit);
 
-	PRIMITIVE m_primitive;
+	Graphics::PRIMITIVE m_primitive;
 	USAGE m_usage;
 
 	std::vector<Vector3> m_vertices;

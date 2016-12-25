@@ -1,21 +1,21 @@
 //================ Copyright (c) 2016, PG, All rights reserved. =================//
 //
-// Purpose:		OpenGL implementation of Image
+// Purpose:		software rasterizer implementation of Image
 //
-// $NoKeywords: $glimg
+// $NoKeywords: $swimg
 //===============================================================================//
 
-#ifndef OPENGLIMAGE_H
-#define OPENGLIMAGE_H
+#ifndef SWIMAGE_H
+#define SWIMAGE_H
 
 #include "Image.h"
 
-class OpenGLImage : public Image
+class SWImage : public Image
 {
 public:
-	OpenGLImage(UString filepath, bool mipmapped = false);
-	OpenGLImage(int width, int height, bool clampToEdge = true);
-	virtual ~OpenGLImage() {destroy();}
+	SWImage(UString filepath, bool mipmapped = false);
+	SWImage(int width, int height, bool clampToEdge = true);
+	virtual ~SWImage() {destroy();}
 
 	void bind(unsigned int textureUnit = 0);
 	void unbind();
@@ -27,9 +27,6 @@ private:
 	void init();
 	void initAsync();
 	void destroy();
-
-	unsigned int m_GLTexture;
-	unsigned int m_iTextureUnitBackup;
 };
 
 #endif

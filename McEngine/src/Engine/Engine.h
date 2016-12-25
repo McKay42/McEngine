@@ -118,6 +118,7 @@ public:
 	inline unsigned long getFrameCount() const {return m_iFrameCount;}
 	inline bool hasFocus() const {return m_bHasFocus;}
 	inline bool isDrawing() const {return m_bDrawing;}
+	inline bool isMinimized() const {return m_bIsMinimized;}
 
 	// debugging/console
 	inline ConsoleBox *getConsoleBox() {return m_consoleBox;}

@@ -100,6 +100,16 @@ void OpenGLShader::setUniform2f(UString name, float value1, float value2)
 		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
 
+void OpenGLShader::setUniform2fv(UString name, int count, float *vectors)
+{
+	if (!m_bReady) return;
+	int id = glGetUniformLocationARB(m_iProgram, name.toUtf8());
+	if (id != -1)
+		glUniform2fv(id, count, (float*)&vectors[0]);
+	else if (debug_shaders->getBool())
+		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+}
+
 void OpenGLShader::setUniform3f(UString name, float x, float y, float z)
 {
 	if (!m_bReady) return;

@@ -1,20 +1,20 @@
 //================ Copyright (c) 2016, PG, All rights reserved. =================//
 //
-// Purpose:		OpenGL GLSL implementation of Shader
+// Purpose:		software rasterizer implementation of Shader
 //
-// $NoKeywords: $glshader
+// $NoKeywords: $swshader
 //===============================================================================//
 
-#ifndef OPENGLSHADER_H
-#define OPENGLSHADER_H
+#ifndef SWSHADER_H
+#define SWSHADER_H
 
 #include "Shader.h"
 
-class OpenGLShader : public Shader
+class SWShader : public Shader
 {
 public:
-	OpenGLShader(UString vertexShader, UString fragmentShader, bool source);
-	virtual ~OpenGLShader() {destroy();}
+	SWShader(UString vertexShader, UString fragmentShader, bool source);
+	virtual ~SWShader() {destroy();}
 
 	virtual void enable();
 	virtual void disable();
@@ -33,17 +33,6 @@ private:
 	virtual void init();
 	virtual void initAsync();
 	virtual void destroy();
-
-	bool compile(UString vertexShader, UString fragmentShader, bool source);
-	int createShaderFromString(UString shaderSource, int shaderType);
-	int createShaderFromFile(UString fileName, int shaderType);
-
-	UString m_sVsh, m_sFsh;
-
-	bool m_bSource;
-	int m_iVertexShader;
-	int m_iFragmentShader;
-	int m_iProgram;
 };
 
 #endif
