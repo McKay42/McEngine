@@ -21,71 +21,81 @@ public:
 	virtual ~VulkanGraphicsInterface();
 
 	// scene
-	void beginScene();
-	void endScene();
+	virtual void beginScene();
+	virtual void endScene();
+
+	// depth buffer
+	virtual void clearDepthBuffer();
 
 	// color
-	void setColor(Color color);
-	void setAlpha(float alpha);
+	virtual void setColor(Color color);
+	virtual void setAlpha(float alpha);
 
-	// drawing
-	void drawPixel(int x, int y);
-	void drawLine(int x1, int y1, int x2, int y2);
-	void drawLine(Vector2 pos1, Vector2 pos2);
-	void drawRect(int x, int y, int width, int height);
-	void drawRect(int x, int y, int width, int height, Color top, Color right, Color bottom, Color left);
+	// 2d primitive drawing
+	virtual void drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type, const void *pixels);
+	virtual void drawPixel(int x, int y);
+	virtual void drawLine(int x1, int y1, int x2, int y2);
+	virtual void drawLine(Vector2 pos1, Vector2 pos2);
+	virtual void drawRect(int x, int y, int width, int height);
+	virtual void drawRect(int x, int y, int width, int height, Color top, Color right, Color bottom, Color left);
 
-	void fillRect(int x, int y, int width, int height);
-	void fillRoundedRect(int x, int y, int width, int height, int radius);
-	void fillGradient(int x, int y, int width, int height, Color topLeftColor, Color topRightColor, Color bottomLeftColor, Color bottomRightColor);
+	virtual void fillRect(int x, int y, int width, int height);
+	virtual void fillRoundedRect(int x, int y, int width, int height, int radius);
+	virtual void fillGradient(int x, int y, int width, int height, Color topLeftColor, Color topRightColor, Color bottomLeftColor, Color bottomRightColor);
 
-	void drawQuad(int x, int y, int width, int height);
-	void drawQuad(Vector2 topLeft, Vector2 topRight, Vector2 bottomRight, Vector2 bottomLeft, Color topLeftColor, Color topRightColor, Color bottomRightColor, Color bottomLeftColor);
+	virtual void drawQuad(int x, int y, int width, int height);
+	virtual void drawQuad(Vector2 topLeft, Vector2 topRight, Vector2 bottomRight, Vector2 bottomLeft, Color topLeftColor, Color topRightColor, Color bottomRightColor, Color bottomLeftColor);
 
-	void drawImage(Image *image);
+	// 2d resource drawing
+	virtual void drawImage(Image *image);
+	virtual void drawString(McFont *font, UString text);
 
-	void drawString(McFont *font, UString text);
+	// 3d type drawing
+	virtual void drawVAO(VertexArrayObject *vao);
+	virtual void drawVB(VertexBuffer *vb);
 
-	// transforms
-	void translate(int x, int y);
-	void rotate(float deg);
-	void scale(float x, float y);
-
-	void pushTransform();
-	void popTransform();
-
-	// clipping
-	void setClipRect(Rect clipRect);
-	void pushClipRect(Rect clipRect);
-	void popClipRect();
+	// DEPRECATED: 2d clipping
+	virtual void setClipRect(Rect clipRect);
+	virtual void pushClipRect(Rect clipRect);
+	virtual void popClipRect();
 
 	// stencil
-	void pushStencil();
-	void fillStencil(bool inside);
-	void popStencil();
+	virtual void pushStencil();
+	virtual void fillStencil(bool inside);
+	virtual void popStencil();
 
-	// 3d gui scenes
-	void push3DScene(Rect region);
-	void pop3DScene();
-	void translate3DScene(float x, float y, float z);
-	void rotate3DScene(float rotx, float roty, float rotz);
-	void offset3DScene(float x, float y, float z);
+	// renderer settings
+	virtual void setClipping(bool enabled);
+	virtual void setBlending(bool enabled);
+	virtual void setDepthBuffer(bool enabled);
+	virtual void setCulling(bool culling);
+	virtual void setAntialiasing(bool aa);
+	virtual void setWireframe(bool enabled);
 
-	// device settings
-	void setCulling(bool culling);
-	void setVSync(bool vsync);
-	void setAntialiasing(bool aa);
+	// renderer actions
+	virtual std::vector<unsigned char> getScreenshot();
 
 	// renderer info
-	UString getVendor();
-	UString getModel();
-	UString getVersion();
-	int getVRAMTotal();
-	int getVRAMRemaining();
+	virtual Vector2 getResolution() const {return m_vResolution;}
+	virtual UString getVendor();
+	virtual UString getModel();
+	virtual UString getVersion();
+	virtual int getVRAMTotal();
+	virtual int getVRAMRemaining();
 
-	void onResolutionChange();
+	// callbacks
+	virtual void onResolutionChange(Vector2 newResolution);
+
+	// factory
+	virtual Image *createImage(UString filePath, bool mipmapped);
+	virtual Image *createImage(int width, int height, bool clampToEdge);
+	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
+	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);
+	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
 
 private:
+	// renderer
+	Vector2 m_vResolution;
 
 #ifdef MCENGINE_FEATURE_VULKAN
 

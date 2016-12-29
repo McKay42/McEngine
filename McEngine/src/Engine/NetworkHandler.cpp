@@ -131,7 +131,7 @@ NetworkHandler::~NetworkHandler()
 #endif
 }
 
-UString NetworkHandler::httpGet(UString url)
+UString NetworkHandler::httpGet(UString url, long timeout, long connectTimeout)
 {
 #ifdef MCENGINE_FEATURE_NETWORKING
 
@@ -141,8 +141,8 @@ UString NetworkHandler::httpGet(UString url)
 	{
 		curl_easy_setopt(curl, CURLOPT_URL, url.toUtf8());
 		curl_easy_setopt(curl, CURLOPT_USERAGENT, "User-Agent: McEngine");
-		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5);
-		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, connectTimeout);
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
 
 		// HACKHACK: TODO: aaaaaaaaaaaaaaaaaaaaaaaaaa
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);

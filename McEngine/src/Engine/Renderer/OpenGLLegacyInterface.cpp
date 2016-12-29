@@ -30,7 +30,7 @@
 #define TEXTURE_FREE_MEMORY_ATI                 0x87FC
 #define RENDERBUFFER_FREE_MEMORY_ATI            0x87FD
 
-OpenGLLegacyInterface::OpenGLLegacyInterface()
+OpenGLLegacyInterface::OpenGLLegacyInterface() : Graphics()
 {
 	// renderer
 	m_vResolution = engine->getScreenSize(); // initial viewport size = window size
@@ -40,15 +40,6 @@ OpenGLLegacyInterface::OpenGLLegacyInterface()
 	m_color = 0xffffffff;
 	m_fClearZ = 1;
 	m_fZ = 1;
-
-	// push identity
-	m_worldTransformStack.push(Matrix4());
-	m_projectionTransformStack.push(Matrix4());
-	m_bTransformUpToDate = false;
-
-	// push false
-	m_3dSceneStack.push(false);
-	m_bIs3dScene = false;
 }
 
 void OpenGLLegacyInterface::init()
@@ -127,24 +118,11 @@ void OpenGLLegacyInterface::endScene()
 {
 	popTransform();
 
-	if (m_worldTransformStack.size() > 1)
-	{
-		engine->showMessageErrorFatal("World Transform Stack Leak", "Make sure all push*() have a pop*()!");
-		engine->shutdown();
-	}
-	if (m_projectionTransformStack.size() > 1)
-	{
-		engine->showMessageErrorFatal("Projection Transform Stack Leak", "Make sure all push*() have a pop*()!");
-		engine->shutdown();
-	}
+	checkStackLeaks();
+
 	if (m_clipRectStack.size() > 0)
 	{
 		engine->showMessageErrorFatal("ClipRect Stack Leak", "Make sure all push*() have a pop*()!");
-		engine->shutdown();
-	}
-	if (m_3dSceneStack.size() > 1)
-	{
-		engine->showMessageErrorFatal("3DScene Stack Leak", "Make sure all push*() have a pop*()!");
 		engine->shutdown();
 	}
 }
@@ -437,82 +415,6 @@ void OpenGLLegacyInterface::drawVB(VertexBuffer *vb)
 	vb->draw(this);
 }
 
-void OpenGLLegacyInterface::pushTransform()
-{
-	m_worldTransformStack.push(Matrix4(m_worldTransformStack.top()));
-	m_projectionTransformStack.push(Matrix4(m_projectionTransformStack.top()));
-}
-
-void OpenGLLegacyInterface::popTransform()
-{
-	if (m_worldTransformStack.size() < 2)
-	{
-		engine->showMessageErrorFatal("World Transform Stack Underflow", "Too many pop*()s!");
-		engine->shutdown();
-		return;
-	}
-	if (m_projectionTransformStack.size() < 2)
-	{
-		engine->showMessageErrorFatal("Projection Transform Stack Underflow", "Too many pop*()s!");
-		engine->shutdown();
-		return;
-	}
-
-	m_worldTransformStack.pop();
-	m_projectionTransformStack.pop();
-	m_bTransformUpToDate = false;
-}
-
-void OpenGLLegacyInterface::translate(float x, float y, float z)
-{
-	m_worldTransformStack.top().translate(x, y, z);
-	m_bTransformUpToDate = false;
-}
-
-void OpenGLLegacyInterface::rotate(float deg, float x, float y, float z)
-{
-	m_worldTransformStack.top().rotate(deg, x, y, z);
-	m_bTransformUpToDate = false;
-}
-
-void OpenGLLegacyInterface::scale(float x, float y, float z)
-{
-	m_worldTransformStack.top().scale(x, y, z);
-	m_bTransformUpToDate = false;
-}
-
-void OpenGLLegacyInterface::setWorldMatrix(Matrix4 &worldMatrix)
-{
-	m_worldTransformStack.pop();
-	m_worldTransformStack.push(worldMatrix);
-	m_bTransformUpToDate = false;
-}
-
-void OpenGLLegacyInterface::setWorldMatrixMul(Matrix4 &worldMatrix)
-{
-	Matrix4 newWorldMatrix = m_worldTransformStack.top() * worldMatrix;
-	m_worldTransformStack.pop();
-	m_worldTransformStack.push(newWorldMatrix);
-	m_bTransformUpToDate = false;
-}
-
-void OpenGLLegacyInterface::setProjectionMatrix(Matrix4 &projectionMatrix)
-{
-	m_projectionTransformStack.pop();
-	m_projectionTransformStack.push(projectionMatrix);
-	m_bTransformUpToDate = false;
-}
-
-Matrix4 OpenGLLegacyInterface::getWorldMatrix()
-{
-	return m_worldTransformStack.top();
-}
-
-Matrix4 OpenGLLegacyInterface::getProjectionMatrix()
-{
-	return m_projectionTransformStack.top();
-}
-
 void OpenGLLegacyInterface::setClipRect(Rect clipRect)
 {
 	if (r_debug_disable_cliprect->getBool()) return;
@@ -573,107 +475,6 @@ void OpenGLLegacyInterface::fillStencil(bool inside)
 void OpenGLLegacyInterface::popStencil()
 {
 	glDisable(GL_STENCIL_TEST);
-}
-
-void OpenGLLegacyInterface::push3DScene(Rect region)
-{
-	if (r_debug_disable_3dscene->getBool()) return;
-
-	// you can't yet stack 3d scenes!
-	if (m_3dSceneStack.top())
-	{
-		m_3dSceneStack.push(false);
-		return;
-	}
-
-	// reset & init
-	m_v3dSceneOffset.x = m_v3dSceneOffset.y = m_v3dSceneOffset.z = 0;
-	float m_fFov = 60.0f;
-
-	// push true, set region
-	m_bIs3dScene = true;
-	m_3dSceneStack.push(true);
-	m_3dSceneRegion = region;
-
-	// backup transforms
-	pushTransform();
-
-	// calculate height to fit viewport angle
-	float angle = (180.0f - m_fFov) / 2.0f;
-	float b = (engine->getScreenHeight() / std::sin(deg2rad(m_fFov))) * std::sin(deg2rad(angle));
-	float hc = std::sqrt(std::pow(b,2.0f) - std::pow((engine->getScreenHeight()/2.0f), 2.0f)); // thank mr pythagoras/monstrata
-
-	// set projection matrix
-	Matrix4 trans2 = Matrix4().translate(-1 + (region.getWidth()) / (float)engine->getScreenWidth() + (region.getX()*2) / (float)engine->getScreenWidth(), 1 - region.getHeight() / (float)engine->getScreenHeight() - (region.getY()*2) / (float)engine->getScreenHeight(), 0);
-	Matrix4 projectionMatrix = trans2 * Camera::buildMatrixPerspectiveFov(deg2rad(m_fFov),((float) engine->getScreenWidth())/((float) engine->getScreenHeight()), -10.0f, 10.0f);
-	m_3dSceneProjectionMatrix = projectionMatrix;
-
-	// set world matrix
-	Matrix4 trans = Matrix4().translate(-(float)region.getWidth()/2 - region.getX(), -(float)region.getHeight()/2 - region.getY(), 0);
-	m_3dSceneWorldMatrix = Camera::buildMatrixLookAt(Vector3(0, 0, -hc), Vector3(0, 0, 0), Vector3(0, -1, 0)) * trans;
-
-	// force transform update
-	m_bTransformUpToDate = false;
-	updateTransform();
-}
-
-void OpenGLLegacyInterface::pop3DScene()
-{
-	if (!m_3dSceneStack.top())
-		return;
-
-	m_3dSceneStack.pop();
-
-	// restore transforms
-	popTransform();
-
-	m_bIs3dScene = false;
-}
-
-void OpenGLLegacyInterface::translate3DScene(float x, float y, float z)
-{
-	// block if we're not in a 3d scene
-	if (!m_3dSceneStack.top())
-		return;
-
-	// translate directly
-	m_3dSceneWorldMatrix.translate(x,y,z);
-
-	m_bTransformUpToDate = false;
-	updateTransform();
-}
-
-void OpenGLLegacyInterface::rotate3DScene(float rotx, float roty, float rotz)
-{
-	// block if we're not in a 3d scene
-	if (!m_3dSceneStack.top())
-		return;
-
-	// first translate to the center of the 3d region, then rotate, then translate back
-	Matrix4 rot;
-	Vector3 centerVec = Vector3(m_3dSceneRegion.getX()+m_3dSceneRegion.getWidth()/2 + m_v3dSceneOffset.x, m_3dSceneRegion.getY()+m_3dSceneRegion.getHeight()/2 + m_v3dSceneOffset.y, m_v3dSceneOffset.z);
-	rot.translate(-centerVec);
-
-	// rotate
-	if (rotx != 0)
-		rot.rotateX(-rotx);
-	if (roty != 0)
-		rot.rotateY(-roty);
-	if (rotz != 0)
-		rot.rotateZ(-rotz);
-
-	rot.translate(centerVec);
-
-	// apply the rotation
-	m_3dSceneWorldMatrix = m_3dSceneWorldMatrix * rot;
-
-	m_bTransformUpToDate = false;
-	updateTransform();
-}
-
-void OpenGLLegacyInterface::offset3DScene(float x, float y, float z)
-{
-	m_v3dSceneOffset = Vector3(x,y,z);
 }
 
 void OpenGLLegacyInterface::setClipping(bool enabled)
@@ -752,7 +553,7 @@ std::vector<unsigned char> OpenGLLegacyInterface::getScreenshot()
 	}
 
 	// copy to vector
-	result.reserve(numElements);
+	result.resize(numElements);
 	result.assign(pixels, pixels + numElements);
 	delete[] pixels;
 
@@ -841,35 +642,13 @@ Shader *OpenGLLegacyInterface::createShaderFromSource(UString vertexShader, UStr
 	return new OpenGLShader(vertexShader, fragmentShader, true);
 }
 
-void OpenGLLegacyInterface::updateTransform()
+void OpenGLLegacyInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)
 {
-	if (!m_bTransformUpToDate)
-	{
-		Matrix4 worldMatrixTemp = m_worldTransformStack.top();
-		Matrix4 projectionMatrixTemp = m_projectionTransformStack.top();
+	glMatrixMode(GL_PROJECTION);
+	glLoadMatrixf(projectionMatrix.get());
 
-		// 3d gui scenes
-		if (m_bIs3dScene)
-		{
-			worldMatrixTemp = m_3dSceneWorldMatrix * m_worldTransformStack.top();
-			projectionMatrixTemp = m_3dSceneProjectionMatrix;
-		}
-
-		glMatrixMode(GL_PROJECTION);
-		glLoadMatrixf(projectionMatrixTemp.get());
-
-		glMatrixMode(GL_MODELVIEW);
-		glLoadMatrixf(worldMatrixTemp.get());
-
-		m_bTransformUpToDate = true;
-	}
-}
-
-void OpenGLLegacyInterface::handleGLErrors()
-{
-	int error = glGetError();
-	if (error != 0)
-		debugLog("OpenGL Error: %i on frame %i\n",error,engine->getFrameCount());
+	glMatrixMode(GL_MODELVIEW);
+	glLoadMatrixf(worldMatrix.get());
 }
 
 int OpenGLLegacyInterface::primitiveToOpenGL(Graphics::PRIMITIVE primitive)
@@ -891,4 +670,11 @@ int OpenGLLegacyInterface::primitiveToOpenGL(Graphics::PRIMITIVE primitive)
 	}
 
 	return GL_TRIANGLES;
+}
+
+void OpenGLLegacyInterface::handleGLErrors()
+{
+	int error = glGetError();
+	if (error != 0)
+		debugLog("OpenGL Error: %i on frame %i\n",error,engine->getFrameCount());
 }
