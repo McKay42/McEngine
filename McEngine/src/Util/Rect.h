@@ -8,7 +8,6 @@
 #ifndef RECT_H
 #define RECT_H
 
-#include "cbase.h"
 #include "Vectors.h"
 
 class Rect

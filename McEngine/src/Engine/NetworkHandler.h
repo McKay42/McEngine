@@ -23,7 +23,7 @@ public:
 	~NetworkHandler();
 
 	// curl stuff
-	UString httpGet(UString url);
+	UString httpGet(UString url, long timeout = 5, long connectTimeout = 5);
 
 
 	// client/server stuff
