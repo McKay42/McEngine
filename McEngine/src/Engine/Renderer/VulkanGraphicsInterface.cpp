@@ -324,9 +324,13 @@ VulkanGraphicsInterface::~VulkanGraphicsInterface()
 
 void VulkanGraphicsInterface::beginScene()
 {
-
 }
+
 void VulkanGraphicsInterface::endScene()
+{
+}
+
+void VulkanGraphicsInterface::clearDepthBuffer()
 {
 }
 
@@ -336,7 +340,10 @@ void VulkanGraphicsInterface::setColor(Color color)
 
 void VulkanGraphicsInterface::setAlpha(float alpha)
 {
+}
 
+void VulkanGraphicsInterface::drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type, const void *pixels)
+{
 }
 
 void VulkanGraphicsInterface::drawPixel(int x, int y)
@@ -387,23 +394,11 @@ void VulkanGraphicsInterface::drawString(McFont *font, UString text)
 {
 }
 
-void VulkanGraphicsInterface::translate(int x, int y)
+void VulkanGraphicsInterface::drawVAO(VertexArrayObject *vao)
 {
 }
 
-void VulkanGraphicsInterface::rotate(float deg)
-{
-}
-
-void VulkanGraphicsInterface::scale(float x, float y)
-{
-}
-
-void VulkanGraphicsInterface::pushTransform()
-{
-}
-
-void VulkanGraphicsInterface::popTransform()
+void VulkanGraphicsInterface::drawVB(VertexBuffer *vb)
 {
 }
 
@@ -431,23 +426,15 @@ void VulkanGraphicsInterface::popStencil()
 {
 }
 
-void VulkanGraphicsInterface::push3DScene(Rect region)
+void VulkanGraphicsInterface::setClipping(bool enabled)
 {
 }
 
-void VulkanGraphicsInterface::pop3DScene()
+void VulkanGraphicsInterface::setBlending(bool enabled)
 {
 }
 
-void VulkanGraphicsInterface::translate3DScene(float x, float y, float z)
-{
-}
-
-void VulkanGraphicsInterface::rotate3DScene(float rotx, float roty, float rotz)
-{
-}
-
-void VulkanGraphicsInterface::offset3DScene(float x, float y, float z)
+void VulkanGraphicsInterface::setDepthBuffer(bool enabled)
 {
 }
 
@@ -455,12 +442,17 @@ void VulkanGraphicsInterface::setCulling(bool culling)
 {
 }
 
-void VulkanGraphicsInterface::setVSync(bool vsync)
+void VulkanGraphicsInterface::setAntialiasing(bool aa)
 {
 }
 
-void VulkanGraphicsInterface::setAntialiasing(bool aa)
+void VulkanGraphicsInterface::setWireframe(bool enabled)
 {
+}
+
+std::vector<unsigned char> VulkanGraphicsInterface::getScreenshot()
+{
+	return std::vector<unsigned char>();
 }
 
 UString VulkanGraphicsInterface::getVendor()
@@ -488,8 +480,34 @@ int VulkanGraphicsInterface::getVRAMRemaining()
 	return -1;
 }
 
-void VulkanGraphicsInterface::onResolutionChange()
+void VulkanGraphicsInterface::onResolutionChange(Vector2 newResolution)
 {
+	m_vResolution = newResolution;
+}
+
+Image *VulkanGraphicsInterface::createImage(UString filePath, bool mipmapped)
+{
+	return NULL;
+}
+
+Image *VulkanGraphicsInterface::createImage(int width, int height, bool clampToEdge)
+{
+	return NULL;
+}
+
+RenderTarget *VulkanGraphicsInterface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
+{
+	return NULL;
+}
+
+Shader *VulkanGraphicsInterface::createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath)
+{
+	return NULL;
+}
+
+Shader *VulkanGraphicsInterface::createShaderFromSource(UString vertexShader, UString fragmentShader)
+{
+	return NULL;
 }
 
 #ifdef MCENGINE_FEATURE_VULKAN

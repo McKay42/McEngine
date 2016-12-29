@@ -9,11 +9,13 @@
 #define GRAPHICS_H
 
 #include <vector>
+#include <stack>
+
+#include "Rect.h"
+#include "Matrices.h"
+#include "Vectors.h"
 
 class UString;
-class Vector2;
-class Matrix4;
-class Rect;
 
 class Image;
 class McFont;
@@ -30,9 +32,6 @@ typedef unsigned long Color;
 class Graphics
 {
 public:
-	Graphics() {}
-	virtual ~Graphics() {}
-
 	enum class PRIMITIVE
 	{
 		PRIMITIVE_LINES,
@@ -71,6 +70,10 @@ public:
 		FILTER_MODE_MIPMAP
 	};
 
+public:
+	Graphics();
+	virtual ~Graphics() {}
+
 	// scene
 	virtual void beginScene() = 0;
 	virtual void endScene() = 0;
@@ -105,21 +108,6 @@ public:
 	virtual void drawVAO(VertexArrayObject *vao) = 0;
 	virtual void drawVB(VertexBuffer *vb) = 0;
 
-	// matrices & transforms
-	virtual void pushTransform() = 0;
-	virtual void popTransform() = 0;
-
-	virtual void translate(float x, float y, float z = 0) = 0;
-	virtual void rotate(float deg, float x = 0, float y = 0, float z = 1) = 0;
-	virtual void scale(float x, float y, float z = 1) = 0;
-
-	virtual void setWorldMatrix(Matrix4 &worldMatrix) = 0;
-	virtual void setWorldMatrixMul(Matrix4 &worldMatrix) = 0;
-	virtual void setProjectionMatrix(Matrix4 &projectionMatrix) = 0;
-
-	virtual Matrix4 getWorldMatrix() = 0;
-	virtual Matrix4 getProjectionMatrix() = 0;
-
 	// DEPRECATED: 2d clipping
 	virtual void setClipRect(Rect clipRect) = 0;
 	virtual void pushClipRect(Rect clipRect) = 0;
@@ -129,13 +117,6 @@ public:
 	virtual void pushStencil() = 0;
 	virtual void fillStencil(bool inside) = 0;
 	virtual void popStencil() = 0;
-
-	// 3d gui scenes
-	virtual void push3DScene(Rect region) = 0;
-	virtual void pop3DScene() = 0;
-	virtual void translate3DScene(float x, float y, float z) = 0;
-	virtual void rotate3DScene(float rotx, float roty, float rotz) = 0;
-	virtual void offset3DScene(float x, float y, float z) = 0;
 
 	// renderer settings
 	virtual void setClipping(bool enabled) = 0;
@@ -167,8 +148,30 @@ public:
 	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath) = 0;
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader) = 0;
 
-protected:
-	virtual void init() = 0; // must be called after the OS implementation constructor
+public:
+	// provided core functions (api independent)
+
+	// matrices & transforms
+	void pushTransform();
+	void popTransform();
+
+	void translate(float x, float y, float z = 0);
+	void rotate(float deg, float x = 0, float y = 0, float z = 1);
+	void scale(float x, float y, float z = 1);
+
+	void setWorldMatrix(Matrix4 &worldMatrix);
+	void setWorldMatrixMul(Matrix4 &worldMatrix);
+	void setProjectionMatrix(Matrix4 &projectionMatrix);
+
+	Matrix4 getWorldMatrix();
+	Matrix4 getProjectionMatrix();
+
+	// 3d gui scenes
+	void push3DScene(Rect region);
+	void pop3DScene();
+	void translate3DScene(float x, float y, float z = 0);
+	void rotate3DScene(float rotx, float roty, float rotz);
+	void offset3DScene(float x, float y, float z = 0);
 
 protected:
 	static ConVar *r_globaloffset_x;
@@ -177,6 +180,27 @@ protected:
 	static ConVar *r_debug_disable_3dscene;
 	static ConVar *r_debug_flush_drawstring;
 	static ConVar *r_debug_drawimage;
+
+protected:
+	virtual void init() = 0; // must be called after the OS implementation constructor
+	virtual void onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix) = 0; // called if the matrices have changed and need to be applied
+
+	void updateTransform(bool force = false);
+
+	void checkStackLeaks();
+
+	// transforms
+	bool m_bTransformUpToDate;
+	std::stack<Matrix4> m_worldTransformStack;
+	std::stack<Matrix4> m_projectionTransformStack;
+
+	// 3d gui scenes
+	bool m_bIs3dScene;
+	std::stack<bool> m_3dSceneStack;
+	Rect m_3dSceneRegion;
+	Vector3 m_v3dSceneOffset;
+	Matrix4 m_3dSceneWorldMatrix;
+	Matrix4 m_3dSceneProjectionMatrix;
 };
 
 #endif
