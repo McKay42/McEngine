@@ -9,7 +9,6 @@
 #define LEGACYOPENGLINTERFACE_H
 
 #include "Graphics.h"
-#include "cbase.h"
 
 class OpenGLLegacyInterface : public Graphics
 {
@@ -51,21 +50,6 @@ public:
 	virtual void drawVAO(VertexArrayObject *vao);
 	virtual void drawVB(VertexBuffer *vb);
 
-	// matrices & transforms
-	virtual void pushTransform();
-	virtual void popTransform();
-
-	virtual void translate(float x, float y, float z = 0);
-	virtual void rotate(float deg, float x, float y, float z = 1);
-	virtual void scale(float x, float y, float z = 1);
-
-	virtual void setWorldMatrix(Matrix4 &worldMatrix);
-	virtual void setWorldMatrixMul(Matrix4 &worldMatrix);
-	virtual void setProjectionMatrix(Matrix4 &projectionMatrix);
-
-	virtual Matrix4 getWorldMatrix();
-	virtual Matrix4 getProjectionMatrix();
-
 	// DEPRECATED: 2d clipping
 	virtual void setClipRect(Rect clipRect);
 	virtual void pushClipRect(Rect clipRect);
@@ -75,13 +59,6 @@ public:
 	virtual void pushStencil();
 	virtual void fillStencil(bool inside);
 	virtual void popStencil();
-
-	// 3d gui scenes
-	virtual void push3DScene(Rect region);
-	virtual void pop3DScene();
-	virtual void translate3DScene(float x, float y, float z);
-	virtual void rotate3DScene(float rotx, float roty, float rotz);
-	virtual void offset3DScene(float x, float y, float z);
 
 	// renderer settings
 	virtual void setClipping(bool enabled);
@@ -115,19 +92,15 @@ public:
 protected:
 	void init();
 
+	virtual void onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix);
+
 private:
 	static int primitiveToOpenGL(Graphics::PRIMITIVE primitive);
 
-	void updateTransform();
 	void handleGLErrors();
 
 	// renderer
 	Vector2 m_vResolution;
-
-	// transforms
-	bool m_bTransformUpToDate;
-	std::stack<Matrix4> m_worldTransformStack;
-	std::stack<Matrix4> m_projectionTransformStack;
 
 	// persistent vars
 	bool m_bAntiAliasing;
@@ -137,14 +110,6 @@ private:
 
 	// clipping
 	std::stack<Rect> m_clipRectStack;
-
-	// 3d gui scenes
-	bool m_bIs3dScene;
-	std::stack<bool> m_3dSceneStack;
-	Rect m_3dSceneRegion;
-	Vector3 m_v3dSceneOffset;
-	Matrix4 m_3dSceneWorldMatrix;
-	Matrix4 m_3dSceneProjectionMatrix;
 };
 
 #endif
