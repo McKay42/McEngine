@@ -66,7 +66,7 @@ void OpenVRController::triggerHapticPulse(unsigned short durationMicroSec, OpenV
 
 	if (m_hmd == NULL) return;
 
-	m_hmd->TriggerHapticPulse(m_hmd->GetTrackedDeviceIndexForControllerRole(roleIdToOpenVR(m_role)), buttonIdToOpenVR(button), durationMicroSec);
+	m_hmd->TriggerHapticPulse(m_hmd->GetTrackedDeviceIndexForControllerRole(roleIdToOpenVR(m_role)), buttonIdToOpenVR(button) - vr::EVRButtonId::k_EButton_Axis0, durationMicroSec);
 
 #endif
 }

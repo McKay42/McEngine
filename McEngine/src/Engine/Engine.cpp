@@ -26,6 +26,8 @@
 
 #include "VulkanGraphicsInterface.h"
 
+#include "NullGraphicsInterface.h"
+
 #include "OpenCLInterface.h"
 #include "OpenVRInterface.h"
 #include "VulkanInterface.h"
