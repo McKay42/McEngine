@@ -24,12 +24,18 @@
 class Shader;
 class Camera;
 class RenderTarget;
-
 class OpenVRController;
+
 class CGLRenderModel;
 
 class OpenVRInterface : public KeyboardListener
 {
+public:
+	struct PLAY_AREA_RECT
+	{
+		Vector3 corners[4];
+	};
+
 public:
 	OpenVRInterface();
 	virtual ~OpenVRInterface();
@@ -39,7 +45,7 @@ public:
 
 	virtual void onKeyDown(KeyboardEvent &e);
 	virtual void onKeyUp(KeyboardEvent &e);
-	virtual void onChar(KeyboardEvent &e) {;}
+	virtual void onChar(KeyboardEvent &e);
 
 	void onResolutionChange(Vector2 newResolution);
 
@@ -54,6 +60,9 @@ public:
 	inline OpenVRController *getLeftController() {return m_controllerLeft;}
 	inline OpenVRController *getRightController() {return m_controllerRight;}
 
+	inline Vector2 getPlayAreaSize() {return m_vPlayAreaSize;}
+	inline PLAY_AREA_RECT getPlayAreaRect() {return m_playAreaRect;}
+
 	inline bool isReady() const {return m_bReady;}
 
 private:
@@ -67,7 +76,9 @@ private:
 	bool initShaders();
 
 	void renderStereoTargets(Graphics *g);
+	void renderSpectatorTarget(Graphics *g);
 	void renderScene(Graphics *g, vr::Hmd_Eye eye);
+	void renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 &matCurrentM, Matrix4 &matCurrentP, Matrix4 &matCurrentVP, Matrix4 &matCurrentMVP);
 	void renderStereoToWindow(Graphics *g);
 
 	void updateControllerAxes(); // for debugging
@@ -123,6 +134,10 @@ private:
 	RenderTarget *m_rightEye;
 	RenderTarget *m_debugOverlay;
 
+	// play area
+	Vector2 m_vPlayAreaSize;
+	PLAY_AREA_RECT m_playAreaRect;
+
 	// debugging
 	Camera *m_fakeCamera;
 	bool m_bWDown;
@@ -163,6 +178,9 @@ private:
 	GLuint m_glControllerVertBuffer;
 	GLuint m_unControllerVAO;
 	unsigned int m_uiControllerVertcount;
+
+	// misc
+	bool m_bSteamVRBugWorkaroundDelayedSSChange;
 
 #endif
 };

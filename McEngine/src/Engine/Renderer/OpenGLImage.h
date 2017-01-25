@@ -17,16 +17,16 @@ public:
 	OpenGLImage(int width, int height, bool clampToEdge = true);
 	virtual ~OpenGLImage() {destroy();}
 
-	void bind(unsigned int textureUnit = 0);
-	void unbind();
+	virtual void bind(unsigned int textureUnit = 0);
+	virtual void unbind();
 
-	void setFilterMode(Graphics::FILTER_MODE filterMode);
-	void setWrapMode(Graphics::WRAP_MODE wrapMode);
+	virtual void setFilterMode(Graphics::FILTER_MODE filterMode);
+	virtual void setWrapMode(Graphics::WRAP_MODE wrapMode);
 
 private:
-	void init();
-	void initAsync();
-	void destroy();
+	virtual void init();
+	virtual void initAsync();
+	virtual void destroy();
 
 	unsigned int m_GLTexture;
 	unsigned int m_iTextureUnitBackup;
