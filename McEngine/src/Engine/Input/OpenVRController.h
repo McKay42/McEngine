@@ -61,6 +61,8 @@ public:
 	void update(uint64_t buttonPressed, uint64_t buttonTouched, vr::VRControllerAxis_t axes[vr::k_unControllerStateAxisCount]);
 	void updateMatrixPose(Matrix4 &deviceToAbsoluteTracking);
 
+	void setHmd(vr::IVRSystem *hmd) {m_hmd = hmd;}
+
 #endif
 
 	void triggerHapticPulse(unsigned short durationMicroSec = 500, OpenVRController::BUTTON button = OpenVRController::BUTTON::BUTTON_STEAMVR_TOUCHPAD);

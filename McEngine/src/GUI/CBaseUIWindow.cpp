@@ -32,7 +32,7 @@ CBaseUIWindow::CBaseUIWindow(float xPos, float yPos, float xSize, float ySize, U
 
 	// titlebar
 	m_bDrawTitleBarLine = true;
-	m_titleFont = rc->loadFont("mssans.ttf", "FONT_WINDOW_TITLE", 13.0f);
+	m_titleFont = rc->loadFont("weblysleekuisb.ttf", "FONT_WINDOW_TITLE", 13.0f);
 	m_iTitleBarHeight = m_titleFont->getHeight()+12;
 	if (m_iTitleBarHeight < titleBarButtonSize)
 		m_iTitleBarHeight = titleBarButtonSize + 4;
@@ -78,7 +78,7 @@ CBaseUIWindow::CBaseUIWindow(float xPos, float yPos, float xSize, float ySize, U
 	m_bRoundedRectangle = false;
 
 	// test features
-	m_rt = engine->getResourceManager()->createRenderTarget(m_vPos.x, m_vPos.y, m_vSize.x+1, m_vSize.y+1);
+	//m_rt = engine->getResourceManager()->createRenderTarget(m_vPos.x, m_vPos.y, m_vSize.x+1, m_vSize.y+1);
 	//float shadowRadius = ui_window_shadow_radius.getInt();
 	///m_shadow = new CBaseUIBoxShadow(0xff000000, shadowRadius, m_vPos.x-shadowRadius, m_vPos.y-shadowRadius, m_vSize.x+shadowRadius*2, m_vSize.y+shadowRadius*2+4, "windowshadow");
 
@@ -123,8 +123,8 @@ void CBaseUIWindow::draw(Graphics *g)
 	*/
 
 	// draw window
-	if (anim->isAnimating(&m_fAnimation) && !m_bCoherenceMode)
-		m_rt->enable();
+	//if (anim->isAnimating(&m_fAnimation) && !m_bCoherenceMode)
+	//	m_rt->enable();
 
 	{
 		// draw background
@@ -206,6 +206,7 @@ void CBaseUIWindow::draw(Graphics *g)
 	// TODO: structure
 	if (anim->isAnimating(&m_fAnimation) && !m_bCoherenceMode)
 	{
+		/*
 		m_rt->disable();
 
 
@@ -216,6 +217,7 @@ void CBaseUIWindow::draw(Graphics *g)
 			g->translate3DScene(0, 0, -(1-m_fAnimation)*100);
 			m_rt->draw(g, m_vPos.x, m_vPos.y);
 		g->pop3DScene();
+		*/
 	}
 }
 
@@ -517,8 +519,8 @@ void CBaseUIWindow::onMoved()
 	m_container->setPos(m_vPos.x, m_vPos.y + m_titleBarContainer->getSize().y);
 	updateTitleBarMetrics();
 
-	if (!m_bCoherenceMode)
-		m_rt->setPos(m_vPos);
+	//if (!m_bCoherenceMode)
+	//	m_rt->setPos(m_vPos);
 	///m_shadow->setPos(m_vPos.x-m_shadow->getRadius(), m_vPos.y-m_shadow->getRadius());
 }
 
@@ -527,8 +529,8 @@ void CBaseUIWindow::onResized()
 	updateTitleBarMetrics();
 	m_container->setSize(m_vSize.x, m_vSize.y - m_titleBarContainer->getSize().y);
 
-	if (!m_bCoherenceMode)
-		m_rt->rebuild(m_vPos.x, m_vPos.y, m_vSize.x+1, m_vSize.y+1);
+	//if (!m_bCoherenceMode)
+	//	m_rt->rebuild(m_vPos.x, m_vPos.y, m_vSize.x+1, m_vSize.y+1);
 	///m_shadow->setSize(m_vSize.x+m_shadow->getRadius()*2, m_vSize.y+m_shadow->getRadius()*2+4);
 }
 

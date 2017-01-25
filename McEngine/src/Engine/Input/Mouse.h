@@ -57,6 +57,8 @@ public:
 	inline int getWheelDeltaHorizontal() const {return m_iWheelDeltaHorizontal;}
 
 private:
+	void setPosXY(float x, float y); // shit hack
+
 	Vector2 m_vPos;
 	Vector2 m_vPrevPos;
 	Vector2 m_vDelta;
@@ -82,6 +84,14 @@ private:
 	Vector2 m_vOffset;
 	Vector2 m_vScale;
 	Rect desktopRect;
+
+	struct FAKELAG_PACKET
+	{
+		float time;
+		Vector2 pos;
+	};
+	std::vector<FAKELAG_PACKET> m_fakelagBuffer;
+	Vector2 m_vFakeLagPos;
 };
 
 #endif

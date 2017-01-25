@@ -16,6 +16,7 @@ ConVar debug_mouse("debug_mouse", false);
 ConVar mouse_sensitivity("mouse_sensitivity", 1.0f);
 ConVar mouse_raw_input("mouse_raw_input", false);
 ConVar mouse_raw_input_absolute_to_window("mouse_raw_input_absolute_to_window", false);
+ConVar mouse_fakelag("mouse_fakelag", 0.000f);
 
 Mouse::Mouse() : InputDevice()
 {
@@ -266,6 +267,37 @@ void Mouse::onPosChange(Vector2 pos)
 	m_vPos.y = (int)m_vPos.y;
 
 	m_vPrevPos = m_vActualPos = m_vPos;
+
+	setPosXY(m_vPos.x, m_vPos.y);
+}
+
+void Mouse::setPosXY(float x, float y)
+{
+	if (mouse_fakelag.getFloat() > 0.0f)
+	{
+		FAKELAG_PACKET p;
+		p.time = engine->getTime() + mouse_fakelag.getFloat();
+		p.pos = Vector2(x, y);
+		m_fakelagBuffer.push_back(p);
+
+		float engineTime = engine->getTime();
+		for (int i=0; i<m_fakelagBuffer.size(); i++)
+		{
+			if (engineTime > m_fakelagBuffer[i].time)
+			{
+				m_vFakeLagPos = m_fakelagBuffer[i].pos;
+
+				m_fakelagBuffer.erase(m_fakelagBuffer.begin() + i);
+				i--;
+			}
+		}
+		m_vPos = m_vFakeLagPos;
+	}
+	else
+	{
+		m_vPos.x = x;
+		m_vPos.y = y;
+	}
 }
 
 void Mouse::onRawMove(int xDelta, int yDelta, bool absolute, bool virtualDesktop)
@@ -334,6 +366,7 @@ void Mouse::onRightChange(bool rightDown)
 
 void Mouse::setPos(Vector2 newPos)
 {
+	setPosXY(newPos.x, newPos.y);
 	env->setMousePos(newPos.x, newPos.y);
 }
 
