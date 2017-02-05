@@ -71,6 +71,7 @@ public:
 
 
 	// renderer actions
+	virtual void flush() {;}
 	virtual std::vector<unsigned char> getScreenshot() {return std::vector<unsigned char>();}
 
 	// renderer info
