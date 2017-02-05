@@ -33,6 +33,15 @@ void ConVar::init()
 	m_bHasValue = true;
 }
 
+void ConVar::init(UString name)
+{
+	init();
+
+	m_sName = name;
+
+	m_bHasValue = false;
+}
+
 void ConVar::init(UString name, ConVarCallback callback)
 {
 	init();
@@ -60,7 +69,7 @@ void ConVar::init(UString name, float defaultValue, UString helpString, ConVarCh
 	m_sName = name;
 	m_fDefaultValue = defaultValue;
 	setValue(defaultValue);
-	m_sHelpstring = helpString;
+	m_sHelpString = helpString;
 	m_changecallback = callback;
 }
 
@@ -71,8 +80,14 @@ void ConVar::init(UString name, UString defaultValue, UString helpString, ConVar
 	m_sName = name;
 	m_sDefaultValue = defaultValue;
 	setValue(defaultValue);
-	m_sHelpstring = helpString;
+	m_sHelpString = helpString;
 	m_changecallback = callback;
+}
+
+ConVar::ConVar(UString name)
+{
+	init(name);
+	addConVar(this);
 }
 
 ConVar::ConVar(UString name, ConVarCallback callback)

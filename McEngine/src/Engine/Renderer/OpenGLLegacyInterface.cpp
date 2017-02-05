@@ -529,6 +529,11 @@ void OpenGLLegacyInterface::setWireframe(bool enabled)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
+void OpenGLLegacyInterface::flush()
+{
+	glFlush();
+}
+
 std::vector<unsigned char> OpenGLLegacyInterface::getScreenshot()
 {
 	std::vector<unsigned char> result;

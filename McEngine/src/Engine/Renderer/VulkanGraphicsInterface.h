@@ -73,6 +73,7 @@ public:
 	virtual void setWireframe(bool enabled);
 
 	// renderer actions
+	virtual void flush();
 	virtual std::vector<unsigned char> getScreenshot();
 
 	// renderer info
