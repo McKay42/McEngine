@@ -49,6 +49,12 @@ public:
 
 	void onResolutionChange(Vector2 newResolution);
 
+	void showKeyboard() {showKeyboardEx("", "");}
+	void showKeyboardEx(UString description, UString text);
+	void hideKeyboard();
+
+	void resetFakeCameraMovement();
+
 	typedef fastdelegate::FastDelegate1<Graphics*> DrawCallback;
 	void setDrawCallback(DrawCallback drawCallback) {m_drawCallback = drawCallback;}
 
@@ -62,6 +68,8 @@ public:
 
 	inline Vector2 getPlayAreaSize() {return m_vPlayAreaSize;}
 	inline PLAY_AREA_RECT getPlayAreaRect() {return m_playAreaRect;}
+
+	Vector2 getRenderTargetResolution();
 
 	inline bool isReady() const {return m_bReady;}
 
@@ -83,7 +91,7 @@ private:
 
 	void updateControllerAxes(); // for debugging
 	void updateStaticMatrices(); // eye position offset and projection
-	void updateMatrixPoses(); // pose matrices
+	bool updateMatrixPoses(); // pose matrices
 	void updateRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	CGLRenderModel *findOrLoadRenderModel(const char *pchRenderModelName);
 
@@ -95,6 +103,7 @@ private:
 	Matrix4 getCurrentEyePosMatrix(vr::Hmd_Eye eye);
 
 	void onSSChange(UString oldValue, UString newValue);
+	void onSSCompositorChange(UString oldValue, UString newValue);
 	void onClippingPlaneChange(UString oldValue, UString newValue);
 
 #endif
@@ -132,6 +141,7 @@ private:
 	// framebuffers
 	RenderTarget *m_leftEye;
 	RenderTarget *m_rightEye;
+	RenderTarget *m_compositorEye;
 	RenderTarget *m_debugOverlay;
 
 	// play area
@@ -140,11 +150,11 @@ private:
 
 	// debugging
 	Camera *m_fakeCamera;
+	bool m_bCaptureMouse;
 	bool m_bWDown;
 	bool m_bADown;
 	bool m_bSDown;
 	bool m_bDDown;
-	bool m_bCaptureMouse;
 	bool m_bShiftDown;
 	bool m_bCtrlDown;
 
@@ -180,7 +190,9 @@ private:
 	unsigned int m_uiControllerVertcount;
 
 	// misc
-	bool m_bSteamVRBugWorkaroundDelayedSSChange;
+	float m_fPrevSSMultiplier;
+	float m_fCompositorSSMultiplier;
+	bool m_bSteamVRBugWorkaroundCompositorSSChangeAllowed;
 
 #endif
 };

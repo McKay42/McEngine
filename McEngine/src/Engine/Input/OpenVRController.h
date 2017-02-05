@@ -96,6 +96,8 @@ private:
 	Vector3 m_vUp;
 	Vector3 m_vRight;
 
+	float m_fLastTriggerHapticPulseTime;
+
 #ifdef MCENGINE_FEATURE_OPENVR
 
 	vr::IVRSystem *m_hmd;

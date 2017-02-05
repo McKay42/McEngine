@@ -27,6 +27,8 @@ OpenVRController::OpenVRController(vr::IVRSystem *hmd, OpenVRController::ROLE ro
 	m_ulButtonPressed = 0;
 	m_ulButtonTouched = 0;
 
+	m_fLastTriggerHapticPulseTime = 0.0f;
+
 	for (int i=0; i<vr::k_unControllerStateAxisCount; i++)
 	{
 		m_rAxis[i].x = 0.0f;
@@ -64,7 +66,10 @@ void OpenVRController::triggerHapticPulse(unsigned short durationMicroSec, OpenV
 {
 #ifdef MCENGINE_FEATURE_OPENVR
 
-	if (m_hmd == NULL) return;
+	if (m_hmd == NULL || durationMicroSec == 0 || engine->getTime() < m_fLastTriggerHapticPulseTime) return;
+
+	// "After this call the application may not trigger another haptic pulse on this controller and axis combination for 5ms."
+	m_fLastTriggerHapticPulseTime = engine->getTime() + 0.00525f;
 
 	m_hmd->TriggerHapticPulse(m_hmd->GetTrackedDeviceIndexForControllerRole(roleIdToOpenVR(m_role)), buttonIdToOpenVR(button) - vr::EVRButtonId::k_EButton_Axis0, durationMicroSec);
 
