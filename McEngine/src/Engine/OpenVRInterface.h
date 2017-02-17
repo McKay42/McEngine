@@ -53,6 +53,7 @@ public:
 	void showKeyboardEx(UString description, UString text);
 	void hideKeyboard();
 
+	void updatePlayAreaMetrics();
 	void resetFakeCameraMovement();
 
 	typedef fastdelegate::FastDelegate1<Graphics*> DrawCallback;
@@ -72,6 +73,8 @@ public:
 	Vector2 getRenderTargetResolution();
 
 	inline bool isReady() const {return m_bReady;}
+	inline bool isKeyboardVisible() const {return m_bIsKeyboardVisible;}
+	bool hasInputFocus();
 
 private:
 
@@ -104,7 +107,9 @@ private:
 
 	void onSSChange(UString oldValue, UString newValue);
 	void onSSCompositorChange(UString oldValue, UString newValue);
+	void onAAChange(UString oldValue, UString newValue);
 	void onClippingPlaneChange(UString oldValue, UString newValue);
+	void onBackgroundBrightnessChange(UString oldValue, UString newValue);
 
 #endif
 
@@ -148,6 +153,9 @@ private:
 	Vector2 m_vPlayAreaSize;
 	PLAY_AREA_RECT m_playAreaRect;
 
+	// keyboard
+	bool m_bIsKeyboardVisible;
+
 	// debugging
 	Camera *m_fakeCamera;
 	bool m_bCaptureMouse;
@@ -175,6 +183,7 @@ private:
 	Shader *m_renderModelShader;
 	Shader *m_controllerAxisShader;
 	Shader *m_genericTexturedShader;
+	Shader *m_genericUntexturedShader;
 
 	// tracking
 	int m_iTrackedControllerCount;
@@ -192,6 +201,7 @@ private:
 	// misc
 	float m_fPrevSSMultiplier;
 	float m_fCompositorSSMultiplier;
+	float m_fPrevAA;
 	bool m_bSteamVRBugWorkaroundCompositorSSChangeAllowed;
 
 #endif

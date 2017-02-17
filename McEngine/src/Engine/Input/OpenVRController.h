@@ -48,6 +48,8 @@ public:
 		ROLE_RIGHTHAND
 	};
 
+	static bool STEAMVR_BUG_WORKAROUND_FLIPFLOP; // only allow 1 controller to send 1 TriggerHapticPulse() within 1 frame, buffer all other calls
+
 public:
 
 #ifndef MCENGINE_FEATURE_OPENVR
@@ -105,6 +107,13 @@ private:
 	uint64_t m_ulButtonPressed;
 	uint64_t m_ulButtonTouched;
 	vr::VRControllerAxis_t m_rAxis[vr::k_unControllerStateAxisCount];
+
+	struct TRIGGER_HAPTIC_PULSE_EVENT
+	{
+		unsigned short durationMicroSec;
+		OpenVRController::BUTTON  button;
+	};
+	std::vector<TRIGGER_HAPTIC_PULSE_EVENT> m_triggerHapticPulseBuffer;
 
 #endif
 };

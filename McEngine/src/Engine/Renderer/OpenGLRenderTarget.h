@@ -27,6 +27,7 @@ public:
 
 	// ILLEGAL:
 	void blitResolveFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt);
+	void blitFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt);
 	inline unsigned int getResolveFrameBuffer() const {return m_iResolveFrameBuffer;}
 	inline unsigned int getResolveTexture() const {return m_iResolveTexture;}
 

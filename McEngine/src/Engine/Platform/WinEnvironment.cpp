@@ -379,7 +379,27 @@ void WinEnvironment::focus()
 
 void WinEnvironment::center()
 {
-	MoveWindow(m_hwnd, GetSystemMetrics(SM_CXSCREEN)/2 - m_vWindowSize.x/2, GetSystemMetrics(SM_CYSCREEN)/2 - m_vWindowSize.y/2, m_vWindowSize.x, m_vWindowSize.y, FALSE);
+	RECT rect;
+	GetClientRect(m_hwnd, &rect);
+
+	int width = rect.right - rect.left;
+	int height = rect.bottom - rect.top;
+	int xPos = (GetSystemMetrics(SM_CXSCREEN)/2) - (int)(width/2);
+	int yPos = (GetSystemMetrics(SM_CYSCREEN)/2) - (int)(height/2);
+
+	RECT clientArea;
+	clientArea.left = xPos;
+	clientArea.top = yPos;
+	clientArea.right = xPos+width;
+	clientArea.bottom = yPos+height;
+	AdjustWindowRect(&clientArea, getWindowStyleWindowed(), FALSE);
+
+	xPos = clientArea.left;
+	yPos = clientArea.top;
+	width = clientArea.right - clientArea.left;
+	height = clientArea.bottom - clientArea.top;
+
+	MoveWindow(m_hwnd, xPos, yPos, width, height, FALSE);
 }
 
 void WinEnvironment::minimize()

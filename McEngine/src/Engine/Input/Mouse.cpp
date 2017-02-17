@@ -283,7 +283,7 @@ void Mouse::setPosXY(float x, float y)
 		float engineTime = engine->getTime();
 		for (int i=0; i<m_fakelagBuffer.size(); i++)
 		{
-			if (engineTime > m_fakelagBuffer[i].time)
+			if (engineTime >= m_fakelagBuffer[i].time)
 			{
 				m_vFakeLagPos = m_fakelagBuffer[i].pos;
 
@@ -367,7 +367,7 @@ void Mouse::onRightChange(bool rightDown)
 void Mouse::setPos(Vector2 newPos)
 {
 	setPosXY(newPos.x, newPos.y);
-	env->setMousePos(newPos.x, newPos.y);
+	env->setMousePos(m_vPos.x, m_vPos.y);
 }
 
 void Mouse::setCursorType(CURSORTYPE cursorType)
