@@ -381,6 +381,8 @@ void OpenGLLegacyInterface::drawString(McFont *font, UString text)
 
 void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao)
 {
+	if (vao == NULL) return;
+
 	const std::vector<Vector3> &vertices = vao->getVertices();
 	const std::vector<Vector3> &normals = vao->getNormals();
 	const std::vector<std::vector<Vector2>> &texcoords = vao->getTexcoords();
@@ -410,6 +412,8 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao)
 
 void OpenGLLegacyInterface::drawVB(VertexBuffer *vb)
 {
+	if (vb == NULL) return;
+
 	updateTransform();
 
 	vb->draw(this);

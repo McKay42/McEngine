@@ -22,8 +22,10 @@ public:
 	void draw(Graphics *g, int x, int y, int width, int height);
 	void drawRect(Graphics *g, int x, int y, int width, int height);
 
+	void rebuild(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
 	void rebuild(int x, int y, int width, int height);
 	void rebuild(int width, int height);
+	void rebuild(int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
 
 	virtual void enable() = 0;
 	virtual void disable() = 0;

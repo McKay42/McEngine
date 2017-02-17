@@ -70,6 +70,7 @@ void __host_timescale( UString oldValue, UString newValue )
 }
 ConVar epilepsy("epilepsy", false);
 ConVar debug_engine("debug_engine", false);
+ConVar minimize_on_focus_lost_if_fullscreen("minimize_on_focus_lost_if_fullscreen", true);
 
 
 
@@ -402,6 +403,9 @@ void Engine::onFocusLost()
 
 	if (m_app != NULL)
 		m_app->onFocusLost();
+
+	if (m_environment->isFullscreen() && minimize_on_focus_lost_if_fullscreen.getBool())
+		m_environment->minimize();
 }
 
 void Engine::onMinimized()
