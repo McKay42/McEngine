@@ -97,33 +97,36 @@ void OpenGLRenderTarget::init()
 	// if multisampled, create resolve framebuffer/texture
 	if (isMultiSampled())
 	{
-		// create resolve framebuffer
-		glGenFramebuffers(1, &m_iResolveFrameBuffer);
-		glBindFramebuffer(GL_FRAMEBUFFER, m_iResolveFrameBuffer);
 		if (m_iResolveFrameBuffer == 0)
 		{
-			engine->showMessageError("RenderTarget Error", "Couldn't glGenFramebuffers() or glBindFramebuffer() multisampled!");
-			return;
+			// create resolve framebuffer
+			glGenFramebuffers(1, &m_iResolveFrameBuffer);
+			glBindFramebuffer(GL_FRAMEBUFFER, m_iResolveFrameBuffer);
+			if (m_iResolveFrameBuffer == 0)
+			{
+				engine->showMessageError("RenderTarget Error", "Couldn't glGenFramebuffers() or glBindFramebuffer() multisampled!");
+				return;
+			}
+
+			// create resolve texture
+			glGenTextures(1, &m_iResolveTexture);
+			glBindTexture(GL_TEXTURE_2D, m_iResolveTexture);
+			if (m_iResolveTexture == 0)
+			{
+				engine->showMessageError("RenderTarget Error", "Couldn't glGenTextures() or glBindTexture() multisampled!");
+				return;
+			}
+
+			// set texture parameters
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0); // no mips
+
+			// fill texture
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (int)m_vSize.x, (int)m_vSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+			// set resolve texture as color attachment0 on the resolve framebuffer
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_iResolveTexture, 0);
 		}
-
-		// create resolve texture
-		glGenTextures(1, &m_iResolveTexture);
-		glBindTexture(GL_TEXTURE_2D, m_iResolveTexture);
-		if (m_iResolveTexture == 0)
-		{
-			engine->showMessageError("RenderTarget Error", "Couldn't glGenTextures() or glBindTexture() multisampled!");
-			return;
-		}
-
-		// set texture parameters
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0); // no mips
-
-		// fill texture
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (int)m_vSize.x, (int)m_vSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-
-		// set resolve texture as color attachment0 on the resolve framebuffer
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_iResolveTexture, 0);
 	}
 
 	// error checking
@@ -146,16 +149,16 @@ void OpenGLRenderTarget::initAsync()
 
 void OpenGLRenderTarget::destroy()
 {
-	if (m_iDepthBuffer != 0)
-		glDeleteRenderbuffers(1, &m_iDepthBuffer);
-	if (m_iRenderTexture != 0)
-		glDeleteTextures(1, &m_iRenderTexture);
-	if (m_iFrameBuffer != 0)
-		glDeleteFramebuffers(1, &m_iFrameBuffer);
 	if (m_iResolveTexture != 0)
 		glDeleteTextures(1, &m_iResolveTexture);
 	if (m_iResolveFrameBuffer != 0)
 		glDeleteFramebuffers(1, &m_iResolveFrameBuffer);
+	if (m_iRenderTexture != 0)
+		glDeleteTextures(1, &m_iRenderTexture);
+	if (m_iDepthBuffer != 0)
+		glDeleteRenderbuffers(1, &m_iDepthBuffer);
+	if (m_iFrameBuffer != 0)
+		glDeleteFramebuffers(1, &m_iFrameBuffer);
 
 	m_iDepthBuffer = m_iRenderTexture = m_iFrameBuffer = m_iResolveTexture = m_iResolveFrameBuffer = 0;
 }
@@ -195,6 +198,7 @@ void OpenGLRenderTarget::disable()
 	 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_iFrameBuffer);
 	    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_iResolveFrameBuffer);
 
+	    // for multisampled, the sizes MUST be the same! you can't blit from multisampled into non-multisampled or different size
 	    glBlitFramebuffer(0, 0, (int)m_vSize.x, (int)m_vSize.y, 0, 0, (int)m_vSize.x, (int)m_vSize.y, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
 	 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
@@ -235,4 +239,35 @@ void OpenGLRenderTarget::unbind()
 	// restore default texture unit
 	if (m_iTextureUnitBackup != 0)
 		glActiveTexture(GL_TEXTURE0);
+}
+
+void OpenGLRenderTarget::blitResolveFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt)
+{
+	if (isMultiSampled())
+	{
+		// HACKHACK: force disable antialiasing
+		engine->getGraphics()->setAntialiasing(false);
+
+	 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_iResolveFrameBuffer);
+	    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rt->getFrameBuffer());
+
+	    glBlitFramebuffer(0, 0, (int)m_vSize.x, (int)m_vSize.y, 0, 0, (int)rt->getWidth(), (int)rt->getHeight(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+	 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+	    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	}
+}
+
+void OpenGLRenderTarget::blitFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt)
+{
+	// HACKHACK: force disable antialiasing
+	engine->getGraphics()->setAntialiasing(false);
+
+ 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_iFrameBuffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rt->getFrameBuffer());
+
+    glBlitFramebuffer(0, 0, (int)m_vSize.x, (int)m_vSize.y, 0, 0, (int)rt->getWidth(), (int)rt->getHeight(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+ 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }

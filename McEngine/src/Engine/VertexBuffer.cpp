@@ -18,17 +18,19 @@ VertexBuffer::VertexBuffer(Graphics::PRIMITIVE primitive, VertexArrayObject::USA
 	m_primitive = primitive;
 	m_usage = usage;
 
-	debugLog("Building VertexBuffer ...\n");
-
 	m_iNumVertices = 0;
 	m_GLVertices = 0;
 	m_GLTextureCoordinates0 = 0;
 
+	m_iDrawPercentNearestMultiple = 0;
+	m_fFromPercent = 0.0f;
+	m_fToPercent = 1.0f;
+
 	// generate & bind vertex buffer
-	glGenBuffersARB(1, &m_GLVertices);
+	glGenBuffers(1, &m_GLVertices);
 
 	m_bHasTexture0 = false;
-	glGenBuffersARB(1, &m_GLTextureCoordinates0);
+	glGenBuffers(1, &m_GLTextureCoordinates0);
 
 	m_bReady = true;
 }
@@ -37,7 +39,10 @@ void VertexBuffer::set(std::vector<Vector3> *vertices, std::vector<Vector2> *tex
 {
 	if (vertices == NULL || vertices->size() < 1)
 	{
-		engine->showMessageError("VertexBuffer Error", "Invalid numVertices!");
+		if (vertices == NULL)
+			engine->showMessageError("VertexBuffer Error", "Invalid numVertices!");
+		else
+			engine->showMessageError("VertexBuffer Error", UString::format("Invalid numVertices (%i)!", vertices->size()));
 		m_bReady = false;
 		return;
 	}
@@ -45,17 +50,18 @@ void VertexBuffer::set(std::vector<Vector3> *vertices, std::vector<Vector2> *tex
 	if (vertices != NULL)
 	{
 		m_iNumVertices = vertices->size();
+		m_iDrawPercentNearestMultiple = m_iNumVertices;
 
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_GLVertices);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, m_iNumVertices*3*sizeof(float), &(*vertices)[0], usageToOpenGL(m_usage));
+		glBindBuffer(GL_ARRAY_BUFFER, m_GLVertices);
+		glBufferData(GL_ARRAY_BUFFER, m_iNumVertices*3*sizeof(float), &(*vertices)[0], usageToOpenGL(m_usage));
 	}
 
 	if (textureCoordinates0 != NULL)
 	{
 		m_bHasTexture0 = true;
 
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_GLTextureCoordinates0);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, m_iNumVertices*2*sizeof(float), &(*textureCoordinates0)[0], usageToOpenGL(m_usage));
+		glBindBuffer(GL_ARRAY_BUFFER, m_GLTextureCoordinates0);
+		glBufferData(GL_ARRAY_BUFFER, m_iNumVertices*2*sizeof(float), &(*textureCoordinates0)[0], usageToOpenGL(m_usage));
 	}
 	else
 		m_bHasTexture0 = false;
@@ -70,32 +76,36 @@ void VertexBuffer::free()
 {
 	m_bReady = false;
 
-	glDeleteBuffersARB(1, &m_GLVertices);
-
-	if (m_bHasTexture0)
-		glDeleteBuffersARB(1, &m_GLTextureCoordinates0);
+	glDeleteBuffers(1, &m_GLVertices);
+	glDeleteBuffers(1, &m_GLTextureCoordinates0);
 }
 
 void VertexBuffer::draw(Graphics *g)
 {
 	if (!m_bReady) return;
 
+	int start = clamp<int>(nearestMultipleOf((int)(m_iNumVertices*m_fFromPercent), m_iDrawPercentNearestMultiple), 0, m_iNumVertices);
+	int end = clamp<int>(nearestMultipleOf((int)(m_iNumVertices*m_fToPercent), m_iDrawPercentNearestMultiple), 0, m_iNumVertices);
+
+	if (start > end || std::abs(end-start) == 0)
+		return;
+
 	// set vertices
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_GLVertices);
+	glBindBuffer(GL_ARRAY_BUFFER, m_GLVertices);
 	glVertexPointer(3, GL_FLOAT, 0, (char*)NULL); // set vertex pointer to vertex buffer
 
 	// set texture0
 	if (m_bHasTexture0)
 	{
-		glClientActiveTextureARB(GL_TEXTURE0_ARB);
+		glClientActiveTexture(GL_TEXTURE0);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_GLTextureCoordinates0);
+		glBindBuffer(GL_ARRAY_BUFFER, m_GLTextureCoordinates0);
 		glTexCoordPointer(2, GL_FLOAT, 0, (char*)NULL); // set first texcoord pointer to texcoord buffer
 	}
 
 	// render it
-	glDrawArrays(primitiveToOpenGL(m_primitive), 0, m_iNumVertices);
+	glDrawArrays(primitiveToOpenGL(m_primitive), start, end);
 
 	// disable everything
 	if (m_bHasTexture0)
@@ -124,12 +134,20 @@ unsigned int VertexBuffer::usageToOpenGL(VertexArrayObject::USAGE usage)
 	switch (usage)
 	{
 	case VertexArrayObject::USAGE::USAGE_STATIC:
-		return GL_STATIC_DRAW_ARB;
+		return GL_STATIC_DRAW;
 	case VertexArrayObject::USAGE::USAGE_DYNAMIC:
-		return GL_DYNAMIC_DRAW_ARB;
+		return GL_DYNAMIC_DRAW;
 	case VertexArrayObject::USAGE::USAGE_STREAM:
-		return GL_STREAM_DRAW_ARB;
+		return GL_STREAM_DRAW;
 	}
 
-	return GL_STATIC_DRAW_ARB;
+	return GL_STATIC_DRAW;
+}
+
+int VertexBuffer::nearestMultipleOf(int number, int multiple)
+{
+	int result = number + multiple/2;
+	result -= result % multiple;
+
+	return result;
 }

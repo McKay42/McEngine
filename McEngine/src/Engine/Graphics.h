@@ -15,17 +15,16 @@
 #include "Matrices.h"
 #include "Vectors.h"
 
+class ConVar;
 class UString;
 
 class Image;
 class McFont;
-class RenderTarget;
 class Shader;
+class RenderTarget;
 
 class VertexArrayObject;
 class VertexBuffer;
-
-class ConVar;
 
 typedef unsigned long Color;
 
@@ -128,6 +127,7 @@ public:
 	virtual void setWireframe(bool enabled) = 0;
 
 	// renderer actions
+	virtual void flush() = 0;
 	virtual std::vector<unsigned char> getScreenshot() = 0;
 
 	// renderer info

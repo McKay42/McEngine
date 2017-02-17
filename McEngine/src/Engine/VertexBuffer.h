@@ -23,10 +23,13 @@ public:
 	void draw(Graphics *g);
 
 	void set(std::vector<Vector3> *vertices, std::vector<Vector2> *textureCoordinates0);
+	void setDrawPercent(float fromPercent, float toPercent, int nearestMultiple) {m_fFromPercent = fromPercent; m_fToPercent = toPercent; m_iDrawPercentNearestMultiple = nearestMultiple;}
 
 private:
 	static unsigned int primitiveToOpenGL(Graphics::PRIMITIVE primitive);
 	static unsigned int usageToOpenGL(VertexArrayObject::USAGE usage);
+
+	int nearestMultipleOf(int number, int multiple);
 
 	Graphics::PRIMITIVE m_primitive;
 	VertexArrayObject::USAGE m_usage;
@@ -37,6 +40,10 @@ private:
 
 	bool m_bReady;
 	bool m_bHasTexture0;
+
+	int m_iDrawPercentNearestMultiple;
+	float m_fFromPercent;
+	float m_fToPercent;
 };
 
 #endif

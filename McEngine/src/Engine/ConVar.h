@@ -23,6 +23,8 @@ public:
 	typedef fastdelegate::FastDelegate1<UString> NativeConVarCallbackArgs;
 	typedef fastdelegate::FastDelegate2<UString, UString> NativeConVarChangeCallback;
 
+	ConVar(UString name);
+
 	ConVar(UString name, ConVarCallback callback);
 	ConVar(UString name, ConVarCallbackArgs callbackARGS);
 
@@ -53,9 +55,12 @@ public:
 	// set
 	void setValue(float value);
 	void setValue(UString sValue);
+
 	void setCallback(NativeConVarCallback callback);
 	void setCallback(NativeConVarCallbackArgs callback);
 	void setCallback(NativeConVarChangeCallback callback);
+
+	void setHelpString(UString helpString) {m_sHelpString = helpString;}
 
 	// get
 	inline const float getDefaultFloat() const {return m_fDefaultValue;}
@@ -66,7 +71,7 @@ public:
 	inline const int getInt() const {return (int)(m_fValue);}
 	inline const UString getString() const {return m_sValue;}
 
-	inline const UString getHelpstring() const {return m_sHelpstring;}
+	inline const UString getHelpstring() const {return m_sHelpString;}
 	inline const UString getName() const {return m_sName;}
 
 	inline const bool hasValue() const {return m_bHasValue;}
@@ -74,6 +79,7 @@ public:
 
 private:
 	void init();
+	void init(UString name);
 	void init(UString name, ConVarCallback callback);
 	void init(UString name, ConVarCallbackArgs callbackARGS);
 	void init(UString name, float defaultValue, UString helpString, ConVarChangeCallback callback);
@@ -82,7 +88,7 @@ private:
 	bool m_bHasValue;
 
 	UString m_sName;
-	UString m_sHelpstring;
+	UString m_sHelpString;
 
 	float m_fValue;
 	float m_fDefaultValue;

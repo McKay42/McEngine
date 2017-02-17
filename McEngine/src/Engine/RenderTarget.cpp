@@ -148,18 +148,28 @@ void RenderTarget::drawRect(Graphics *g, int x, int y, int width, int height)
 	unbind();
 }
 
-void RenderTarget::rebuild(int x, int y, int width, int height)
+void RenderTarget::rebuild(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
 {
 	m_vPos.x = x;
 	m_vPos.y = y;
 	m_vSize.x = width;
 	m_vSize.y = height;
+	m_multiSampleType = multiSampleType;
+
 	reload();
+}
+
+void RenderTarget::rebuild(int x, int y, int width, int height)
+{
+	rebuild(x, y, width, height, m_multiSampleType);
 }
 
 void RenderTarget::rebuild(int width, int height)
 {
-	m_vSize.x = width;
-	m_vSize.y = height;
-	reload();
+	rebuild(m_vPos.x, m_vPos.y, width, height, m_multiSampleType);
+}
+
+void RenderTarget::rebuild(int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
+{
+	rebuild(m_vPos.x, m_vPos.y, width, height, multiSampleType);
 }

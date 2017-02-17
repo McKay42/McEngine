@@ -24,6 +24,10 @@ public:
 
 	inline unsigned int getFrameBuffer() const {return m_iFrameBuffer;}
 	inline unsigned int getRenderTexture() const {return m_iRenderTexture;}
+
+	// ILLEGAL:
+	void blitResolveFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt);
+	void blitFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt);
 	inline unsigned int getResolveFrameBuffer() const {return m_iResolveFrameBuffer;}
 	inline unsigned int getResolveTexture() const {return m_iResolveTexture;}
 
