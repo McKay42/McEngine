@@ -257,3 +257,17 @@ void OpenGLRenderTarget::blitResolveFrameBufferIntoFrameBuffer(OpenGLRenderTarge
 	    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	}
 }
+
+void OpenGLRenderTarget::blitFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt)
+{
+	// HACKHACK: force disable antialiasing
+	engine->getGraphics()->setAntialiasing(false);
+
+ 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_iFrameBuffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rt->getFrameBuffer());
+
+    glBlitFramebuffer(0, 0, (int)m_vSize.x, (int)m_vSize.y, 0, 0, (int)rt->getWidth(), (int)rt->getHeight(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+ 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+}
