@@ -441,6 +441,11 @@ void SWGraphicsInterface::setWireframe(bool enabled)
 	// TODO:
 }
 
+void SWGraphicsInterface::flush()
+{
+	// TODO:
+}
+
 std::vector<unsigned char> SWGraphicsInterface::getScreenshot()
 {
 	std::vector<unsigned char> result;

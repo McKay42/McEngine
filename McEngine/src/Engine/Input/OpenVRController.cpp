@@ -10,6 +10,8 @@
 #include "Engine.h"
 #include "ConVar.h"
 
+bool OpenVRController::STEAMVR_BUG_WORKAROUND_FLIPFLOP = false;
+
 #ifndef MCENGINE_FEATURE_OPENVR
 
 OpenVRController::OpenVRController() : InputDevice()
@@ -27,6 +29,8 @@ OpenVRController::OpenVRController(vr::IVRSystem *hmd, OpenVRController::ROLE ro
 	m_ulButtonPressed = 0;
 	m_ulButtonTouched = 0;
 
+	m_fLastTriggerHapticPulseTime = 0.0f;
+
 	for (int i=0; i<vr::k_unControllerStateAxisCount; i++)
 	{
 		m_rAxis[i].x = 0.0f;
@@ -42,6 +46,19 @@ void OpenVRController::update(uint64_t buttonPressed, uint64_t buttonTouched, vr
 	for (int i=0; i<vr::k_unControllerStateAxisCount; i++)
 	{
 		m_rAxis[i] = axes[i];
+	}
+
+	// execute buffered TriggerHapticPulse events
+	// we only execute the newest buffered event here, all others are discarded
+	if ((!STEAMVR_BUG_WORKAROUND_FLIPFLOP && m_role == OpenVRController::ROLE::ROLE_RIGHTHAND) || (STEAMVR_BUG_WORKAROUND_FLIPFLOP && m_role == OpenVRController::ROLE::ROLE_LEFTHAND))
+	{
+		if (m_triggerHapticPulseBuffer.size() > 0)
+		{
+			TRIGGER_HAPTIC_PULSE_EVENT ev = m_triggerHapticPulseBuffer[m_triggerHapticPulseBuffer.size()-1];
+			m_triggerHapticPulseBuffer.clear();
+
+			triggerHapticPulse(ev.durationMicroSec, ev.button);
+		}
 	}
 }
 
@@ -64,9 +81,21 @@ void OpenVRController::triggerHapticPulse(unsigned short durationMicroSec, OpenV
 {
 #ifdef MCENGINE_FEATURE_OPENVR
 
-	if (m_hmd == NULL) return;
+	if (m_hmd == NULL || durationMicroSec == 0 || engine->getTime() < m_fLastTriggerHapticPulseTime) return;
 
-	m_hmd->TriggerHapticPulse(m_hmd->GetTrackedDeviceIndexForControllerRole(roleIdToOpenVR(m_role)), buttonIdToOpenVR(button), durationMicroSec);
+	// "After this call the application may not trigger another haptic pulse on this controller and axis combination for 5ms."
+	m_fLastTriggerHapticPulseTime = engine->getTime() + 0.00515f;
+
+	if ((STEAMVR_BUG_WORKAROUND_FLIPFLOP && m_role == OpenVRController::ROLE::ROLE_RIGHTHAND) || (!STEAMVR_BUG_WORKAROUND_FLIPFLOP && m_role == OpenVRController::ROLE::ROLE_LEFTHAND))
+	{
+		// not our turn, buffer the call and execute it in the next update()
+		TRIGGER_HAPTIC_PULSE_EVENT ev;
+		ev.durationMicroSec = durationMicroSec;
+		ev.button = button;
+		m_triggerHapticPulseBuffer.push_back(ev);
+	}
+	else // ok, it's our turn
+		m_hmd->TriggerHapticPulse(m_hmd->GetTrackedDeviceIndexForControllerRole(roleIdToOpenVR(m_role)), buttonIdToOpenVR(button) - vr::EVRButtonId::k_EButton_Axis0, durationMicroSec);
 
 #endif
 }

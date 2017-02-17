@@ -17,7 +17,11 @@
 
 #include "Engine.h"
 
+#ifdef MCENGINE_FEATURE_SOUND
+
 DWORD CALLBACK soundFXCallbackProc(HSTREAM handle, void *buffer, DWORD length, void *user);
+
+#endif
 
 Sound::Sound(UString filepath, bool stream, bool threeD, bool loop) : Resource(filepath)
 {
@@ -59,7 +63,7 @@ void Sound::initAsync()
 {
 #ifdef MCENGINE_FEATURE_SOUND
 
-	printf("RESOURCE MANAGER: Loading %s\n", m_sFilePath.toUtf8());
+	printf("Resource Manager: Loading %s\n", m_sFilePath.toUtf8());
 
 	// create the sound
 	if (m_bStream)
@@ -428,13 +432,14 @@ bool Sound::isFinished()
 
 void Sound::refactor(UString newFilePath)
 {
+	// HACKHACK: this refactor function shouldn't exist
 	m_sFilePath = newFilePath;
 	reload();
 }
 
 void Sound::clear()
 {
-	//if (!(m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)) // HACKHACK:
+	//if (!(m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)) // HACKHACK: this function also shouldn't exist
 	{
 		m_HCHANNEL = 0;
 		m_HCHANNELBACKUP = 0;
@@ -442,6 +447,8 @@ void Sound::clear()
 }
 
 
+
+#ifdef MCENGINE_FEATURE_SOUND
 
 DWORD CALLBACK soundFXCallbackProc(HSTREAM handle, void *buffer, DWORD length, void *user)
 {
@@ -457,3 +464,5 @@ DWORD CALLBACK soundFXCallbackProc(HSTREAM handle, void *buffer, DWORD length, v
 	else
 		return BASS_STREAMPROC_END;
 }
+
+#endif

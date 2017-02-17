@@ -450,6 +450,10 @@ void VulkanGraphicsInterface::setWireframe(bool enabled)
 {
 }
 
+void VulkanGraphicsInterface::flush()
+{
+}
+
 std::vector<unsigned char> VulkanGraphicsInterface::getScreenshot()
 {
 	return std::vector<unsigned char>();
