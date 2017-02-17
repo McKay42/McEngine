@@ -24,12 +24,18 @@
 class Shader;
 class Camera;
 class RenderTarget;
-
 class OpenVRController;
+
 class CGLRenderModel;
 
 class OpenVRInterface : public KeyboardListener
 {
+public:
+	struct PLAY_AREA_RECT
+	{
+		Vector3 corners[4];
+	};
+
 public:
 	OpenVRInterface();
 	virtual ~OpenVRInterface();
@@ -39,9 +45,16 @@ public:
 
 	virtual void onKeyDown(KeyboardEvent &e);
 	virtual void onKeyUp(KeyboardEvent &e);
-	virtual void onChar(KeyboardEvent &e) {;}
+	virtual void onChar(KeyboardEvent &e);
 
 	void onResolutionChange(Vector2 newResolution);
+
+	void showKeyboard() {showKeyboardEx("", "");}
+	void showKeyboardEx(UString description, UString text);
+	void hideKeyboard();
+
+	void updatePlayAreaMetrics();
+	void resetFakeCameraMovement();
 
 	typedef fastdelegate::FastDelegate1<Graphics*> DrawCallback;
 	void setDrawCallback(DrawCallback drawCallback) {m_drawCallback = drawCallback;}
@@ -54,7 +67,14 @@ public:
 	inline OpenVRController *getLeftController() {return m_controllerLeft;}
 	inline OpenVRController *getRightController() {return m_controllerRight;}
 
+	inline Vector2 getPlayAreaSize() {return m_vPlayAreaSize;}
+	inline PLAY_AREA_RECT getPlayAreaRect() {return m_playAreaRect;}
+
+	Vector2 getRenderTargetResolution();
+
 	inline bool isReady() const {return m_bReady;}
+	inline bool isKeyboardVisible() const {return m_bIsKeyboardVisible;}
+	bool hasInputFocus();
 
 private:
 
@@ -67,12 +87,14 @@ private:
 	bool initShaders();
 
 	void renderStereoTargets(Graphics *g);
+	void renderSpectatorTarget(Graphics *g);
 	void renderScene(Graphics *g, vr::Hmd_Eye eye);
+	void renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 &matCurrentM, Matrix4 &matCurrentP, Matrix4 &matCurrentVP, Matrix4 &matCurrentMVP);
 	void renderStereoToWindow(Graphics *g);
 
 	void updateControllerAxes(); // for debugging
 	void updateStaticMatrices(); // eye position offset and projection
-	void updateMatrixPoses(); // pose matrices
+	bool updateMatrixPoses(); // pose matrices
 	void updateRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	CGLRenderModel *findOrLoadRenderModel(const char *pchRenderModelName);
 
@@ -84,7 +106,10 @@ private:
 	Matrix4 getCurrentEyePosMatrix(vr::Hmd_Eye eye);
 
 	void onSSChange(UString oldValue, UString newValue);
+	void onSSCompositorChange(UString oldValue, UString newValue);
+	void onAAChange(UString oldValue, UString newValue);
 	void onClippingPlaneChange(UString oldValue, UString newValue);
+	void onBackgroundBrightnessChange(UString oldValue, UString newValue);
 
 #endif
 
@@ -121,15 +146,23 @@ private:
 	// framebuffers
 	RenderTarget *m_leftEye;
 	RenderTarget *m_rightEye;
+	RenderTarget *m_compositorEye;
 	RenderTarget *m_debugOverlay;
+
+	// play area
+	Vector2 m_vPlayAreaSize;
+	PLAY_AREA_RECT m_playAreaRect;
+
+	// keyboard
+	bool m_bIsKeyboardVisible;
 
 	// debugging
 	Camera *m_fakeCamera;
+	bool m_bCaptureMouse;
 	bool m_bWDown;
 	bool m_bADown;
 	bool m_bSDown;
 	bool m_bDDown;
-	bool m_bCaptureMouse;
 	bool m_bShiftDown;
 	bool m_bCtrlDown;
 
@@ -150,6 +183,7 @@ private:
 	Shader *m_renderModelShader;
 	Shader *m_controllerAxisShader;
 	Shader *m_genericTexturedShader;
+	Shader *m_genericUntexturedShader;
 
 	// tracking
 	int m_iTrackedControllerCount;
@@ -163,6 +197,12 @@ private:
 	GLuint m_glControllerVertBuffer;
 	GLuint m_unControllerVAO;
 	unsigned int m_uiControllerVertcount;
+
+	// misc
+	float m_fPrevSSMultiplier;
+	float m_fCompositorSSMultiplier;
+	float m_fPrevAA;
+	bool m_bSteamVRBugWorkaroundCompositorSSChangeAllowed;
 
 #endif
 };

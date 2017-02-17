@@ -35,8 +35,8 @@
 // #define WINDOW_MAXIMIZED // start maximized
 // #define WINDOW_GHOST // click-through overlay mode (experimental)
 
-#define WINDOW_WIDTH (1280+6)
-#define WINDOW_HEIGHT (720+28)
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 720
 
 #define WINDOW_WIDTH_MIN 100
 #define WINDOW_HEIGHT_MIN 100
@@ -538,6 +538,18 @@ HWND createWinWindow(HINSTANCE hInstance)
 	int yPos = (GetSystemMetrics(SM_CYSCREEN)/2) - (WINDOW_HEIGHT/2);
 	int width = WINDOW_WIDTH;
 	int height = WINDOW_HEIGHT;
+
+	RECT clientArea;
+	clientArea.left = xPos;
+	clientArea.top = yPos;
+	clientArea.right = xPos+width;
+	clientArea.bottom = yPos+height;
+	AdjustWindowRect(&clientArea, style, FALSE);
+
+	xPos = clientArea.left;
+	yPos = clientArea.top;
+	width = clientArea.right - clientArea.left;
+	height = clientArea.bottom - clientArea.top;
 
 #ifdef WINDOW_MAXIMIZED
 	RECT workArea;
