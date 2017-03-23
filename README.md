@@ -35,7 +35,7 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 
 [Model Viewer for Metroid Prime Hunters (a Nintendo DS game, YouTube link)](https://youtu.be/BSn59ebjOnw?t=2m51s)
 
-##Eclipse
+## Eclipse
 This is a preconfigured Eclipse CDT (C/C++) project, meaning that in the best case you only have to copy the McEngine folder (which contains src, libraries, build and the project files) to your workspace and import it in Eclipse as an existing project.
 
 [https://www.eclipse.org/downloads/eclipse-packages/](https://www.eclipse.org/downloads/eclipse-packages/)
@@ -49,7 +49,7 @@ For Windows, the build configuration to use would be either ```Windows Release``
 
 If you don't want to use eclipse you'll have to create your own makefile. Microsoft Visual Studio and their compilers are not supported.
 
-##Windows
+## Windows
 The Windows build needs mingw-w64 (i686 with Win32 threads), you can get it here:
 
 Project: [https://mingw-w64.org/doku.php/](https://mingw-w64.org/doku.php/)
@@ -60,7 +60,7 @@ __Please use the installer__, since it just works™. The pre-built toolchains o
 Make sure you add the mingw directory to your PATH after the installation is finished. To test if everything works, try to enter the following command in a cmd window: `g++ --version`.
 
 
-##Linux
+## Linux
 The Linux build needs the following packages:
 - sudo apt-get install mesa-common-dev
 - sudo apt-get install libglu1-mesa-dev
