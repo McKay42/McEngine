@@ -8,6 +8,10 @@
 #ifndef VULKANINTERFACE_H
 #define VULKANINTERFACE_H
 
+#include "cbase.h"
+
+#ifdef MCENGINE_FEATURE_VULKAN
+
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -17,8 +21,6 @@
 // #error "TODO: add correct define here"
 
 #endif
-
-#ifdef MCENGINE_FEATURE_VULKAN
 
 #include <vulkan.h>
 

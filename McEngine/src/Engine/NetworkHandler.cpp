@@ -10,6 +10,8 @@
 #include "Engine.h"
 #include "ConVar.h"
 
+#include <sstream>
+
 #ifdef MCENGINE_FEATURE_NETWORKING
 
 #include <curl.h>
@@ -148,7 +150,7 @@ UString NetworkHandler::httpGet(UString url, long timeout, long connectTimeout)
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlWriteCallback);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlStringWriteCallback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &curlReadBuffer);
 
 		/*CURLcode res = */curl_easy_perform(curl);
@@ -157,7 +159,59 @@ UString NetworkHandler::httpGet(UString url, long timeout, long connectTimeout)
 		return UString(curlReadBuffer.c_str());
 	}
 	else
-		return "Error: curl == NULL";
+	{
+		debugLog("NetworkHandler::httpGet() error, curl == NULL!\n");
+		return "";
+	}
+
+#else
+
+	return "";
+
+#endif
+}
+
+std::string NetworkHandler::httpDownload(UString url, long timeout, long connectTimeout)
+{
+#ifdef MCENGINE_FEATURE_NETWORKING
+
+	CURL *curl = curl_easy_init();
+
+	if (curl != NULL)
+	{
+		curl_easy_setopt(curl, CURLOPT_URL, url.toUtf8());
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "User-Agent: McEngine");
+		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, connectTimeout);
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+		curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "deflate");
+
+		// HACKHACK: TODO: aaaaaaaaaaaaaaaaaaaaaaaaaa
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+		std::stringstream curlWriteBuffer(std::stringstream::in | std::stringstream::out | std::stringstream::binary);
+
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlStringStreamWriteCallback);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &curlWriteBuffer);
+
+		CURLcode res = curl_easy_perform(curl);
+		if (res != CURLE_OK)
+		{
+			curlWriteBuffer = std::stringstream();
+			debugLog("NetworkHandler::httpDownload() error, code %i!\n", (int)res);
+		}
+
+		curl_easy_cleanup(curl);
+
+		return curlWriteBuffer.str();
+	}
+	else
+	{
+		debugLog("NetworkHandler::httpDownload() error, curl == NULL!\n");
+		return std::string("");
+	}
 
 #else
 
@@ -439,10 +493,16 @@ void NetworkHandler::update()
 
 #ifdef MCENGINE_FEATURE_NETWORKING
 
-size_t NetworkHandler::curlWriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+size_t NetworkHandler::curlStringWriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
-	((std::string*)userp)->append((char*)contents, size*nmemb);
-	return size*nmemb;
+	((std::string*)userp)->append((char*)contents, size * nmemb);
+	return size * nmemb;
+}
+
+size_t NetworkHandler::curlStringStreamWriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+	((std::stringstream*)userp)->write((const char*)contents, (size_t) size * nmemb);
+	return size * nmemb;
 }
 
 void NetworkHandler::onClientEvent(ENetEvent e)

@@ -24,6 +24,7 @@ public:
 
 	// curl stuff
 	UString httpGet(UString url, long timeout = 5, long connectTimeout = 5);
+	std::string httpDownload(UString url, long timeout = 60, long connectTimeout = 5);
 
 
 	// client/server stuff
@@ -95,7 +96,8 @@ private:
 
 #ifdef MCENGINE_FEATURE_NETWORKING
 
-	static size_t curlWriteCallback(void *contents, size_t size, size_t nmemb, void *userp);
+	static size_t curlStringWriteCallback(void *contents, size_t size, size_t nmemb, void *userp);
+	static size_t curlStringStreamWriteCallback(void *contents, size_t size, size_t nmemb, void *userp);
 
 	void onClientEvent(ENetEvent e);
 	void onServerEvent(ENetEvent e);

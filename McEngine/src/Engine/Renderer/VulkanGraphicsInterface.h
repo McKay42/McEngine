@@ -10,9 +10,6 @@
 
 #include "VulkanInterface.h"
 #include "Graphics.h"
-#include "cbase.h"
-
-// TODO: implement VulkanGraphicsInterface
 
 class VulkanGraphicsInterface : public Graphics
 {
@@ -69,6 +66,7 @@ public:
 	virtual void setBlending(bool enabled);
 	virtual void setDepthBuffer(bool enabled);
 	virtual void setCulling(bool culling);
+	virtual void setVSync(bool enabled);
 	virtual void setAntialiasing(bool aa);
 	virtual void setWireframe(bool enabled);
 
@@ -94,43 +92,18 @@ public:
 	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
 
+protected:
+	void init();
+
+	virtual void onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix);
+
 private:
 	// renderer
 	Vector2 m_vResolution;
 
 #ifdef MCENGINE_FEATURE_VULKAN
 
-	void *swapChainGetInstanceProc(const char *name);
-	void *swapChainGetDeviceProc(const char *name);
-	void setImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkImageAspectFlags aspectMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout);
-	VkImageMemoryBarrier createImageMemoryBarrier();
-	void swapBuffers(VkQueue queue, VkSemaphore presentCompleteSemaphore, unsigned int *currentBuffer);
-
-	// swap chain stuff
 	VkSurfaceKHR m_surface;
-	VkFormat m_colorFormat;
-	VkColorSpaceKHR m_colorSpace;
-
-	VkSwapchainKHR m_swapChain;
-	std::vector<VkImage> m_images;
-
-	struct SwapChainBuffer
-	{
-		VkImage image;
-		VkImageView view;
-	};
-	std::vector<SwapChainBuffer> m_buffers;
-	size_t m_nodeIndex;
-
-	PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;
-	PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
-	PFN_vkGetPhysicalDeviceSurfaceFormatsKHR fpGetPhysicalDeviceSurfaceFormatsKHR;
-	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fpGetPhysicalDeviceSurfacePresentModesKHR;
-	PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
-	PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
-	PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
-	PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
-	PFN_vkQueuePresentKHR fpQueuePresentKHR;
 
 #endif
 };
