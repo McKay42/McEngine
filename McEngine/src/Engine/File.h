@@ -65,12 +65,14 @@ public:
 	size_t getFileSize() const;
 
 private:
+	bool m_bReady;
+	bool m_bRead;
+
 	std::ifstream m_ifstream;
 	std::string m_sBuffer;
 	size_t m_iFileSize;
 
-	bool m_bReady;
-	bool m_bRead;
+	UString m_sFilePath;
 };
 
 #endif

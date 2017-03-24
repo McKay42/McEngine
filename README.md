@@ -10,14 +10,14 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 2. ```/libraries/``` contains all dependencies (includes, dlls, libs, sos)
 
 3. ```/src/``` contains the source code
-  3. ```/src/App/``` contains the code for applications using the engine
-  4. ```/src/Engine/``` contains the core
-    5. ```/src/Engine/Input/``` contains input devices
-    6. ```/src/Engine/Main/``` contains the main entry points
-    7. ```/src/Engine/Platform/``` contains all platform specific code which is not in main
-    8. ```/src/Engine/Renderer/``` contains renderer specific code
-  5. ```/src/GUI/``` contains very primitive UI elements, mostly for debugging (such as the console)
-  6. ```/src/Util/``` contains helper functions, and small libraries which are contained in one file
+   1. ```/src/App/``` contains the code for applications using the engine
+   2. ```/src/Engine/``` contains the core
+      1. ```/src/Engine/Input/``` contains input devices
+      2. ```/src/Engine/Main/``` contains the main entry points (and icons for the executable)
+      3. ```/src/Engine/Platform/``` contains all platform specific code which is not in main
+      4. ```/src/Engine/Renderer/``` contains renderer specific code
+   3. ```/src/GUI/``` contains very primitive UI elements, mostly for debugging (such as the console)
+   4. ```/src/Util/``` contains helper functions, and small libraries which are contained in one file
 
 - Every supported platform must have a ```main_<OS_NAME>.cpp``` file in ```/src/Engine/Main/``` containing the main entry point.
 - Other platform specific code which is not part of the main file goes into ```/src/Engine/Platform/```.
@@ -35,7 +35,7 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 
 [Model Viewer for Metroid Prime Hunters (a Nintendo DS game, YouTube link)](https://youtu.be/BSn59ebjOnw?t=2m51s)
 
-##Eclipse
+## Eclipse
 This is a preconfigured Eclipse CDT (C/C++) project, meaning that in the best case you only have to copy the McEngine folder (which contains src, libraries, build and the project files) to your workspace and import it in Eclipse as an existing project.
 
 [https://www.eclipse.org/downloads/eclipse-packages/](https://www.eclipse.org/downloads/eclipse-packages/)
@@ -49,7 +49,7 @@ For Windows, the build configuration to use would be either ```Windows Release``
 
 If you don't want to use eclipse you'll have to create your own makefile. Microsoft Visual Studio and their compilers are not supported.
 
-##Windows
+## Windows
 The Windows build needs mingw-w64 (i686 with Win32 threads), you can get it here:
 
 Project: [https://mingw-w64.org/doku.php/](https://mingw-w64.org/doku.php/)
@@ -60,7 +60,7 @@ __Please use the installer__, since it just works™. The pre-built toolchains o
 Make sure you add the mingw directory to your PATH after the installation is finished. To test if everything works, try to enter the following command in a cmd window: `g++ --version`.
 
 
-##Linux
+## Linux
 The Linux build needs the following packages:
 - sudo apt-get install mesa-common-dev
 - sudo apt-get install libglu1-mesa-dev

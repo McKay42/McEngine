@@ -51,6 +51,8 @@ ConsoleBox::ConsoleBox() : CBaseUIElement(0,0,0,0,"")
 	m_suggestion->setDrawBackground(true);
 	m_suggestion->setBackgroundColor( COLOR(255,0,0,0) );
 	m_suggestion->setFrameColor( COLOR(255,255,255,255) );
+	m_suggestion->setHorizontalScrolling(false);
+	m_suggestion->setVerticalScrolling(true);
 	m_suggestion->setVisible(false);
 	m_fSuggestionAnimation = 0;
 	m_bSuggestionAnimateIn = false;

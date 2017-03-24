@@ -13,9 +13,6 @@
 #include <mutex>
 #include "WinMinGW.Mutex.h"
 
-// HACKHACK:
-#include "OpenGLImage.h"
-
 #define RM_IMAGE_FOLDER "materials/"
 #define RM_FONT_FOLDER "fonts/"
 #define RM_SOUND_FOLDER "sounds/"

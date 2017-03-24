@@ -10,10 +10,9 @@
 #ifndef WINGLINTERFACE_H
 #define WINGLINTERFACE_H
 
-#include <OpenGLLegacyInterface.h>
+#include "OpenGLLegacyInterface.h"
 #include <Windows.h>
 
-bool checkGLHardwareAcceleration();
 PIXELFORMATDESCRIPTOR getPixelFormatDescriptor();
 bool initWinGLMultisample(HDC hDC, HINSTANCE hInstance, HWND hWnd);
 
@@ -26,10 +25,11 @@ struct FAKE_CONTEXT
 class WinGLLegacyInterface : public OpenGLLegacyInterface
 {
 public:
+	static FAKE_CONTEXT createAndMakeCurrentWGLContext(HWND hwnd, PIXELFORMATDESCRIPTOR pfdIn);
+
+public:
 	WinGLLegacyInterface(HWND hwnd);
 	virtual ~WinGLLegacyInterface();
-
-	static FAKE_CONTEXT createAndMakeCurrentWGLContext(HWND hwnd, PIXELFORMATDESCRIPTOR pfdIn);
 
 	// scene
 	void endScene();
@@ -38,6 +38,7 @@ public:
 	void setVSync(bool vsync);
 
 	// ILLEGAL:
+	bool checkGLHardwareAcceleration();
 	inline HGLRC getGLContext() const {return m_hglrc;}
 	inline HDC getGLHDC() const {return m_hdc;}
 
