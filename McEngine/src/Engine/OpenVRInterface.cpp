@@ -63,10 +63,12 @@ ConVar vr_hidekeyboard("vr_hidekeyboard");
 
 ConVar vr_debug_controllers("vr_debug_controllers", false);
 
-ConVar vr_debug_rendermodel_name("vr_debug_rendermodel_name", "vr_controller_vive_1_5");
+ConVar vr_debug_rendermodel_name("vr_debug_rendermodel_name", "generic_hmd");
+ConVar vr_debug_rendermodel_scale("vr_debug_rendermodel_scale", 1.0f);
 ConVar vr_debug_rendermodel_component_name("vr_debug_rendermodel_component_name", "button");
 
-//ConVar vr_head_image_scale("vr_head_image_scale", 1.0f);
+ConVar vr_head_image_scale("vr_head_image_scale", 0.55f);
+ConVar vr_head_translation("vr_head_translation", -0.12f);
 
 OpenVRInterface *openvr = NULL;
 
@@ -109,6 +111,8 @@ OpenVRInterface::OpenVRInterface()
 	m_bIsKeyboardVisible = false;
 
 	m_drawCallback = NULL;
+
+	m_controllerColorOverride = 0xff000000;
 
 	m_leftEye = NULL;
 	m_rightEye = NULL;
@@ -184,6 +188,8 @@ OpenVRInterface::OpenVRInterface()
 	m_fPrevAA = vr_aa.getFloat();
 
 	///return;
+	if (engine->getArgs().find("novr") != -1)
+		return;
 
 	// check if openvr runtime is installed
 	if (!vr::VR_IsRuntimeInstalled())
@@ -506,6 +512,7 @@ bool OpenVRInterface::initShaders()
 			// fragment shader
 			"#version 410 core\n"
 			"uniform float brightness;\n"
+			"uniform vec3 colorOverride;\n"
 			"uniform sampler2D diffuse;\n"
 			"in vec2 v2TexCoord;\n"
 			"out vec4 outputColor;\n"
@@ -513,6 +520,10 @@ bool OpenVRInterface::initShaders()
 			"{\n"
 			"   outputColor = texture(diffuse, v2TexCoord);\n"
 			"	outputColor.rgb *= brightness;\n"
+			"	float overrideMultiplier = (1.0f - colorOverride.x) * (1.0f - colorOverride.y) * (1.0f - colorOverride.z);\n"
+			"	outputColor.r = outputColor.r * overrideMultiplier + colorOverride.x;\n"
+			"	outputColor.g = outputColor.g * overrideMultiplier + colorOverride.y;\n"
+			"	outputColor.b = outputColor.b * overrideMultiplier + colorOverride.z;\n"
 			"}\n"
 	);
 
@@ -633,6 +644,8 @@ void OpenVRInterface::renderScene(Graphics *g, vr::Hmd_Eye eye)
 	renderScene(g, matCurrentEye, matCurrentM, matCurrentP, matCurrentVP, matCurrentMVP);
 }
 
+bool isSpectatorDraw = false;
+
 void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 &matCurrentM, Matrix4 &matCurrentP, Matrix4 &matCurrentVP, Matrix4 &matCurrentMVP)
 {
 	// TODO: render stencil mesh
@@ -703,7 +716,18 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 			Matrix4 matMVP = m_matCurrentMVP * matDeviceToTracking;
 
 			m_renderModelShader->setUniformMatrix4fv("matrix", matMVP);
-			m_renderModelShader->setUniform1f("brightness", (trackedDeviceClass == vr::TrackedDeviceClass_Controller ? vr_controller_model_brightness_multiplier.getFloat() : 1.0f));
+
+			if (trackedDeviceClass == vr::TrackedDeviceClass_Controller)
+			{
+				m_renderModelShader->setUniform1f("brightness", (trackedDeviceClass == vr::TrackedDeviceClass_Controller ? vr_controller_model_brightness_multiplier.getFloat() : 1.0f));
+				m_renderModelShader->setUniform3f("colorOverride", COLOR_GET_Rf(m_controllerColorOverride), COLOR_GET_Gf(m_controllerColorOverride), COLOR_GET_Bf(m_controllerColorOverride));
+			}
+			else
+			{
+				m_renderModelShader->setUniform1f("brightness", 1.0f);
+				m_renderModelShader->setUniform3f("colorOverride", 0.0f, 0.0f, 0.0f);
+			}
+
 			m_rTrackedDeviceToRenderModel[unTrackedDevice]->draw();
 		}
 	}
@@ -711,11 +735,17 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 
 	// TEMP:
 	/*
+	if (isSpectatorDraw)
+	{
 	m_renderModelShader->enable();
 	{
 		Matrix4 translation;
 		translation.translate(0, 1, 0);
 		Matrix4 finalMVP = m_matCurrentMVP * translation;
+		Matrix4 tempCopy = m_mat4HMDPose;
+		Matrix4 tempScale;
+		tempScale.scale(vr_debug_rendermodel_scale.getFloat());
+		finalMVP = m_matCurrentMVP * tempCopy.invert() * tempScale;
 
 		m_renderModelShader->setUniformMatrix4fv("matrix", finalMVP);
 		m_renderModelShader->setUniform1f("brightness", 3.0f);
@@ -763,6 +793,7 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 		}
 	}
 	m_renderModelShader->disable();
+	}
 	*/
 
 	/*
@@ -787,10 +818,14 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 
 		// TEMP:
 		/*
+		if (isSpectatorDraw)
+		{
 		m_genericTexturedShader->enable();
 		Matrix4 headRotation;
 		headRotation.rotateX(90.0f + 180.0f);
-		Matrix4 headMatrix = headRotation * m_mat4HMDPose;
+		Matrix4 headTranslation;
+		headTranslation.translate(0, 0, vr_head_translation.getFloat());
+		Matrix4 headMatrix = headRotation * headTranslation * m_mat4HMDPose;
 		Matrix4 vrheadmatrix = m_matCurrentMVP * headMatrix.invert();
 		m_genericTexturedShader->setUniformMatrix4fv("matrix", vrheadmatrix);
 
@@ -812,6 +847,7 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 		ovao.addVertex(-width/2.0f, 0.0f, height/2.0f);
 
 		g->drawVAO(&ovao);
+		}
 		*/
 
 
@@ -926,7 +962,9 @@ void OpenVRInterface::renderSpectatorTarget(Graphics *g)
 				matCurrentM = m_fakeCamera->getRotation().getMatrix() * translation;
 				matCurrentMVP = matCurrentVP * matCurrentM;
 
+				isSpectatorDraw = true;
 				renderScene(g, matCurrentEye, matCurrentM, matCurrentP, matCurrentVP, matCurrentMVP);
+				isSpectatorDraw = false;
 			}
 			m_leftEye->disable();
 		}
@@ -1226,6 +1264,11 @@ void OpenVRInterface::resetFakeCameraMovement()
 #endif
 }
 
+void OpenVRInterface::setControllerColorOverride(Color controllerColor)
+{
+	m_controllerColorOverride = controllerColor;
+}
+
 Vector2 OpenVRInterface::getRenderTargetResolution()
 {
 	const Vector2 errorReturnResolution = Vector2(1, 1);
@@ -1480,7 +1523,7 @@ Matrix4 OpenVRInterface::getHMDMatrixProjectionEye(vr::Hmd_Eye eye)
 
 CGLRenderModel *OpenVRInterface::findOrLoadRenderModel(const char *pchRenderModelName)
 {
-	debugLog("OpenVRInterface::findOrLoadRenderModel( %s )\n", pchRenderModelName);
+	///debugLog("OpenVRInterface::findOrLoadRenderModel( %s )\n", pchRenderModelName);
 
 	CGLRenderModel *pRenderModel = NULL;
 	for (std::vector<CGLRenderModel*>::iterator i = m_vecRenderModels.begin(); i != m_vecRenderModels.end(); i++)

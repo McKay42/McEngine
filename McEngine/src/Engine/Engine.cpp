@@ -8,26 +8,6 @@
 #include "NetworkHandler.h" // must be up here
 #include "Engine.h"
 
-#if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
-
-#include "WinGLLegacyInterface.h"
-#include "WinSWGraphicsInterface.h"
-#include "WinContextMenu.h"
-#include "WinEnvironment.h"
-
-#elif defined __linux__
-
-#include "stdarg.h"
-#include "LinuxGLLegacyInterface.h"
-#include "LinuxContextMenu.h"
-#include "LinuxEnvironment.h"
-
-#endif
-
-#include "VulkanGraphicsInterface.h"
-
-#include "NullGraphicsInterface.h"
-
 #include "OpenCLInterface.h"
 #include "OpenVRInterface.h"
 #include "VulkanInterface.h"
@@ -80,13 +60,12 @@ Environment *env = NULL;
 Console *Engine::m_console = NULL;
 ConsoleBox *Engine::m_consoleBox = NULL;
 
-
-
-Engine::Engine(Environment *environment)
+Engine::Engine(Environment *environment, const char *args)
 {
 	engine = this;
 	m_environment = environment;
 	env = environment;
+	m_sArgs = UString(args);
 	m_guiContainer = NULL;
 	m_app = NULL;
 
@@ -94,22 +73,9 @@ Engine::Engine(Environment *environment)
 	setvbuf(stdout, NULL, _IONBF, 0);
 	setvbuf(stderr, NULL, _IONBF, 0);
 
+	// print debug information
 	debugLog("-= Engine Startup =-\n");
 	_version();
-
-	// check if we are able to start
-
-#if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
-
-	if (!checkGLHardwareAcceleration())
-	{
-		showMessageErrorFatal("Fatal Engine Error", "No OpenGL hardware acceleration available!\nThe engine will quit now.");
-		exit(0);
-	}
-
-#elif defined __linux__
-	// TODO: implement checkGLHardwareAcceleration() on linux
-#endif
 
 	// timing
 	m_timer = new Timer();
@@ -148,24 +114,10 @@ Engine::Engine(Environment *environment)
 	m_inputDevices.push_back(m_gamepad);
 	m_gamepads.push_back(m_gamepad);
 
-	m_vulkan = NULL;
-	///m_vulkan = new VulkanInterface();
-
 	// init platform specific interfaces
-
-#if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
-
-	m_graphics = new WinGLLegacyInterface(((WinEnvironment*)env)->getHwnd());
-	///m_graphics = new WinSWGraphicsInterface(((WinEnvironment*)env)->getHwnd());
-	///m_graphics = new VulkanGraphicsInterface();
-	m_contextMenu = new WinContextMenu();
-
-#elif defined __linux__
-
-	m_graphics = new LinuxGLLegacyInterface(((LinuxEnvironment*)m_environment)->getDisplay(), ((LinuxEnvironment*)m_environment)->getWindow());
-	m_contextMenu = new LinuxContextMenu();
-
-#endif
+	m_vulkan = new VulkanInterface(); // needs to be created before Graphics
+	m_graphics = env->createRenderer();
+	m_contextMenu = env->createContextMenu();
 
 	// and the rest
 	m_resourceManager = new ResourceManager();
@@ -206,9 +158,6 @@ Engine::~Engine()
 	debugLog("Engine: Freeing OpenVR...\n");
 	SAFE_DELETE(m_openVR);
 
-	debugLog("Engine: Freeing Vulkan...\n");
-	SAFE_DELETE(m_vulkan);
-
 	debugLog("Engine: Freeing Sound...\n");
 	SAFE_DELETE(m_sound);
 
@@ -233,6 +182,9 @@ Engine::~Engine()
 
 	debugLog("Engine: Freeing graphics...\n");
 	SAFE_DELETE(m_graphics);
+
+	debugLog("Engine: Freeing Vulkan...\n");
+	SAFE_DELETE(m_vulkan);
 
 	debugLog("Engine: Freeing environment...\n");
 	SAFE_DELETE(m_environment);
@@ -501,6 +453,7 @@ void Engine::onMouseRightChange(bool mouseRightDown)
 
 void Engine::onKeyboardKeyDown(KEYCODE keyCode)
 {
+	// handle ALT+F4 quit
 	if (m_keyboard->isAltDown() && keyCode == KEY_F4)
 		shutdown();
 
@@ -524,6 +477,15 @@ void Engine::shutdown()
 
 	m_bBlackout = true;
 	m_environment->shutdown();
+}
+
+void Engine::restart()
+{
+	if (m_app != NULL && !m_app->onShutdown())
+		return;
+
+	m_bBlackout = true;
+	m_environment->restart();
 }
 
 void Engine::focus()
@@ -691,6 +653,11 @@ void _exit(void)
 	engine->shutdown();
 }
 
+void _restart(void)
+{
+	engine->restart();
+}
+
 void _printsize(void)
 {
 	Vector2 s = engine->getScreenSize();
@@ -732,6 +699,11 @@ void _minimize(void)
 	env->minimize();
 }
 
+void _toggleresizable(void)
+{
+	env->setWindowResizable(!env->isWindowResizable());
+}
+
 void _focus(void)
 {
 	engine->focus();
@@ -766,10 +738,13 @@ void _crash(void)
 }
 
 ConVar __exit("exit", _exit);
+ConVar __shutdown("shutdown", _exit);
+ConVar __restart("restart", _restart);
 ConVar __printsize("printsize", _printsize);
 ConVar __fullscreen("fullscreen", _fullscreen);
 ConVar __windowed("windowed", _windowed);
 ConVar __minimize("minimize", _minimize);
+ConVar __resizable_toggle("resizable_toggle", _toggleresizable);
 ConVar __focus("focus", _focus);
 ConVar __center("center", _center);
 ConVar __version("version", _version);

@@ -59,6 +59,8 @@ public:
 	typedef fastdelegate::FastDelegate1<Graphics*> DrawCallback;
 	void setDrawCallback(DrawCallback drawCallback) {m_drawCallback = drawCallback;}
 
+	void setControllerColorOverride(Color controllerColor);
+
 	inline Matrix4 getCurrentModelMatrix() {return m_matCurrentM;}
 	inline Matrix4 getCurrentViewProjectionMatrix() {return m_matCurrentVP;}
 	inline Matrix4 getCurrentModelViewProjectionMatrix() {return m_matCurrentMVP;}
@@ -124,11 +126,14 @@ private:
 
 	bool m_bReady;
 
+	// main draw callback
+	DrawCallback m_drawCallback;
+
+	// controllers
 	OpenVRController *m_controller;
 	OpenVRController *m_controllerLeft;
 	OpenVRController *m_controllerRight;
-
-	DrawCallback m_drawCallback;
+	Color m_controllerColorOverride;
 
 	// matrices
 	Matrix4 m_mat4HMDPose;
@@ -193,12 +198,12 @@ private:
 	std::string m_strPoseClasses;                            // what classes we saw poses for this frame
 	char m_rDevClassChar[ vr::k_unMaxTrackedDeviceCount ];   // for each device, a character representing its class
 
-	// mesh buffers
+	// TEMP: mesh buffers
 	GLuint m_glControllerVertBuffer;
 	GLuint m_unControllerVAO;
 	unsigned int m_uiControllerVertcount;
 
-	// misc
+	// custom
 	float m_fPrevSSMultiplier;
 	float m_fCompositorSSMultiplier;
 	float m_fPrevAA;

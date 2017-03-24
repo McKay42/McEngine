@@ -15,6 +15,7 @@
 
 WinFile::WinFile(UString filePath)
 {
+	m_sFilePath = filePath;
 	m_bReady = false;
 
 	// pointers
@@ -298,6 +299,8 @@ UString WinFile::readLine()
 
 const char *WinFile::readFile()
 {
+	if (File::debug->getBool())
+		debugLog("WinFile::readFile() on %s\n", m_sFilePath.toUtf8());
 
 #ifdef WINFILE_USE_MEMORY_MAPPING
 

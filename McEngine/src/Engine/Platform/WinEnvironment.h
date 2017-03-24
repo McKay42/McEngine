@@ -17,6 +17,7 @@
 class WinEnvironment : public Environment
 {
 public:
+	// ILLEGAL:
 	static long getWindowStyleWindowed();
 	static long getWindowStyleFullscreen();
 
@@ -26,27 +27,44 @@ public:
 
 	void update();
 
-	// os calls
+	// engine/factory
+	Graphics *createRenderer();
+	ContextMenu *createContextMenu();
+
+	// system
+	OS getOS();
 	void shutdown();
+	void restart();
+	UString getExecutablePath();
+	void openURLInDefaultBrowser(UString url);
+
+	// user
 	UString getUsername();
 	UString getUserDataPath();
+
+	// file IO
 	bool fileExists(UString filename);
-	UString getClipBoardText();
-	void setClipBoardText(UString text);
-	void openURLInDefaultBrowser(UString url);
-	UString openFileWindow(const char *filetypefilters, UString title, UString initialpath);
-	UString openFolderWindow(UString title, UString initialpath);
+	bool directoryExists(UString directoryName);
+	bool createDirectory(UString directoryName);
+	bool renameFile(UString oldFileName, UString newFileName);
+	bool deleteFile(UString filePath);
 	std::vector<UString> getFilesInFolder(UString folder);
 	std::vector<UString> getFoldersInFolder(UString folder);
 	std::vector<UString> getLogicalDrives();
 	UString getFolderFromFilePath(UString filepath);
 	UString getFileExtensionFromFilePath(UString filepath, bool includeDot = false);
 
-	// message boxes
+	// clipboard
+	UString getClipBoardText();
+	void setClipBoardText(UString text);
+
+	// dialogs & message boxes
 	void showMessageInfo(UString title, UString message);
 	void showMessageWarning(UString title, UString message);
 	void showMessageError(UString title, UString message);
 	void showMessageErrorFatal(UString title, UString message);
+	UString openFileWindow(const char *filetypefilters, UString title, UString initialpath);
+	UString openFolderWindow(UString title, UString initialpath);
 
 	// window
 	void focus();
@@ -58,6 +76,7 @@ public:
 	void setWindowTitle(UString title);
 	void setWindowPos(int x, int y);
 	void setWindowSize(int width, int height);
+	void setWindowResizable(bool resizable);
 	void setWindowGhostCorporeal(bool corporeal);
 	Vector2 getWindowPos();
 	Vector2 getWindowSize();
@@ -65,6 +84,7 @@ public:
 	Rect getVirtualScreenRect();
 	Rect getDesktopRect();
 	bool isFullscreen() {return m_bFullScreen;}
+	bool isWindowResizable() {return m_bResizable;}
 
 	// mouse
 	bool isCursorInWindow();
@@ -80,6 +100,7 @@ public:
 	// ILLEGAL:
 	inline HWND getHwnd() const {return m_hwnd;}
 	inline HINSTANCE getHInstance() const {return m_hInstance;}
+	inline bool isRestartScheduled() const {return m_bIsRestartScheduled;}
 
 private:
 	void path_strip_filename(TCHAR *Path);
@@ -89,6 +110,7 @@ private:
 	HINSTANCE m_hInstance;
 
 	// window
+	static bool m_bResizable;
 	bool m_bFullScreen;
 	Vector2 m_vWindowSize;
 	Vector2 m_vLastWindowPos;
@@ -100,6 +122,9 @@ private:
 	bool m_bIsCursorInsideWindow;
 	HCURSOR m_mouseCursor;
 	HCURSOR m_mouseCursorArrow;
+
+	// custom
+	bool m_bIsRestartScheduled;
 };
 
 #endif
