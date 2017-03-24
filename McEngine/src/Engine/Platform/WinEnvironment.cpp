@@ -11,6 +11,11 @@
 #include "Engine.h"
 #include "Mouse.h"
 
+#include "WinGLLegacyInterface.h"
+#include "WinSWGraphicsInterface.h"
+#include "VulkanGraphicsInterface.h"
+#include "WinContextMenu.h"
+
 #include <Lmcons.h>
 #include <Shlobj.h>
 
@@ -21,6 +26,8 @@
 
 bool g_bCursorVisible = true;
 
+bool WinEnvironment::m_bResizable = true;
+
 WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance)
 {
 	m_hwnd = hwnd;
@@ -30,6 +37,8 @@ WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance)
 	m_bFullScreen = false;
 	m_vWindowSize = getWindowSize();
 	m_bCursorClipped = false;
+
+	m_bIsRestartScheduled = false;
 }
 
 void WinEnvironment::update()
@@ -37,9 +46,32 @@ void WinEnvironment::update()
 	m_bIsCursorInsideWindow = Rect(0, 0, engine->getScreenWidth(), engine->getScreenHeight()).contains(getMousePos());
 }
 
+Graphics *WinEnvironment::createRenderer()
+{
+	//return new VulkanGraphicsInterface();
+	//return new WinSWGraphicsInterface(m_hwnd);
+	return new WinGLLegacyInterface(m_hwnd);
+}
+
+ContextMenu *WinEnvironment::createContextMenu()
+{
+	return new WinContextMenu();
+}
+
+Environment::OS WinEnvironment::getOS()
+{
+	return Environment::OS::OS_WINDOWS;
+}
+
 void WinEnvironment::shutdown()
 {
 	SendMessage(m_hwnd, WM_CLOSE, 0, 0);
+}
+
+void WinEnvironment::restart()
+{
+	m_bIsRestartScheduled = true;
+	shutdown();
 }
 
 UString WinEnvironment::getUsername()
@@ -59,6 +91,14 @@ UString WinEnvironment::getUserDataPath()
 	return UString("");
 }
 
+UString WinEnvironment::getExecutablePath()
+{
+	wchar_t path[MAX_PATH];
+	if (GetModuleFileNameW(NULL, path, MAX_PATH))
+		return UString(path);
+	return UString("");
+}
+
 bool WinEnvironment::fileExists(UString filename)
 {
 	WIN32_FIND_DATAW FindFileData;
@@ -70,6 +110,27 @@ bool WinEnvironment::fileExists(UString filename)
 		FindClose(handle);
 		return true;
 	}
+}
+
+bool WinEnvironment::directoryExists(UString filename)
+{
+	DWORD dwAttrib = GetFileAttributesW(filename.wc_str());
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+bool WinEnvironment::createDirectory(UString directoryName)
+{
+	return CreateDirectoryW(directoryName.wc_str(), NULL);
+}
+
+bool WinEnvironment::renameFile(UString oldFileName, UString newFileName)
+{
+	return MoveFileW(oldFileName.wc_str(), newFileName.wc_str());
+}
+
+bool WinEnvironment::deleteFile(UString filePath)
+{
+	return DeleteFileW(filePath.wc_str());
 }
 
 UString WinEnvironment::getClipBoardText()
@@ -94,27 +155,21 @@ void WinEnvironment::setClipBoardText(UString text)
 {
 	if (text.length() < 1) return;
 
-	if (OpenClipboard(NULL))
+	if (OpenClipboard(NULL) && EmptyClipboard())
 	{
-		EmptyClipboard();
+		HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, ((text.length() + 1) * sizeof(WCHAR)));
 
-		HGLOBAL hglbCopy;
-		hglbCopy = GlobalAlloc(GMEM_MOVEABLE, ((text.length() + 1) * sizeof(WCHAR)));
-
-		if (hglbCopy == NULL)
+		if (hMem == NULL)
         {
 			debugLog("ERROR: hglbCopy == NULL!\n");
             CloseClipboard();
             return;
         }
 
-		LPWSTR  lptstrCopy;
-		lptstrCopy = (LPWSTR)GlobalLock(hglbCopy);
-		memcpy(lptstrCopy, text.wc_str(), (text.length() + 1) * sizeof(WCHAR) );
-        lptstrCopy[(text.length() + 1) * sizeof(WCHAR)] = (WCHAR) 0;    // null
+		memcpy(GlobalLock(hMem), text.wc_str(), (text.length() + 1) * sizeof(WCHAR));
+        GlobalUnlock(hMem);
 
-		GlobalUnlock(hglbCopy);
-		SetClipboardData(CF_UNICODETEXT, hglbCopy);
+		SetClipboardData(CF_UNICODETEXT, hMem);
 
 		CloseClipboard();
 	}
@@ -485,6 +540,12 @@ void WinEnvironment::setWindowSize(int width, int height)
 	MoveWindow(m_hwnd, m_vLastWindowPos.x, m_vLastWindowPos.y, m_vWindowSize.x, m_vWindowSize.y, FALSE);
 }
 
+void WinEnvironment::setWindowResizable(bool resizable)
+{
+	m_bResizable = resizable;
+	SetWindowLongPtr(m_hwnd, GWL_STYLE, getWindowStyleWindowed());
+}
+
 void WinEnvironment::setWindowGhostCorporeal(bool corporeal)
 {
 	LONG_PTR exStyle = 0;
@@ -726,9 +787,8 @@ long WinEnvironment::getWindowStyleWindowed()
 {
 	long style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
 
-#ifndef WINDOW_RESIZABLE
-	style = style & (~WS_SIZEBOX);
-#endif
+	if (!m_bResizable)
+		style = style & (~WS_SIZEBOX);
 
 	return style;
 }
