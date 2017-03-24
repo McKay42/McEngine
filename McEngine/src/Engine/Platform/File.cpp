@@ -70,9 +70,10 @@ size_t File::getFileSize() const
 // std implementation of File
 StdFile::StdFile(UString filePath)
 {
+	m_sFilePath = filePath;
 	m_bReady = false;
-	m_iFileSize = 0;
 	m_bRead = true;
+	m_iFileSize = 0;
 
 	m_ifstream.open(filePath.toUtf8(), std::ios::in | std::ios::binary);
 
@@ -137,6 +138,9 @@ UString StdFile::readLine()
 
 const char *StdFile::readFile()
 {
+	if (File::debug->getBool())
+		debugLog("StdFile::readFile() on %s\n", m_sFilePath.toUtf8());
+
 	if (!m_bReady || !canRead())
 		return NULL;
 

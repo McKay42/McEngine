@@ -40,6 +40,8 @@ private:
 	HANDLE m_handleMapping;
 	size_t m_iFileSize;
 
+	UString m_sFilePath;
+
 	// line reader
 	char *m_buffer;
 	DWORD m_iRead;

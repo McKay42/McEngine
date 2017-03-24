@@ -17,6 +17,7 @@ bool g_bARBMultisampleSupported = false;
 int g_iARBMultisampleFormat = 0;
 
 
+
 //****************//
 //	Pixel Format  //
 //****************//
@@ -35,21 +36,6 @@ PIXELFORMATDESCRIPTOR getPixelFormatDescriptor()
 	pfd.iLayerType = PFD_MAIN_PLANE;
 	return pfd;
 }
-
-
-//************************************************//
-//	check if OpenGL hw acceleration is available  //
-//************************************************//
-
-bool checkGLHardwareAcceleration()
-{
-	HDC hdc = GetDC(((WinEnvironment*)env)->getHwnd());
-	PIXELFORMATDESCRIPTOR pfd = getPixelFormatDescriptor();
-	int pixelFormat = ChoosePixelFormat(hdc, &pfd);
-	ReleaseDC(((WinEnvironment*)env)->getHwnd(), hdc);
-	return pixelFormat;
-}
-
 
 //**************************************//
 //	check if an extension is supported  //
@@ -91,7 +77,6 @@ bool wglIsExtensionSupported(const char *extension)
 
     return false;
 }
-
 
 //************************************//
 //	handle enabling of multisampling  //
@@ -176,13 +161,16 @@ FAKE_CONTEXT WinGLLegacyInterface::createAndMakeCurrentWGLContext(HWND hwnd, PIX
 }
 
 
-//************************************//
-//	implementation of WinGLInterface  //
-//************************************//
 
 WinGLLegacyInterface::WinGLLegacyInterface(HWND hwnd) : OpenGLLegacyInterface()
 {
 	m_hwnd = hwnd;
+
+	if (!checkGLHardwareAcceleration())
+	{
+		engine->showMessageErrorFatal("Fatal Engine Error", "No OpenGL hardware acceleration available!\nThe engine will quit now.");
+		exit(0);
+	}
 
 	// get device context
 	m_hdc = GetDC(m_hwnd);
@@ -246,6 +234,15 @@ void WinGLLegacyInterface::setVSync(bool vsync)
 		if( wglSwapIntervalEXT )
 			wglSwapIntervalEXT((int)vsync);
 	}
+}
+
+bool WinGLLegacyInterface::checkGLHardwareAcceleration()
+{
+	HDC hdc = GetDC(((WinEnvironment*)env)->getHwnd());
+	PIXELFORMATDESCRIPTOR pfd = getPixelFormatDescriptor();
+	int pixelFormat = ChoosePixelFormat(hdc, &pfd);
+	ReleaseDC(((WinEnvironment*)env)->getHwnd(), hdc);
+	return pixelFormat;
 }
 
 #endif

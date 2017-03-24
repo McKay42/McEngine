@@ -32,8 +32,8 @@ public:
 	// scrolling
 	void scrollY(int delta, bool animated = true);
 	void scrollX(int delta, bool animated = true);
-	void scrollToY(int scrollPosY);
-	void scrollToX(int scrollPosX);
+	void scrollToY(int scrollPosY, bool animated = true);
+	void scrollToX(int scrollPosX, bool animated = true);
 	void scrollToElement(CBaseUIElement *element, int xOffset = 0, int yOffset = 0);
 
 	void scrollToRight();
