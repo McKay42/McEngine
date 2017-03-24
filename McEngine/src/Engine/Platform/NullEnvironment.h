@@ -16,27 +16,44 @@ public:
 	NullEnvironment();
 	virtual ~NullEnvironment() {;}
 
-	// os calls
+	// engine/factory
+	Graphics *createRenderer();
+	ContextMenu *createContextMenu();
+
+	// system
+	OS getOS() {return Environment::OS::OS_NULL;}
 	void shutdown();
+	void restart();
+	UString getExecutablePath() {return "";}
+	void openURLInDefaultBrowser(UString url) {;}
+
+	// user
 	UString getUsername() {return "<NULL>";}
 	UString getUserDataPath() {return "<NULL>";}
+
+	// file IO
 	bool fileExists(UString filename) {return false;}
-	UString getClipBoardText() {return "";}
-	void setClipBoardText(UString text) {;}
-	void openURLInDefaultBrowser(UString url) {;}
-	UString openFileWindow(const char *filetypefilters, UString title, UString initialpath) {return "";}
-	UString openFolderWindow(UString title, UString initialpath) {return "";}
+	bool directoryExists(UString directoryName) {return false;}
+	bool createDirectory(UString directoryName) {return false;}
+	bool renameFile(UString oldFileName, UString newFileName) {return false;}
+	bool deleteFile(UString filePath) {return false;}
 	std::vector<UString> getFilesInFolder(UString folder) {return std::vector<UString>();}
 	std::vector<UString> getFoldersInFolder(UString folder) {return std::vector<UString>();}
 	std::vector<UString> getLogicalDrives() {return std::vector<UString>();}
 	UString getFolderFromFilePath(UString filepath) {return "";}
 	UString getFileExtensionFromFilePath(UString filepath, bool includeDot = false) {return "";}
 
-	// message boxes
+	// clipboard
+	UString getClipBoardText() {return "";}
+	void setClipBoardText(UString text) {;}
+
+	// dialogs & message boxes
 	void showMessageInfo(UString title, UString message) {;}
 	void showMessageWarning(UString title, UString message) {;}
 	void showMessageError(UString title, UString message) {;}
 	void showMessageErrorFatal(UString title, UString message) {;}
+	UString openFileWindow(const char *filetypefilters, UString title, UString initialpath) {return "";}
+	UString openFolderWindow(UString title, UString initialpath) {return "";}
 
 	// window
 	void focus() {;}

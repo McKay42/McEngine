@@ -25,6 +25,7 @@
 #include "Engine.h"
 #include "ConVar.h"
 #include "Timer.h"
+#include "Mouse.h"
 
 #include <WinGLLegacyInterface.h>
 #include "WinEnvironment.h"
@@ -147,12 +148,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				if (g_engine != NULL)
 				{
 					long val = DefWindowProc(hwnd, msg, wParam, lParam);
-					if (!val == HTCLIENT)
+					if (val != HTCLIENT)
 						return val;
 
 					// fake window moving
-					Rect dragging = Rect(20, 4, engine->getScreenWidth()-80, 20);
-					if (dragging.contains(g_engine->getMousePos()))
+					Vector2 mousePos = g_engine->getEnvironment()->getMousePos();
+					Rect dragging = Rect(40, 4, engine->getScreenWidth()-80, 20); // HACKHACK: hardcoded 40 for stuff
+					if (dragging.contains(mousePos))
 						val = HTCAPTION;
 
 					if (IsZoomed(hwnd))
@@ -163,22 +165,22 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					Rect resizeW = Rect(0, 0, 4, engine->getScreenHeight());
 					Rect resizeO = Rect(engine->getScreenWidth()-5, 0, engine->getScreenWidth(), engine->getScreenHeight());
 					Rect resizeS = Rect(0, engine->getScreenHeight()-5, engine->getScreenWidth(), engine->getScreenHeight());
-					if (resizeN.contains(g_engine->getMousePos()))
+					if (resizeN.contains(mousePos))
 						val = HTTOP;
-					if (resizeW.contains(g_engine->getMousePos()))
+					if (resizeW.contains(mousePos))
 						val = HTLEFT;
-					if (resizeO.contains(g_engine->getMousePos()))
+					if (resizeO.contains(mousePos))
 						val = HTRIGHT;
-					if (resizeS.contains(g_engine->getMousePos()))
+					if (resizeS.contains(mousePos))
 						val = HTBOTTOM;
 
-					if (resizeN.contains(g_engine->getMousePos()) && resizeW.contains(g_engine->getMousePos()))
+					if (resizeN.contains(mousePos) && resizeW.contains(mousePos))
 						val = HTTOPLEFT;
-					if (resizeN.contains(g_engine->getMousePos()) && resizeO.contains(g_engine->getMousePos()))
+					if (resizeN.contains(mousePos) && resizeO.contains(mousePos))
 						val = HTTOPRIGHT;
-					if (resizeO.contains(g_engine->getMousePos()) && resizeS.contains(g_engine->getMousePos()))
+					if (resizeO.contains(mousePos) && resizeS.contains(mousePos))
 						val = HTBOTTOMRIGHT;
-					if (resizeS.contains(g_engine->getMousePos()) && resizeW.contains(g_engine->getMousePos()))
+					if (resizeS.contains(mousePos) && resizeW.contains(mousePos))
 						val = HTBOTTOMLEFT;
 
 					return val;
@@ -616,6 +618,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wc.hbrBackground = (HBRUSH)CreateSolidBrush(0x00000000);
     wc.lpszMenuName  = NULL;
 	wc.lpszClassName = WINDOW_TITLE;
+    //wc.hIconSm       = LoadIcon(hInstance, MAKEINTRESOURCE(1)); // load icon named "1" in /Main/WinIcon.rc file, must link to WinIcon.o which was created with windres
     wc.hIconSm       = LoadIcon(NULL, IDI_APPLICATION);
 
 	// register window class
@@ -713,7 +716,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &lpDevMode))
 	{
 		float displayFrequency = static_cast<float>(lpDevMode.dmDisplayFrequency);
-		printf("Display Refresh Rate is %.2f Hz, setting fps_max to %i.\n\n", displayFrequency, (int)displayFrequency);
+		///printf("Display Refresh Rate is %.2f Hz, setting fps_max to %i.\n\n", displayFrequency, (int)displayFrequency);
 		fps_max.setValue((int)displayFrequency);
 	}
 
@@ -745,7 +748,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #endif
 
     // initialize engine
-    g_engine = new Engine(new WinEnvironment(hwnd, hInstance));
+	WinEnvironment *environment = new WinEnvironment(hwnd, hInstance);
+    g_engine = new Engine(environment, lpCmdLine);
     g_engine->loadApp();
 
     if (g_bHasFocus)
@@ -816,11 +820,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	SAFE_DELETE(frameTimer);
 	SAFE_DELETE(deltaTimer);
 
+	bool isRestartScheduled = environment->isRestartScheduled();
+
     // release engine
     SAFE_DELETE(g_engine);
 
 	// finally, destroy the window
 	DestroyWindow(hwnd);
+
+	// handle potential restart
+	if (isRestartScheduled)
+	{
+		wchar_t full_path[MAX_PATH];
+		GetModuleFileNameW(NULL, full_path, MAX_PATH);
+		STARTUPINFOW startupInfo = {sizeof(STARTUPINFOW)};
+		PROCESS_INFORMATION processInfo;
+		CreateProcessW(full_path, NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &startupInfo, &processInfo);
+	}
 
     return 0;
 }

@@ -18,7 +18,7 @@
 #include "ConVar.h"
 
 ConVar ui_scrollview_resistance("ui_scrollview_resistance", 5.0f, "how many pixels you have to pull before you start scrolling");
-ConVar ui_scrollview_scrollbarwidth("ui_scrollview_scrollbarwidth", 5.0f);
+ConVar ui_scrollview_scrollbarwidth("ui_scrollview_scrollbarwidth", 15.0f);
 ConVar ui_scrollview_kinetic_energy_multiplier("ui_scrollview_kinetic_energy_multiplier", 24.0f, "afterscroll delta multiplier");
 ConVar ui_scrollview_mousewheel_multiplier("ui_scrollview_mousewheel_multiplier", 3.5f);
 
@@ -95,8 +95,8 @@ void CBaseUIScrollView::draw(Graphics *g)
 				if (((m_bScrollbarScrolling && m_bScrollbarIsVerticalScrolling) || m_verticalScrollbar.contains(engine->getMouse()->getPos())) && !m_bScrolling)
 					g->setAlpha(1.0f);
 
-				//g->fillRect(m_verticalScrollbar.getX(), m_verticalScrollbar.getY(), m_verticalScrollbar.getWidth(), m_verticalScrollbar.getHeight());
-				g->fillRoundedRect(m_verticalScrollbar.getX(), m_verticalScrollbar.getY(), m_verticalScrollbar.getWidth(), m_verticalScrollbar.getHeight(), m_verticalScrollbar.getWidth()/2);
+				g->fillRect(m_verticalScrollbar.getX(), m_verticalScrollbar.getY(), m_verticalScrollbar.getWidth(), m_verticalScrollbar.getHeight());
+				//g->fillRoundedRect(m_verticalScrollbar.getX(), m_verticalScrollbar.getY(), m_verticalScrollbar.getWidth(), m_verticalScrollbar.getHeight(), m_verticalScrollbar.getWidth()/2);
 			}
 
 			// horizontal
@@ -106,8 +106,8 @@ void CBaseUIScrollView::draw(Graphics *g)
 				if (((m_bScrollbarScrolling && !m_bScrollbarIsVerticalScrolling) || m_horizontalScrollbar.contains(engine->getMouse()->getPos())) && !m_bScrolling)
 					g->setAlpha(1.0f);
 
-				//g->fillRect(m_horizontalScrollbar.getX(), m_horizontalScrollbar.getY(), m_horizontalScrollbar.getWidth(), m_horizontalScrollbar.getHeight());
-				g->fillRoundedRect(m_horizontalScrollbar.getX(), m_horizontalScrollbar.getY(), m_horizontalScrollbar.getWidth(), m_horizontalScrollbar.getHeight(), m_horizontalScrollbar.getHeight()/2);
+				g->fillRect(m_horizontalScrollbar.getX(), m_horizontalScrollbar.getY(), m_horizontalScrollbar.getWidth(), m_horizontalScrollbar.getHeight());
+				//g->fillRoundedRect(m_horizontalScrollbar.getX(), m_horizontalScrollbar.getY(), m_horizontalScrollbar.getWidth(), m_horizontalScrollbar.getHeight(), m_horizontalScrollbar.getHeight()/2);
 			}
 		}
 
@@ -267,12 +267,12 @@ void CBaseUIScrollView::update()
 		if (m_bScrollbarIsVerticalScrolling)
 		{
 			float percent = clamp<float>( (engine->getMouse()->getPos().y - m_vPos.y - m_verticalScrollbar.getWidth() - m_verticalScrollbar.getHeight() - m_vMouseBackup.y - 1) / (m_vSize.y - 2*m_verticalScrollbar.getWidth()), 0.0f, 1.0f );
-			scrollToY(-m_vScrollSize.y*percent);
+			scrollToY(-m_vScrollSize.y*percent, false);
 		}
 		else
 		{
 			float percent = clamp<float>( (engine->getMouse()->getPos().x - m_vPos.x - m_horizontalScrollbar.getHeight() - m_horizontalScrollbar.getWidth() - m_vMouseBackup.x - 1) / (m_vSize.x - 2*m_horizontalScrollbar.getHeight()), 0.0f, 1.0f );
-			scrollToX(-m_vScrollSize.x*percent);
+			scrollToX(-m_vScrollSize.x*percent, false);
 		}
 	}
 
@@ -393,7 +393,7 @@ void CBaseUIScrollView::scrollX(int delta, bool animated)
 	}
 }
 
-void CBaseUIScrollView::scrollToX(int scrollPosX)
+void CBaseUIScrollView::scrollToX(int scrollPosX, bool animated)
 {
 	if (!m_bHorizontalScrolling || m_bScrolling) return;
 
@@ -402,13 +402,20 @@ void CBaseUIScrollView::scrollToX(int scrollPosX)
 	if (lowerBounds >= upperBounds)
 		lowerBounds = upperBounds;
 
-	m_bAutoScrollingX = true;
 	float targetX = clamp<float>(scrollPosX, lowerBounds, upperBounds);
-	m_vVelocity.x = targetX;
-	anim->moveQuadOut(&m_vScrollPos.x, targetX, 0.15f, 0.0f, true);
+	//if (animated)
+	{
+		m_bAutoScrollingX = true;
+		m_vVelocity.x = targetX;
+		anim->moveQuadOut(&m_vScrollPos.x, targetX, animated ? 0.15f : 0.035f, 0.0f, true);
+	}
+	/*
+	else
+		m_vScrollPos.x = targetX;
+	*/
 }
 
-void CBaseUIScrollView::scrollToY(int scrollPosY)
+void CBaseUIScrollView::scrollToY(int scrollPosY, bool animated)
 {
 	if (!m_bVerticalScrolling || m_bScrolling) return;
 
@@ -417,10 +424,17 @@ void CBaseUIScrollView::scrollToY(int scrollPosY)
 	if (lowerBounds >= upperBounds)
 		lowerBounds = upperBounds;
 
-	m_bAutoScrollingY = true;
 	float targetY = clamp<float>(scrollPosY, lowerBounds, upperBounds);
-	m_vVelocity.y = targetY;
-	anim->moveQuadOut(&m_vScrollPos.y, targetY, 0.15f, 0.0f, true);
+	//if (animated)
+	{
+		m_bAutoScrollingY = true;
+		m_vVelocity.y = targetY;
+		anim->moveQuadOut(&m_vScrollPos.y, targetY, animated ? 0.15f : 0.035f, 0.0f, true);
+	}
+	/*
+	else
+		m_vScrollPos.y = targetY;
+	*/
 }
 
 void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int xOffset, int yOffset)
@@ -474,7 +488,7 @@ void CBaseUIScrollView::updateScrollbars()
 
 		float verticalHeightPercent = ((m_vSize.y - verticalBlockWidth*2) / m_vScrollSize.y);
 		float verticalBlockHeight = clamp<float>(std::max(verticalHeightPercent * m_vSize.y, verticalBlockWidth)*overscroll, verticalBlockWidth, m_vSize.y);
-		m_verticalScrollbar = Rect(m_vPos.x + m_vSize.x - 2*verticalBlockWidth, m_vPos.y + verticalPercent*(m_vSize.y-verticalBlockWidth*2 - verticalBlockHeight) + verticalBlockWidth + 1, verticalBlockWidth, verticalBlockHeight);
+		m_verticalScrollbar = Rect(m_vPos.x + m_vSize.x - verticalBlockWidth, m_vPos.y + verticalPercent*(m_vSize.y-verticalBlockWidth*2 - verticalBlockHeight) + verticalBlockWidth + 1, verticalBlockWidth, verticalBlockHeight);
 	}
 
 	// update horizontal scrollbar
@@ -484,7 +498,7 @@ void CBaseUIScrollView::updateScrollbars()
 		float horizontalBlockWidth = ui_scrollview_scrollbarwidth.getInt();
 		float horizontalHeightPercent = ((m_vSize.x - horizontalBlockWidth*2) / m_vScrollSize.x);
 		float horizontalBlockHeight = std::max(horizontalHeightPercent * m_vSize.x, horizontalBlockWidth);
-		m_horizontalScrollbar = Rect(m_vPos.x + horizontalPercent*(m_vSize.x-horizontalBlockWidth*2 - horizontalBlockHeight) + horizontalBlockWidth + 1, m_vPos.y + m_vSize.y - 2*horizontalBlockWidth, horizontalBlockHeight, horizontalBlockWidth);
+		m_horizontalScrollbar = Rect(m_vPos.x + horizontalPercent*(m_vSize.x-horizontalBlockWidth*2 - horizontalBlockHeight) + horizontalBlockWidth + 1, m_vPos.y + m_vSize.y - horizontalBlockWidth, horizontalBlockHeight, horizontalBlockWidth);
 	}
 }
 

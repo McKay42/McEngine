@@ -7,8 +7,11 @@
 
 #include "VulkanInterface.h"
 #include "Engine.h"
+#include "ConVar.h"
 
 #include <string.h>
+
+ConVar vulkan_debug("vulkan_debug", false);
 
 VulkanInterface *vulkan = NULL;
 
@@ -19,16 +22,38 @@ VulkanInterface::VulkanInterface()
 
 #ifdef MCENGINE_FEATURE_VULKAN
 
-	// OS dependent required extensions for anything to work at all
+	// handle extensions
 	std::vector<const char *> enabledExtensions;
 	enabledExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
-		enabledExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+
+	enabledExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+
 #else
+
 	#error "TODO: add correct extension here"
-		enabledExtensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+	enabledExtensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+
 #endif
+
+	// list all available layers
+	uint32_t layerCount;
+	vkEnumerateInstanceLayerProperties(&layerCount, NULL);
+	std::vector<VkLayerProperties> availableLayers(layerCount);
+	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+	debugLog("Vulkan: Found %i available layers:\n", layerCount);
+	for (int i=0; i<availableLayers.size(); i++)
+	{
+		debugLog("Vulkan: Layer %i = %s v%i (%s)\n", i, availableLayers[i].description, availableLayers[i].implementationVersion, availableLayers[i].layerName);
+	}
+
+	// handle layers
+	std::vector<const char *> enabledLayers;
+	if (vulkan_debug.getBool())
+		enabledLayers.push_back("VK_LAYER_LUNARG_standard_validation");
+
+	// TODO: implement & handle debug layers and callbacks
 
 	// application settings
 	VkApplicationInfo appInfo = VkApplicationInfo{};
@@ -46,14 +71,17 @@ VulkanInterface::VulkanInterface()
 	createInfo.pApplicationInfo = &appInfo;
 	createInfo.enabledExtensionCount = enabledExtensions.size();
 	createInfo.ppEnabledExtensionNames = &enabledExtensions[0];
+	createInfo.enabledLayerCount = enabledLayers.size();
+	createInfo.ppEnabledLayerNames = &enabledLayers[0];
 
 	// create instance
 	VkResult res = vkCreateInstance(&createInfo, NULL, &m_instance);
-
 	if (res != VK_SUCCESS)
 	{
 		if (res == VK_ERROR_EXTENSION_NOT_PRESENT)
 			engine->showMessageError("Vulkan Error", UString::format("Couldn't vkCreateInstance(), returned %d. Required Vulkan extensions are not present!", res));
+		else if (res == VK_ERROR_LAYER_NOT_PRESENT)
+			engine->showMessageError("Vulkan Error", UString::format("Couldn't vkCreateInstance(), returned %d. Required Vulkan layers are not present!", res));
 		else
 			engine->showMessageError("Vulkan Error", UString::format("Couldn't vkCreateInstance(), returned %d", res));
 		return;
@@ -62,13 +90,11 @@ VulkanInterface::VulkanInterface()
 	// iterate over all available devices
 	unsigned int numDevices = 0;
 	res = vkEnumeratePhysicalDevices(m_instance, &numDevices, NULL);
-
 	if (res != VK_SUCCESS)
 	{
 		engine->showMessageError("Vulkan Error", UString::format("Couldn't vkEnumeratePhysicalDevices(), returned %d", res));
 		return;
 	}
-
 	if (numDevices < 1)
 	{
 		engine->showMessageError("Vulkan Error", "Couldn't detect any Vulkan compatible devices!");
@@ -78,16 +104,13 @@ VulkanInterface::VulkanInterface()
 	debugLog("Vulkan: Found %i compatible device(s)\n", numDevices);
 	std::vector<VkPhysicalDevice> devices(numDevices);
 	res = vkEnumeratePhysicalDevices(m_instance, &numDevices, &devices[0]);
-
 	if (res != VK_SUCCESS)
 	{
 		engine->showMessageError("Vulkan Error", UString::format("Couldn't enumerate vkEnumeratePhysicalDevices(), returned %d", res));
 		return;
 	}
 
-	// Enumerate over device properties. Output information about each device
-	// just for logging purposes. The API version shifts at the end are from
-	// the Vulkan header file (VK_VER_MAJOR, VK_VER_MINOR, VK_VER_PATCH).
+	// list all devices
 	VkPhysicalDeviceProperties deviceProperties;
 	for (unsigned int i=0; i<numDevices; i++)
 	{
@@ -105,6 +128,8 @@ VulkanInterface::VulkanInterface()
 	debugLog("Vulkan: Selecting device #%i as default device.\n", 0);
 	m_physicalDevice = devices[0];
 
+	// TODO: fix everything after this, queue families
+
 	// create device
 	VkDeviceCreateInfo deviceInfo;
 
@@ -119,9 +144,7 @@ VulkanInterface::VulkanInterface()
 	deviceInfo.enabledExtensionCount = 0;
 	deviceInfo.ppEnabledExtensionNames = NULL;
 
-	// we don't want any any features,:the wording in the spec for DeviceCreateInfo
-	// excludes that you can pass NULL to disable features, which GetPhysicalDeviceFeatures
-	// tells you is a valid value. This must be supplied - NULL is legal here.
+	// we don't want any any features
 	deviceInfo.pEnabledFeatures = NULL;
 
 	// here's where we initialize our queues

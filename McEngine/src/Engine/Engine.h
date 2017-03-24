@@ -37,7 +37,7 @@ public:
 	static void debugLog(Color color, const char *fmt, ...);
 
 public:
-	Engine(Environment *environment);
+	Engine(Environment *environment, const char *args = NULL);
 	~Engine();
 
 	// app
@@ -70,6 +70,7 @@ public:
 
 	// convenience functions (passthroughs)
 	void shutdown();
+	void restart();
 	void focus();
 	void center();
 	void toggleFullscreen();
@@ -116,6 +117,7 @@ public:
 	inline double getTimeRunning() const {return m_dRunTime;}
 	inline double getFrameTime() const {return m_dFrameTime;}
 	inline unsigned long getFrameCount() const {return m_iFrameCount;}
+	UString getArgs() {return m_sArgs;}
 	inline bool hasFocus() const {return m_bHasFocus;}
 	inline bool isDrawing() const {return m_bDrawing;}
 	inline bool isMinimized() const {return m_bIsMinimized;}
@@ -171,6 +173,7 @@ private:
 	static Console *m_console;
 
 	// engine
+	UString m_sArgs;
 	bool m_bBlackout;
 	bool m_bDrawing;
 };
