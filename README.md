@@ -10,14 +10,14 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 2. ```/libraries/``` contains all dependencies (includes, dlls, libs, sos)
 
 3. ```/src/``` contains the source code
-  3. ```/src/App/``` contains the code for applications using the engine
-  4. ```/src/Engine/``` contains the core
-    5. ```/src/Engine/Input/``` contains input devices
-    6. ```/src/Engine/Main/``` contains the main entry points
-    7. ```/src/Engine/Platform/``` contains all platform specific code which is not in main
-    8. ```/src/Engine/Renderer/``` contains renderer specific code
-  5. ```/src/GUI/``` contains very primitive UI elements, mostly for debugging (such as the console)
-  6. ```/src/Util/``` contains helper functions, and small libraries which are contained in one file
+   1. ```/src/App/``` contains the code for applications using the engine
+   2. ```/src/Engine/``` contains the core
+      1. ```/src/Engine/Input/``` contains input devices
+      2. ```/src/Engine/Main/``` contains the main entry points (and icons for the executable)
+      3. ```/src/Engine/Platform/``` contains all platform specific code which is not in main
+      4. ```/src/Engine/Renderer/``` contains renderer specific code
+   3. ```/src/GUI/``` contains very primitive UI elements, mostly for debugging (such as the console)
+   4. ```/src/Util/``` contains helper functions, and small libraries which are contained in one file
 
 - Every supported platform must have a ```main_<OS_NAME>.cpp``` file in ```/src/Engine/Main/``` containing the main entry point.
 - Other platform specific code which is not part of the main file goes into ```/src/Engine/Platform/```.
