@@ -67,8 +67,13 @@ ConVar vr_debug_rendermodel_name("vr_debug_rendermodel_name", "generic_hmd");
 ConVar vr_debug_rendermodel_scale("vr_debug_rendermodel_scale", 1.0f);
 ConVar vr_debug_rendermodel_component_name("vr_debug_rendermodel_component_name", "button");
 
+ConVar vr_head_rendermodel_name("vr_head_rendermodel_name", "generic_hmd", "name of the model to use for the hmd in spectator mode, see /<Steam>/steamapps/common/SteamVR/resources/rendermodels/ for all available models");
+ConVar vr_head_rendermodel_scale("vr_head_rendermodel_scale", 1.0f);
+ConVar vr_head_rendermodel_brightness("vr_head_rendermodel_brightness", 1.5f);
+/*
 ConVar vr_head_image_scale("vr_head_image_scale", 0.55f);
 ConVar vr_head_translation("vr_head_translation", -0.12f);
+*/
 
 OpenVRInterface *openvr = NULL;
 
@@ -149,6 +154,7 @@ OpenVRInterface::OpenVRInterface()
 	vr_showkeyboard.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::showKeyboard));
 	vr_hidekeyboard.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::hideKeyboard));
 	vr_background_brightness.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onBackgroundBrightnessChange));
+	vr_head_rendermodel_name.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onHeadRenderModelChange));
 
 	// initialize controllers
 	m_controllerLeft = new OpenVRController(NULL, OpenVRController::ROLE::ROLE_LEFTHAND);
@@ -163,6 +169,7 @@ OpenVRInterface::OpenVRInterface()
 	m_bDDown = false;
 	m_bShiftDown = false;
 	m_bCtrlDown = false;
+	m_bIsSpectatorDraw = false;
 
 	m_pHMD = NULL;
 	m_iTrackedControllerCount = 0;
@@ -172,6 +179,7 @@ OpenVRInterface::OpenVRInterface()
 	m_strPoseClasses = "";
 
 	m_pRenderModels = NULL;
+	m_headRenderModel = NULL;
 
 	m_glControllerVertBuffer = 0;
 	m_unControllerVAO = 0;
@@ -644,8 +652,6 @@ void OpenVRInterface::renderScene(Graphics *g, vr::Hmd_Eye eye)
 	renderScene(g, matCurrentEye, matCurrentM, matCurrentP, matCurrentVP, matCurrentMVP);
 }
 
-bool isSpectatorDraw = false;
-
 void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 &matCurrentM, Matrix4 &matCurrentP, Matrix4 &matCurrentVP, Matrix4 &matCurrentMVP)
 {
 	// TODO: render stencil mesh
@@ -692,7 +698,7 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 		}
 	}
 
-	// internal rendermodel rendering
+	// internal rendermodel rendering (all connected tracked devices which have models)
 	m_renderModelShader->enable();
 	{
 		for (uint32_t unTrackedDevice = 0; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++)
@@ -733,10 +739,32 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 	}
 	m_renderModelShader->disable();
 
+	// draw head rendermodel if in spectator mode/draw
+	if (m_bIsSpectatorDraw)
+	{
+		// lazy loading
+		if (m_headRenderModel == NULL)
+			onHeadRenderModelChange("", vr_head_rendermodel_name.getString());
+
+		if (m_headRenderModel != NULL)
+		{
+			m_renderModelShader->enable();
+			{
+				Matrix4 pose = m_mat4HMDPose;
+				Matrix4 scale;
+				scale.scale(vr_head_rendermodel_scale.getFloat());
+				Matrix4 finalMVP = m_matCurrentMVP * pose.invert() * scale;
+
+				m_renderModelShader->setUniformMatrix4fv("matrix", finalMVP);
+				m_renderModelShader->setUniform1f("brightness", vr_head_rendermodel_brightness.getFloat());
+				m_headRenderModel->draw();
+			}
+			m_renderModelShader->disable();
+		}
+	}
+
 	// TEMP:
 	/*
-	if (isSpectatorDraw)
-	{
 	m_renderModelShader->enable();
 	{
 		Matrix4 translation;
@@ -793,9 +821,7 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 		}
 	}
 	m_renderModelShader->disable();
-	}
 	*/
-
 	/*
 	for (uint32_t i=0; i<vr::VRRenderModels()->GetRenderModelCount(); i++)
 	{
@@ -818,35 +844,35 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 
 		// TEMP:
 		/*
-		if (isSpectatorDraw)
+		if (m_bIsSpectatorDraw)
 		{
-		m_genericTexturedShader->enable();
-		Matrix4 headRotation;
-		headRotation.rotateX(90.0f + 180.0f);
-		Matrix4 headTranslation;
-		headTranslation.translate(0, 0, vr_head_translation.getFloat());
-		Matrix4 headMatrix = headRotation * headTranslation * m_mat4HMDPose;
-		Matrix4 vrheadmatrix = m_matCurrentMVP * headMatrix.invert();
-		m_genericTexturedShader->setUniformMatrix4fv("matrix", vrheadmatrix);
+			m_genericTexturedShader->enable();
+			Matrix4 headRotation;
+			headRotation.rotateX(90.0f + 180.0f);
+			Matrix4 headTranslation;
+			headTranslation.translate(0, 0, vr_head_translation.getFloat());
+			Matrix4 headMatrix = headRotation * headTranslation * m_mat4HMDPose;
+			Matrix4 vrheadmatrix = m_matCurrentMVP * headMatrix.invert();
+			m_genericTexturedShader->setUniformMatrix4fv("matrix", vrheadmatrix);
 
-		Image *vrHeadImage = engine->getResourceManager()->getImage("vrhead");
-		vrHeadImage->bind();
+			Image *vrHeadImage = engine->getResourceManager()->getImage("vrhead");
+			vrHeadImage->bind();
 
-		VertexArrayObject ovao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+			VertexArrayObject ovao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
 
-		float width = 0.45f*vr_head_image_scale.getFloat();
-		float height = 0.45f*vr_head_image_scale.getFloat();
+			float width = 0.45f*vr_head_image_scale.getFloat();
+			float height = 0.45f*vr_head_image_scale.getFloat();
 
-		ovao.addTexcoord(0, 1);
-		ovao.addVertex(width/2.0f, 0.0f, height/2.0f);
-		ovao.addTexcoord(0, 0);
-		ovao.addVertex(width/2.0f, 0.0f, -height/2.0f);
-		ovao.addTexcoord(1, 0);
-		ovao.addVertex(-width/2.0f, 0.0f, -height/2.0f);
-		ovao.addTexcoord(1, 1);
-		ovao.addVertex(-width/2.0f, 0.0f, height/2.0f);
+			ovao.addTexcoord(0, 1);
+			ovao.addVertex(width/2.0f, 0.0f, height/2.0f);
+			ovao.addTexcoord(0, 0);
+			ovao.addVertex(width/2.0f, 0.0f, -height/2.0f);
+			ovao.addTexcoord(1, 0);
+			ovao.addVertex(-width/2.0f, 0.0f, -height/2.0f);
+			ovao.addTexcoord(1, 1);
+			ovao.addVertex(-width/2.0f, 0.0f, height/2.0f);
 
-		g->drawVAO(&ovao);
+			g->drawVAO(&ovao);
 		}
 		*/
 
@@ -962,9 +988,9 @@ void OpenVRInterface::renderSpectatorTarget(Graphics *g)
 				matCurrentM = m_fakeCamera->getRotation().getMatrix() * translation;
 				matCurrentMVP = matCurrentVP * matCurrentM;
 
-				isSpectatorDraw = true;
+				m_bIsSpectatorDraw = true;
 				renderScene(g, matCurrentEye, matCurrentM, matCurrentP, matCurrentVP, matCurrentMVP);
-				isSpectatorDraw = false;
+				m_bIsSpectatorDraw = false;
 			}
 			m_leftEye->disable();
 		}
@@ -1523,6 +1549,9 @@ Matrix4 OpenVRInterface::getHMDMatrixProjectionEye(vr::Hmd_Eye eye)
 
 CGLRenderModel *OpenVRInterface::findOrLoadRenderModel(const char *pchRenderModelName)
 {
+	if (pchRenderModelName == NULL)
+		debugLog("OpenVRInterface::findOrLoadRenderModel( NULL )!!!\n");
+
 	///debugLog("OpenVRInterface::findOrLoadRenderModel( %s )\n", pchRenderModelName);
 
 	CGLRenderModel *pRenderModel = NULL;
@@ -1689,6 +1718,12 @@ void OpenVRInterface::onBackgroundBrightnessChange(UString oldValue, UString new
 
 	m_leftEye->setClearColor(clearColor);
 	m_rightEye->setClearColor(clearColor);
+}
+
+void OpenVRInterface::onHeadRenderModelChange(UString oldValue, UString newValue)
+{
+	if (newValue.length() > 0)
+		m_headRenderModel = findOrLoadRenderModel(newValue.toUtf8());
 }
 
 #endif

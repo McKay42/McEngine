@@ -50,7 +50,10 @@ void Sound::init()
 	{
 		UString msg = "Couldn't load sound \"";
 		msg.append(m_sFilePath);
-		msg.append(UString::format("\", stream = %i, errorcode = %i\n", (int)m_bStream, BASS_ErrorGetCode()));
+		msg.append(UString::format("\", stream = %i, errorcode = %i", (int)m_bStream, BASS_ErrorGetCode()));
+		msg.append(", file = ");
+		msg.append(m_sFilePath);
+		msg.append("\n");
 		debugLog(0xffdd3333, msg.toUtf8());
 	}
 	else
@@ -111,7 +114,7 @@ void Sound::initAsync()
 		m_HSTREAMBACKUP = m_HSTREAM; // needed for proper cleanup for FX HSAMPLES
 
 		if (m_HSTREAM == 0)
-			printf("Sound::initAsync() BASS_SampleLoad() error %i!\n", BASS_ErrorGetCode());
+			printf("Sound::initAsync() BASS_SampleLoad() error %i on %s !\n", BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 	}
 
 	m_bAsyncReady = true;
@@ -140,7 +143,10 @@ SOUNDHANDLE Sound::getHandle()
 		{
 			UString msg = "Couldn't BASS_SampleGetChannel \"";
 			msg.append(m_sFilePath);
-			msg.append(UString::format("\", stream = %i, errorcode = %i\n", (int)m_bStream, BASS_ErrorGetCode()));
+			msg.append(UString::format("\", stream = %i, errorcode = %i", (int)m_bStream, BASS_ErrorGetCode()));
+			msg.append(", file = ");
+			msg.append(m_sFilePath);
+			msg.append("\n");
 			debugLog(0xffdd3333, msg.toUtf8());
 		}
 		else
@@ -211,19 +217,19 @@ void Sound::setPosition(double percent)
 	// HACKHACK:
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
 	{
-		setPositionMS(0);
+		setPositionMS(0, true);
 		m_soundProcUserData->offset = (QWORD) ((double)(length)*percent);
 	}
 	else
 	{
 		if (!BASS_ChannelSetPosition(getHandle(), (QWORD) ((double)(length)*percent), BASS_POS_BYTE))
-			debugLog("Sound::setPosition( %f ) BASS_ChannelSetPosition() Error %i!\n", percent, BASS_ErrorGetCode());
+			debugLog("Sound::setPosition( %f ) BASS_ChannelSetPosition() Error %i on %s !\n", percent, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 	}
 
 #endif
 }
 
-void Sound::setPositionMS(unsigned long ms)
+void Sound::setPositionMS(unsigned long ms, bool internal)
 {
 #ifdef MCENGINE_FEATURE_SOUND
 
@@ -237,8 +243,8 @@ void Sound::setPositionMS(unsigned long ms)
 	}
 	else
 	{
-		if (!BASS_ChannelSetPosition(getHandle(), BASS_ChannelSeconds2Bytes(getHandle(), ms/1000.0), BASS_POS_BYTE))
-			debugLog("Sound::setPositionMS( %lu ) BASS_ChannelSetPosition() Error %i!\n", ms, BASS_ErrorGetCode());
+		if (!BASS_ChannelSetPosition(getHandle(), BASS_ChannelSeconds2Bytes(getHandle(), ms/1000.0), BASS_POS_BYTE) && !internal)
+			debugLog("Sound::setPositionMS( %lu ) BASS_ChannelSetPosition() Error %i on %s !\n", ms, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 	}
 
 #endif

@@ -112,6 +112,7 @@ private:
 	void onAAChange(UString oldValue, UString newValue);
 	void onClippingPlaneChange(UString oldValue, UString newValue);
 	void onBackgroundBrightnessChange(UString oldValue, UString newValue);
+	void onHeadRenderModelChange(UString oldValue, UString newValue);
 
 #endif
 
@@ -170,11 +171,13 @@ private:
 	bool m_bDDown;
 	bool m_bShiftDown;
 	bool m_bCtrlDown;
+	bool m_bIsSpectatorDraw;
 
 #ifdef MCENGINE_FEATURE_OPENVR
 
 	std::vector<CGLRenderModel*> m_vecRenderModels;
 	CGLRenderModel *m_rTrackedDeviceToRenderModel[vr::k_unMaxTrackedDeviceCount];
+	CGLRenderModel *m_headRenderModel;
 
 	// openvr system
 	vr::IVRSystem *m_pHMD;
