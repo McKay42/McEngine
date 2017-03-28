@@ -19,7 +19,7 @@ public:
 	virtual ~Sound() {destroy();}
 
 	void setPosition(double percent);
-	void setPositionMS(unsigned long ms);
+	void setPositionMS(unsigned long ms) {setPositionMS(ms, false);}
 	void setVolume(float volume);
 	void setSpeed(float speed);
 	void setPitch(float pitch);
@@ -54,6 +54,8 @@ private:
 	virtual void init();
 	virtual void initAsync();
 	virtual void destroy();
+
+	void setPositionMS(unsigned long ms, bool internal);
 
 	SOUND_PROC_USERDATA *m_soundProcUserData;
 
