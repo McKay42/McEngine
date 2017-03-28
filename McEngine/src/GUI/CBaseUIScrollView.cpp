@@ -132,6 +132,8 @@ void CBaseUIScrollView::update()
 		// if we are above our resistance, try to steal the focus and enable scrolling for us
 		if (m_container->isActive() && diff > m_iScrollResistance && !m_container->isBusy())
 			m_container->stealFocus();
+		else
+			m_vKineticAverage.zero();
 
 		// handle scrollbar scrolling start
 		if (!m_container->isBusy())
@@ -214,6 +216,8 @@ void CBaseUIScrollView::update()
 	}
 	else // no longer scrolling, smooth the remaining velocity
 	{
+		m_vKineticAverage.zero();
+
 		// rubber banding + kinetic scrolling
 		if (!m_bAutoScrollingY && m_bVerticalScrolling)
 		{
