@@ -311,7 +311,8 @@ int main(int argc, char *argv[])
 	XSetICFocus(ic);
 
     // initialize engine
-    g_engine = new Engine(new LinuxEnvironment(dpy, win));
+	LinuxEnvironment *environment = new LinuxEnvironment(dpy, win);
+    g_engine = new Engine(environment, argc > 1 ? argv[1] : "");
     g_engine->loadApp();
 
     // create timer
