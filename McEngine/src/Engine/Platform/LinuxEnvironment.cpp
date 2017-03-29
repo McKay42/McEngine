@@ -10,6 +10,9 @@
 #include "LinuxEnvironment.h"
 #include "Engine.h"
 
+#include "LinuxGLLegacyInterface.h"
+#include "LinuxContextMenu.h"
+
 #include <X11/cursorfont.h>
 #include <X11/Xatom.h>
 #include <dirent.h>
@@ -20,6 +23,8 @@
 
 #include <string.h>
 #include <stdio.h>
+
+bool LinuxEnvironment::m_bResizable = true;
 
 LinuxEnvironment::LinuxEnvironment(Display *display, Window window)
 {
@@ -57,6 +62,21 @@ void LinuxEnvironment::update()
 	m_bIsCursorInsideWindow = Rect(0, 0, engine->getScreenWidth(), engine->getScreenHeight()).contains(getMousePos());
 }
 
+Graphics *LinuxEnvironment::createRenderer()
+{
+	return new LinuxGLLegacyInterface(m_display, m_window);
+}
+
+ContextMenu *LinuxEnvironment::createContextMenu()
+{
+	return new LinuxContextMenu();
+}
+
+Environment::OS LinuxEnvironment::getOS()
+{
+	return Environment::OS::OS_LINUX;
+}
+
 void LinuxEnvironment::shutdown()
 {
 	XEvent ev;
@@ -73,32 +93,15 @@ void LinuxEnvironment::shutdown()
 	XSendEvent(m_display, m_window, false, NoEventMask, &ev);
 }
 
-UString LinuxEnvironment::getUsername()
+void LinuxEnvironment::restart()
 {
 	// TODO:
-	return "";
 }
 
-UString LinuxEnvironment::getUserDataPath()
+UString LinuxEnvironment::getExecutablePath()
 {
 	// TODO:
-	return "";
-}
-
-bool LinuxEnvironment::fileExists(UString filename)
-{
-	return (bool)(std::ifstream(filename.toUtf8()));
-}
-
-UString LinuxEnvironment::getClipBoardText()
-{
-	// TODO:
-	return "";
-}
-
-void LinuxEnvironment::setClipBoardText(UString text)
-{
-	// TODO:
+	return UString("");
 }
 
 void LinuxEnvironment::openURLInDefaultBrowser(UString url)
@@ -107,16 +110,53 @@ void LinuxEnvironment::openURLInDefaultBrowser(UString url)
 		exit(execl("/usr/bin/xdg-open", "xdg-open", url.toUtf8(), (char*)0));
 }
 
-UString LinuxEnvironment::openFileWindow(const char *filetypefilters, UString title, UString initialpath)
+UString LinuxEnvironment::getUsername()
 {
 	// TODO:
-	return "";
+	return UString("");
 }
 
-UString LinuxEnvironment::openFolderWindow(UString title, UString initialpath)
+UString LinuxEnvironment::getUserDataPath()
 {
 	// TODO:
-	return "";
+	return UString("");
+}
+
+bool LinuxEnvironment::fileExists(UString filename)
+{
+	return (bool)(std::ifstream(filename.toUtf8()));
+}
+
+bool LinuxEnvironment::directoryExists(UString directoryName)
+{
+	DIR *dir = opendir(directoryName.toUtf8());
+	if (dir)
+	{
+		closedir(dir);
+		return true;
+	}
+	else if (ENOENT == errno) // not a directory
+	{
+	}
+	else // something else broke
+	{
+	}
+	return false;
+}
+
+bool LinuxEnvironment::createDirectory(UString directoryName)
+{
+	return mkdir(directoryName.toUtf8(), DEFFILEMODE) != -1;
+}
+
+bool LinuxEnvironment::renameFile(UString oldFileName, UString newFileName)
+{
+	return rename(oldFileName.toUtf8(), newFileName.toUtf8()) != -1;
+}
+
+bool LinuxEnvironment::deleteFile(UString filePath)
+{
+	return remove(filePath.toUtf8()) == 0;
 }
 
 std::vector<UString> LinuxEnvironment::getFilesInFolder(UString folder)
@@ -214,6 +254,17 @@ UString LinuxEnvironment::getFileExtensionFromFilePath(UString filepath, bool in
 		return UString("");
 }
 
+UString LinuxEnvironment::getClipBoardText()
+{
+	// TODO:
+	return UString("");
+}
+
+void LinuxEnvironment::setClipBoardText(UString text)
+{
+	// TODO:
+}
+
 void LinuxEnvironment::showMessageInfo(UString title, UString message)
 {
 	// TODO:
@@ -232,6 +283,18 @@ void LinuxEnvironment::showMessageError(UString title, UString message)
 void LinuxEnvironment::showMessageErrorFatal(UString title, UString message)
 {
 	// TODO:
+}
+
+UString LinuxEnvironment::openFileWindow(const char *filetypefilters, UString title, UString initialpath)
+{
+	// TODO:
+	return UString("");
+}
+
+UString LinuxEnvironment::openFolderWindow(UString title, UString initialpath)
+{
+	// TODO:
+	return UString("");
 }
 
 void LinuxEnvironment::focus()
@@ -257,39 +320,6 @@ void LinuxEnvironment::maximize()
 	// TODO: maybe resize?
 }
 
-#define _NET_WM_STATE_TOGGLE    2
-
-void LinuxEnvironment::toggleFullscreen()
-{
-	debugLog("toggleFullscreen()");
-
-	/*
-    XEvent xev;
-    long evmask = SubstructureRedirectMask | SubstructureNotifyMask;
-	xev.type = ClientMessage;
-	xev.xclient.window = m_window;
-	xev.xclient.message_type = XInternAtom(m_display, "_NET_WM_STATE_FULLSCREEN", true);
-	xev.xclient.format = 32;
-	xev.xclient.data.l[0] = _NET_WM_STATE_TOGGLE;
-	xev.xclient.data.l[1] = true; // STATE_FULLSCREEN?
-	xev.xclient.data.l[2] = 0;  // no second property to toggle
-	xev.xclient.data.l[3] = 1;  // source indication: application
-	xev.xclient.data.l[4] = 0;  // unused
-
-	if (!XSendEvent(m_display, m_window, 0, evmask, &xev))
-		debugLog("LinuxEnvironment: Couldn't XSendEvent() fullscreen!");
-	*/
-
-	/*
-	Atom wm_state   = XInternAtom (m_display, "_NET_WM_STATE", true );
-	Atom wm_fullscreen = XInternAtom (m_display, "_NET_WM_STATE_FULLSCREEN", true );
-
-	XChangeProperty(m_display, m_window, wm_state, XA_ATOM, 32,
-	                PropModeReplace, (unsigned char *)&wm_fullscreen, 1);
-	*/
-    // TODO:
-}
-
 void LinuxEnvironment::enableFullscreen()
 {
 	// TODO:
@@ -313,6 +343,12 @@ void LinuxEnvironment::setWindowPos(int x, int y)
 void LinuxEnvironment::setWindowSize(int width, int height)
 {
 	XResizeWindow(m_display, m_window, width, height);
+}
+
+void LinuxEnvironment::setWindowResizable(bool resizable)
+{
+	m_bResizable = resizable;
+	// TODO: XSetWMNormalHints(), can't force though
 }
 
 void LinuxEnvironment::setWindowGhostCorporeal(bool corporeal)
@@ -501,6 +537,41 @@ Cursor LinuxEnvironment::makeBlankCursor()
 	XFreePixmap(m_display, blank);
 
 	return cursor;
+}
+
+
+
+#define _NET_WM_STATE_TOGGLE    2
+
+void LinuxEnvironment::toggleFullscreen()
+{
+	debugLog("toggleFullscreen()");
+
+	/*
+    XEvent xev;
+    long evmask = SubstructureRedirectMask | SubstructureNotifyMask;
+	xev.type = ClientMessage;
+	xev.xclient.window = m_window;
+	xev.xclient.message_type = XInternAtom(m_display, "_NET_WM_STATE_FULLSCREEN", true);
+	xev.xclient.format = 32;
+	xev.xclient.data.l[0] = _NET_WM_STATE_TOGGLE;
+	xev.xclient.data.l[1] = true; // STATE_FULLSCREEN?
+	xev.xclient.data.l[2] = 0;  // no second property to toggle
+	xev.xclient.data.l[3] = 1;  // source indication: application
+	xev.xclient.data.l[4] = 0;  // unused
+
+	if (!XSendEvent(m_display, m_window, 0, evmask, &xev))
+		debugLog("LinuxEnvironment: Couldn't XSendEvent() fullscreen!");
+	*/
+
+	/*
+	Atom wm_state   = XInternAtom (m_display, "_NET_WM_STATE", true );
+	Atom wm_fullscreen = XInternAtom (m_display, "_NET_WM_STATE_FULLSCREEN", true );
+
+	XChangeProperty(m_display, m_window, wm_state, XA_ATOM, 32,
+	                PropModeReplace, (unsigned char *)&wm_fullscreen, 1);
+	*/
+    // TODO:
 }
 
 #endif
