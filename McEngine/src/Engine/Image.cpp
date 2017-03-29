@@ -149,7 +149,7 @@ bool Image::loadRawImage()
 			}
 
 			jpeg_mem_src(&cinfo, (unsigned char*)data, file.getFileSize());
-			int headerRes = jpeg_read_header(&cinfo, true);
+			int headerRes = jpeg_read_header(&cinfo, TRUE);
 			if (headerRes != JPEG_HEADER_OK)
 			{
 				jpeg_destroy_decompress(&cinfo);
