@@ -29,6 +29,7 @@
 
 #define WINDOW_TITLE "McEngine"
 
+// TODO: this is incorrect, the size here doesn't take the decorations into account
 #define WINDOW_WIDTH (1280)
 #define WINDOW_HEIGHT (720)
 
@@ -36,6 +37,7 @@
 #define WINDOW_HEIGHT_MIN 100
 
 Engine *g_engine = NULL;
+LinuxEnvironment *g_environment = NULL;
 
 bool g_bRunning = true;
 bool g_bUpdate = true;
@@ -76,6 +78,12 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 
 	case KeymapNotify:
 		XRefreshKeyboardMapping(&xev.xmapping);
+		break;
+
+	// clipboard
+	case SelectionRequest:
+		if (g_environment != NULL)
+			g_environment->handleSelectionRequest(xev.xselectionrequest);
 		break;
 
 	// keyboard
@@ -312,6 +320,7 @@ int main(int argc, char *argv[])
 
     // initialize engine
 	LinuxEnvironment *environment = new LinuxEnvironment(dpy, win);
+	g_environment = environment;
     g_engine = new Engine(environment, argc > 1 ? argv[1] : "");
     g_engine->loadApp();
 
@@ -372,12 +381,32 @@ int main(int argc, char *argv[])
 		}
     }
 
+	bool isRestartScheduled = environment->isRestartScheduled();
+
 	// release the engine
 	SAFE_DELETE(g_engine);
 
 	// destroy the window
 	XDestroyWindow(dpy, win);
 	XCloseDisplay(dpy);
+
+	// handle potential restart
+	if (isRestartScheduled)
+	{
+		char buf[4096];
+		memset(buf, '\0', 4096);
+		if (readlink("/proc/self/exe", buf, 4095) != -1)
+		{
+			if (fork() == 0)
+			{
+				char *argv[] = {buf, 0};
+				char *envp[] = {0};
+				execve(buf, (char * const *)argv, (char * const *)envp);
+
+				// TODO: not finished yet, not working
+			}
+		}
+	}
 
 	return 0;
 }
