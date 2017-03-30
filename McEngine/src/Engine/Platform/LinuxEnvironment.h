@@ -96,18 +96,33 @@ public:
 	// ILLEGAL:
 	inline Display *getDisplay() const {return m_display;}
 	inline Window getWindow() const {return m_window;}
+	inline bool isRestartScheduled() const {return m_bIsRestartScheduled;}
+
+	void handleSelectionRequest(XSelectionRequestEvent &evt);
 
 private:
 	static int getFilesInFolderFilter(const struct dirent *entry);
 	static int getFoldersInFolderFilter(const struct dirent *entry);
-	Cursor makeBlankCursor();
 
-	void toggleFullscreen();
+	Cursor makeBlankCursor();
+	void setCursorInt(Cursor cursor);
+
+	UString readWindowProperty(Window window, Atom prop, Atom fmt /* XA_STRING or UTF8_STRING */, bool deleteAfterReading);
+	bool requestSelectionContent(UString &selection_content, Atom selection, Atom requested_format);
+	void setClipBoardTextInt(UString clipText);
+	UString getClipboardTextInt();
+
 
 	Display *m_display;
 	Window m_window;
 
+	// window
 	static bool m_bResizable;
+	bool m_bFullScreen;
+	Vector2 m_vLastWindowPos;
+	Vector2 m_vLastWindowSize;
+
+	// mouse
 	bool m_bCursorClipped;
 	Rect m_cursorClip;
 	bool m_bCursorRequest;
@@ -117,7 +132,17 @@ private:
 	Cursor m_mouseCursor;
 	Cursor m_invisibleCursor;
 
-	bool m_bFullScreen;
+	// clipboard
+	UString m_sLocalClipboardContent;
+	Atom m_atom_UTF8_STRING;
+	Atom m_atom_CLIPBOARD;
+	Atom m_atom_TARGETS;
+
+	// custom
+	bool m_bIsRestartScheduled;
+	bool m_bResizeDelayHack;
+	Vector2 m_vResizeHackSize;
+	bool m_bPrevCursorHack;
 };
 
 #endif

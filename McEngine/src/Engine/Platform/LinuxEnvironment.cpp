@@ -16,13 +16,24 @@
 #include <X11/cursorfont.h>
 #include <X11/Xatom.h>
 #include <dirent.h>
+#include <libgen.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/param.h>
 #include <unistd.h>
+#include <pwd.h>
 
 #include <string.h>
 #include <stdio.h>
+
+typedef struct
+{
+	unsigned long   flags;
+	unsigned long   functions;
+	unsigned long   decorations;
+	long            inputMode;
+	unsigned long   status;
+} Hints;
 
 bool LinuxEnvironment::m_bResizable = true;
 
@@ -39,7 +50,15 @@ LinuxEnvironment::LinuxEnvironment(Display *display, Window window)
 	m_mouseCursor = XCreateFontCursor(m_display, XC_left_ptr);
 	m_invisibleCursor = makeBlankCursor();
 
+	m_atom_UTF8_STRING = XInternAtom(m_display, "UTF8_STRING", False);
+	m_atom_CLIPBOARD = XInternAtom(m_display, "CLIPBOARD", False);
+	m_atom_TARGETS = XInternAtom(m_display, "TARGETS", False);
+
 	m_bFullScreen = false;
+
+	m_bIsRestartScheduled = false;
+	m_bResizeDelayHack = false;
+	m_bPrevCursorHack = false;
 }
 
 LinuxEnvironment::~LinuxEnvironment()
@@ -85,9 +104,9 @@ void LinuxEnvironment::shutdown()
 	ev.type = ClientMessage;
 	ev.xclient.type = ClientMessage;
 	ev.xclient.window = m_window;
-	ev.xclient.message_type = XInternAtom(m_display, "WM_PROTOCOLS", true);
+	ev.xclient.message_type = XInternAtom(m_display, "WM_PROTOCOLS", True);
 	ev.xclient.format = 32;
-	ev.xclient.data.l[0] = XInternAtom(m_display, "WM_DELETE_WINDOW", false);
+	ev.xclient.data.l[0] = XInternAtom(m_display, "WM_DELETE_WINDOW", False);
 	ev.xclient.data.l[1] = CurrentTime;
 
 	XSendEvent(m_display, m_window, false, NoEventMask, &ev);
@@ -95,13 +114,18 @@ void LinuxEnvironment::shutdown()
 
 void LinuxEnvironment::restart()
 {
-	// TODO:
+	m_bIsRestartScheduled = true;
+	shutdown();
 }
 
 UString LinuxEnvironment::getExecutablePath()
 {
-	// TODO:
-	return UString("");
+	char buf[4096];
+	memset(buf, '\0', 4096);
+	if (readlink("/proc/self/exe", buf, 4095) != -1)
+		return UString(buf);
+	else
+		return UString("");
 }
 
 void LinuxEnvironment::openURLInDefaultBrowser(UString url)
@@ -112,19 +136,25 @@ void LinuxEnvironment::openURLInDefaultBrowser(UString url)
 
 UString LinuxEnvironment::getUsername()
 {
-	// TODO:
-	return UString("");
+	passwd *pwd = getpwuid(getuid());
+	if (pwd != NULL && pwd->pw_name != NULL)
+		return UString(pwd->pw_name);
+	else
+		return UString("");
 }
 
 UString LinuxEnvironment::getUserDataPath()
 {
-	// TODO:
-	return UString("");
+	passwd *pwd = getpwuid(getuid());
+	if (pwd != NULL && pwd->pw_dir != NULL)
+		return UString(pwd->pw_dir);
+	else
+		return UString("");
 }
 
 bool LinuxEnvironment::fileExists(UString filename)
 {
-	return (bool)(std::ifstream(filename.toUtf8()));
+	return std::ifstream(filename.toUtf8()).good();
 }
 
 bool LinuxEnvironment::directoryExists(UString directoryName)
@@ -236,13 +266,16 @@ std::vector<UString> LinuxEnvironment::getFoldersInFolder(UString folder)
 std::vector<UString> LinuxEnvironment::getLogicalDrives()
 {
 	std::vector<UString> drives;
+	drives.push_back(UString("/"));
 	return drives;
 }
 
 UString LinuxEnvironment::getFolderFromFilePath(UString filepath)
 {
-	// TODO:
-	return "";
+	if (directoryExists(filepath)) // indirect check if this is already a valid directory (and not a file)
+		return filepath;
+	else
+		return UString(dirname((char*)filepath.toUtf8()));
 }
 
 UString LinuxEnvironment::getFileExtensionFromFilePath(UString filepath, bool includeDot)
@@ -256,13 +289,12 @@ UString LinuxEnvironment::getFileExtensionFromFilePath(UString filepath, bool in
 
 UString LinuxEnvironment::getClipBoardText()
 {
-	// TODO:
-	return UString("");
+	return getClipboardTextInt();
 }
 
 void LinuxEnvironment::setClipBoardText(UString text)
 {
-	// TODO:
+	setClipBoardTextInt(text);
 }
 
 void LinuxEnvironment::showMessageInfo(UString title, UString message)
@@ -300,13 +332,18 @@ UString LinuxEnvironment::openFolderWindow(UString title, UString initialpath)
 void LinuxEnvironment::focus()
 {
 	XRaiseWindow(m_display, m_window);
+	XMapRaised(m_display, m_window);
 }
 
 void LinuxEnvironment::center()
 {
 	Vector2 windowSize = getWindowSize();
+	if (m_bResizeDelayHack)
+		windowSize = m_vResizeHackSize;
+	m_bResizeDelayHack = false;
+
 	Screen *defaultScreen = XDefaultScreenOfDisplay(m_display);
-	XMoveResizeWindow(m_display, m_window, WidthOfScreen(defaultScreen)/2 - windowSize.x/2, HeightOfScreen(defaultScreen)/2 - windowSize.y/2, windowSize.x, windowSize.y);
+	XMoveResizeWindow(m_display, m_window, WidthOfScreen(defaultScreen)/2 - (unsigned int)(windowSize.x/2), HeightOfScreen(defaultScreen)/2 - (unsigned int)(windowSize.y/2), (unsigned int)windowSize.x, (unsigned int)windowSize.y);
 }
 
 void LinuxEnvironment::minimize()
@@ -317,17 +354,137 @@ void LinuxEnvironment::minimize()
 void LinuxEnvironment::maximize()
 {
 	XMapWindow(m_display, m_window);
-	// TODO: maybe resize?
+
+	// set size to fill entire screen (also fill borders)
+	// the "x" and "y" members of "attributes" are the window's coordinates relative to its parent, i.e. to the decoration window
+	XWindowAttributes attributes;
+	XGetWindowAttributes(m_display, m_window, &attributes);
+	XMoveResizeWindow(m_display,
+			m_window,
+			-attributes.x,
+			-attributes.y,
+			(unsigned int)getNativeScreenSize().x,
+			(unsigned int)getNativeScreenSize().y);
 }
 
 void LinuxEnvironment::enableFullscreen()
 {
-	// TODO:
+	if (m_bFullScreen) return;
+
+	// backup
+	m_vLastWindowPos = getWindowPos();
+	m_vLastWindowSize = getWindowSize();
+
+	// disable window decorations
+    Hints hints;
+    Atom property;
+    hints.flags = 2; // specify that we're changing the window decorations
+    hints.decorations = 0; // 0 (false) = disable decorations
+    property = XInternAtom(m_display, "_MOTIF_WM_HINTS", True);
+    XChangeProperty(m_display, m_window, property, property, 32, PropModeReplace, (unsigned char *)&hints, 5);
+
+	// set size to fill entire screen (also fill borders)
+	// the "x" and "y" members of "attributes" are the window's coordinates relative to its parent, i.e. to the decoration window
+	XWindowAttributes attributes;
+	XGetWindowAttributes(m_display, m_window, &attributes);
+	XMoveResizeWindow(m_display,
+			m_window,
+			-attributes.x,
+			-attributes.y,
+			(unsigned int)getNativeScreenSize().x,
+			(unsigned int)getNativeScreenSize().y);
+
+    // suggest fullscreen mode
+	Atom atom = XInternAtom(m_display, "_NET_WM_STATE_FULLSCREEN", True);
+	XChangeProperty(
+		m_display, m_window,
+		XInternAtom(m_display, "_NET_WM_STATE", True),
+		XA_ATOM, 32, PropModeReplace,
+		(unsigned char*)&atom, 1);
+
+	// get identifiers for the provided atom name strings
+	Atom wm_state = XInternAtom(m_display, "_NET_WM_STATE", False);
+	Atom fullscreen = XInternAtom(m_display, "_NET_WM_STATE_FULLSCREEN", False);
+
+	XEvent xev;
+	memset(&xev, 0, sizeof(xev));
+
+	xev.type                 = ClientMessage;
+	xev.xclient.window       = m_window;
+	xev.xclient.message_type = wm_state;
+	xev.xclient.format       = 32;
+	xev.xclient.data.l[0]    = 1; // enable fullscreen (1 == true)
+	xev.xclient.data.l[1]    = fullscreen;
+
+	// send an event mask to the X-server
+	XSendEvent(
+		m_display,
+		DefaultRootWindow(m_display),
+		False,
+		SubstructureNotifyMask,
+		&xev);
+
+	// force top window
+	XMapRaised(m_display, m_window);
+
+	m_bFullScreen = true;
 }
 
 void LinuxEnvironment::disableFullscreen()
 {
-	// TODO:
+	if (!m_bFullScreen) return;
+
+    // unsuggest fullscreen mode
+	Atom atom = XInternAtom(m_display, "_NET_WM_STATE_FULLSCREEN", True);
+	XChangeProperty(
+		m_display, m_window,
+		XInternAtom(m_display, "_NET_WM_STATE", True),
+		XA_ATOM, 32, PropModeReplace,
+		(unsigned char*)&atom, 1);
+
+	// get identifiers for the provided atom name strings
+	Atom wm_state = XInternAtom(m_display, "_NET_WM_STATE", False);
+	Atom fullscreen = XInternAtom(m_display, "_NET_WM_STATE_FULLSCREEN", False);
+
+	XEvent xev;
+	memset(&xev, 0, sizeof(xev));
+
+	xev.type                 = ClientMessage;
+	xev.xclient.window       = m_window;
+	xev.xclient.message_type = wm_state;
+	xev.xclient.format       = 32;
+	xev.xclient.data.l[0]    = 0; // disable fullscreen (0 == false)
+	xev.xclient.data.l[1]    = fullscreen;
+
+	// send an event mask to the X-server
+	XSendEvent(
+		m_display,
+		DefaultRootWindow(m_display),
+		False,
+		SubstructureNotifyMask,
+		&xev);
+
+	// enable window decorations
+    Hints hints;
+    Atom property;
+    hints.flags = 2;
+    hints.decorations = 1;
+    property = XInternAtom(m_display, "_MOTIF_WM_HINTS", True);
+    XChangeProperty(m_display, m_window, property, property, 32, PropModeReplace, (unsigned char *)&hints, 5);
+
+	// restore previous size and position
+    // TODO: the y-position is not consistent in Ubuntu, the window keeps going down when toggling fullscreen, force center() workaround
+	XMoveResizeWindow(m_display,
+			m_window,
+			(int)m_vLastWindowPos.x,
+			(int)m_vLastWindowPos.y,
+			(unsigned int)m_vLastWindowSize.x,
+			(unsigned int)m_vLastWindowSize.y);
+	m_vResizeHackSize = m_vLastWindowSize;
+	m_bResizeDelayHack = true;
+	center();
+
+	m_bFullScreen = false;
 }
 
 void LinuxEnvironment::setWindowTitle(UString title)
@@ -337,18 +494,32 @@ void LinuxEnvironment::setWindowTitle(UString title)
 
 void LinuxEnvironment::setWindowPos(int x, int y)
 {
+	XMapWindow(m_display, m_window);
 	XMoveWindow(m_display, m_window, x, y);
 }
 
 void LinuxEnvironment::setWindowSize(int width, int height)
 {
+	m_vResizeHackSize = Vector2(width, height);
+	m_bResizeDelayHack = true;
+
 	XResizeWindow(m_display, m_window, width, height);
+	XFlush(m_display);
 }
 
 void LinuxEnvironment::setWindowResizable(bool resizable)
 {
 	m_bResizable = resizable;
 	// TODO: XSetWMNormalHints(), can't force though
+	// _NET_WM_ACTION_RESIZE
+	/*
+	Atom atom = XInternAtom(m_display, "_NET_WM_ACTION_RESIZE", True);
+	XChangeProperty(
+		m_display, m_window,
+		XInternAtom(m_display, "_NET_WM_ALLOWED_ACTIONS", True),
+		XA_ATOM, 32, PropModeReplace,
+		(unsigned char*)&atom, 1);
+	*/
 }
 
 void LinuxEnvironment::setWindowGhostCorporeal(bool corporeal)
@@ -358,6 +529,7 @@ void LinuxEnvironment::setWindowGhostCorporeal(bool corporeal)
 
 Vector2 LinuxEnvironment::getWindowPos()
 {
+	// client coordinates
 	Window rootRet;
 	int x = 0;
 	int y = 0;
@@ -369,10 +541,23 @@ Vector2 LinuxEnvironment::getWindowPos()
 	XGetGeometry(m_display, m_window, &rootRet, &x, &y, &width, &height, &borderWidth, &depth);
 
 	return Vector2(x, y);
+
+	// server coordinates
+	/*
+	int x = 0;
+	int y = 0;
+	Window child;
+	XWindowAttributes xwa;
+	XTranslateCoordinates(m_display, m_window, DefaultRootWindow(m_display), 0, 0, &x, &y, &child );
+	XGetWindowAttributes(m_display, m_window, &xwa);
+
+	return Vector2(x - xwa.x, y - xwa.y);
+	*/
 }
 
 Vector2 LinuxEnvironment::getWindowSize()
 {
+	// client size
 	Window rootRet;
 	int x = 0;
 	int y = 0;
@@ -439,6 +624,8 @@ Rect LinuxEnvironment::getCursorClip()
 
 void LinuxEnvironment::setCursor(CURSORTYPE cur)
 {
+	if (!m_bCursorVisible) return;
+
 	switch (cur)
 	{
 	case CURSOR_NORMAL:
@@ -467,7 +654,7 @@ void LinuxEnvironment::setCursor(CURSORTYPE cur)
 		break;
 	}
 
-	XDefineCursor(m_display, m_window, m_mouseCursor);
+	setCursorInt(m_mouseCursor);
 
 	m_bCursorReset = true;
 	m_bCursorRequest = true;
@@ -476,7 +663,7 @@ void LinuxEnvironment::setCursor(CURSORTYPE cur)
 void LinuxEnvironment::setCursorVisible(bool visible)
 {
 	m_bCursorVisible = visible;
-	XDefineCursor(m_display, m_window, visible ? m_mouseCursor : m_invisibleCursor);
+	setCursorInt(visible ? m_mouseCursor : m_invisibleCursor);
 }
 
 void LinuxEnvironment::setMousePos(int x, int y)
@@ -539,39 +726,207 @@ Cursor LinuxEnvironment::makeBlankCursor()
 	return cursor;
 }
 
-
-
-#define _NET_WM_STATE_TOGGLE    2
-
-void LinuxEnvironment::toggleFullscreen()
+void LinuxEnvironment::setCursorInt(Cursor cursor)
 {
-	debugLog("toggleFullscreen()");
+	if (m_bPrevCursorHack)
+		XUndefineCursor(m_display, m_window);
+	m_bPrevCursorHack = true;
+
+	XDefineCursor(m_display, m_window, cursor);
+}
+
+UString LinuxEnvironment::readWindowProperty(Window window, Atom prop, Atom fmt /* XA_STRING or UTF8_STRING */, bool deleteAfterReading)
+{
+	UString returnData = UString("");
+	unsigned char *clipData;
+	Atom actualType;
+	int actualFormat;
+	unsigned long nitems, bytesLeft;
+	if (XGetWindowProperty(m_display, m_window, prop, 0L /* offset */,
+			1000000 /* length (max) */, False,
+			AnyPropertyType /* format */, &actualType, &actualFormat, &nitems,
+			&bytesLeft, &clipData) == Success)
+	{
+		if (actualType == m_atom_UTF8_STRING && actualFormat == 8)
+		{
+			// very inefficient, but whatever
+			std::string temp;
+			for (int i=0; i<nitems; i++)
+			{
+				temp += clipData[i];
+			}
+			returnData = UString(temp.c_str());
+		}
+		else if (actualType == XA_STRING && actualFormat == 8)
+		{
+			// very inefficient, but whatever
+			std::string temp;
+			for (int i=0; i<nitems; i++)
+			{
+				temp += clipData[i];
+			}
+			returnData = UString(temp.c_str());
+		}
+
+		if (clipData != 0)
+			XFree(clipData);
+	}
+
+	if (deleteAfterReading)
+		XDeleteProperty(m_display, window, prop);
+
+	return returnData;
+}
+
+bool LinuxEnvironment::requestSelectionContent(UString &selection_content, Atom selection, Atom requested_format)
+{
+	// send a SelectionRequest to the window owning the selection and waits for its answer (with a timeout)
+	// the selection owner will be asked to set the MCENGINE_SEL property on m_window with the selection content
+	Atom property_name = XInternAtom(m_display, "MCENGINE_SEL", false);
+	XConvertSelection(m_display, selection, requested_format, property_name, m_window, CurrentTime);
+	bool gotReply = false;
+	int timeoutMs = 200; // will wait at most for 200 ms
+	do
+	{
+		XEvent event;
+		gotReply = XCheckTypedWindowEvent(m_display, m_window, SelectionNotify, &event);
+		if (gotReply)
+		{
+			if (event.xselection.property == property_name)
+			{
+				selection_content = readWindowProperty(event.xselection.requestor, event.xselection.property, requested_format, true);
+				return true;
+			}
+			else // the format we asked for was denied.. (event.xselection.property == None)
+				return false;
+		}
+
+		// not very elegant.. we could do a select() or something like that... however clipboard content requesting
+		// is inherently slow on x11, it often takes 50ms or more so...
+		usleep(4000);
+		timeoutMs -= 4;
+	}
+	while (timeoutMs > 0);
+
+	debugLog("LinuxEnvironment::requestSelectionContent() : Timeout!\n");
+	return false;
+}
+
+void LinuxEnvironment::handleSelectionRequest(XSelectionRequestEvent &evt)
+{
+	// called from the event loop in response to SelectionRequest events
+	// the selection content is sent to the target window as a window property
+	XSelectionEvent reply;
+	reply.type = SelectionNotify;
+	reply.display = evt.display;
+	reply.requestor = evt.requestor;
+	reply.selection = evt.selection;
+	reply.target = evt.target;
+	reply.property = None; // == "fail"
+	reply.time = evt.time;
+
+	char *data = 0;
+	int property_format = 0, data_nitems = 0;
+	if (evt.selection == XA_PRIMARY || evt.selection == m_atom_CLIPBOARD)
+	{
+		if (evt.target == XA_STRING)
+		{
+			// format data according to system locale
+			data = strdup((const char*)m_sLocalClipboardContent.toUtf8());
+			data_nitems = strlen(data);
+			property_format = 8; // bits/item
+		}
+		else if (evt.target == m_atom_UTF8_STRING)
+		{
+			// translate to utf8
+			data = strdup((const char*)m_sLocalClipboardContent.toUtf8());
+			data_nitems = strlen(data);
+			property_format = 8; // bits/item
+		}
+		else if (evt.target == m_atom_TARGETS)
+		{
+			// another application wants to know what we are able to send
+			data_nitems = 2;
+			property_format = 32; // atoms are 32-bit
+			data = (char*) malloc(data_nitems * 4);
+			((Atom*)data)[0] = m_atom_UTF8_STRING;
+			((Atom*)data)[1] = XA_STRING;
+		}
+	}
+	else
+		debugLog("LinuxEnvironment::handleSelectionRequest() : Requested unsupported clipboard!\n");
+
+	if (data)
+	{
+		const size_t MAX_REASONABLE_SELECTION_SIZE = 1000000;
+
+		// for very big chunks of data, we should use the "INCR" protocol, which is a pain in the asshole
+		if (evt.property != None && strlen(data) < MAX_REASONABLE_SELECTION_SIZE)
+		{
+			XChangeProperty(evt.display, evt.requestor, evt.property,
+					evt.target, property_format /* 8 or 32 */, PropModeReplace,
+					(const unsigned char*) data, data_nitems);
+			reply.property = evt.property; // " == success"
+		}
+		free(data);
+	}
+
+	XSendEvent(evt.display, evt.requestor, 0, NoEventMask, (XEvent *) &reply);
+}
+
+void LinuxEnvironment::setClipBoardTextInt(UString clipText)
+{
+	m_sLocalClipboardContent = clipText;
+	XSetSelectionOwner(m_display, XA_PRIMARY, m_window, CurrentTime);
+	XSetSelectionOwner(m_display, m_atom_CLIPBOARD, m_window, CurrentTime);
+}
+
+UString LinuxEnvironment::getClipboardTextInt()
+{
+	UString content;
+
+	// clipboard code is modified from https://forum.juce.com/t/clipboard-support-in-linux/3894
+	// thanks to jpo!
 
 	/*
-    XEvent xev;
-    long evmask = SubstructureRedirectMask | SubstructureNotifyMask;
-	xev.type = ClientMessage;
-	xev.xclient.window = m_window;
-	xev.xclient.message_type = XInternAtom(m_display, "_NET_WM_STATE_FULLSCREEN", true);
-	xev.xclient.format = 32;
-	xev.xclient.data.l[0] = _NET_WM_STATE_TOGGLE;
-	xev.xclient.data.l[1] = true; // STATE_FULLSCREEN?
-	xev.xclient.data.l[2] = 0;  // no second property to toggle
-	xev.xclient.data.l[3] = 1;  // source indication: application
-	xev.xclient.data.l[4] = 0;  // unused
+	 1) try to read from the "CLIPBOARD" selection first (the "high
+	 level" clipboard that is supposed to be filled by ctrl-C
+	 etc). When a clipboard manager is running, the content of this
+	 selection is preserved even when the original selection owner
+	 exits.
 
-	if (!XSendEvent(m_display, m_window, 0, evmask, &xev))
-		debugLog("LinuxEnvironment: Couldn't XSendEvent() fullscreen!");
+	 2) and then try to read from "PRIMARY" selection (the "legacy" selection
+	 filled by good old x11 apps such as xterm)
+
+	 3) a third fallback could be CUT_BUFFER0 but they are obsolete since X10 !
+	 ( http://www.jwz.org/doc/x-cut-and-paste.html )
+
+	 There is not content negotiation here -- we just try to retrieve the selection first
+	 as utf8 and then as a locale-dependent string
 	*/
 
-	/*
-	Atom wm_state   = XInternAtom (m_display, "_NET_WM_STATE", true );
-	Atom wm_fullscreen = XInternAtom (m_display, "_NET_WM_STATE_FULLSCREEN", true );
+	Atom selection = XA_PRIMARY;
+	Window selection_owner = None;
+	if ((selection_owner = XGetSelectionOwner(m_display, selection)) == None)
+	{
+		selection = m_atom_CLIPBOARD;
+		selection_owner = XGetSelectionOwner(m_display, selection);
+	}
 
-	XChangeProperty(m_display, m_window, wm_state, XA_ATOM, 32,
-	                PropModeReplace, (unsigned char *)&wm_fullscreen, 1);
-	*/
-    // TODO:
+	if (selection_owner != None)
+	{
+		if (selection_owner == m_window) // ourself
+		    content = m_sLocalClipboardContent; // just return the local clipboard
+		else
+		{
+			// first try: we want an utf8 string
+			bool ok = requestSelectionContent(content, selection, m_atom_UTF8_STRING);
+			if (!ok) // second chance, ask for a good old locale-dependent string
+				ok = requestSelectionContent(content, selection, XA_STRING);
+		}
+	}
+
+	return content;
 }
 
 #endif
