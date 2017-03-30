@@ -699,6 +699,11 @@ void _minimize(void)
 	env->minimize();
 }
 
+void _maximize(void)
+{
+	env->maximize();
+}
+
 void _toggleresizable(void)
 {
 	env->setWindowResizable(!env->isWindowResizable());
@@ -744,6 +749,7 @@ ConVar __printsize("printsize", _printsize);
 ConVar __fullscreen("fullscreen", _fullscreen);
 ConVar __windowed("windowed", _windowed);
 ConVar __minimize("minimize", _minimize);
+ConVar __maximize("maximize", _maximize);
 ConVar __resizable_toggle("resizable_toggle", _toggleresizable);
 ConVar __focus("focus", _focus);
 ConVar __center("center", _center);
