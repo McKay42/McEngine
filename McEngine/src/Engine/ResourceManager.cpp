@@ -230,6 +230,17 @@ Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool m
 	return img;
 }
 
+Image *ResourceManager::loadImageUnnamed(UString filepath, bool mipmapped)
+{
+	// create instance and load it
+	filepath.insert(0, RM_IMAGE_FOLDER);
+	Image *img = engine->getGraphics()->createImage(filepath, mipmapped);
+
+	loadResource(img, true);
+
+	return img;
+}
+
 Image *ResourceManager::loadImageAbs(UString absoluteFilepath, UString resourceName, bool mipmapped)
 {
 	// check if it already exists
@@ -242,6 +253,16 @@ Image *ResourceManager::loadImageAbs(UString absoluteFilepath, UString resourceN
 	// create instance and load it
 	Image *img = engine->getGraphics()->createImage(absoluteFilepath, mipmapped);
 	img->setName(resourceName);
+
+	loadResource(img, true);
+
+	return img;
+}
+
+Image *ResourceManager::loadImageAbsUnnamed(UString absoluteFilepath, bool mipmapped)
+{
+	// create instance and load it
+	Image *img = engine->getGraphics()->createImage(absoluteFilepath, mipmapped);
 
 	loadResource(img, true);
 

@@ -231,11 +231,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				if (!HIWORD(wParam)) // if we are not minimized
 				{
+					printf("WndProc() : WM_ACTIVATE, not minimized\n");
 					g_bUpdate = true;
 					g_bDraw = true;
 				}
 				else
 				{
+					printf("WndProc() : WM_ACTIVATE, minimized\n");
 					/// g_bUpdate = false;
 					g_bDraw = false;
 					g_bHasFocus = false;
@@ -816,7 +818,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 	}
 
-	// release the timer
+	// release the timers
 	SAFE_DELETE(frameTimer);
 	SAFE_DELETE(deltaTimer);
 
