@@ -37,7 +37,9 @@ public:
 
 	// images
 	Image *loadImage(UString filepath, UString resourceName, bool mipmapped = false);
+	Image *loadImageUnnamed(UString filepath, bool mipmapped = false);
 	Image *loadImageAbs(UString absoluteFilepath, UString resourceName, bool mipmapped = false);
+	Image *loadImageAbsUnnamed(UString absoluteFilepath, bool mipmapped = false);
 	Image *createImage(unsigned int width, unsigned int height, bool clampToEdge = true);
 
 	// fonts
