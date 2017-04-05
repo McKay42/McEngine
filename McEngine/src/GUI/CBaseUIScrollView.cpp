@@ -133,7 +133,7 @@ void CBaseUIScrollView::update()
 		if (m_container->isActive() && diff > m_iScrollResistance && !m_container->isBusy())
 			m_container->stealFocus();
 		else
-			m_vKineticAverage.zero();
+			m_vKineticAverage /= 1.1f; // HACKHACK: quickfix
 
 		// handle scrollbar scrolling start
 		if (!m_container->isBusy())
@@ -216,7 +216,7 @@ void CBaseUIScrollView::update()
 	}
 	else // no longer scrolling, smooth the remaining velocity
 	{
-		m_vKineticAverage.zero();
+		//m_vKineticAverage.zero();
 
 		// rubber banding + kinetic scrolling
 		if (!m_bAutoScrollingY && m_bVerticalScrolling)
