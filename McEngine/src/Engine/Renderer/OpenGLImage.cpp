@@ -42,6 +42,9 @@ void OpenGLImage::init()
 		return;
 	}
 
+	// TEMP: clear gl error state
+	glGetError();
+
 	// create texture and bind
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(1, &m_GLTexture);

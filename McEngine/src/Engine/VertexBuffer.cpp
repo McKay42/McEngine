@@ -105,7 +105,7 @@ void VertexBuffer::draw(Graphics *g)
 	}
 
 	// render it
-	glDrawArrays(primitiveToOpenGL(m_primitive), start, end);
+	glDrawArrays(primitiveToOpenGL(m_primitive), start, end-start);
 
 	// disable everything
 	if (m_bHasTexture0)
