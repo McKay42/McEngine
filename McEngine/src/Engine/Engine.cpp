@@ -8,6 +8,9 @@
 #include "NetworkHandler.h" // must be up here
 #include "Engine.h"
 
+#include <mutex>
+#include "WinMinGW.Mutex.h"
+
 #include "OpenCLInterface.h"
 #include "OpenVRInterface.h"
 #include "VulkanInterface.h"
@@ -51,8 +54,8 @@ void __host_timescale( UString oldValue, UString newValue )
 ConVar epilepsy("epilepsy", false);
 ConVar debug_engine("debug_engine", false);
 ConVar minimize_on_focus_lost_if_fullscreen("minimize_on_focus_lost_if_fullscreen", true);
-
-
+ConVar _win_realtimestylus("win_realtimestylus", false, "if compiled on Windows, enables native RealTimeStylus support for tablet clicks");
+ConVar *win_realtimestylus = &_win_realtimestylus;
 
 Engine *engine = NULL;
 Environment *env = NULL;
@@ -436,9 +439,12 @@ void Engine::onMouseWheelHorizontal(int delta)
 	m_mouse->onWheelHorizontal(delta);
 }
 
+std::mutex g_engineMouseLeftClickMutex;
 void Engine::onMouseLeftChange(bool mouseLeftDown)
 {
-	m_mouse->onLeftChange(mouseLeftDown);
+	std::lock_guard<std::mutex> lk(g_engineMouseLeftClickMutex); // async calls from WinRealTimeStylus must be protected
+	if (m_mouse->isLeftDown() != mouseLeftDown) // necessary due to WinRealTimeStylus, would cause double clicks otherwise
+		m_mouse->onLeftChange(mouseLeftDown);
 }
 
 void Engine::onMouseMiddleChange(bool mouseMiddleDown)
