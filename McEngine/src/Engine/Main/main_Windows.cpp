@@ -7,6 +7,8 @@
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
+// #define MCENGINE_WINDOWS_REALTIMESTYLUS_SUPPORT
+
 #include "cbase.h"
 
 // because "Please include winsock2.h before windows.h"
@@ -16,6 +18,10 @@
 
 #include <windows.h>
 #include <dwmapi.h>
+
+#ifdef MCENGINE_WINDOWS_REALTIMESTYLUS_SUPPORT
+	#include "WinRealTimeStylus.h"
+#endif
 
 #include <iostream>
 #include <stdlib.h>
@@ -231,13 +237,17 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				if (!HIWORD(wParam)) // if we are not minimized
 				{
-					printf("WndProc() : WM_ACTIVATE, not minimized\n");
+					if (g_engine != NULL)
+						printf("WndProc() : WM_ACTIVATE, not minimized\n");
+
 					g_bUpdate = true;
 					g_bDraw = true;
 				}
 				else
 				{
-					printf("WndProc() : WM_ACTIVATE, minimized\n");
+					if (g_engine != NULL)
+						printf("WndProc() : WM_ACTIVATE, minimized\n");
+
 					/// g_bUpdate = false;
 					g_bDraw = false;
 					g_bHasFocus = false;
@@ -734,6 +744,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		MessageBox(NULL, "Couldn't RegisterRawInputDevices()!", "Warning", MB_ICONEXCLAMATION | MB_OK);
 	}
 
+	// initialize RealTimeStylus (COM)
+#ifdef MCENGINE_WINDOWS_REALTIMESTYLUS_SUPPORT
+	HRESULT hr = CoInitialize(NULL);
+	if (hr == S_OK || hr == S_FALSE) // if we initialized successfully, or if we are already initialized
+	{
+		if (!InitRealTimeStylus(hInstance, hwnd))
+			printf("WARNING: Couldn't InitRealTimeStylus()! RealTimeStylus is not going to work.\n");
+	}
+	else
+		printf("WARNING: Couldn't CoInitialize()! RealTimeStylus is not going to work.\n");
+#endif
+
     // create timers
     Timer *frameTimer = new Timer();
     frameTimer->start();
@@ -746,7 +768,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// make the window visible
 	ShowWindow(hwnd, nCmdShow);
 #ifdef WINDOW_MAXIMIZED
-		ShowWindow(hwnd, SW_MAXIMIZE);
+	ShowWindow(hwnd, SW_MAXIMIZE);
 #endif
 
     // initialize engine
@@ -817,6 +839,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 	}
+
+    // uninitialize RealTimeStylus (COM)
+#ifdef MCENGINE_WINDOWS_REALTIMESTYLUS_SUPPORT
+	UninitRealTimeStylus();
+    CoUninitialize();
+#endif
 
 	// release the timers
 	SAFE_DELETE(frameTimer);
