@@ -17,7 +17,6 @@
 #include "RenderTarget.h"
 
 #include "pthread.h"
-#include <atomic>
 
 class ResourceManager
 {
