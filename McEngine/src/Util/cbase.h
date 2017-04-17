@@ -16,6 +16,7 @@
 #include <string>
 #include <random>
 #include <memory>
+#include <atomic>
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
