@@ -268,7 +268,7 @@ void Camera::rotateY(float yawDeg)
 	if (m_fYaw > 360.0f)
 		m_fYaw = m_fYaw - 360.0f;
 	else if (m_fYaw < 0.0f)
-		m_fYaw = 360.0f - m_fYaw;
+		m_fYaw = 360.0f + m_fYaw;
 
 	updateVectors();
 }
