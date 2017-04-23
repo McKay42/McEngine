@@ -33,6 +33,7 @@ ConVar vr_bug_workaround_triggerhapticpulse("vr_bug_workaround_triggerhapticpuls
 
 ConVar vr_ss("vr_ss", 1.6f, "internal engine supersampling factor. the recommended rendertarget size, as reported by OpenVR, is multiplied by this value");
 ConVar vr_ss_compositor("vr_ss_compositor", 2.0f, "external compositor submission texture supersampling factor. the recommended rendertarget size, as reported by OpenVR, is multiplied by this value");
+ConVar vr_compositor_submit_double("vr_compositor_submit_double", false, "use separate submission texture for each eye (trades VRAM for speed/compatibility)");
 ConVar vr_aa("vr_aa", 2.0f, "antialiasing/multisampling factor. valid values are: 0, 2, 4, 8, 16");
 ConVar vr_nearz("vr_nearz", 0.1f);
 ConVar vr_farz("vr_farz", 300.0f);
@@ -121,7 +122,8 @@ OpenVRInterface::OpenVRInterface()
 
 	m_leftEye = NULL;
 	m_rightEye = NULL;
-	m_compositorEye = NULL;
+	m_compositorEye1 = NULL;
+	m_compositorEye2 = NULL;
 	m_debugOverlay = NULL;
 
 	m_vPlayAreaSize = Vector2(2, 2);
@@ -147,6 +149,7 @@ OpenVRInterface::OpenVRInterface()
 	// convar callbacks
 	vr_ss.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onSSChange));
 	vr_ss_compositor.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onSSCompositorChange));
+	vr_compositor_submit_double.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onCompositorSubmitDoubleChange));
 	vr_aa.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onAAChange));
 	vr_nearz.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onClippingPlaneChange));
 	vr_farz.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onClippingPlaneChange));
@@ -420,10 +423,18 @@ bool OpenVRInterface::initRenderTargets()
 		m_rightEye->rebuild(finalRenderTargetWidth, finalRenderTargetHeight, multisampleType);
 
 	// compositor temporary (for dynamic ss)
-	if (m_compositorEye == NULL)
-		m_compositorEye = engine->getResourceManager()->createRenderTarget(finalCompositorRenderTargetWidth, finalCompositorRenderTargetHeight);
+	if (m_compositorEye1 == NULL)
+		m_compositorEye1 = engine->getResourceManager()->createRenderTarget(finalCompositorRenderTargetWidth, finalCompositorRenderTargetHeight);
 	else if (m_bSteamVRBugWorkaroundCompositorSSChangeAllowed)
-		m_compositorEye->rebuild(finalCompositorRenderTargetWidth, finalCompositorRenderTargetHeight);
+		m_compositorEye1->rebuild(finalCompositorRenderTargetWidth, finalCompositorRenderTargetHeight);
+
+	if (vr_compositor_submit_double.getBool())
+	{
+		if (m_compositorEye2 == NULL)
+			m_compositorEye2 = engine->getResourceManager()->createRenderTarget(finalCompositorRenderTargetWidth, finalCompositorRenderTargetHeight);
+		else if (m_bSteamVRBugWorkaroundCompositorSSChangeAllowed)
+			m_compositorEye2->rebuild(finalCompositorRenderTargetWidth, finalCompositorRenderTargetHeight);
+	}
 
 	// engine overlay
 	if (m_debugOverlay == NULL)
@@ -575,33 +586,50 @@ void OpenVRInterface::draw(Graphics *g)
 		// only OpenGL is supported atm
 		OpenGLRenderTarget *glLeftEye = dynamic_cast<OpenGLRenderTarget*>(m_leftEye);
 		OpenGLRenderTarget *glRightEye = dynamic_cast<OpenGLRenderTarget*>(m_rightEye);
-		OpenGLRenderTarget *glCompositorEye = dynamic_cast<OpenGLRenderTarget*>(m_compositorEye);
-		if (glLeftEye != NULL && glRightEye != NULL && glCompositorEye != NULL)
+		OpenGLRenderTarget *glCompositorEye1 = dynamic_cast<OpenGLRenderTarget*>(m_compositorEye1);
+		OpenGLRenderTarget *glCompositorEye2 = m_compositorEye2 != NULL ? dynamic_cast<OpenGLRenderTarget*>(m_compositorEye2) : NULL;
+		if (glLeftEye != NULL && glRightEye != NULL && glCompositorEye1 != NULL)
 		{
 			// there are no words for how angry I am having to do supersampling like this >:(
 			// at least it only costs memory and not extra time
 
+			const bool submitDouble = vr_compositor_submit_double.getBool() && glCompositorEye2 != NULL;
+
 			vr::EVRCompositorError res = vr::EVRCompositorError::VRCompositorError_None;
 
-			// left eye
+			// blit left
 			if (glLeftEye->isMultiSampled())
-				glLeftEye->blitResolveFrameBufferIntoFrameBuffer(glCompositorEye);
+				glLeftEye->blitResolveFrameBufferIntoFrameBuffer(glCompositorEye1);
 			else
-				glLeftEye->blitFrameBufferIntoFrameBuffer(glCompositorEye);
+				glLeftEye->blitFrameBufferIntoFrameBuffer(glCompositorEye1);
 
-			vr::Texture_t leftEyeTexture = {(void*)glCompositorEye->getRenderTexture(), vr::ETextureType::TextureType_OpenGL, vr::EColorSpace::ColorSpace_Gamma};
+			// blit right double
+			if (submitDouble)
+			{
+				if (glRightEye->isMultiSampled())
+					glRightEye->blitResolveFrameBufferIntoFrameBuffer(glCompositorEye2);
+				else
+					glRightEye->blitFrameBufferIntoFrameBuffer(glCompositorEye2);
+			}
+
+			// submit left
+			vr::Texture_t leftEyeTexture = {(void*)glCompositorEye1->getRenderTexture(), vr::ETextureType::TextureType_OpenGL, vr::EColorSpace::ColorSpace_Gamma};
 			res = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
 
 			if (res != vr::EVRCompositorError::VRCompositorError_None)
 				debugLog("OpenVR Error: Compositor::Submit(Eye_Left) error %i!!!\n", (int)res);
 
-			// right eye
-			if (glRightEye->isMultiSampled())
-				glRightEye->blitResolveFrameBufferIntoFrameBuffer(glCompositorEye);
-			else
-				glRightEye->blitFrameBufferIntoFrameBuffer(glCompositorEye);
+			// blit right
+			if (!submitDouble)
+			{
+				if (glRightEye->isMultiSampled())
+					glRightEye->blitResolveFrameBufferIntoFrameBuffer(glCompositorEye1);
+				else
+					glRightEye->blitFrameBufferIntoFrameBuffer(glCompositorEye1);
+			}
 
-			vr::Texture_t rightEyeTexture = {(void*)glCompositorEye->getRenderTexture(), vr::ETextureType::TextureType_OpenGL, vr::EColorSpace::ColorSpace_Gamma};
+			// submit right (double)
+			vr::Texture_t rightEyeTexture = {(void*)(submitDouble ? glCompositorEye2->getRenderTexture() : glCompositorEye1->getRenderTexture()), vr::ETextureType::TextureType_OpenGL, vr::EColorSpace::ColorSpace_Gamma};
 			res = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
 
 			if (res != vr::EVRCompositorError::VRCompositorError_None)
@@ -1692,6 +1720,13 @@ void OpenVRInterface::onSSCompositorChange(UString oldValue, UString newValue)
 	}
 
 	m_fCompositorSSMultiplier = newValue.toFloat();
+	m_bReady = initRenderTargets();
+}
+
+void OpenVRInterface::onCompositorSubmitDoubleChange(UString oldValue, UString newValue)
+{
+	if (!m_bReady) return;
+
 	m_bReady = initRenderTargets();
 }
 
