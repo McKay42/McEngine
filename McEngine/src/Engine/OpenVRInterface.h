@@ -109,6 +109,7 @@ private:
 
 	void onSSChange(UString oldValue, UString newValue);
 	void onSSCompositorChange(UString oldValue, UString newValue);
+	void onCompositorSubmitDoubleChange(UString oldValue, UString newValue);
 	void onAAChange(UString oldValue, UString newValue);
 	void onClippingPlaneChange(UString oldValue, UString newValue);
 	void onBackgroundBrightnessChange(UString oldValue, UString newValue);
@@ -152,7 +153,8 @@ private:
 	// framebuffers
 	RenderTarget *m_leftEye;
 	RenderTarget *m_rightEye;
-	RenderTarget *m_compositorEye;
+	RenderTarget *m_compositorEye1;
+	RenderTarget *m_compositorEye2;
 	RenderTarget *m_debugOverlay;
 
 	// play area
