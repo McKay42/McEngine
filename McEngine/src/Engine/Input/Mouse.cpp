@@ -17,6 +17,8 @@ ConVar mouse_sensitivity("mouse_sensitivity", 1.0f);
 ConVar mouse_raw_input("mouse_raw_input", false);
 ConVar mouse_raw_input_absolute_to_window("mouse_raw_input_absolute_to_window", false);
 ConVar mouse_fakelag("mouse_fakelag", 0.000f);
+ConVar tablet_sensitivity_ignore("tablet_sensitivity_ignore", false);
+ConVar win_ink_workaround("win_ink_workaround", false);
 
 Mouse::Mouse() : InputDevice()
 {
@@ -141,24 +143,31 @@ void Mouse::update()
 		else
 		{
 			Vector2 nextCursorPos;
-			if (m_bAbsolute)
+			if (m_bAbsolute && !tablet_sensitivity_ignore.getBool())
 			{
 				// HACKHACK: this works on windows only!!!
-				const int rawRange = 65536; // absolute coord range, but what if I want to have a tablet that's more accurate than 1/65536-th? >:(
+				float rawRangeX = 65536; // absolute coord range, but what if I want to have a tablet that's more accurate than 1/65536-th? >:(
+				float rawRangeY = 65536;
+
+				if (win_ink_workaround.getBool()) // if enabled, uses the screen resolution as the coord range
+				{
+					rawRangeX = env->getNativeScreenSize().x;
+					rawRangeY = env->getNativeScreenSize().y;
+				}
 
 				if (mouse_raw_input_absolute_to_window.getBool())
 				{
 					const Vector2 scaledOffset = m_vOffset*m_vScale;
 					const Vector2 scaledEngineScreenSize = engine->getScreenSize()*m_vScale + 2*scaledOffset;
 
-					nextCursorPos.x = (((float)((m_vRawDelta.x - rawRange/2) * mouse_sensitivity.getFloat()) + rawRange/2) / rawRange) * scaledEngineScreenSize.x - scaledOffset.x;
-					nextCursorPos.y = (((float)((m_vRawDelta.y - rawRange/2) * mouse_sensitivity.getFloat()) + rawRange/2) / rawRange) * scaledEngineScreenSize.y - scaledOffset.y;
+					nextCursorPos.x = (((float)((m_vRawDelta.x - rawRangeX/2) * mouse_sensitivity.getFloat()) + rawRangeX/2) / rawRangeX) * scaledEngineScreenSize.x - scaledOffset.x;
+					nextCursorPos.y = (((float)((m_vRawDelta.y - rawRangeY/2) * mouse_sensitivity.getFloat()) + rawRangeY/2) / rawRangeY) * scaledEngineScreenSize.y - scaledOffset.y;
 				}
 				else
 				{
                     // shift and scale to desktop
 					Rect screen = m_bVirtualDesktop ? env->getVirtualScreenRect() : desktopRect;
-					const Vector2 posInScreenCoords = Vector2((m_vRawDelta.x/rawRange) * screen.getWidth() + screen.getX(), (m_vRawDelta.y/rawRange) * screen.getHeight() + screen.getY());
+					const Vector2 posInScreenCoords = Vector2((m_vRawDelta.x/rawRangeX) * screen.getWidth() + screen.getX(), (m_vRawDelta.y/rawRangeY) * screen.getHeight() + screen.getY());
 
 					// offset to window
 					nextCursorPos = posInScreenCoords - env->getWindowPos();
