@@ -56,7 +56,7 @@ Project: [https://mingw-w64.org/doku.php/](https://mingw-w64.org/doku.php/)
 
 Installer: [https://sourceforge.net/projects/mingw-w64/](https://sourceforge.net/projects/mingw-w64/)
 
-__Please use the installer__, since it just works™. The pre-built toolchains on the project page for mingw-w64 are apparently outdated and don't contain all the necessary files for a Windows build, while the installer supports up to g++ 6.2.0.
+__Please use the installer__, since it just works™. The pre-built toolchains on the project page for mingw-w64 are apparently outdated and don't contain all the necessary files for a Windows build, while the installer supports up to g++ 6.3.0.
 Make sure you add the mingw directory to your PATH after the installation is finished. To test if everything works, try to enter the following command in a cmd window: `g++ --version`.
 
 
