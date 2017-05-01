@@ -35,6 +35,8 @@ Sound::Sound(UString filepath, bool stream, bool threeD, bool loop) : Resource(f
 	m_bIsLooped = loop;
 	m_bIsOverlayable = false;
 
+	m_fLastPlayTime = 0.0;
+
 	m_bisSpeedAndPitchHackEnabled = false;
 	m_soundProcUserData = new SOUND_PROC_USERDATA();
 }
