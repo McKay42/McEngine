@@ -18,6 +18,7 @@
 #include "Sound.h"
 
 ConVar snd_output_device("snd_output_device", "Default");
+ConVar snd_restrict_play_frame("snd_restrict_play_frame", true, "only allow one new channel per frame for overlayable sounds (prevents lag and earrape)");
 
 SoundEngine::SoundEngine()
 {
@@ -158,60 +159,69 @@ SoundEngine::~SoundEngine()
 
 bool SoundEngine::play(Sound *snd)
 {
-	if (!m_bReady || snd == NULL) return false;
+	if (!m_bReady || snd == NULL || !snd->isReady()) return false;
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	if (snd->isReady() && !snd->isPlaying())
+	if (!snd_restrict_play_frame.getBool() || engine->getTime() > snd->getLastPlayTime())
 	{
-		bool ret = BASS_ChannelPlay(snd->getHandle(), FALSE);
-		if (!ret)
-			debugLog("SoundEngine::play() couldn't BASS_ChannelPlay(), errorcode %i\n", BASS_ErrorGetCode());
-		return ret;
-	}
-	else
-		return false;
+		DWORD handle = snd->getHandle();
+		if (BASS_ChannelIsActive(handle) != BASS_ACTIVE_PLAYING)
+		{
+			bool ret = BASS_ChannelPlay(handle, FALSE);
+			if (!ret)
+				debugLog("SoundEngine::play() couldn't BASS_ChannelPlay(), errorcode %i\n", BASS_ErrorGetCode());
+			else
+				snd->setLastPlayTime(engine->getTime());
 
-#else
-	return false;
+			return ret;
+		}
+	}
+
 #endif
+
+	return false;
 }
 
 bool SoundEngine::play3d(Sound *snd, Vector3 pos)
 {
-	if (!m_bReady || snd == NULL) return false;
+	if (!m_bReady || snd == NULL || !snd->isReady() || !snd->is3d()) return false;
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	if (snd->isReady() && !snd->isPlaying() && snd->is3d())
+	if (!snd_restrict_play_frame.getBool() || engine->getTime() > snd->getLastPlayTime())
 	{
 		DWORD handle = snd->getHandle();
+		if (BASS_ChannelIsActive(handle) != BASS_ACTIVE_PLAYING)
+		{
+			BASS_3DVECTOR bassPos = BASS_3DVECTOR(pos.x, pos.y, pos.z);
+			if (!BASS_ChannelSet3DPosition(handle, &bassPos, NULL, NULL))
+				debugLog("SoundEngine::play3d() couldn't BASS_ChannelSet3DPosition(), errorcode %i\n", BASS_ErrorGetCode());
+			else
+				BASS_Apply3D(); // apply the changes
 
-		BASS_3DVECTOR bassPos = BASS_3DVECTOR(pos.x, pos.y, pos.z);
-		if (!BASS_ChannelSet3DPosition(handle, &bassPos, NULL, NULL))
-			debugLog("SoundEngine::play3d() couldn't BASS_ChannelSet3DPosition(), errorcode %i\n", BASS_ErrorGetCode());
-		else
-			BASS_Apply3D(); // apply the changes
+			bool ret = BASS_ChannelPlay(handle, FALSE);
+			if (!ret)
+				debugLog("SoundEngine::play3d() couldn't BASS_ChannelPlay(), errorcode %i\n", BASS_ErrorGetCode());
+			else
+				snd->setLastPlayTime(engine->getTime());
 
-		bool ret = BASS_ChannelPlay(handle, FALSE);
-		if (!ret)
-			debugLog("SoundEngine::play3d() couldn't BASS_ChannelPlay(), errorcode %i\n", BASS_ErrorGetCode());
-		return ret;
+			return ret;
+		}
 	}
-	else
-		return false;
 
 #endif
+
+	return false;
 }
 
 void SoundEngine::pause(Sound *snd)
 {
 #ifdef MCENGINE_FEATURE_SOUND
 
-	if (!m_bReady || snd == NULL) return;
+	if (!m_bReady || snd == NULL || !snd->isReady()) return;
 
-	if (snd->isReady())
-		BASS_ChannelPause(snd->getHandle());
+	BASS_ChannelPause(snd->getHandle());
 
 #endif
 }
@@ -220,14 +230,12 @@ void SoundEngine::stop(Sound *snd)
 {
 #ifdef MCENGINE_FEATURE_SOUND
 
-	if (!m_bReady || snd == NULL) return;
+	if (!m_bReady || snd == NULL || !snd->isReady()) return;
 
-	if (snd->isReady())
-	{
-		BASS_ChannelStop(snd->getHandle());
-		snd->setPosition(0.0);
-		snd->clear();
-	}
+	BASS_ChannelStop(snd->getHandle());
+	snd->setPosition(0.0); // HACKHACK: necessary
+	snd->clear();
+	snd->setLastPlayTime(0.0f);
 
 #endif
 }
