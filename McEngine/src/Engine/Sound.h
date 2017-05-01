@@ -26,12 +26,16 @@ public:
 	void setFrequency(float frequency);
 	void setOverlayable(bool overlayable) {m_bIsOverlayable = overlayable;}
 
+	void setLastPlayTime(double lastPlayTime) {m_fLastPlayTime = lastPlayTime;}
+
 	SOUNDHANDLE getHandle();
 	float getPosition();
 	unsigned long getPositionMS();
 	unsigned long getLengthMS();
 	float getSpeed();
 	float getPitch();
+
+	inline double getLastPlayTime() const {return m_fLastPlayTime;}
 
 	bool isPlaying();
 	bool isFinished();
@@ -69,6 +73,8 @@ private:
 	bool m_bIs3d;
 	bool m_bIsLooped;
 	bool m_bIsOverlayable;
+
+	double m_fLastPlayTime;
 
 	bool m_bisSpeedAndPitchHackEnabled;
 };
