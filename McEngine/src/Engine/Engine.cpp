@@ -443,7 +443,7 @@ std::mutex g_engineMouseLeftClickMutex;
 void Engine::onMouseLeftChange(bool mouseLeftDown)
 {
 	std::lock_guard<std::mutex> lk(g_engineMouseLeftClickMutex); // async calls from WinRealTimeStylus must be protected
-	if (m_mouse->isLeftDown() != mouseLeftDown) // necessary due to WinRealTimeStylus, would cause double clicks otherwise
+	if (m_mouse->isLeftDown() != mouseLeftDown) // necessary due to WinRealTimeStylus and Touch, would cause double clicks otherwise
 		m_mouse->onLeftChange(mouseLeftDown);
 }
 
@@ -454,7 +454,8 @@ void Engine::onMouseMiddleChange(bool mouseMiddleDown)
 
 void Engine::onMouseRightChange(bool mouseRightDown)
 {
-	m_mouse->onRightChange(mouseRightDown);
+	if (m_mouse->isRightDown() != mouseRightDown) // necessary due to Touch, would cause double clicks otherwise
+		m_mouse->onRightChange(mouseRightDown);
 }
 
 void Engine::onKeyboardKeyDown(KEYCODE keyCode)

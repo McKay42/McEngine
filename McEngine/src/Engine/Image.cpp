@@ -57,19 +57,17 @@ Image::Image(UString filepath, bool mipmapped) : Resource(filepath)
 	m_iHeight = 0;
 	m_bHasAlphaChannel = true;
 	m_bCreatedImage = false;
-	m_bClampToEdge = false;
 }
 
-Image::Image(int width, int height, bool clampToEdge) : Resource()
+Image::Image(int width, int height, bool mipmapped) : Resource()
 {
-	m_bMipmapped = true;
+	m_bMipmapped = mipmapped;
 	m_type = Image::TYPE::TYPE_RGB;
 	m_iNumChannels = 4;
 	m_iWidth = width;
 	m_iHeight = height;
 	m_bHasAlphaChannel = true;
 	m_bCreatedImage = true;
-	m_bClampToEdge = clampToEdge;
 
 	// reserve and fill with pink pixels
 	m_rawImage.resize(4*m_iWidth*m_iHeight);

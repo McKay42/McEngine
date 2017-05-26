@@ -269,16 +269,16 @@ Image *ResourceManager::loadImageAbsUnnamed(UString absoluteFilepath, bool mipma
 	return img;
 }
 
-Image *ResourceManager::createImage(unsigned int width, unsigned int height, bool clampToEdge)
+Image *ResourceManager::createImage(unsigned int width, unsigned int height, bool mipmapped)
 {
 	if (width < 1 || height < 1 || width > 4096 || height > 4096)
 	{
-		engine->showMessageError("Resource Manager Error", UString::format("Invalid parameters in createImage(%i, %i, %i)!\n", width, height, (int)clampToEdge));
+		engine->showMessageError("Resource Manager Error", UString::format("Invalid parameters in createImage(%i, %i, %i)!\n", width, height, (int)mipmapped));
 		return NULL;
 	}
 
 	// create instance and load it
-	Image *img = engine->getGraphics()->createImage(width, height, clampToEdge);
+	Image *img = engine->getGraphics()->createImage(width, height, mipmapped);
 	img->setName("<CREATED_IMAGE>");
 
 	loadResource(img, false);
@@ -305,7 +305,7 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, unsign
 	return fnt;
 }
 
-Sound *ResourceManager::loadSound(UString filepath, UString resourceName, bool stream, bool threeD, bool loop)
+Sound *ResourceManager::loadSound(UString filepath, UString resourceName, bool stream, bool threeD, bool loop, bool prescan)
 {
 	// check if it already exists
 	{
@@ -316,7 +316,7 @@ Sound *ResourceManager::loadSound(UString filepath, UString resourceName, bool s
 
 	// create instance and load it
 	filepath.insert(0, RM_SOUND_FOLDER);
-	Sound *snd = new Sound(filepath, stream, threeD, loop);
+	Sound *snd = new Sound(filepath, stream, threeD, loop, prescan);
 	snd->setName(resourceName);
 
 	loadResource(snd, true);
@@ -324,7 +324,7 @@ Sound *ResourceManager::loadSound(UString filepath, UString resourceName, bool s
 	return snd;
 }
 
-Sound *ResourceManager::loadSoundAbs(UString filepath, UString resourceName, bool stream, bool threeD, bool loop)
+Sound *ResourceManager::loadSoundAbs(UString filepath, UString resourceName, bool stream, bool threeD, bool loop, bool prescan)
 {
 	// check if it already exists
 	{
@@ -334,7 +334,7 @@ Sound *ResourceManager::loadSoundAbs(UString filepath, UString resourceName, boo
 	}
 
 	// create instance and load it
-	Sound *snd = new Sound(filepath, stream, threeD, loop);
+	Sound *snd = new Sound(filepath, stream, threeD, loop, prescan);
 	snd->setName(resourceName);
 
 	loadResource(snd, true);

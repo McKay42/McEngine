@@ -23,7 +23,7 @@ DWORD CALLBACK soundFXCallbackProc(HSTREAM handle, void *buffer, DWORD length, v
 
 #endif
 
-Sound::Sound(UString filepath, bool stream, bool threeD, bool loop) : Resource(filepath)
+Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan) : Resource(filepath)
 {
 	m_fVolume = 1.0f;
 	m_HSTREAM = 0;
@@ -33,6 +33,7 @@ Sound::Sound(UString filepath, bool stream, bool threeD, bool loop) : Resource(f
 	m_bStream = stream;
 	m_bIs3d = threeD;
 	m_bIsLooped = loop;
+	m_bPrescan = prescan;
 	m_bIsOverlayable = false;
 
 	m_fLastPlayTime = 0.0;
@@ -76,15 +77,15 @@ void Sound::initAsync()
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
-		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.wc_str(), 0, 0, BASS_STREAM_DECODE | BASS_UNICODE);
+		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.wc_str(), 0, 0, BASS_STREAM_DECODE | BASS_UNICODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0));
 
 #elif defined __linux__
 
-		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, BASS_STREAM_DECODE);
+		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, BASS_STREAM_DECODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0));
 
 #else
 
-		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, BASS_STREAM_DECODE);
+		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, BASS_STREAM_DECODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0));
 
 #endif
 
@@ -237,15 +238,17 @@ void Sound::setPositionMS(unsigned long ms, bool internal)
 
 	if (!m_bReady || ms > getLengthMS()) return;
 
+	SOUNDHANDLE handle = getHandle();
+
 	// HACKHACK:
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
 	{
-		BASS_ChannelSetPosition(getHandle(), 0, BASS_POS_BYTE);
-		m_soundProcUserData->offset = BASS_ChannelSeconds2Bytes(getHandle(), ms/1000.0);
+		BASS_ChannelSetPosition(handle, 0, BASS_POS_BYTE);
+		m_soundProcUserData->offset = BASS_ChannelSeconds2Bytes(handle, ms/1000.0);
 	}
 	else
 	{
-		if (!BASS_ChannelSetPosition(getHandle(), BASS_ChannelSeconds2Bytes(getHandle(), ms/1000.0), BASS_POS_BYTE) && !internal)
+		if (!BASS_ChannelSetPosition(handle, BASS_ChannelSeconds2Bytes(handle, ms/1000.0), BASS_POS_BYTE) && !internal)
 			debugLog("Sound::setPositionMS( %lu ) BASS_ChannelSetPosition() Error %i on %s !\n", ms, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 	}
 
@@ -349,15 +352,16 @@ unsigned long Sound::getPositionMS()
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	QWORD position = BASS_ChannelGetPosition(getHandle(), BASS_POS_BYTE);
+	SOUNDHANDLE handle = getHandle();
+	QWORD position = BASS_ChannelGetPosition(handle, BASS_POS_BYTE);
 
-	double positionInSeconds = BASS_ChannelBytes2Seconds(getHandle(), position);
+	double positionInSeconds = BASS_ChannelBytes2Seconds(handle, position);
 	double positionInMilliSeconds = positionInSeconds * 1000.0;
 
 	// HACKHACK:
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
 	{
-		double offsetInSeconds = BASS_ChannelBytes2Seconds(getHandle(), m_soundProcUserData->offset);
+		double offsetInSeconds = BASS_ChannelBytes2Seconds(handle, m_soundProcUserData->offset);
 		double offsetInMilliSeconds = offsetInSeconds * 1000.0;
 		return static_cast<unsigned long>(positionInMilliSeconds + offsetInMilliSeconds);
 	}

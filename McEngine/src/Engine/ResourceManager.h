@@ -39,14 +39,14 @@ public:
 	Image *loadImageUnnamed(UString filepath, bool mipmapped = false);
 	Image *loadImageAbs(UString absoluteFilepath, UString resourceName, bool mipmapped = false);
 	Image *loadImageAbsUnnamed(UString absoluteFilepath, bool mipmapped = false);
-	Image *createImage(unsigned int width, unsigned int height, bool clampToEdge = true);
+	Image *createImage(unsigned int width, unsigned int height, bool mipmapped = false);
 
 	// fonts
 	McFont *loadFont(UString filepath, UString resourceName, unsigned int fontSize = 16, bool antialiasing = true);
 
 	// sounds
-	Sound *loadSound(UString filepath, UString resourceName, bool stream = false, bool threeD = false, bool loop = false);
-	Sound *loadSoundAbs(UString filepath, UString resourceName, bool stream = false, bool threeD = false, bool loop = false);
+	Sound *loadSound(UString filepath, UString resourceName, bool stream = false, bool threeD = false, bool loop = false, bool prescan = false);
+	Sound *loadSoundAbs(UString filepath, UString resourceName, bool stream = false, bool threeD = false, bool loop = false, bool prescan = false);
 
 	// shaders
 	Shader *loadShader(UString vertexShaderFilePath, UString fragmentShaderFilePath, UString resourceName);
