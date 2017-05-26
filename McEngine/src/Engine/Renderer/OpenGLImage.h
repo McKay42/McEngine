@@ -14,7 +14,7 @@ class OpenGLImage : public Image
 {
 public:
 	OpenGLImage(UString filepath, bool mipmapped = false);
-	OpenGLImage(int width, int height, bool clampToEdge = true);
+	OpenGLImage(int width, int height, bool mipmapped = false);
 	virtual ~OpenGLImage() {destroy();}
 
 	virtual void bind(unsigned int textureUnit = 0);
@@ -27,6 +27,8 @@ private:
 	virtual void init();
 	virtual void initAsync();
 	virtual void destroy();
+
+	void handleGLErrors();
 
 	unsigned int m_GLTexture;
 	unsigned int m_iTextureUnitBackup;

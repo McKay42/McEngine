@@ -26,6 +26,7 @@ public:
 	virtual void setUniform2fv(UString name, int count, float *vectors) {;}
 	virtual void setUniform3f(UString name, float x, float y, float z) {;}
 	virtual void setUniform3fv(UString name, int count, float *vectors) {;}
+	virtual void setUniform4f(UString name, float x, float y, float z, float w) {;}
 	virtual void setUniformMatrix4fv(UString name, Matrix4 &matrix) {;}
 	virtual void setUniformMatrix4fv(UString name, float *v) {;}
 

@@ -48,6 +48,7 @@ CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float 
 	m_iPrevScrollDeltaY = m_iPrevScrollDeltaX =  0;
 	m_bBlockScrolling = false;
 
+	m_bScrollResistanceCheck = false;
 	m_iScrollResistance = ui_scrollview_resistance.getInt();
 
 	m_container = new CBaseUIContainer(xPos, yPos, xSize, ySize, name);
@@ -124,6 +125,12 @@ void CBaseUIScrollView::update()
 	// scrolling logic
 	if (m_bActive && !m_bBlockScrolling && (m_bVerticalScrolling || m_bHorizontalScrolling) && m_bEnabled)
 	{
+		if (!m_bScrollResistanceCheck)
+		{
+			m_bScrollResistanceCheck = true;
+			m_vMouseBackup3 = engine->getMouse()->getPos();
+		}
+
 		// get pull strength
 		int diff = std::abs(engine->getMouse()->getPos().x - m_vMouseBackup3.x);
 		if (std::abs(engine->getMouse()->getPos().y - m_vMouseBackup3.y) > diff)
@@ -190,7 +197,7 @@ void CBaseUIScrollView::update()
 		m_bScrollbarScrolling = false;
 	}
 	else
-		m_vMouseBackup3 = engine->getMouse()->getPos();
+		m_bScrollResistanceCheck = false;
 
 	// handle mouse wheel
 	if (!engine->getKeyboard()->isAltDown() && m_bMouseInside && m_bEnabled)

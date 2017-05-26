@@ -20,6 +20,8 @@ OpenGLShader::OpenGLShader(UString vertexShader, UString fragmentShader, bool so
 	m_iProgram = 0;
 	m_iVertexShader = 0;
 	m_iFragmentShader = 0;
+
+	m_iProgramBackup = 0;
 }
 
 void OpenGLShader::init()
@@ -44,12 +46,15 @@ void OpenGLShader::destroy()
 	m_iProgram = 0;
 	m_iFragmentShader = 0;
 	m_iVertexShader = 0;
+
+	m_iProgramBackup = 0;
 }
 
 void OpenGLShader::enable()
 {
 	if (!m_bReady) return;
 
+	glGetIntegerv(GL_CURRENT_PROGRAM, &m_iProgramBackup); // backup
 	glUseProgramObjectARB(m_iProgram);
 }
 
@@ -57,7 +62,7 @@ void OpenGLShader::disable()
 {
 	if (!m_bReady) return;
 
-	glUseProgramObjectARB(0);
+	glUseProgramObjectARB(m_iProgramBackup); // restore
 }
 
 void OpenGLShader::setUniform1f(UString name, float value)
@@ -130,6 +135,16 @@ void OpenGLShader::setUniform3fv(UString name, int count, float *vectors)
 		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
 
+void OpenGLShader::setUniform4f(UString name, float x, float y, float z, float w)
+{
+	if (!m_bReady) return;
+	int id = glGetUniformLocationARB(m_iProgram, name.toUtf8());
+	if (id != -1)
+		glUniform4fARB(id, x, y, z, w);
+	else if (debug_shaders->getBool())
+		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+}
+
 void OpenGLShader::setUniformMatrix4fv(UString name, Matrix4 &matrix)
 {
 	if (!m_bReady) return;
@@ -148,6 +163,12 @@ void OpenGLShader::setUniformMatrix4fv(UString name, float *v)
 		glUniformMatrix4fv(id, 1, GL_FALSE, v);
 	else if (debug_shaders->getBool())
 		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+}
+
+int OpenGLShader::getAttribLocation(UString name)
+{
+	if (!m_bReady) return -1;
+	return glGetAttribLocation(m_iProgram, name.toUtf8());
 }
 
 bool OpenGLShader::compile(UString vertexShader, UString fragmentShader, bool source)

@@ -20,7 +20,7 @@ OpenGLImage::OpenGLImage(UString filepath, bool mipmapped) : Image(filepath, mip
 	m_iTextureUnitBackup = 0;
 }
 
-OpenGLImage::OpenGLImage(int width, int height, bool clampToEdge) : Image(width, height, clampToEdge)
+OpenGLImage::OpenGLImage(int width, int height, bool mipmapped) : Image(width, height, mipmapped)
 {
 	m_GLTexture = 0;
 	m_iTextureUnitBackup = 0;
@@ -42,11 +42,11 @@ void OpenGLImage::init()
 		return;
 	}
 
-	// TEMP: clear gl error state
-	glGetError();
+	// DEPRECATED LEGACY
+	glEnable(GL_TEXTURE_2D);
+	glGetError(); // clear gl error state
 
 	// create texture and bind
-	glEnable(GL_TEXTURE_2D);
 	glGenTextures(1, &m_GLTexture);
 	glBindTexture(GL_TEXTURE_2D, m_GLTexture);
 
@@ -62,28 +62,16 @@ void OpenGLImage::init()
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	// TODO: HACKHACK: this if block is only here for backwards compatibility with CGProject and (maybe) MetroidModelViewer (needs check)
-	if (m_bCreatedImage) // for lightmaps, which are NPOT
-	{
-		if (m_bClampToEdge)
-		{
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		}
-
-		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-	}
-
 	if (m_type == Image::TYPE::TYPE_JPG) // HACKHACK: wat
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-	//debugLog("going to teximage (mipmapped = %i, alphachannel = %i, width = %i, height = %i, buffer size = %i)\n", (int)m_bMipmapped, (int)m_bHasAlphaChannel, m_iWidth, m_iHeight, m_rawImage.size());
-
-	// m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA))
-	// set pixel format and load pixels (defaults to no mipmapping)
-	if (m_bMipmapped) // TODO: the 4 seems to be wrong? defaults to wrong LOD sometimes... // TODO: gluBuild2DMipmaps() is more or less deprecated, refactor this
-		gluBuild2DMipmaps(GL_TEXTURE_2D, 4, m_iWidth, m_iHeight, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), GL_UNSIGNED_BYTE, &m_rawImage[0]);
+	// upload to gpu
+	if (m_bMipmapped)
+	{
+		// TODO: gluBuild2DMipmaps() is more or less deprecated, refactor this
+		// TODO: doesn't work with gl 3.0
+		//gluBuild2DMipmaps(GL_TEXTURE_2D, 4, m_iWidth, m_iHeight, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), GL_UNSIGNED_BYTE, &m_rawImage[0]);
+	}
 	else
 		glTexImage2D(GL_TEXTURE_2D, 0, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), m_iWidth, m_iHeight, 0, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), GL_UNSIGNED_BYTE, &m_rawImage[0]);
 
@@ -135,7 +123,9 @@ void OpenGLImage::bind(unsigned int textureUnit)
 	glBindTexture(GL_TEXTURE_2D, m_GLTexture);
 
 	// needed for legacy support (OpenGLLegacyInterface)
+	// DEPRECATED LEGACY
 	glEnable(GL_TEXTURE_2D);
+	glGetError(); // clear gl error state
 }
 
 void OpenGLImage::unbind()
@@ -197,4 +187,11 @@ void OpenGLImage::setWrapMode(Graphics::WRAP_MODE wrapMode)
 		}
 	}
 	unbind();
+}
+
+void OpenGLImage::handleGLErrors()
+{
+	int GLerror = glGetError();
+	if (GLerror != 0)
+		debugLog("OpenGL Image Error: %i on file %s!\n", GLerror, m_sFilePath.toUtf8());
 }

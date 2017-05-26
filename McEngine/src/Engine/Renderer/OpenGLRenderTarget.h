@@ -44,7 +44,7 @@ private:
 
 	int m_iFrameBufferBackup;
 	unsigned int m_iTextureUnitBackup;
-	Vector2 m_vGraphicsResolutionBackup;
+	int m_iViewportBackup[4];
 };
 
 #endif
