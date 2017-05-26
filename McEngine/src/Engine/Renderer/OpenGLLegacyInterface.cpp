@@ -631,9 +631,9 @@ Image *OpenGLLegacyInterface::createImage(UString filePath, bool mipmapped)
 	return new OpenGLImage(filePath, mipmapped);
 }
 
-Image *OpenGLLegacyInterface::createImage(int width, int height, bool clampToEdge)
+Image *OpenGLLegacyInterface::createImage(int width, int height, bool mipmapped)
 {
-	return new OpenGLImage(width, height, clampToEdge);
+	return new OpenGLImage(width, height, mipmapped);
 }
 
 RenderTarget *OpenGLLegacyInterface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)

@@ -1,21 +1,22 @@
-//================ Copyright (c) 2016, PG, All rights reserved. =================//
+//================ Copyright (c) 2017, PG, All rights reserved. =================//
 //
-// Purpose:		vulkan implementation of Graphics
+// Purpose:		raw opengl 3.x graphics interface
 //
-// $NoKeywords: $vkg
+// $NoKeywords: $gl3i
 //===============================================================================//
 
-#ifndef VULKANGRAPHICSINTERFACE_H
-#define VULKANGRAPHICSINTERFACE_H
+#ifndef OPENGL3INTERFACE_H
+#define OPENGL3INTERFACE_H
 
-#include "VulkanInterface.h"
 #include "Graphics.h"
 
-class VulkanGraphicsInterface : public Graphics
+class OpenGLShader;
+
+class OpenGL3Interface : public Graphics
 {
 public:
-	VulkanGraphicsInterface();
-	virtual ~VulkanGraphicsInterface();
+	OpenGL3Interface();
+	virtual ~OpenGL3Interface();
 
 	// scene
 	virtual void beginScene();
@@ -66,7 +67,6 @@ public:
 	virtual void setBlending(bool enabled);
 	virtual void setDepthBuffer(bool enabled);
 	virtual void setCulling(bool culling);
-	virtual void setVSync(bool enabled);
 	virtual void setAntialiasing(bool aa);
 	virtual void setWireframe(bool enabled);
 
@@ -93,19 +93,36 @@ public:
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
 
 protected:
-	void init();
-
+	virtual void init();
 	virtual void onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix);
 
 private:
+	void handleGLErrors();
+
+	static int primitiveToOpenGL(Graphics::PRIMITIVE primitive);
+
 	// renderer
 	Vector2 m_vResolution;
+	Matrix4 m_projectionMatrix;
+	Matrix4 m_worldMatrix;
+	Matrix4 m_MP;
 
-#ifdef MCENGINE_FEATURE_VULKAN
+	OpenGLShader *m_shaderTexturedGeneric;
+	int m_iShaderTexturedGenericAttribPosition;
+	int m_iShaderTexturedGenericAttribUV;
+	int m_iShaderTexturedGenericAttribCol;
+	bool m_bShaderTexturedGenericIsTextureEnabled;
 
-	VkSurfaceKHR m_surface;
+	unsigned int m_iVA;
+	unsigned int m_iVBOVertices;
+	unsigned int m_iVBOTexcoords;
+	unsigned int m_iVBOTexcolors;
 
-#endif
+	// persistent vars
+	Color m_color;
+
+	// clipping
+	std::stack<Rect> m_clipRectStack;
 };
 
 #endif

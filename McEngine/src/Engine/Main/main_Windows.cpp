@@ -7,7 +7,12 @@
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
-// #define MCENGINE_WINDOWS_REALTIMESTYLUS_SUPPORT
+//#define MCENGINE_WINDOWS_REALTIMESTYLUS_SUPPORT
+//#define MCENGINE_WINDOWS_TOUCH_SUPPORT
+
+#ifdef MCENGINE_WINDOWS_TOUCH_SUPPORT
+#define WINVER 0x0A00 // Windows 10, to enable the ifdefs in winuser.h for touch
+#endif
 
 #include "cbase.h"
 
@@ -19,9 +24,19 @@
 #include <windows.h>
 #include <dwmapi.h>
 
-#ifdef MCENGINE_WINDOWS_REALTIMESTYLUS_SUPPORT
-	#include "WinRealTimeStylus.h"
+#ifdef MCENGINE_WINDOWS_TOUCH_SUPPORT
+#include <winuser.h>
+typedef WINBOOL (WINAPI *PGPI)(UINT32 pointerId, POINTER_INFO *pointerInfo);
+PGPI g_GetPointerInfo = (PGPI)GetProcAddress(GetModuleHandle(TEXT("user32.dll")), "GetPointerInfo");
 #endif
+
+#ifdef MCENGINE_WINDOWS_REALTIMESTYLUS_SUPPORT
+#include "WinRealTimeStylus.h"
+#endif
+
+#define MI_WP_SIGNATURE 0xFF515700
+#define SIGNATURE_MASK 0xFFFFFF00
+#define IsPenEvent(dw) (((dw) & SIGNATURE_MASK) == MI_WP_SIGNATURE)
 
 #include <iostream>
 #include <stdlib.h>
@@ -72,9 +87,13 @@ bool g_bMinimized = false; // for fps_max_background
 bool g_bHasFocus = false; // for fps_max_background
 bool g_bIsCursorVisible = true; // local variable
 
+std::vector<unsigned int> g_vTouches;
+
 ConVar fps_max("fps_max", 60.0f);
 ConVar fps_max_background("fps_max_background", 30.0f);
 ConVar fps_unlimited("fps_unlimited", false);
+
+extern ConVar *win_realtimestylus;
 
 
 
@@ -303,7 +322,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		// left mouse button
 		case WM_LBUTTONDOWN:
-			if (g_engine != NULL)
+			if (g_engine != NULL && (!win_realtimestylus->getBool() || !IsPenEvent(GetMessageExtraInfo()))) // if realtimestylus support is enabled, all clicks are handled by it and not here
 				g_engine->onMouseLeftChange(true);
 			SetCapture(hwnd);
 			break;
@@ -327,7 +346,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		// right mouse button
 		case WM_RBUTTONDOWN:
-			if (g_engine != NULL)
+			if (g_engine != NULL && (!win_realtimestylus->getBool() || !IsPenEvent(GetMessageExtraInfo()))) // if realtimestylus support is enabled, all pen clicks are handled by it and not here
 				g_engine->onMouseRightChange(true);
 			SetCapture(hwnd);
 			break;
@@ -424,6 +443,77 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 			return 0;
 		*/
+
+#ifdef MCENGINE_WINDOWS_TOUCH_SUPPORT
+		case WM_POINTERUP:
+		case WM_POINTERDOWN:
+		case WM_POINTERUPDATE:
+		case WM_POINTERENTER:
+		case WM_POINTERLEAVE:
+		case WM_POINTERCAPTURECHANGED:
+		case WM_POINTERWHEEL:
+		case WM_POINTERHWHEEL:
+		if (g_engine != NULL && g_GetPointerInfo != NULL)
+		{
+			POINTER_INFO pointerInfo;
+			unsigned long id = LOWORD(wParam);
+			if (g_GetPointerInfo(LOWORD(wParam), &pointerInfo))
+			{
+				if (pointerInfo.pointerFlags & POINTER_FLAG_PRIMARY)
+				{
+					// bit of a hack, but it should work fine
+					// convert to fake raw tablet coordinates (0 to 65536)
+					int rawAbsoluteX = ((float)pointerInfo.ptPixelLocation.x / (float)g_engine->getEnvironment()->getNativeScreenSize().x)*65536;
+					int rawAbsoluteY = ((float)pointerInfo.ptPixelLocation.y / (float)g_engine->getEnvironment()->getNativeScreenSize().y)*65536;
+					g_engine->onMouseRawMove(rawAbsoluteX, rawAbsoluteY, true, true);
+				}
+
+				if (pointerInfo.pointerFlags & POINTER_FLAG_DOWN)
+				{
+					bool contains = false;
+					for (int i=0; i<g_vTouches.size(); i++)
+					{
+						if (g_vTouches[i] == id)
+						{
+							contains = true;
+							break;
+						}
+					}
+
+					if (!contains)
+					{
+						bool already = g_vTouches.size() > 0;
+						g_vTouches.push_back(id);
+
+						if (already)
+							g_engine->onMouseRightChange(true);
+						else
+							g_engine->onMouseLeftChange(true);
+					}
+				}
+				else if (pointerInfo.pointerFlags & POINTER_FLAG_UP)
+				{
+					for (int i=0; i<g_vTouches.size(); i++)
+					{
+						if (g_vTouches[i] == id)
+						{
+							g_vTouches.erase(g_vTouches.begin() + i);
+							i--;
+						}
+					}
+
+					bool still = g_vTouches.size() > 0;
+
+					if (still)
+						g_engine->onMouseRightChange(false);
+					// WTF: this is already called by WM_LBUTTONUP, fuck touch
+					//else
+					//	g_engine->onMouseLeftChange(false);
+				}
+			}
+		}
+		break;
+#endif
 
 		// raw input handling (only for mouse movement atm)
 		case WM_INPUT:

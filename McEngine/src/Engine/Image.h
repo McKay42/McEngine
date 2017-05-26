@@ -24,7 +24,7 @@ public:
 
 public:
 	Image(UString filepath, bool mipmapped = false);
-	Image(int width, int height, bool clampToEdge = true); // TODO: HACKHACK: backwards compatibility for CGProject; remove sometime in the future
+	Image(int width, int height, bool mipmapped = false);
 	virtual ~Image() {;}
 
 	virtual void bind(unsigned int textureUnit = 0) = 0;
@@ -65,7 +65,6 @@ protected:
 	bool m_bHasAlphaChannel;
 	bool m_bMipmapped;
 	bool m_bCreatedImage;
-	bool m_bClampToEdge;
 
 	std::vector<unsigned char> m_rawImage;
 };

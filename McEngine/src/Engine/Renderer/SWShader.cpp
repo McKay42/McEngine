@@ -72,6 +72,11 @@ void SWShader::setUniform3fv(UString name, int count, float *vectors)
 	// TODO:
 }
 
+void SWShader::setUniform4f(UString name, float x, float y, float z, float w)
+{
+	// TODO:
+}
+
 void SWShader::setUniformMatrix4fv(UString name, Matrix4 &matrix)
 {
 	// TODO:

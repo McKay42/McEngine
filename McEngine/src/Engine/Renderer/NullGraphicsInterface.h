@@ -69,7 +69,6 @@ public:
 	virtual void setAntialiasing(bool aa) {;}
 	virtual void setWireframe(bool enabled) {;}
 
-
 	// renderer actions
 	virtual void flush() {;}
 	virtual std::vector<unsigned char> getScreenshot() {return std::vector<unsigned char>();}
@@ -87,7 +86,7 @@ public:
 
 	// factory
 	virtual Image *createImage(UString filePath, bool mipmapped);
-	virtual Image *createImage(int width, int height, bool clampToEdge);
+	virtual Image *createImage(int width, int height, bool mipmapped);
 	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
 	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
