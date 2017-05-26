@@ -125,6 +125,7 @@ private:
 	bool m_bAutoScrollingY;
 	int m_iPrevScrollDeltaX,m_iPrevScrollDeltaY;
 
+	bool m_bScrollResistanceCheck;
 	int m_iScrollResistance;
 };
 

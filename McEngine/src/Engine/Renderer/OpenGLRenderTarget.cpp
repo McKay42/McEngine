@@ -16,6 +16,10 @@ OpenGLRenderTarget::OpenGLRenderTarget(int x, int y, int width, int height, Grap
 {
 	m_iFrameBuffer = m_iRenderTexture = m_iDepthBuffer = m_iResolveTexture = m_iResolveFrameBuffer = 0;
 	m_iFrameBufferBackup = m_iTextureUnitBackup = 0;
+	m_iViewportBackup[0] = 0;
+	m_iViewportBackup[1] = 0;
+	m_iViewportBackup[2] = 0;
+	m_iViewportBackup[3] = 0;
 }
 
 void OpenGLRenderTarget::init()
@@ -172,7 +176,7 @@ void OpenGLRenderTarget::enable()
 	glBindFramebuffer(GL_FRAMEBUFFER, m_iFrameBuffer);
 
 	// set new viewport
-	glPushAttrib(GL_VIEWPORT_BIT); // backup
+	glGetIntegerv(GL_VIEWPORT, m_iViewportBackup); // backup
 	glViewport( -m_vPos.x, (m_vPos.y-engine->getGraphics()->getResolution().y)+m_vSize.y, engine->getGraphics()->getResolution().x, engine->getGraphics()->getResolution().y);
 
 	// clear
@@ -206,7 +210,7 @@ void OpenGLRenderTarget::disable()
 	}
 
 	// restore viewport
-	glPopAttrib();
+	glViewport(m_iViewportBackup[0], m_iViewportBackup[1], m_iViewportBackup[2], m_iViewportBackup[3]);
 
 	// restore framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, m_iFrameBufferBackup);
@@ -225,7 +229,9 @@ void OpenGLRenderTarget::bind(unsigned int textureUnit)
 	glBindTexture(GL_TEXTURE_2D, isMultiSampled() ? m_iResolveTexture : m_iRenderTexture);
 
 	// needed for legacy support (OpenGLLegacyInterface)
+	// DEPRECATED LEGACY
 	glEnable(GL_TEXTURE_2D);
+	glGetError(); // clear gl error state
 }
 
 void OpenGLRenderTarget::unbind()

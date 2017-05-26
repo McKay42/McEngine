@@ -17,9 +17,9 @@ Image *NullGraphicsInterface::createImage(UString filePath, bool mipmapped)
 	return new NullImage(filePath, mipmapped);
 }
 
-Image *NullGraphicsInterface::createImage(int width, int height, bool clampToEdge)
+Image *NullGraphicsInterface::createImage(int width, int height, bool mipmapped)
 {
-	return new NullImage(width, height, clampToEdge);
+	return new NullImage(width, height, mipmapped);
 }
 
 RenderTarget *NullGraphicsInterface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)

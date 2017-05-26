@@ -514,9 +514,9 @@ Image *SWGraphicsInterface::createImage(UString filePath, bool mipmapped)
 	return new SWImage(filePath, mipmapped);
 }
 
-Image *SWGraphicsInterface::createImage(int width, int height, bool clampToEdge)
+Image *SWGraphicsInterface::createImage(int width, int height, bool mipmapped)
 {
-	return new SWImage(width, height, clampToEdge);
+	return new SWImage(width, height, mipmapped);
 }
 
 RenderTarget *SWGraphicsInterface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)

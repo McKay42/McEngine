@@ -15,7 +15,7 @@ typedef unsigned long SOUNDHANDLE;
 class Sound : public Resource
 {
 public:
-	Sound(UString filepath, bool stream, bool threeD, bool loop);
+	Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan);
 	virtual ~Sound() {destroy();}
 
 	void setPosition(double percent);
@@ -72,6 +72,7 @@ private:
 	bool m_bStream;
 	bool m_bIs3d;
 	bool m_bIsLooped;
+	bool m_bPrescan;
 	bool m_bIsOverlayable;
 
 	double m_fLastPlayTime;

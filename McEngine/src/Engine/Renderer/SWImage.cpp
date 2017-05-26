@@ -16,7 +16,7 @@ SWImage::SWImage(UString filepath, bool mipmapped) : Image(filepath, mipmapped)
 	// TODO:
 }
 
-SWImage::SWImage(int width, int height, bool clampToEdge) : Image(width, height, clampToEdge)
+SWImage::SWImage(int width, int height, bool mipmapped) : Image(width, height, mipmapped)
 {
 	// TODO:
 }
