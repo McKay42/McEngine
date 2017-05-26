@@ -34,6 +34,7 @@ ConVar vr_bug_workaround_triggerhapticpulse("vr_bug_workaround_triggerhapticpuls
 ConVar vr_ss("vr_ss", 1.6f, "internal engine supersampling factor. the recommended rendertarget size, as reported by OpenVR, is multiplied by this value");
 ConVar vr_ss_compositor("vr_ss_compositor", 2.0f, "external compositor submission texture supersampling factor. the recommended rendertarget size, as reported by OpenVR, is multiplied by this value");
 ConVar vr_compositor_submit_double("vr_compositor_submit_double", false, "use separate submission texture for each eye (trades VRAM for speed/compatibility)");
+ConVar vr_compositor_texture_size_max("vr_compositor_texture_size_max", 4096.0f, "submission texture size is force clamped to less or equal to this value");
 ConVar vr_aa("vr_aa", 2.0f, "antialiasing/multisampling factor. valid values are: 0, 2, 4, 8, 16");
 ConVar vr_nearz("vr_nearz", 0.1f);
 ConVar vr_farz("vr_farz", 300.0f);
@@ -385,6 +386,33 @@ bool OpenVRInterface::initRenderTargets()
 
 	uint32_t finalCompositorRenderTargetWidth = recommendedRenderTargetWidth * m_fCompositorSSMultiplier;
 	uint32_t finalCompositorRenderTargetHeight = recommendedRenderTargetHeight * m_fCompositorSSMultiplier;
+
+	// ensure that SteamVR doesn't shit itself due to too large submission textures >:(
+	// clamp to vr_compositor_texture_size_max, while keeping the aspect ratio
+	if (finalCompositorRenderTargetWidth > vr_compositor_texture_size_max.getInt() || finalCompositorRenderTargetHeight > vr_compositor_texture_size_max.getInt())
+	{
+		bool swapped = false;
+		if (finalCompositorRenderTargetHeight < finalCompositorRenderTargetWidth)
+		{
+			swapped = true;
+			uint32_t temp = finalCompositorRenderTargetWidth;
+			finalCompositorRenderTargetWidth = finalCompositorRenderTargetHeight;
+			finalCompositorRenderTargetHeight = temp;
+		}
+
+		float aspectRatio = (float)finalCompositorRenderTargetWidth / (float)finalCompositorRenderTargetHeight;
+
+		finalCompositorRenderTargetHeight = vr_compositor_texture_size_max.getInt();
+		finalCompositorRenderTargetWidth = (uint32_t)(aspectRatio*(float)finalCompositorRenderTargetHeight);
+
+		// swap back if necessary
+		if (swapped)
+		{
+			uint32_t temp = finalCompositorRenderTargetWidth;
+			finalCompositorRenderTargetWidth = finalCompositorRenderTargetHeight;
+			finalCompositorRenderTargetHeight = temp;
+		}
+	}
 
 	debugLog("OpenVR: Recommended RenderTarget size = (%i, %i) x %g, final Engine RenderTarget size = (%i, %i)\n", recommendedRenderTargetWidth, recommendedRenderTargetHeight, vr_ss.getFloat(), finalRenderTargetWidth, finalRenderTargetHeight);
 	debugLog("OpenVR: Compositor RenderTarget size = (%i, %i) x %g, final Compositor RenderTarget size = (%i, %i)\n", recommendedRenderTargetWidth, recommendedRenderTargetHeight, m_fCompositorSSMultiplier, finalCompositorRenderTargetWidth, finalCompositorRenderTargetHeight);
@@ -909,13 +937,8 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 		// draw engine debug gui
 		if (vr_console_overlay.getBool())
 		{
-			m_genericTexturedShader->enable();
 			g->setDepthBuffer(false);
 			{
-				// TODO: make this more beautiful
-				m_genericTexturedShader->disable();
-				m_genericTexturedShader->enable();
-
 				const float scaleFactor = 1.0f;
 				float aspectRatio = m_debugOverlay->getWidth() / m_debugOverlay->getHeight();
 
@@ -951,6 +974,7 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 
 				m_debugOverlay->bind();
 				{
+					g->setColor(0xffffffff);
 					g->drawVAO(&vao);
 				}
 				m_debugOverlay->unbind();

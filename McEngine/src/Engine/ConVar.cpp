@@ -424,7 +424,7 @@ void _help(UString args)
 	}
 
 	UString thelog = temp[0]->getName();
-	thelog.append(": ");
+	thelog.append(" : ");
 	thelog.append(temp[0]->getHelpstring());
 
 	debugLog(thelog.toUtf8());
@@ -440,6 +440,11 @@ void _listcommands(void)
 	for (int i=0; i<convars.size(); i++)
 	{
 		UString tstring = convars[i]->getName();
+		if (convars[i]->getHelpstring().length() > 0)
+		{
+			tstring.append(" : ");
+			tstring.append(convars[i]->getHelpstring());
+		}
 		tstring.append("\n");
 		debugLog(tstring.toUtf8());
 	}

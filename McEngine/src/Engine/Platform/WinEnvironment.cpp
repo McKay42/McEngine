@@ -12,6 +12,7 @@
 #include "Mouse.h"
 
 #include "WinGLLegacyInterface.h"
+#include "WinGL3Interface.h"
 #include "WinSWGraphicsInterface.h"
 #include "VulkanGraphicsInterface.h"
 #include "WinContextMenu.h"
@@ -51,6 +52,7 @@ Graphics *WinEnvironment::createRenderer()
 	//return new VulkanGraphicsInterface();
 	//return new WinSWGraphicsInterface(m_hwnd);
 	return new WinGLLegacyInterface(m_hwnd);
+	//return new WinGL3Interface(m_hwnd);
 }
 
 ContextMenu *WinEnvironment::createContextMenu()
