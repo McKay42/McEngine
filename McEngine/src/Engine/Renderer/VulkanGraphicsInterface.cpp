@@ -241,9 +241,9 @@ Image *VulkanGraphicsInterface::createImage(UString filePath, bool mipmapped)
 	return new NullImage(filePath, mipmapped);
 }
 
-Image *VulkanGraphicsInterface::createImage(int width, int height, bool clampToEdge)
+Image *VulkanGraphicsInterface::createImage(int width, int height, bool mipmapped)
 {
-	return new NullImage(width, height, clampToEdge);
+	return new NullImage(width, height, mipmapped);
 }
 
 RenderTarget *VulkanGraphicsInterface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)

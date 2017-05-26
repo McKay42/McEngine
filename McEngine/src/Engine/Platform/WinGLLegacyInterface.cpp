@@ -223,7 +223,7 @@ void WinGLLegacyInterface::setVSync(bool vsync)
 	PFNWGLSWAPINTERVALPROC wglSwapIntervalEXT = 0;
 
 	const char *extensions = (char*)glGetString( GL_EXTENSIONS );
-	if (strstr(extensions, "WGL_EXT_swap_control") == 0)
+	if (extensions == NULL || strstr(extensions, "WGL_EXT_swap_control") == 0)
 	{
 		debugLog("OpenGL: Can't set VSync, WGL_EXT_swap_control not supported!\n");
 		return;
@@ -233,6 +233,8 @@ void WinGLLegacyInterface::setVSync(bool vsync)
 		wglSwapIntervalEXT = (PFNWGLSWAPINTERVALPROC)wglGetProcAddress("wglSwapIntervalEXT");
 		if( wglSwapIntervalEXT )
 			wglSwapIntervalEXT((int)vsync);
+		else
+			debugLog("OpenGL: Can't set VSync, wglSwapIntervalEXT not supported!\n");
 	}
 }
 
