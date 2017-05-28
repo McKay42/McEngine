@@ -89,6 +89,11 @@ bool g_bIsCursorVisible = true; // local variable
 
 std::vector<unsigned int> g_vTouches;
 
+extern "C" { // force switch to the high performance gpu in multi-gpu systems (mostly laptops)
+__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001; // http://developer.download.nvidia.com/devzone/devcenter/gamegraphics/files/OptimusRenderingPolicies.pdf
+__declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001; // https://community.amd.com/thread/169965
+}
+
 ConVar fps_max("fps_max", 60.0f);
 ConVar fps_max_background("fps_max_background", 30.0f);
 ConVar fps_unlimited("fps_unlimited", false);
