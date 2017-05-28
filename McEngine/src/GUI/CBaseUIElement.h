@@ -28,20 +28,25 @@ public:
 	virtual void onChar(KeyboardEvent &e) {;}
 
 	// setters
-	virtual void setPos(float xPos, float yPos) {if (m_vPos.x != xPos || m_vPos.y != yPos) {m_vPos.x = xPos; m_vPos.y = yPos; onMoved();}}
-	virtual void setPosX(float xPos) {if (m_vPos.x != xPos) {m_vPos.x = xPos; onMoved();}}
-	virtual void setPosY(float yPos) {if (m_vPos.y != yPos) {m_vPos.y = yPos; onMoved();}}
-	virtual void setPos(Vector2 position) {if (m_vPos != position) {m_vPos = position; onMoved();}}
+	virtual void setPos(float xPos, float yPos) {if (m_vPos.x != xPos || m_vPos.y != yPos) {m_vPos.x = xPos - m_vSize.x * m_vAnchor.x; m_vPos.y = yPos - m_vSize.y * m_vAnchor.y; onMoved();}}
+	virtual void setPosX(float xPos) {if (m_vPos.x != xPos) {m_vPos.x = xPos - m_vSize.x * m_vAnchor.x; onMoved();}}
+	virtual void setPosY(float yPos) {if (m_vPos.y != yPos) {m_vPos.y = yPos - m_vSize.y * m_vAnchor.y; onMoved();}}
+	virtual void setPos(Vector2 position) {if (m_vPos != position) {m_vPos = position - m_vSize * m_vAnchor; onMoved();}}
 
 	virtual void setRelPos(float xPos, float yPos) {if (m_vmPos.x != xPos || m_vmPos.y != yPos) {m_vmPos.x = xPos; m_vmPos.y = yPos; onMoved();}}
 	virtual void setRelPos(Vector2 position) {if (m_vmPos != position) {m_vmPos = position; onMoved();}}
 	virtual void setRelPosX(float xPos) {if (m_vmPos.x != xPos) {m_vmPos.x = xPos; onMoved();}}
 	virtual void setRelPosY(float yPos) {if (m_vmPos.y != yPos) {m_vmPos.y = yPos; onMoved();}}
 
-	virtual void setSize(float xSize, float ySize) {if (m_vSize.x != xSize || m_vSize.y != ySize) {m_vSize.x = xSize; m_vSize.y = ySize; onResized();}}
-	virtual void setSizeX(float xSize) {if (m_vSize.x != xSize) {m_vSize.x = xSize; onResized();}}
-	virtual void setSizeY(float ySize) {if (m_vSize.y != ySize) {m_vSize.y = ySize; onResized();}}
-	virtual void setSize(Vector2 size) {if (m_vSize != size) {m_vSize = size; onResized();}}
+	virtual void setSize(float xSize, float ySize) {if (m_vSize.x != xSize || m_vSize.y != ySize) {m_vPos.x += (m_vSize.x - xSize) * m_vAnchor.x; m_vPos.y += (m_vSize.y - ySize) * m_vAnchor.y; m_vSize.y = ySize; onResized();}}
+	virtual void setSizeX(float xSize) {if (m_vSize.x != xSize) {m_vPos.x += (m_vSize.x - xSize) * m_vAnchor.x; m_vSize.x = xSize; onResized();}}
+	virtual void setSizeY(float ySize) {if (m_vSize.y != ySize) {m_vPos.y += (m_vSize.y - ySize) * m_vAnchor.y; m_vSize.y = ySize; onResized();}}
+	virtual void setSize(Vector2 size) {if (m_vSize != size) {m_vPos += (m_vSize - size) * m_vAnchor; m_vSize = size; onResized();}}
+
+	virtual void setAnchor(float xAnchor, float yAnchor) {if (m_vAnchor.x != xAnchor || m_vAnchor.y != yAnchor){m_vPos.x -= m_vSize.x * (xAnchor - m_vAnchor.x); m_vPos.y -= m_vSize.y * (yAnchor - m_vAnchor.y); m_vAnchor.x = xAnchor; m_vAnchor.y = yAnchor;}}
+	virtual void setAnchorX(float xAnchor){if (m_vAnchor.x != xAnchor){m_vPos.x -= m_vSize.x * (xAnchor - m_vAnchor.x); m_vAnchor.x = xAnchor;}}
+	virtual void setAnchorY(float yAnchor){if (m_vAnchor.y != yAnchor){m_vPos.y -= m_vSize.y * (yAnchor - m_vAnchor.y); m_vAnchor.y = yAnchor;}}
+	virtual void setAnchor(Vector2 anchor){if (m_vAnchor != anchor){m_vPos -= m_vSize * (anchor - m_vAnchor); m_vAnchor = anchor;}}
 
 	virtual void setVisible(bool visible) {m_bVisible = visible;}
 	virtual void setActive(bool active) {m_bActive = active;}
@@ -57,6 +62,7 @@ public:
 	inline const Vector2& getSize() const {return m_vSize;}
 	inline UString getName() const {return m_sName;}
 	inline const Vector2& getRelPos() const {return m_vmPos;}
+	inline const Vector2& getAnchor() const {return m_vAnchor;}
 
 	virtual bool isActive() {return m_bActive || isBusy();}
 	virtual bool isVisible() {return m_bVisible;}
@@ -103,6 +109,9 @@ protected:
 	Vector2 m_vPos;
 	Vector2 m_vmPos;
 	Vector2 m_vSize;
+
+	// anchor
+	Vector2 m_vAnchor;		// the point of transformation
 
 private:
 	bool m_bMouseInsideCheck;

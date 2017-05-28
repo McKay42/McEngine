@@ -19,6 +19,8 @@ CBaseUIElement::CBaseUIElement(float xPos, float yPos, float xSize, float ySize,
 	m_vmPos.y = m_vPos.y;
 	m_vSize.x = xSize;
 	m_vSize.y = ySize;
+	m_vAnchor.x = 0;
+	m_vAnchor.y = 0;
 	m_sName = name;
 
 	// attributes
