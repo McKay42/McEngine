@@ -17,8 +17,6 @@ public:
 	Vector2 m_vSizeNormal;
 
 	UIFrameworkAnchorTestButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text) : CBaseUIButton(xPos, yPos, xSize, ySize, name, text) {m_vSizeNormal.x = xSize; m_vSizeNormal.y = ySize;}
-	virtual void onMouseDownInside() {debugLog("Anchor Test: Set Anchor - {0, 0}"); setAnchor(0, 0);}
-	virtual void onMouseDownOutside() {debugLog("Anchor Test: Set Anchor - {1, 1}"); setAnchor(1, 1);}
 	virtual void onMouseInside() {setSize(m_vSizeNormal * 1.1);}
 	virtual void onMouseOutside() {setSize(m_vSizeNormal);}
 };
@@ -28,10 +26,13 @@ UIFrameworkTest::UIFrameworkTest()
 	// Anchor
 	m_anchorTestButton = new UIFrameworkAnchorTestButton(300, 600, 200, 25, "AnchorTestButton", "Anchor Test");
 	m_anchorTestButton->setAnchor(0.5, 0.5);
+	m_anchorTestButton->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTest::changeTestAnchor));
 	debugLog("Anchor Test: Set Anchor - {0.5, 0.5}");
 
+	m_bAnchorChanged=false;
+
 	// Canvas Container
-	m_canvasTest = new CBaseUICanvas(engine->getScreenWidth(), engine->getScreenHeight());
+	m_canvasTest = new CBaseUICanvas(0, 0, engine->getScreenWidth(), engine->getScreenHeight());
 
 	m_canvasTestTL = new CBaseUITextbox(0, 0, 0.2, 0.1, "CanvasTestTopLeft");
 	m_canvasTestTL->setText("Top Left");
@@ -40,8 +41,6 @@ UIFrameworkTest::UIFrameworkTest()
 	m_canvasTestTR = new CBaseUITextbox(1, 0, 0.2, 0.1, "CanvasTestTopRight");
 	m_canvasTestTR->setText("Top Right");
 	m_canvasTestTR->setAnchor(1, 0);
-
-	debugLog("m_canvasTestTR - Position: (%f, %f) - Size: (%f, %f) - Anchor: (%f, %f", m_canvasTestTR->getPos().x, m_canvasTestTR->getPos().y, m_canvasTestTR->getSize().x, m_canvasTestTR->getSize().y, m_canvasTestTR->getAnchor().x, m_canvasTestTR->getAnchor().y);;
 
 	m_canvasTestBL = new CBaseUITextbox(0, 1, 0.2, 0.1, "CanvasTestBottomLeft");
 	m_canvasTestBL->setText("Bottom Left");
@@ -56,10 +55,14 @@ UIFrameworkTest::UIFrameworkTest()
 	m_canvasTest->addSlot(m_canvasTestBL);
 	m_canvasTest->addSlot(m_canvasTestBR);
 
-	m_canvasTestButton = new CBaseUIButton(300, 500, 200, 25, "CanvasTestButton", "Resize Canvas");
-	m_canvasTestButton->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTest::resizeCanvas));
+	m_canvasResizeButton = new CBaseUIButton(300, 500, 200, 25, "CanvasTestButton", "Resize Canvas");
+	m_canvasResizeButton->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTest::resizeCanvas));
 
-	m_bResized=false;
+	m_canvasMoveButton = new CBaseUIButton(300, 400, 200, 25, "CanvasMoveButton", "Move Canvas");
+	m_canvasMoveButton->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTest::moveCanvas));
+
+	m_bCanvasResized=false;
+	m_bCanvasMoved=false;
 }
 
 UIFrameworkTest::~UIFrameworkTest()
@@ -77,7 +80,8 @@ void UIFrameworkTest::draw(Graphics *g)
 
 	// Canvas
 	m_canvasTest->draw(g);
-	m_canvasTestButton->draw(g);
+	m_canvasResizeButton->draw(g);
+	m_canvasMoveButton->draw(g);
 }
 
 void UIFrameworkTest::update()
@@ -87,20 +91,43 @@ void UIFrameworkTest::update()
 
 	// Canvas
 	m_canvasTest->update();
-	m_canvasTestButton->update();
+	m_canvasResizeButton->update();
+	m_canvasMoveButton->update();
+}
+
+void UIFrameworkTest::changeTestAnchor(){
+	if (m_bAnchorChanged){
+		m_anchorTestButton->setAnchor(0.5, 0.5);
+		m_bAnchorChanged=false;
+	}
+
+	else{
+		m_anchorTestButton->setAnchor(0, 0);
+		m_bAnchorChanged=true;
+	}
 }
 
 void UIFrameworkTest::resizeCanvas(){
-	if (m_bResized){
+	if (m_bCanvasResized){
 		m_canvasTest->setSize(engine->getScreenSize());
-		m_bResized=false;
-		return;
+		m_bCanvasResized=false;
 	}
 
 	else{
 		m_canvasTest->setSize(800, 600);
-		m_bResized=true;
-		return;
+		m_bCanvasResized=true;
+	}
+}
+
+void UIFrameworkTest::moveCanvas(){
+	if (m_bCanvasMoved){
+		m_canvasTest->setPos(0, 0);
+		m_bCanvasMoved=false;
+	}
+
+	else{
+		m_canvasTest->setPos(100, 100);
+		m_bCanvasMoved=true;
 	}
 }
 
