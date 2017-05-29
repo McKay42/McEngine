@@ -29,25 +29,45 @@ public:
 	virtual void onChar(KeyboardEvent &e) {;}
 
 	// setters
-	virtual void setPos(float xPos, float yPos) {if (m_vPos.x != xPos || m_vPos.y != yPos) {if(m_bIsCanvasChild){m_vPos.x = xPos; m_vPos.y= yPos;} else{m_vPos.x = xPos - m_vSize.x * m_vAnchor.x; m_vPos.y = yPos - m_vSize.y * m_vAnchor.y;} onMoved();}}
-	virtual void setPosX(float xPos) {if (m_vPos.x != xPos) {if(m_bIsCanvasChild){m_vPos.x = xPos;} else{m_vPos.x = xPos - m_vSize.x * m_vAnchor.x;} onMoved();}}
-	virtual void setPosY(float yPos) {if (m_vPos.y != yPos) {if(m_bIsCanvasChild){m_vPos.y = yPos;} else{m_vPos.y = yPos - m_vSize.y * m_vAnchor.y;} onMoved();}}
-	virtual void setPos(Vector2 position) {if (m_vPos != position) {if(m_bIsCanvasChild){m_vPos = position;} else{m_vPos = position - m_vSize * m_vAnchor;} onMoved();}}
+	virtual void setPos(float xPos, float yPos) {if (m_vPos.x != xPos || m_vPos.y != yPos) {m_vPos.x = xPos - m_vSize.x * m_vAnchor.x; m_vPos.y = yPos - m_vSize.y * m_vAnchor.y; onMoved();}}
+	virtual void setPosX(float xPos) {if (m_vPos.x != xPos) {m_vPos.x = xPos - m_vSize.x * m_vAnchor.x; onMoved();}}
+	virtual void setPosY(float yPos) {if (m_vPos.y != yPos) {m_vPos.y = yPos - m_vSize.y * m_vAnchor.y; onMoved();}}
+	virtual void setPos(Vector2 position) {if (m_vPos != position) {m_vPos = position - m_vSize * m_vAnchor; onMoved();}}
 
-	virtual void setRelPos(float xPos, float yPos) {if (m_vmPos.x != xPos || m_vmPos.y != yPos) {if(m_bIsCanvasChild){m_vmPos.x = xPos; m_vmPos.y = yPos;} else{m_vmPos.x = xPos - m_vSize.x * m_vAnchor.x; m_vmPos.y = yPos - m_vSize.y * m_vAnchor.y;} onMoved();}}
-	virtual void setRelPosX(float xPos) {if (m_vmPos.x != xPos) {if(m_bIsCanvasChild){m_vmPos.x = xPos;} else{m_vmPos.x = xPos - m_vSize.x * m_vAnchor.x;} onMoved();}}
-	virtual void setRelPosY(float yPos) {if (m_vmPos.y != yPos) {if(m_bIsCanvasChild){m_vmPos.y = yPos;} else{m_vmPos.y = yPos - m_vSize.x * m_vAnchor.y;} onMoved();}}
-	virtual void setRelPos(Vector2 position) {if (m_vmPos != position) {if(m_bIsCanvasChild){m_vmPos = position;} else{m_vmPos = position - m_vSize * m_vAnchor;} onMoved();}}
+	virtual void setPosAbsolute(float xPos, float yPos) {if (m_vPos.x != xPos || m_vPos.y != yPos) {m_vPos.x = xPos; m_vPos.y = yPos; onMoved();}}
+	virtual void setPosAbsoluteX(float xPos) {if (m_vPos.x != xPos) {m_vPos.x = xPos; onMoved();}}
+	virtual void setPosAbsoluteY(float yPos) {if (m_vPos.y != yPos) {m_vPos.y = yPos; onMoved();}}
+	virtual void setPosAbsolute(Vector2 position) {if (m_vPos != position) {m_vPos = position; onMoved();}}
 
-	virtual void setSize(float xSize, float ySize) {if (m_vSize.x != xSize || m_vSize.y != ySize) {if(!m_bIsCanvasChild) {m_vPos.x += (m_vSize.x - xSize) * m_vAnchor.x; m_vPos.y += (m_vSize.y - ySize) * m_vAnchor.y;} m_vSize.x = xSize; m_vSize.y = ySize; onResized();}}
-	virtual void setSizeX(float xSize) {if (m_vSize.x != xSize) {if(!m_bIsCanvasChild) {m_vPos.x += (m_vSize.x - xSize) * m_vAnchor.x;} m_vSize.x = xSize; onResized();}}
-	virtual void setSizeY(float ySize) {if (m_vSize.y != ySize) {if(!m_bIsCanvasChild) {m_vPos.y += (m_vSize.y - ySize) * m_vAnchor.y;} m_vSize.y = ySize; onResized();}}
-	virtual void setSize(Vector2 size) {if (m_vSize != size) {if(!m_bIsCanvasChild) {m_vPos += (m_vSize - size) * m_vAnchor;} m_vSize = size; onResized();}}
+	virtual void setRelPos(float xPos, float yPos) {if (m_vmPos.x != xPos || m_vmPos.y != yPos) {m_vmPos.x = xPos - m_vSize.x * m_vAnchor.x; m_vmPos.y = yPos - m_vSize.y * m_vAnchor.y; onMoved();}}
+	virtual void setRelPosX(float xPos) {if (m_vmPos.x != xPos) {m_vmPos.x = xPos - m_vSize.x * m_vAnchor.x; onMoved();}}
+	virtual void setRelPosY(float yPos) {if (m_vmPos.y != yPos) {m_vmPos.y = yPos - m_vSize.x * m_vAnchor.y; onMoved();}}
+	virtual void setRelPos(Vector2 position) {if (m_vmPos != position) {m_vmPos = position - m_vSize * m_vAnchor; onMoved();}}
 
-	virtual void setAnchor(float xAnchor, float yAnchor) {if (m_vAnchor.x != xAnchor || m_vAnchor.y != yAnchor){if(!m_bIsCanvasChild){m_vPos.x -= m_vSize.x * (xAnchor - m_vAnchor.x); m_vPos.y -= m_vSize.y * (yAnchor - m_vAnchor.y);} m_vAnchor.x = xAnchor; m_vAnchor.y = yAnchor;}}
-	virtual void setAnchorX(float xAnchor){if (m_vAnchor.x != xAnchor){if(!m_bIsCanvasChild){m_vPos.x -= m_vSize.x * (xAnchor - m_vAnchor.x);} m_vAnchor.x = xAnchor;}}
-	virtual void setAnchorY(float yAnchor){if (m_vAnchor.y != yAnchor){if(!m_bIsCanvasChild){m_vPos.y -= m_vSize.y * (yAnchor - m_vAnchor.y);} m_vAnchor.y = yAnchor;}}
-	virtual void setAnchor(Vector2 anchor){if (m_vAnchor != anchor){if(!m_bIsCanvasChild){m_vPos -= m_vSize * (anchor - m_vAnchor);} m_vAnchor = anchor;}}
+	virtual void setRelPosAbsolute(float xPos, float yPos) {if (m_vmPos.x != xPos || m_vmPos.y != yPos) {m_vmPos.x = xPos; m_vmPos.y = yPos; onMoved();}}
+	virtual void setRelPosAbsoluteX(float xPos) {if (m_vmPos.x != xPos) {m_vmPos.x = xPos; onMoved();}}
+	virtual void setRelPosAbsoluteY(float yPos) {if (m_vmPos.y != yPos) {m_vmPos.y = yPos; onMoved();}}
+	virtual void setRelPosAbsolute(Vector2 position) {if (m_vmPos != position) {m_vmPos = position; onMoved();}}
+
+	virtual void setSize(float xSize, float ySize) {if (m_vSize.x != xSize || m_vSize.y != ySize) {m_vPos.x += (m_vSize.x - xSize) * m_vAnchor.x; m_vPos.y += (m_vSize.y - ySize) * m_vAnchor.y; m_vSize.x = xSize; m_vSize.y = ySize; onResized();}}
+	virtual void setSizeX(float xSize) {if (m_vSize.x != xSize) {m_vPos.x += (m_vSize.x - xSize) * m_vAnchor.x; m_vSize.x = xSize; onResized();}}
+	virtual void setSizeY(float ySize) {if (m_vSize.y != ySize) {m_vPos.y += (m_vSize.y - ySize) * m_vAnchor.y; m_vSize.y = ySize; onResized();}}
+	virtual void setSize(Vector2 size) {if (m_vSize != size) {m_vPos += (m_vSize - size) * m_vAnchor; m_vSize = size; onResized();}}
+
+	virtual void setSizeAbsolute(float xSize, float ySize) {if(m_vSize.x != xSize || m_vSize.y != ySize) {m_vSize.x = xSize; m_vSize.y = ySize; onResized();}}
+	virtual void setSizeAbsoluteX(float xSize) {if(m_vSize.x != xSize) {m_vSize.x = xSize; onResized();}}
+	virtual void setSizeAbsoluteY(float ySize) {if(m_vSize.y != ySize) {m_vSize.y = ySize; onResized();}}
+	virtual void setSizeAbsolute(Vector2 size) {if(m_vSize != size) {m_vSize = size; onResized();}}
+
+	virtual void setAnchor(float xAnchor, float yAnchor) {if (m_vAnchor.x != xAnchor || m_vAnchor.y != yAnchor){m_vPos.x -= m_vSize.x * (xAnchor - m_vAnchor.x); m_vPos.y -= m_vSize.y * (yAnchor - m_vAnchor.y); m_vAnchor.x = xAnchor; m_vAnchor.y = yAnchor; onMoved();}}
+	virtual void setAnchorX(float xAnchor){if (m_vAnchor.x != xAnchor){m_vPos.x -= m_vSize.x * (xAnchor - m_vAnchor.x); m_vAnchor.x = xAnchor; onMoved();}}
+	virtual void setAnchorY(float yAnchor){if (m_vAnchor.y != yAnchor){m_vPos.y -= m_vSize.y * (yAnchor - m_vAnchor.y); m_vAnchor.y = yAnchor; onMoved();}}
+	virtual void setAnchor(Vector2 anchor){if (m_vAnchor != anchor){m_vPos -= m_vSize * (anchor - m_vAnchor); m_vAnchor = anchor; onMoved();}}
+
+	virtual void setAnchorAbsolute(float xAnchor, float yAnchor) {if (m_vAnchor.x != xAnchor || m_vAnchor.y != yAnchor){m_vAnchor.x = xAnchor, m_vAnchor.y = yAnchor;}}
+	virtual void setAnchorAbsoluteX(float xAnchor) {if (m_vAnchor.x != xAnchor) {m_vAnchor.x = xAnchor;}}
+	virtual void setAnchorAbsoluteY(float yAnchor) {if (m_vAnchor.y != yAnchor) {m_vAnchor.y = yAnchor;}}
+	virtual void setAnchorAbsolute(Vector2 anchor) {if (m_vAnchor != anchor) {m_vAnchor = anchor;}}
 
 	virtual void setVisible(bool visible) {m_bVisible = visible;}
 	virtual void setActive(bool active) {m_bActive = active;}
@@ -57,7 +77,6 @@ public:
 	virtual void setEnabled(bool enabled) {if (enabled != m_bEnabled) {m_bEnabled = enabled; if (m_bEnabled) {onEnabled();} else {onDisabled();}}}
 	virtual void setBusy(bool busy) {m_bBusy = busy;}
 	virtual void setName(UString name) {m_sName = name;}
-	virtual void setIsCanvasChild(bool isCanvasChild) {m_bIsCanvasChild = isCanvasChild;}
 
 	// getters
 	inline const Vector2& getPos() const {return m_vPos;}
@@ -106,8 +125,6 @@ protected:
 	bool m_bDrawManually;
 	bool m_bPositionManually;
 	bool m_bMouseInside;
-
-	bool m_bIsCanvasChild;
 
 	// position and size
 	Vector2 m_vPos;

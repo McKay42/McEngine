@@ -17,7 +17,7 @@ class CBaseUIElement;
  * UI Canvas Container
  * Scales any slotted containers or elements by the size of the canvas, useful for resolution scaling
  * The size/position of UI elements slotted should 0.0 to 1.0 as a percentage of the total screen area
- * Set scaleByHeightOnly per element to avoid stretching/squashing on aspect ratio changes
+ * Set scaleByHeightOnly per element to avoid stretching/squashing on aspect ratio changes. Uses a 16:9 (Widescreen) aspect ratio for assumed desired width
  */
 struct Slot{
 	CBaseUIElement *element;
