@@ -33,10 +33,10 @@ public:
 	virtual void setPosY(float yPos) {if (m_vPos.y != yPos) {m_vPos.y = yPos - m_vSize.y * m_vAnchor.y; onMoved();}}
 	virtual void setPos(Vector2 position) {if (m_vPos != position) {m_vPos = position - m_vSize * m_vAnchor; onMoved();}}
 
-	virtual void setRelPos(float xPos, float yPos) {if (m_vmPos.x != xPos || m_vmPos.y != yPos) {m_vmPos.x = xPos; m_vmPos.y = yPos; onMoved();}}
-	virtual void setRelPos(Vector2 position) {if (m_vmPos != position) {m_vmPos = position; onMoved();}}
-	virtual void setRelPosX(float xPos) {if (m_vmPos.x != xPos) {m_vmPos.x = xPos; onMoved();}}
-	virtual void setRelPosY(float yPos) {if (m_vmPos.y != yPos) {m_vmPos.y = yPos; onMoved();}}
+	virtual void setRelPos(float xPos, float yPos) {if (m_vmPos.x != xPos || m_vmPos.y != yPos) {m_vmPos.x = xPos - m_vSize.x * m_vAnchor.x; m_vmPos.y = yPos - m_vSize.y * m_vAnchor.y; onMoved();}}
+	virtual void setRelPosX(float xPos) {if (m_vmPos.x != xPos) {m_vmPos.x = xPos - m_vSize.x * m_vAnchor.x; onMoved();}}
+	virtual void setRelPosY(float yPos) {if (m_vmPos.y != yPos) {m_vmPos.y = yPos - m_vSize.x * m_vAnchor.y; onMoved();}}
+	virtual void setRelPos(Vector2 position) {if (m_vmPos != position) {m_vmPos = position - m_vSize * m_vAnchor; onMoved();}}
 
 	virtual void setSize(float xSize, float ySize) {if (m_vSize.x != xSize || m_vSize.y != ySize) {m_vPos.x += (m_vSize.x - xSize) * m_vAnchor.x; m_vPos.y += (m_vSize.y - ySize) * m_vAnchor.y; m_vSize.y = ySize; onResized();}}
 	virtual void setSizeX(float xSize) {if (m_vSize.x != xSize) {m_vPos.x += (m_vSize.x - xSize) * m_vAnchor.x; m_vSize.x = xSize; onResized();}}
