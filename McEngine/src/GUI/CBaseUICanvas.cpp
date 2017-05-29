@@ -225,7 +225,7 @@ void CBaseUICanvas::draw(Graphics *g){
 		}
 
 		posNormal = m_vSlots[i]->element->getPos();
-		m_vSlots[i]->element->setPos(posNormal*m_vSize);
+		m_vSlots[i]->element->setPos((posNormal * m_vSize) - (m_vSlots[i]->element->getSize() * m_vSlots[i]->element->getAnchor()));
 
 		m_vSlots[i]->element->draw(g);
 
