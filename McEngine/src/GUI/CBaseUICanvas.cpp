@@ -221,16 +221,16 @@ void CBaseUICanvas::draw(Graphics *g){
 	for (int i=0; i<m_vSlots.size(); i++){
 		if (!m_vSlots[i]->scaleByHeightOnly){
 			sizeNormal = m_vSlots[i]->element->getSize();
-			m_vSlots[i]->element->setSize(sizeNormal * m_vSize);
+			m_vSlots[i]->element->setSizeAbsolute(sizeNormal * m_vSize);
 		}
 
 		posNormal = m_vSlots[i]->element->getPos();
-		m_vSlots[i]->element->setPos((posNormal * m_vSize) - (m_vSlots[i]->element->getSize() * m_vSlots[i]->element->getAnchor()));
+		m_vSlots[i]->element->setPosAbsolute(posNormal * m_vSize);
 
 		m_vSlots[i]->element->draw(g);
 
-		m_vSlots[i]->element->setSize(sizeNormal);
-		m_vSlots[i]->element->setPos(posNormal);
+		m_vSlots[i]->element->setSizeAbsolute(sizeNormal);
+		m_vSlots[i]->element->setPosAbsolute(posNormal);
 	}
 }
 
