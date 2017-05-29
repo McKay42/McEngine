@@ -6,27 +6,9 @@
  */
 
 #include "CBaseUICanvas.h"
-#include "CBaseUIElement.h"
 #include "Engine.h"
 
-CBaseUICanvas::CBaseUICanvas(float xPos, float yPos, float xSize, float ySize) {
-	if (xSize != 0){
-		m_vSize = engine->getScreenSize();
-	}
-
-	else{
-		m_vSize.x = xSize;
-		m_vSize.y = ySize;
-	}
-
-	m_vPos.x = xPos;
-	m_vPos.y = yPos;
-	m_vAnchor.x = 0;
-	m_vAnchor.y = 0;
-
-	m_bVisible = true;
-
-}
+CBaseUICanvas::CBaseUICanvas(float xPos, float yPos, float xSize, float ySize, UString name) : CBaseUIElement(xPos, yPos, xSize, ySize, name){;}
 
 CBaseUICanvas::~CBaseUICanvas() {
 	clear();
@@ -241,6 +223,25 @@ void CBaseUICanvas::draw(Graphics *g){
 
 		m_vSlots[i]->element->setSizeAbsolute(sizeNormal);
 		m_vSlots[i]->element->setPosAbsolute(posNormal);
+	}
+}
+
+void CBaseUICanvas::drawDebug(Graphics *g){
+	if (!m_bVisible) return;
+
+	// Draw debug box for this canvas
+	g->setColor(COLOR(255, 255, 0, 0));
+	g->drawRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
+
+	// Draw for nested canvas
+	for (int i=0; i<m_vSlots.size(); i++){
+		if (typeid(m_vSlots[i]->element) == typeid(CBaseUICanvas)){
+			CBaseUICanvas *canvas = dynamic_cast<CBaseUICanvas *>(m_vSlots[i]->element);
+
+			//TODO - This supports only a single layer of nested canvas debug drawing. Fix that
+			g->setColor(COLOR(255, 0, 255, 0));
+			g->drawRect(canvas->getPos().x*m_vSize.x, canvas->getPos().y*m_vSize.y, canvas->getSize().x*m_vSize.x, canvas->getSize().y*m_vSize.y);
+		}
 	}
 }
 

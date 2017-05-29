@@ -10,8 +10,7 @@
 
 #include "cbase.h"
 #include "Engine.h"
-
-class CBaseUIElement;
+#include "CBaseUIElement.h"
 
 /*
  * UI Canvas Container
@@ -24,13 +23,14 @@ struct Slot{
 	bool scaleByHeightOnly=false;
 };
 
-class CBaseUICanvas {
+class CBaseUICanvas : public CBaseUIElement{
 public:
-	CBaseUICanvas(float xPos, float yPos, float xSize, float ySize);
+	CBaseUICanvas(float xPos, float yPos, float xSize, float ySize, UString name);
 	virtual ~CBaseUICanvas();
 
 	// main
 	virtual void draw(Graphics *g);
+	virtual void drawDebug(Graphics *g);
 	virtual void update();
 
 	// container
@@ -56,52 +56,6 @@ public:
 
 	virtual void clear();
 	virtual void empty();
-
-	// setters
-	virtual void setPos(float xPos, float yPos) {if (m_vPos.x != xPos || m_vPos.y != yPos) {m_vPos.x = xPos - m_vSize.x * m_vAnchor.x; m_vPos.y = yPos - m_vSize.y * m_vAnchor.y;}}
-	virtual void setPosX(float xPos) {if (m_vPos.x != xPos) {m_vPos.x = xPos - m_vSize.x * m_vAnchor.x;}}
-	virtual void setPosY(float yPos) {if (m_vPos.y != yPos) {m_vPos.y = yPos - m_vSize.y * m_vAnchor.y;}}
-	virtual void setPos(Vector2 position) {if (m_vPos != position) {m_vPos = position - m_vSize * m_vAnchor;}}
-
-	virtual void setPosAbsolute(float xPos, float yPos) {if (m_vPos.x != xPos || m_vPos.y != yPos) {m_vPos.x = xPos; m_vPos.y = yPos;}}
-	virtual void setPosAbsoluteX(float xPos) {if (m_vPos.x != xPos) {m_vPos.x = xPos;}}
-	virtual void setPosAbsoluteY(float yPos) {if (m_vPos.y != yPos) {m_vPos.y = yPos;}}
-	virtual void setPosAbsolute(Vector2 position) {if (m_vPos != position) {m_vPos = position;}}
-
-	virtual void setSize(float xSize, float ySize) {if (m_vSize.x != xSize || m_vSize.y != ySize) {m_vPos.x += (m_vSize.x - xSize) * m_vAnchor.x; m_vPos.y += (m_vSize.y - ySize) * m_vAnchor.y; m_vSize.x = xSize; m_vSize.y = ySize;}}
-	virtual void setSizeX(float xSize) {if (m_vSize.x != xSize) {m_vPos.x += (m_vSize.x - xSize) * m_vAnchor.x; m_vSize.x = xSize;}}
-	virtual void setSizeY(float ySize) {if (m_vSize.y != ySize) {m_vPos.y += (m_vSize.y - ySize) * m_vAnchor.y; m_vSize.y = ySize;}}
-	virtual void setSize(Vector2 size) {if (m_vSize != size) {m_vPos += (m_vSize - size) * m_vAnchor; m_vSize = size;}}
-
-	virtual void setSizeAbsolute(float xSize, float ySize) {if(m_vSize.x != xSize || m_vSize.y != ySize) {m_vSize.x = xSize; m_vSize.y = ySize;}}
-	virtual void setSizeAbsoluteX(float xSize) {if(m_vSize.x != xSize) {m_vSize.x = xSize;}}
-	virtual void setSizeAbsoluteY(float ySize) {if(m_vSize.y != ySize) {m_vSize.y = ySize;}}
-	virtual void setSizeAbsolute(Vector2 size) {if(m_vSize != size) {m_vSize = size;}}
-
-	virtual void setAnchor(float xAnchor, float yAnchor) {if (m_vAnchor.x != xAnchor || m_vAnchor.y != yAnchor){m_vPos.x -= m_vSize.x * (xAnchor - m_vAnchor.x); m_vPos.y -= m_vSize.y * (yAnchor - m_vAnchor.y); m_vAnchor.x = xAnchor; m_vAnchor.y = yAnchor;}}
-	virtual void setAnchorX(float xAnchor){if (m_vAnchor.x != xAnchor){m_vPos.x -= m_vSize.x * (xAnchor - m_vAnchor.x); m_vAnchor.x = xAnchor;}}
-	virtual void setAnchorY(float yAnchor){if (m_vAnchor.y != yAnchor){m_vPos.y -= m_vSize.y * (yAnchor - m_vAnchor.y); m_vAnchor.y = yAnchor;}}
-	virtual void setAnchor(Vector2 anchor){if (m_vAnchor != anchor){m_vPos -= m_vSize * (anchor - m_vAnchor); m_vAnchor = anchor;}}
-
-	virtual void setAnchorAbsolute(float xAnchor, float yAnchor) {if (m_vAnchor.x != xAnchor || m_vAnchor.y != yAnchor){m_vAnchor.x = xAnchor, m_vAnchor.y = yAnchor;}}
-	virtual void setAnchorAbsoluteX(float xAnchor) {if (m_vAnchor.x != xAnchor) {m_vAnchor.x = xAnchor;}}
-	virtual void setAnchorAbsoluteY(float yAnchor) {if (m_vAnchor.y != yAnchor) {m_vAnchor.y = yAnchor;}}
-	virtual void setAnchorAbsolute(Vector2 anchor) {if (m_vAnchor != anchor) {m_vAnchor = anchor;}}
-
-	virtual void setVisible(bool visible){m_bVisible = visible;}
-
-	// getters
-	inline const Vector2& getSize() const {return m_vSize;}
-
-	virtual bool isVisible() {return m_bVisible;}
-
-protected:
-	// attributes
-	Vector2 m_vSize;
-	Vector2 m_vPos;
-	Vector2 m_vAnchor;
-	UString m_sName;
-	bool m_bVisible;
 
 protected:
 	std::vector<Slot*> m_vSlots;
