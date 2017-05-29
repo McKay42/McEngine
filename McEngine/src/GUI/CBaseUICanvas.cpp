@@ -224,9 +224,14 @@ void CBaseUICanvas::draw(Graphics *g){
 	Vector2 posNormal;
 	Vector2 sizeNormal;
 	for (int i=0; i<m_vSlots.size(); i++){
+		sizeNormal = m_vSlots[i]->element->getSize();
+
 		if (!m_vSlots[i]->scaleByHeightOnly){
-			sizeNormal = m_vSlots[i]->element->getSize();
 			m_vSlots[i]->element->setSizeAbsolute(sizeNormal * m_vSize);
+		}
+
+		else{
+			m_vSlots[i]->element->setSizeAbsolute(sizeNormal.x * ((m_vSize.y / 9) * 16), sizeNormal.y * m_vSize.y);
 		}
 
 		posNormal = m_vSlots[i]->element->getPos();
