@@ -11,8 +11,7 @@
 #include "App.h"
 
 class CBaseUIButton;
-class CBaseUICanvas;
-class CBaseUITextbox;
+class UIFrameworkTestScreen;
 
 class UIFrameworkTest: public App {
 public:
@@ -22,32 +21,15 @@ public:
 	virtual void draw(Graphics *g);
 	virtual void update();
 
-	// Anchor Test
-	void changeTestAnchor();
-
-	// Canvas Test
-	void resizeCanvas();
-	void moveCanvas();
+	virtual void menuClick();
 
 public:
-	// UI
-	// Anchor Test
-	CBaseUIButton *m_anchorTestButton;
-	bool m_bAnchorChanged;
+	UIFrameworkTestScreen *m_currentScreen;
+	UIFrameworkTestScreen *m_menuScreen;
+	UIFrameworkTestScreen *m_singleCanvasScreen;
+	UIFrameworkTestScreen *m_multiCanvasScreen;
 
-	// Canvas Test
-	CBaseUICanvas *m_canvasTest;
-	CBaseUITextbox *m_canvasTestTL;
-	CBaseUITextbox *m_canvasTestTR;
-	CBaseUITextbox *m_canvasTestBL;
-	CBaseUITextbox *m_canvasTestBR;
-	CBaseUITextbox *m_canvasTestHeightOnly;
-	CBaseUIButton *m_canvasResizeButton;
-	CBaseUIButton *m_canvasMoveButton;
-	bool m_bCanvasResized;
-	bool m_bCanvasMoved;
-
-
+	CBaseUIButton *m_menuButton;
 };
 
 #endif /* APP_UIFRAMEWORKTEST_UIFRAMEWORKTEST_H_ */

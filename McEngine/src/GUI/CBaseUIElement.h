@@ -11,7 +11,6 @@
 #include "cbase.h"
 #include "Engine.h"
 #include "KeyboardListener.h"
-#include "CBaseUICanvas.h"
 
 class CBaseUIElement : public KeyboardListener
 {
