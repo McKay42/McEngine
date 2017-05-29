@@ -35,22 +35,20 @@ UIFrameworkTest::UIFrameworkTest()
 
 	m_canvasTestTL = new CBaseUITextbox(0, 0, 0.2, 0.1, "CanvasTestTopLeft");
 	m_canvasTestTL->setText("Top Left");
-	m_canvasTestTL->setIsCanvasChild(true);
 	m_canvasTestTL->setAnchor(0, 0);
 
 	m_canvasTestTR = new CBaseUITextbox(1, 0, 0.2, 0.1, "CanvasTestTopRight");
 	m_canvasTestTR->setText("Top Right");
-	m_canvasTestTR->setIsCanvasChild(true);
 	m_canvasTestTR->setAnchor(1, 0);
+
+	debugLog("m_canvasTestTR - Position: (%f, %f) - Size: (%f, %f) - Anchor: (%f, %f", m_canvasTestTR->getPos().x, m_canvasTestTR->getPos().y, m_canvasTestTR->getSize().x, m_canvasTestTR->getSize().y, m_canvasTestTR->getAnchor().x, m_canvasTestTR->getAnchor().y);;
 
 	m_canvasTestBL = new CBaseUITextbox(0, 1, 0.2, 0.1, "CanvasTestBottomLeft");
 	m_canvasTestBL->setText("Bottom Left");
-	m_canvasTestBL->setIsCanvasChild(true);
 	m_canvasTestBL->setAnchor(0, 1);
 
 	m_canvasTestBR = new CBaseUITextbox(1, 1, 0.2, 0.1, "CanvasTestBottomRight");
 	m_canvasTestBR->setText("Bottom Right");
-	m_canvasTestBR->setIsCanvasChild(true);
 	m_canvasTestBR->setAnchor(1, 1);
 
 	m_canvasTest->addSlot(m_canvasTestTL);

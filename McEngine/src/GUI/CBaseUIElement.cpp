@@ -34,8 +34,6 @@ CBaseUIElement::CBaseUIElement(float xPos, float yPos, float xSize, float ySize,
 	m_bPositionManually = false;
 	m_bMouseInside = false;
 
-	m_bIsCanvasChild = false;
-
 	m_bMouseInsideCheck = false;
 	m_bMouseUpCheck = false;
 }
