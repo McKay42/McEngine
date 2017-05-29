@@ -9,7 +9,7 @@
 #include "CBaseUIElement.h"
 #include "Engine.h"
 
-CBaseUICanvas::CBaseUICanvas(float xSize, float ySize) {
+CBaseUICanvas::CBaseUICanvas(float xPos, float yPos, float xSize, float ySize) {
 	if (xSize != 0){
 		m_vSize = engine->getScreenSize();
 	}
@@ -18,6 +18,11 @@ CBaseUICanvas::CBaseUICanvas(float xSize, float ySize) {
 		m_vSize.x = xSize;
 		m_vSize.y = ySize;
 	}
+
+	m_vPos.x = xPos;
+	m_vPos.y = yPos;
+	m_vAnchor.x = 0;
+	m_vAnchor.y = 0;
 
 	m_bVisible = true;
 
@@ -225,7 +230,7 @@ void CBaseUICanvas::draw(Graphics *g){
 		}
 
 		posNormal = m_vSlots[i]->element->getPos();
-		m_vSlots[i]->element->setPosAbsolute(posNormal * m_vSize);
+		m_vSlots[i]->element->setPosAbsolute(m_vPos + posNormal * m_vSize);
 
 		m_vSlots[i]->element->draw(g);
 
