@@ -31,19 +31,27 @@ UIFrameworkTest::UIFrameworkTest()
 	debugLog("Anchor Test: Set Anchor - {0.5, 0.5}");
 
 	// Canvas Container
+	m_canvasTest = new CBaseUICanvas(engine->getScreenWidth(), engine->getScreenHeight());
+
 	m_canvasTestTL = new CBaseUITextbox(0, 0, 0.2, 0.1, "CanvasTestTopLeft");
 	m_canvasTestTL->setText("Top Left");
+	m_canvasTestTL->setIsCanvasChild(true);
+	m_canvasTestTL->setAnchor(0, 0);
 
-	m_canvasTestTR = new CBaseUITextbox(0.8, 0, 0.2, 0.1, "CanvasTestTopRight");
+	m_canvasTestTR = new CBaseUITextbox(1, 0, 0.2, 0.1, "CanvasTestTopRight");
 	m_canvasTestTR->setText("Top Right");
+	m_canvasTestTR->setIsCanvasChild(true);
+	m_canvasTestTR->setAnchor(1, 0);
 
-	m_canvasTestBL = new CBaseUITextbox(0, 0.9, 0.2, 0.1, "CanvasTestBottomLeft");
+	m_canvasTestBL = new CBaseUITextbox(0, 1, 0.2, 0.1, "CanvasTestBottomLeft");
 	m_canvasTestBL->setText("Bottom Left");
+	m_canvasTestBL->setIsCanvasChild(true);
+	m_canvasTestBL->setAnchor(0, 1);
 
-	m_canvasTestBR = new CBaseUITextbox(0.8, 0.9, 0.2, 0.1, "CanvasTestBottomRight");
+	m_canvasTestBR = new CBaseUITextbox(1, 1, 0.2, 0.1, "CanvasTestBottomRight");
 	m_canvasTestBR->setText("Bottom Right");
-
-	m_canvasTest = new CBaseUICanvas(engine->getScreenWidth(), engine->getScreenHeight());
+	m_canvasTestBR->setIsCanvasChild(true);
+	m_canvasTestBR->setAnchor(1, 1);
 
 	m_canvasTest->addSlot(m_canvasTestTL);
 	m_canvasTest->addSlot(m_canvasTestTR);
