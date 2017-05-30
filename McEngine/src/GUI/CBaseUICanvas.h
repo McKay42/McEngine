@@ -9,7 +9,6 @@
 #define GUI_WINDOWS_CBASEUICANVAS_H_
 
 #include "cbase.h"
-#include "Engine.h"
 #include "CBaseUIElement.h"
 
 /*
