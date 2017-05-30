@@ -9,7 +9,6 @@
 #define APP_UIFRAMEWORKTEST_UIFRAMEWORKTESTSINGLECANVAS_H_
 
 #include "cbase.h"
-#include "Engine.h"
 #include "UIFrameworkTestScreen.h"
 
 class UIFrameworkTest;
@@ -17,7 +16,8 @@ class CBaseUIButton;
 class CBaseUITextbox;
 class CBaseUICanvas;
 
-class UIFrameworkTestSingleCanvas: public UIFrameworkTestScreen {
+class UIFrameworkTestSingleCanvas: public UIFrameworkTestScreen
+{
 public:
 	UIFrameworkTestSingleCanvas(UIFrameworkTest *app);
 	virtual ~UIFrameworkTestSingleCanvas();

@@ -10,14 +10,14 @@
 
 #include "UIFrameworkTestScreen.h"
 #include "cbase.h"
-#include "Engine.h"
 
 class UIFrameworkTest;
 class CBaseUICanvas;
 class CBaseUIButton;
 class CBaseUITextbox;
 
-class UIFrameworkTestMultiCanvas: public UIFrameworkTestScreen {
+class UIFrameworkTestMultiCanvas: public UIFrameworkTestScreen
+{
 public:
 	UIFrameworkTestMultiCanvas(UIFrameworkTest *app);
 	virtual ~UIFrameworkTestMultiCanvas();
@@ -38,10 +38,25 @@ public:
 	CBaseUICanvas *m_canvasBL;
 	CBaseUICanvas *m_canvasBR;
 
-	CBaseUITextbox *m_canvasHelperTL;
-	CBaseUITextbox *m_canvasHelperTR;
-	CBaseUITextbox *m_canvasHelperBL;
-	CBaseUITextbox *m_canvasHelperBR;
+	CBaseUITextbox *m_canvasHelperTL_TL;
+	CBaseUITextbox *m_canvasHelperTL_TR;
+	CBaseUITextbox *m_canvasHelperTL_BL;
+	CBaseUITextbox *m_canvasHelperTL_BR;
+
+	CBaseUITextbox *m_canvasHelperTR_TL;
+	CBaseUITextbox *m_canvasHelperTR_TR;
+	CBaseUITextbox *m_canvasHelperTR_BL;
+	CBaseUITextbox *m_canvasHelperTR_BR;
+
+	CBaseUITextbox *m_canvasHelperBL_TL;
+	CBaseUITextbox *m_canvasHelperBL_TR;
+	CBaseUITextbox *m_canvasHelperBL_BL;
+	CBaseUITextbox *m_canvasHelperBL_BR;
+
+	CBaseUITextbox *m_canvasHelperBR_TL;
+	CBaseUITextbox *m_canvasHelperBR_TR;
+	CBaseUITextbox *m_canvasHelperBR_BL;
+	CBaseUITextbox *m_canvasHelperBR_BR;
 
 	CBaseUIButton *m_canvasMainResize;
 	CBaseUIButton *m_canvasMainMove;

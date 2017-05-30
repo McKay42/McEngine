@@ -9,11 +9,11 @@
 #define APP_UIFRAMEWORKTEST_UIFRAMEWORKTESTSCREEN_H_
 
 #include "cbase.h"
-#include "Engine.h"
 
 class UIFrameworkTest;
 
-class UIFrameworkTestScreen {
+class UIFrameworkTestScreen
+{
 public:
 	UIFrameworkTestScreen(UIFrameworkTest *app);
 	virtual ~UIFrameworkTestScreen();

@@ -9,11 +9,14 @@
 #include "UIFrameworkTest.h"
 
 
-UIFrameworkTestScreen::UIFrameworkTestScreen(UIFrameworkTest *app) {
+UIFrameworkTestScreen::UIFrameworkTestScreen(UIFrameworkTest *app)
+{
 	m_app = app;
 
 }
 
-UIFrameworkTestScreen::~UIFrameworkTestScreen() {
+UIFrameworkTestScreen::~UIFrameworkTestScreen()
+{
+
 }
 
