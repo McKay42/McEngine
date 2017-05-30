@@ -11,7 +11,8 @@
 #include "CBaseUICanvas.h"
 #include "CBaseUITextbox.h"
 
-UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) : UIFrameworkTestScreen(app) {
+UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) : UIFrameworkTestScreen(app)
+{
 	// Canvas Container
 	m_canvasTestTL = new CBaseUITextbox(0, 0, 0.2, 0.1, "CanvasTestTopLeft");
 	m_canvasTestTL->setText("Top Left");
@@ -56,21 +57,24 @@ UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) :
 
 }
 
-UIFrameworkTestSingleCanvas::~UIFrameworkTestSingleCanvas() {
+UIFrameworkTestSingleCanvas::~UIFrameworkTestSingleCanvas()
+{
 	m_canvasTest->clear();
 	SAFE_DELETE(m_canvasTest);
 	SAFE_DELETE(m_canvasResizeButton);
 	SAFE_DELETE(m_canvasMoveButton);
 }
 
-void UIFrameworkTestSingleCanvas::resizeCanvas(){
-	if (m_bCanvasResized){
+void UIFrameworkTestSingleCanvas::resizeCanvas()
+{
+	if (m_bCanvasResized)
+	{
 		m_canvasTest->setSize(engine->getScreenSize());
 		m_bCanvasResized=false;
 		debugLog("Canvas Test: Set Size (%f, %f)", engine->getScreenSize().x, engine->getScreenSize().y);
 	}
-
-	else{
+	else
+	{
 		m_canvasTest->setSize(800, 600);
 		m_bCanvasResized=true;
 		debugLog("Canvas Test: Set Size (800, 600)");
@@ -81,6 +85,8 @@ void UIFrameworkTestSingleCanvas::draw(Graphics *g)
 {
 	// Canvas
 	m_canvasTest->draw(g);
+	m_canvasTest->drawDebug(g);
+
 	m_canvasResizeButton->draw(g);
 	m_canvasMoveButton->draw(g);
 }
@@ -94,13 +100,14 @@ void UIFrameworkTestSingleCanvas::update()
 }
 
 void UIFrameworkTestSingleCanvas::moveCanvas(){
-	if (m_bCanvasMoved){
+	if (m_bCanvasMoved)
+	{
 		m_canvasTest->setPos(0, 0);
 		m_bCanvasMoved=false;
 		debugLog("Canvas Test: Set Position (0, 0)");
 	}
-
-	else{
+	else
+	{
 		m_canvasTest->setPos(100, 100);
 		m_bCanvasMoved=true;
 		debugLog("Canvas Test: Set Position (100, 100)");

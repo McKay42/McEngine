@@ -5,23 +5,12 @@
  *      Author: Psy
  */
 
-#include <UIFrameworkTest/UIFrameworkTest.h>
-
+#include "UIFrameworkTest.h"
 #include "CBaseUIButton.h"
 #include "UIFrameworkTestScreen.h"
 #include "UIFrameworkTestSingleCanvas.h"
 #include "UIFrameworkTestMultiCanvas.h"
 #include "UIFrameworkTestMenu.h"
-
-class UIFrameworkAnchorTestButton : public CBaseUIButton
-{
-public:
-	Vector2 m_vSizeNormal;
-
-	UIFrameworkAnchorTestButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text) : CBaseUIButton(xPos, yPos, xSize, ySize, name, text) {m_vSizeNormal.x = xSize; m_vSizeNormal.y = ySize;}
-	virtual void onMouseInside() {setSize(m_vSizeNormal * 1.1);}
-	virtual void onMouseOutside() {setSize(m_vSizeNormal);}
-};
 
 UIFrameworkTest::UIFrameworkTest()
 {
@@ -61,6 +50,7 @@ void UIFrameworkTest::update()
 		m_menuButton->update();
 }
 
-void UIFrameworkTest::menuClick(){
+void UIFrameworkTest::menuClick()
+{
 	m_currentScreen = m_menuScreen;
 }

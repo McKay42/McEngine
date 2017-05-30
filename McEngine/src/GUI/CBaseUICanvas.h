@@ -18,19 +18,21 @@
  * The size/position of UI elements slotted should 0.0 to 1.0 as a percentage of the total screen area
  * Set scaleByHeightOnly per element to avoid stretching/squashing on aspect ratio changes. Uses a 16:9 (Widescreen) aspect ratio for assumed desired width
  */
-struct Slot{
-	CBaseUIElement *element;
-	bool scaleByHeightOnly=false;
-};
 
-class CBaseUICanvas : public CBaseUIElement{
+class CBaseUICanvas : public CBaseUIElement
+{
 public:
+	struct Slot{
+		CBaseUIElement *element;
+		bool scaleByHeightOnly=false;
+	};
+
 	CBaseUICanvas(float xPos, float yPos, float xSize, float ySize, UString name);
 	virtual ~CBaseUICanvas();
 
 	// main
 	virtual void draw(Graphics *g);
-	virtual void drawDebug(Graphics *g);
+	virtual void drawDebug(Graphics *g, Color color=COLOR(255,255,0,0));
 	virtual void update();
 
 	// container
@@ -58,6 +60,11 @@ public:
 	virtual void empty();
 
 protected:
+	// events
+	virtual void onMoved();
+	virtual void onResized();
+	virtual void updateLayout();
+
 	std::vector<Slot*> m_vSlots;
 };
 
