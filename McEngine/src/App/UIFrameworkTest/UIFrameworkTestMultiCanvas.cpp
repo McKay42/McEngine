@@ -6,7 +6,10 @@
  */
 
 #include "UIFrameworkTestMultiCanvas.h"
+
+#include "Engine.h"
 #include "UIFrameworkTest.h"
+
 #include "CBaseUICanvas.h"
 #include "CBaseUIButton.h"
 #include "CBaseUITextbox.h"
