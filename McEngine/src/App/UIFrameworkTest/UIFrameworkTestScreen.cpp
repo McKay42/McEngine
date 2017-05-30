@@ -12,7 +12,6 @@
 UIFrameworkTestScreen::UIFrameworkTestScreen(UIFrameworkTest *app)
 {
 	m_app = app;
-
 }
 
 UIFrameworkTestScreen::~UIFrameworkTestScreen()

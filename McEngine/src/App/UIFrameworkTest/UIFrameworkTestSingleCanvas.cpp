@@ -55,14 +55,14 @@ UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) :
 	m_canvasMoveButton = new CBaseUIButton(300, 400, 200, 25, "CanvasMoveButton", "Move Canvas");
 	m_canvasMoveButton->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestSingleCanvas::moveCanvas));
 
-	m_bCanvasResized=false;
-	m_bCanvasMoved=false;
-
+	m_bCanvasResized = false;
+	m_bCanvasMoved = false;
 }
 
 UIFrameworkTestSingleCanvas::~UIFrameworkTestSingleCanvas()
 {
 	m_canvasTest->clear();
+
 	SAFE_DELETE(m_canvasTest);
 	SAFE_DELETE(m_canvasResizeButton);
 	SAFE_DELETE(m_canvasMoveButton);
@@ -102,7 +102,8 @@ void UIFrameworkTestSingleCanvas::update()
 	m_canvasMoveButton->update();
 }
 
-void UIFrameworkTestSingleCanvas::moveCanvas(){
+void UIFrameworkTestSingleCanvas::moveCanvas()
+{
 	if (m_bCanvasMoved)
 	{
 		m_canvasTest->setPos(0, 0);

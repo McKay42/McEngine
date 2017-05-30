@@ -12,7 +12,6 @@
 
 UIFrameworkTestMenu::UIFrameworkTestMenu(UIFrameworkTest *app) : UIFrameworkTestScreen(app)
 {
-
 	m_UIFrameworkTestSingleCanvas = new CBaseUIButton(100, 100, 200, 25, "UIFrameworkTestSingleCanvasButton", "Single Canvas");
 	m_UIFrameworkTestSingleCanvas->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestMenu::loadUIFrameworkTestSingleCanvas));
 
@@ -23,6 +22,7 @@ UIFrameworkTestMenu::UIFrameworkTestMenu(UIFrameworkTest *app) : UIFrameworkTest
 UIFrameworkTestMenu::~UIFrameworkTestMenu()
 {
 	SAFE_DELETE(m_UIFrameworkTestSingleCanvas);
+	SAFE_DELETE(m_UIFrameworkTestMultiCanvas);
 }
 
 void UIFrameworkTestMenu::draw(Graphics *g)

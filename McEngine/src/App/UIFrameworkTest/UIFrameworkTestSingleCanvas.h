@@ -38,6 +38,7 @@ protected:
 	CBaseUITextbox *m_canvasTestHeightOnly;
 	CBaseUIButton *m_canvasResizeButton;
 	CBaseUIButton *m_canvasMoveButton;
+
 	bool m_bCanvasResized;
 	bool m_bCanvasMoved;
 };
