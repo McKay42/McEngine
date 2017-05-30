@@ -16,7 +16,6 @@
 
 UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : UIFrameworkTestScreen(app)
 {
-
 	// Main Canvas
 	m_canvasMain = new CBaseUICanvas(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "CanvasMain");
 

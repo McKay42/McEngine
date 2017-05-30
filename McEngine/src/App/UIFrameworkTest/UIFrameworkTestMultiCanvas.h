@@ -65,7 +65,6 @@ public:
 	bool m_bCanvasMainResize;
 	bool m_bCanvasMainMove;
 	bool m_bCanvasInnerResize;
-
 };
 
 #endif /* APP_UIFRAMEWORKTEST_UIFRAMEWORKTESTMULTICANVAS_H_ */
