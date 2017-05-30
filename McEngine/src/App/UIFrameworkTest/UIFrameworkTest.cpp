@@ -23,7 +23,6 @@ UIFrameworkTest::UIFrameworkTest()
 	m_menuButton->setTextColor(COLOR(255, 255, 50, 50));
 	m_menuButton->setFrameColor(COLOR(255, 255, 50, 50));
 	m_menuButton->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTest::menuClick));
-
 }
 
 UIFrameworkTest::~UIFrameworkTest()
@@ -31,7 +30,6 @@ UIFrameworkTest::~UIFrameworkTest()
 	SAFE_DELETE(m_menuScreen);
 	SAFE_DELETE(m_singleCanvasScreen);
 	SAFE_DELETE(m_multiCanvasScreen);
-	SAFE_DELETE(m_currentScreen);
 }
 
 void UIFrameworkTest::draw(Graphics *g)
