@@ -9,14 +9,14 @@
 #define APP_UIFRAMEWORKTEST_UIFRAMEWORKTESTMENU_H_
 
 #include "cbase.h"
-#include "Engine.h"
 #include "UIFrameworkTestScreen.h"
 
 
 class CBaseUIButton;
 class CBaseUICanvas;
 
-class UIFrameworkTestMenu: public UIFrameworkTestScreen {
+class UIFrameworkTestMenu: public UIFrameworkTestScreen
+{
 public:
 	UIFrameworkTestMenu(UIFrameworkTest *app);
 	virtual ~UIFrameworkTestMenu();

@@ -13,7 +13,8 @@
 class CBaseUIButton;
 class UIFrameworkTestScreen;
 
-class UIFrameworkTest: public App {
+class UIFrameworkTest: public App
+{
 public:
 	UIFrameworkTest();
 	virtual ~UIFrameworkTest();

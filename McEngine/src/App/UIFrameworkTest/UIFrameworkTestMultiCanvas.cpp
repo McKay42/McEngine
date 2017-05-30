@@ -11,7 +11,8 @@
 #include "CBaseUIButton.h"
 #include "CBaseUITextbox.h"
 
-UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : UIFrameworkTestScreen(app) {
+UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : UIFrameworkTestScreen(app)
+{
 
 	// Main Canvas
 	m_canvasMain = new CBaseUICanvas(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "CanvasMain");
@@ -30,25 +31,89 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 	m_canvasBR->setAnchor(1, 1);
 
 	// Canvas Helpers
-	m_canvasHelperTL = new CBaseUITextbox(0, 0, 0.4, 0.4, "HelperTL");
-	m_canvasHelperTL->setText("Top Left");
-	m_canvasHelperTL->setTextJustification(1);
-	m_canvasHelperTL->setAnchor(0, 0);
+	// Top Left
+	m_canvasHelperTL_TL = new CBaseUITextbox(0, 0, 0.4, 0.4, "HelperTL");
+	m_canvasHelperTL_TL->setText("Top Left");
+	m_canvasHelperTL_TL->setTextJustification(1);
+	m_canvasHelperTL_TL->setAnchor(0, 0);
 
-	m_canvasHelperTR = new CBaseUITextbox(1, 0, 0.4, 0.4, "HelperTR");
-	m_canvasHelperTR->setText("Top Right");
-	m_canvasHelperTR->setTextJustification(1);
-	m_canvasHelperTR->setAnchor(1, 0);
+	m_canvasHelperTL_TR = new CBaseUITextbox(1, 0, 0.4, 0.4, "HelperTR");
+	m_canvasHelperTL_TR->setText("Top Right");
+	m_canvasHelperTL_TR->setTextJustification(1);
+	m_canvasHelperTL_TR->setAnchor(1, 0);
 
-	m_canvasHelperBL = new CBaseUITextbox(0, 1, 0.4, 0.4, "HelperBL");
-	m_canvasHelperBL->setText("Bottom Left");
-	m_canvasHelperBL->setTextJustification(1);
-	m_canvasHelperBL->setAnchor(0, 1);
+	m_canvasHelperTL_BL = new CBaseUITextbox(0, 1, 0.4, 0.4, "HelperBL");
+	m_canvasHelperTL_BL->setText("Bottom Left");
+	m_canvasHelperTL_BL->setTextJustification(1);
+	m_canvasHelperTL_BL->setAnchor(0, 1);
 
-	m_canvasHelperBR = new CBaseUITextbox(1, 1, 0.4, 0.4, "HelperBR");
-	m_canvasHelperBR->setText("Bottom Right");
-	m_canvasHelperBR->setTextJustification(1);
-	m_canvasHelperBR->setAnchor(1, 1);
+	m_canvasHelperTL_BR = new CBaseUITextbox(1, 1, 0.4, 0.4, "HelperBR");
+	m_canvasHelperTL_BR->setText("Bottom Right");
+	m_canvasHelperTL_BR->setTextJustification(1);
+	m_canvasHelperTL_BR->setAnchor(1, 1);
+
+	// Top Right
+	m_canvasHelperTR_TL = new CBaseUITextbox(0, 0, 0.4, 0.4, "HelperTL");
+	m_canvasHelperTR_TL->setText("Top Left");
+	m_canvasHelperTR_TL->setTextJustification(1);
+	m_canvasHelperTR_TL->setAnchor(0, 0);
+
+	m_canvasHelperTR_TR = new CBaseUITextbox(1, 0, 0.4, 0.4, "HelperTR");
+	m_canvasHelperTR_TR->setText("Top Right");
+	m_canvasHelperTR_TR->setTextJustification(1);
+	m_canvasHelperTR_TR->setAnchor(1, 0);
+
+	m_canvasHelperTR_BL = new CBaseUITextbox(0, 1, 0.4, 0.4, "HelperBL");
+	m_canvasHelperTR_BL->setText("Bottom Left");
+	m_canvasHelperTR_BL->setTextJustification(1);
+	m_canvasHelperTR_BL->setAnchor(0, 1);
+
+	m_canvasHelperTR_BR = new CBaseUITextbox(1, 1, 0.4, 0.4, "HelperBR");
+	m_canvasHelperTR_BR->setText("Bottom Right");
+	m_canvasHelperTR_BR->setTextJustification(1);
+	m_canvasHelperTR_BR->setAnchor(1, 1);
+
+	// Bottom Left
+	m_canvasHelperBL_TL = new CBaseUITextbox(0, 0, 0.4, 0.4, "HelperTL");
+	m_canvasHelperBL_TL->setText("Top Left");
+	m_canvasHelperBL_TL->setTextJustification(1);
+	m_canvasHelperBL_TL->setAnchor(0, 0);
+
+	m_canvasHelperBL_TR = new CBaseUITextbox(1, 0, 0.4, 0.4, "HelperTR");
+	m_canvasHelperBL_TR->setText("Top Right");
+	m_canvasHelperBL_TR->setTextJustification(1);
+	m_canvasHelperBL_TR->setAnchor(1, 0);
+
+	m_canvasHelperBL_BL = new CBaseUITextbox(0, 1, 0.4, 0.4, "HelperBL");
+	m_canvasHelperBL_BL->setText("Bottom Left");
+	m_canvasHelperBL_BL->setTextJustification(1);
+	m_canvasHelperBL_BL->setAnchor(0, 1);
+
+	m_canvasHelperBL_BR = new CBaseUITextbox(1, 1, 0.4, 0.4, "HelperBR");
+	m_canvasHelperBL_BR->setText("Bottom Right");
+	m_canvasHelperBL_BR->setTextJustification(1);
+	m_canvasHelperBL_BR->setAnchor(1, 1);
+
+	// Bottom Right
+	m_canvasHelperBR_TL = new CBaseUITextbox(0, 0, 0.4, 0.4, "HelperTL");
+	m_canvasHelperBR_TL->setText("Top Left");
+	m_canvasHelperBR_TL->setTextJustification(1);
+	m_canvasHelperBR_TL->setAnchor(0, 0);
+
+	m_canvasHelperBR_TR = new CBaseUITextbox(1, 0, 0.4, 0.4, "HelperTR");
+	m_canvasHelperBR_TR->setText("Top Right");
+	m_canvasHelperBR_TR->setTextJustification(1);
+	m_canvasHelperBR_TR->setAnchor(1, 0);
+
+	m_canvasHelperBR_BL = new CBaseUITextbox(0, 1, 0.4, 0.4, "HelperBL");
+	m_canvasHelperBR_BL->setText("Bottom Left");
+	m_canvasHelperBR_BL->setTextJustification(1);
+	m_canvasHelperBR_BL->setAnchor(0, 1);
+
+	m_canvasHelperBR_BR = new CBaseUITextbox(1, 1, 0.4, 0.4, "HelperBR");
+	m_canvasHelperBR_BR->setText("Bottom Right");
+	m_canvasHelperBR_BR->setTextJustification(1);
+	m_canvasHelperBR_BR->setAnchor(1, 1);
 
 	// Buttons
 	m_canvasMainResize = new CBaseUIButton(300, 600, 300, 25, "canvasMainResize", "Resize Main Canvas");
@@ -62,28 +127,28 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 
 	// Set UI Hierarchy
 	// Top Left Canvas Helpers
-	m_canvasTL->addSlot(m_canvasHelperTL);
-	m_canvasTL->addSlot(m_canvasHelperTR);
-	m_canvasTL->addSlot(m_canvasHelperBL);
-	m_canvasTL->addSlot(m_canvasHelperBR);
+	m_canvasTL->addSlot(m_canvasHelperTL_TL);
+	m_canvasTL->addSlot(m_canvasHelperTL_TR);
+	m_canvasTL->addSlot(m_canvasHelperTL_BL);
+	m_canvasTL->addSlot(m_canvasHelperTL_BR);
 
 	// Top Right Canvas Helpers
-	m_canvasTR->addSlot(m_canvasHelperTL);
-	m_canvasTR->addSlot(m_canvasHelperTR);
-	m_canvasTR->addSlot(m_canvasHelperBL);
-	m_canvasTR->addSlot(m_canvasHelperBR);
+	m_canvasTR->addSlot(m_canvasHelperTR_TL);
+	m_canvasTR->addSlot(m_canvasHelperTR_TR);
+	m_canvasTR->addSlot(m_canvasHelperTR_BL);
+	m_canvasTR->addSlot(m_canvasHelperTR_BR);
 
 	// Bottom Left Canvas Helpers
-	m_canvasBL->addSlot(m_canvasHelperTL);
-	m_canvasBL->addSlot(m_canvasHelperTR);
-	m_canvasBL->addSlot(m_canvasHelperBL);
-	m_canvasBL->addSlot(m_canvasHelperBR);
+	m_canvasBL->addSlot(m_canvasHelperBL_TL);
+	m_canvasBL->addSlot(m_canvasHelperBL_TR);
+	m_canvasBL->addSlot(m_canvasHelperBL_BL);
+	m_canvasBL->addSlot(m_canvasHelperBL_BR);
 
 	// Bottom Right Canvas Helpers
-	m_canvasBR->addSlot(m_canvasHelperTL);
-	m_canvasBR->addSlot(m_canvasHelperTR);
-	m_canvasBR->addSlot(m_canvasHelperBL);
-	m_canvasBR->addSlot(m_canvasHelperBR);
+	m_canvasBR->addSlot(m_canvasHelperBR_TL);
+	m_canvasBR->addSlot(m_canvasHelperBR_TR);
+	m_canvasBR->addSlot(m_canvasHelperBR_BL);
+	m_canvasBR->addSlot(m_canvasHelperBR_BR);
 
 	// Inner Canvas
 	m_canvasMain->addSlot(m_canvasTL);
@@ -97,69 +162,81 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 	m_bCanvasInnerResize=false;
 }
 
-UIFrameworkTestMultiCanvas::~UIFrameworkTestMultiCanvas() {
+UIFrameworkTestMultiCanvas::~UIFrameworkTestMultiCanvas()
+{
 	m_canvasMain->clear();
-
 	SAFE_DELETE(m_canvasMainResize);
 	SAFE_DELETE(m_canvasMainMove);
 	SAFE_DELETE(m_canvasInnerResize);
 }
 
-void UIFrameworkTestMultiCanvas::draw(Graphics *g){
+void UIFrameworkTestMultiCanvas::draw(Graphics *g)
+{
 	m_canvasMain->draw(g);
 	m_canvasMainResize->draw(g);
 	m_canvasMainMove->draw(g);
 	m_canvasInnerResize->draw(g);
 
+	m_canvasTL->drawDebug(g, COLOR(255, 0, 255, 0));
+	m_canvasTR->drawDebug(g, COLOR(255, 0, 255, 0));
+	m_canvasBL->drawDebug(g, COLOR(255, 0, 255, 0));
+	m_canvasBR->drawDebug(g, COLOR(255, 0, 255, 0));
 	m_canvasMain->drawDebug(g);
 }
 
-void UIFrameworkTestMultiCanvas::update(){
+void UIFrameworkTestMultiCanvas::update()
+{
 	m_canvasMain->update();
 	m_canvasMainResize->update();
 	m_canvasMainMove->update();
 	m_canvasInnerResize->update();
 }
 
-void UIFrameworkTestMultiCanvas::canvasMainResize(){
-	if (m_bCanvasMainResize){
+void UIFrameworkTestMultiCanvas::canvasMainResize()
+{
+	if (m_bCanvasMainResize)
+	{
 		m_canvasMain->setSize(engine->getScreenSize());
 		m_bCanvasMainResize=false;
 	}
-	else{
+	else
+	{
 		m_canvasMain->setSize(800, 600);
 		m_bCanvasMainResize=true;
 	}
 
 }
 
-void UIFrameworkTestMultiCanvas::canvasMainMove(){
-	if (m_bCanvasMainMove){
+void UIFrameworkTestMultiCanvas::canvasMainMove()
+{
+	if (m_bCanvasMainMove)
+	{
 		m_canvasMain->setPos(0, 0);
 		m_bCanvasMainMove=false;
 	}
-	else{
+	else
+	{
 		m_canvasMain->setPos(150, 150);
 		m_bCanvasMainMove=true;
 	}
 }
 
-void UIFrameworkTestMultiCanvas::canvasInnerResize(){
-	if (m_bCanvasInnerResize){
-		m_canvasTL->setSize(0.5, 0.5);
-		m_canvasTR->setSize(0.5, 0.5);
-		m_canvasBL->setSize(0.5, 0.5);
-		m_canvasBR->setSize(0.5, 0.5);
-
+void UIFrameworkTestMultiCanvas::canvasInnerResize()
+{
+	if (m_bCanvasInnerResize)
+	{
+		m_canvasTL->setRelSize(0.5, 0.5);
+		m_canvasTR->setRelSize(0.5, 0.5);
+		m_canvasBL->setRelSize(0.5, 0.5);
+		m_canvasBR->setRelSize(0.5, 0.5);
 		m_bCanvasInnerResize=false;
 	}
-
-	else{
-		m_canvasTL->setSize(0.25, 0.25);
-		m_canvasTR->setSize(0.75, 0.3);
-		m_canvasBL->setSize(0.4, 0.75);
-		m_canvasBR->setSize(0.6, 0.7);
-
+	else
+	{
+		m_canvasTL->setRelSize(0.25, 0.25);
+		m_canvasTR->setRelSize(0.75, 0.25);
+		m_canvasBL->setRelSize(0.5, 0.75);
+		m_canvasBR->setRelSize(0.5, 0.75);
 		m_bCanvasInnerResize=true;
 	}
 }
