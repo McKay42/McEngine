@@ -55,73 +55,28 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 	m_canvasHelperTL_BR->setAnchor(1, 1);
 
 	// Top Right
-	m_canvasHelperTR_TL = new CBaseUITextbox(0, 0, 0.4, 0.4, "HelperTL");
-	m_canvasHelperTR_TL->setText("Top Left");
-	m_canvasHelperTR_TL->setTextJustification(1);
-	m_canvasHelperTR_TL->setAnchor(0, 0);
-
-	m_canvasHelperTR_TR = new CBaseUITextbox(1, 0, 0.4, 0.4, "HelperTR");
-	m_canvasHelperTR_TR->setText("Top Right");
-	m_canvasHelperTR_TR->setTextJustification(1);
-	m_canvasHelperTR_TR->setAnchor(1, 0);
-
-	m_canvasHelperTR_BL = new CBaseUITextbox(0, 1, 0.4, 0.4, "HelperBL");
-	m_canvasHelperTR_BL->setText("Bottom Left");
-	m_canvasHelperTR_BL->setTextJustification(1);
-	m_canvasHelperTR_BL->setAnchor(0, 1);
-
-	m_canvasHelperTR_BR = new CBaseUITextbox(1, 1, 0.4, 0.4, "HelperBR");
-	m_canvasHelperTR_BR->setText("Bottom Right");
-	m_canvasHelperTR_BR->setTextJustification(1);
-	m_canvasHelperTR_BR->setAnchor(1, 1);
+	m_canvasHelperTR_TL = new CBaseUITextbox(*m_canvasHelperTL_TL);
+	m_canvasHelperTR_TR = new CBaseUITextbox(*m_canvasHelperTL_TR);
+	m_canvasHelperTR_BL = new CBaseUITextbox(*m_canvasHelperTL_BR);
+	m_canvasHelperTR_BR = new CBaseUITextbox(*m_canvasHelperTL_BL);
 
 	// Bottom Left
-	m_canvasHelperBL_TL = new CBaseUITextbox(0, 0, 0.4, 0.4, "HelperTL");
-	m_canvasHelperBL_TL->setText("Top Left");
-	m_canvasHelperBL_TL->setTextJustification(1);
-	m_canvasHelperBL_TL->setAnchor(0, 0);
-
-	m_canvasHelperBL_TR = new CBaseUITextbox(1, 0, 0.4, 0.4, "HelperTR");
-	m_canvasHelperBL_TR->setText("Top Right");
-	m_canvasHelperBL_TR->setTextJustification(1);
-	m_canvasHelperBL_TR->setAnchor(1, 0);
-
-	m_canvasHelperBL_BL = new CBaseUITextbox(0, 1, 0.4, 0.4, "HelperBL");
-	m_canvasHelperBL_BL->setText("Bottom Left");
-	m_canvasHelperBL_BL->setTextJustification(1);
-	m_canvasHelperBL_BL->setAnchor(0, 1);
-
-	m_canvasHelperBL_BR = new CBaseUITextbox(1, 1, 0.4, 0.4, "HelperBR");
-	m_canvasHelperBL_BR->setText("Bottom Right");
-	m_canvasHelperBL_BR->setTextJustification(1);
-	m_canvasHelperBL_BR->setAnchor(1, 1);
+	m_canvasHelperBL_TL = new CBaseUITextbox(*m_canvasHelperTL_TL);
+	m_canvasHelperBL_TR = new CBaseUITextbox(*m_canvasHelperTL_TR);
+	m_canvasHelperBL_BL = new CBaseUITextbox(*m_canvasHelperTL_BR);
+	m_canvasHelperBL_BR = new CBaseUITextbox(*m_canvasHelperTL_BL);
 
 	// Bottom Right
-	m_canvasHelperBR_TL = new CBaseUITextbox(0, 0, 0.4, 0.4, "HelperTL");
-	m_canvasHelperBR_TL->setText("Top Left");
-	m_canvasHelperBR_TL->setTextJustification(1);
-	m_canvasHelperBR_TL->setAnchor(0, 0);
-
-	m_canvasHelperBR_TR = new CBaseUITextbox(1, 0, 0.4, 0.4, "HelperTR");
-	m_canvasHelperBR_TR->setText("Top Right");
-	m_canvasHelperBR_TR->setTextJustification(1);
-	m_canvasHelperBR_TR->setAnchor(1, 0);
-
-	m_canvasHelperBR_BL = new CBaseUITextbox(0, 1, 0.4, 0.4, "HelperBL");
-	m_canvasHelperBR_BL->setText("Bottom Left");
-	m_canvasHelperBR_BL->setTextJustification(1);
-	m_canvasHelperBR_BL->setAnchor(0, 1);
-
-	m_canvasHelperBR_BR = new CBaseUITextbox(1, 1, 0.4, 0.4, "HelperBR");
-	m_canvasHelperBR_BR->setText("Bottom Right");
-	m_canvasHelperBR_BR->setTextJustification(1);
-	m_canvasHelperBR_BR->setAnchor(1, 1);
+	m_canvasHelperBR_TL = new CBaseUITextbox(*m_canvasHelperTL_TL);
+	m_canvasHelperBR_TR = new CBaseUITextbox(*m_canvasHelperTL_TR);
+	m_canvasHelperBR_BL = new CBaseUITextbox(*m_canvasHelperTL_BR);
+	m_canvasHelperBR_BR = new CBaseUITextbox(*m_canvasHelperTL_BL);
 
 	// Buttons
-	m_canvasMainResize = new CBaseUIButton(300, 600, 300, 25, "canvasMainResize", "Resize Main Canvas");
+	m_canvasMainResize 	= new CBaseUIButton(300, 600, 300, 25, "canvasMainResize", "Resize Main Canvas");
 	m_canvasMainResize->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestMultiCanvas::canvasMainResize));
 
-	m_canvasMainMove = new CBaseUIButton(300, 500, 300, 25, "canvasMainMove", "Move Main Canvas");
+	m_canvasMainMove 	= new CBaseUIButton(300, 500, 300, 25, "canvasMainMove", "Move Main Canvas");
 	m_canvasMainMove->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestMultiCanvas::canvasMainMove));
 
 	m_canvasInnerResize = new CBaseUIButton(300, 400, 300, 25, "canvasInnerResize", "Resize Inner Canvas");
@@ -157,7 +112,6 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 	m_canvasMain->addSlot(m_canvasTR);
 	m_canvasMain->addSlot(m_canvasBL);
 	m_canvasMain->addSlot(m_canvasBR);
-
 
 	m_bCanvasMainResize=false;
 	m_bCanvasMainMove=false;
