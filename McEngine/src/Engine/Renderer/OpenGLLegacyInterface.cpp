@@ -14,9 +14,7 @@
 #include "OpenGLImage.h"
 #include "OpenGLRenderTarget.h"
 #include "OpenGLShader.h"
-
-#include "VertexArrayObject.h"
-#include "VertexBuffer.h"
+#include "OpenGLVertexArrayObject.h"
 
 #include "OpenGLHeaders.h"
 
@@ -383,12 +381,19 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao)
 {
 	if (vao == NULL) return;
 
+	updateTransform();
+
+	// if baked, then we can directly draw the buffer
+	if (vao->isReady())
+	{
+		((OpenGLVertexArrayObject*)vao)->draw();
+		return;
+	}
+
 	const std::vector<Vector3> &vertices = vao->getVertices();
 	const std::vector<Vector3> &normals = vao->getNormals();
 	const std::vector<std::vector<Vector2>> &texcoords = vao->getTexcoords();
 	const std::vector<Color> &colors = vao->getColors();
-
-	updateTransform();
 
 	glBegin(primitiveToOpenGL(vao->getPrimitive()));
 	for (int i=0; i<vertices.size(); i++)
@@ -408,15 +413,6 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao)
 		glVertex3f(vertices[i].x, vertices[i].y, vertices[i].z);
 	}
 	glEnd();
-}
-
-void OpenGLLegacyInterface::drawVB(VertexBuffer *vb)
-{
-	if (vb == NULL) return;
-
-	updateTransform();
-
-	vb->draw(this);
 }
 
 void OpenGLLegacyInterface::setClipRect(Rect clipRect)
@@ -649,6 +645,11 @@ Shader *OpenGLLegacyInterface::createShaderFromFile(UString vertexShaderFilePath
 Shader *OpenGLLegacyInterface::createShaderFromSource(UString vertexShader, UString fragmentShader)
 {
 	return new OpenGLShader(vertexShader, fragmentShader, true);
+}
+
+VertexArrayObject *OpenGLLegacyInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
+{
+	return new OpenGLVertexArrayObject(primitive, usage);
 }
 
 void OpenGLLegacyInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)

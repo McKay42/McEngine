@@ -7,6 +7,7 @@
 
 #include "NullGraphicsInterface.h"
 #include "Engine.h"
+#include "VertexArrayObject.h"
 
 #include "NullImage.h"
 #include "NullRenderTarget.h"
@@ -35,6 +36,11 @@ Shader *NullGraphicsInterface::createShaderFromFile(UString vertexShaderFilePath
 Shader *NullGraphicsInterface::createShaderFromSource(UString vertexShader, UString fragmentShader)
 {
 	return new NullShader(vertexShader, fragmentShader, true);
+}
+
+VertexArrayObject *NullGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
+{
+	return new VertexArrayObject(primitive, usage);
 }
 
 void NullGraphicsInterface::drawString(McFont *font, UString text) {;}

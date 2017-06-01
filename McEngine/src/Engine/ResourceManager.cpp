@@ -418,6 +418,16 @@ RenderTarget *ResourceManager::createRenderTarget(int width, int height, Graphic
 	return createRenderTarget(0, 0, width, height, multiSampleType);
 }
 
+VertexArrayObject *ResourceManager::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
+{
+	// create instance and load it
+	VertexArrayObject *vao = engine->getGraphics()->createVertexArrayObject(primitive, usage);
+
+	loadResource(vao, true);
+
+	return vao;
+}
+
 Image *ResourceManager::getImage(UString resourceName)
 {
 	for (int i=0; i<m_vResources.size(); i++)

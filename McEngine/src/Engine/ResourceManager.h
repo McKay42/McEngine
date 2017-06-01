@@ -15,6 +15,7 @@
 #include "Sound.h"
 #include "Shader.h"
 #include "RenderTarget.h"
+#include "VertexArrayObject.h"
 
 #include "pthread.h"
 
@@ -57,6 +58,9 @@ public:
 	// rendertargets
 	RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
 	RenderTarget *createRenderTarget(int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
+
+	// models/meshes
+	VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC);
 
 	// resource access by name // TODO: should probably use generics for this
 	Image *getImage(UString resourceName);
