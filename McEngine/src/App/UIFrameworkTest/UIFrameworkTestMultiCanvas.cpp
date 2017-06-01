@@ -148,17 +148,25 @@ void UIFrameworkTestMultiCanvas::update()
 	m_canvasInnerResize->update();
 }
 
+void UIFrameworkTestMultiCanvas::onResolutionChanged(Vector2 newResolution)
+{
+	if (!m_bCanvasMainResize)
+	{
+		m_canvasMain->setSize(newResolution);
+	}
+}
+
 void UIFrameworkTestMultiCanvas::canvasMainResize()
 {
 	if (m_bCanvasMainResize)
 	{
 		m_canvasMain->setSize(engine->getScreenSize());
-		m_bCanvasMainResize=false;
+		m_bCanvasMainResize = false;
 	}
 	else
 	{
 		m_canvasMain->setSize(800, 600);
-		m_bCanvasMainResize=true;
+		m_bCanvasMainResize = true;
 	}
 
 }
@@ -168,12 +176,12 @@ void UIFrameworkTestMultiCanvas::canvasMainMove()
 	if (m_bCanvasMainMove)
 	{
 		m_canvasMain->setPos(0, 0);
-		m_bCanvasMainMove=false;
+		m_bCanvasMainMove = false;
 	}
 	else
 	{
 		m_canvasMain->setPos(150, 150);
-		m_bCanvasMainMove=true;
+		m_bCanvasMainMove = true;
 	}
 }
 

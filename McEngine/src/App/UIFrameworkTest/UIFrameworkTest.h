@@ -21,6 +21,7 @@ public:
 
 	virtual void draw(Graphics *g);
 	virtual void update();
+	virtual void onResolutionChanged(Vector2 newResolution);
 
 	virtual void menuClick();
 
