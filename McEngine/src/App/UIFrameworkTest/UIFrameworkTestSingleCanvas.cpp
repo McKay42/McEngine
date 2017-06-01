@@ -102,6 +102,15 @@ void UIFrameworkTestSingleCanvas::update()
 	m_canvasMoveButton->update();
 }
 
+void UIFrameworkTestSingleCanvas::onResolutionChanged(Vector2 newResolution)
+{
+	if (!m_bCanvasResized)
+	{
+		m_canvasTest->setSize(newResolution);
+		debugLog("Canvas Test: Set Size (%f, %f)", newResolution.x, newResolution.y);
+	}
+}
+
 void UIFrameworkTestSingleCanvas::moveCanvas()
 {
 	if (m_bCanvasMoved)

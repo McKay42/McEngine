@@ -21,6 +21,8 @@ public:
 	virtual void draw(Graphics *g) = 0;
 	virtual void update() = 0;
 
+	virtual void onResolutionChanged(Vector2 newResolution) {;}
+
 	UIFrameworkTest *m_app;
 };
 

@@ -48,6 +48,11 @@ void UIFrameworkTest::update()
 		m_menuButton->update();
 }
 
+void UIFrameworkTest::onResolutionChanged(Vector2 newResolution)
+{
+	m_currentScreen->onResolutionChanged(newResolution);
+}
+
 void UIFrameworkTest::menuClick()
 {
 	m_currentScreen = m_menuScreen;
