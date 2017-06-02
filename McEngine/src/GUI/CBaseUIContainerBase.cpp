@@ -8,162 +8,101 @@
 #include "CBaseUIContainerBase.h"
 #include "Engine.h"
 
-CBaseUIContainerBase::CBaseUIContainerBase(UString name) : CBaseUIElement(0, 0, 0, 0, name) {
+CBaseUIContainerBase::CBaseUIContainerBase(UString name) : CBaseUIElement(0, 0, 0, 0, name)
+{
 
 }
 
-CBaseUIContainerBase::~CBaseUIContainerBase() {
-
+CBaseUIContainerBase::~CBaseUIContainerBase()
+{
+	clear();
 }
 
 void CBaseUIContainerBase::clear()
 {
-	for (int i=0; i<m_vSlots.size(); i++)
-	{
-		delete m_vSlots[i]->element;
-		delete m_vSlots[i];
-	}
+	for (int i=0; i<m_vElements.size(); i++)
+		delete m_vElements[i];
 
-	m_vSlots = std::vector<Slot*>();
+	m_vElements = std::vector<CBaseUIElement*>();
 }
 
 void CBaseUIContainerBase::empty()
 {
-	for (int i=0; i<m_vSlots.size(); i++)
-		m_vSlots[i]->element->setParent(nullptr);
+	for (int i=0; i<m_vElements.size(); i++)
+		m_vElements[i]->setParent(nullptr);
 
-	m_vSlots = std::vector<Slot*>();
+	m_vElements = std::vector<CBaseUIElement*>();
 }
 
-void CBaseUIContainerBase::addSlot(Slot *slot)
+CBaseUIContainerBase *CBaseUIContainerBase::addElement(CBaseUIElement *element)
 {
-	if (slot == NULL) return;
+	if (element == NULL) return this;
 
-	slot->element->setParent(this);
-	m_vSlots.push_back(slot);
-	updateSlot(slot);
-}
-
-void CBaseUIContainerBase::addSlot(CBaseUIElement *element, bool scaleByHeightOnly)
-{
-	if (element == NULL) return;
-
-	Slot *slot = new Slot;
 	element->setParent(this);
-	slot->element = element;
-	slot->scaleByHeightOnly = scaleByHeightOnly;
-	m_vSlots.push_back(slot);
-	updateSlot(slot);
+	m_vElements.push_back(element);
+	updateElement(element);
+
+	return this;
 }
 
-void CBaseUIContainerBase::addSlotBack(Slot *slot)
+CBaseUIContainerBase *CBaseUIContainerBase::addElementBack(CBaseUIElement *element)
 {
-	if (slot == NULL) return;
+	if (element == NULL) return this;
 
-	slot->element->setParent(this);
-	m_vSlots.insert(m_vSlots.begin(), slot);
-	updateSlot(slot);
-}
-
-void CBaseUIContainerBase::addSlotBack(CBaseUIElement *element, bool scaleByHeightOnly)
-{
-	if (element == NULL) return;
-
-	Slot *slot = new Slot;
 	element->setParent(this);
-	slot->element = element;
-	slot->scaleByHeightOnly = scaleByHeightOnly;
-	m_vSlots.insert(m_vSlots.begin(), slot);
-	updateSlot(slot);
+	m_vElements.insert(m_vElements.begin(), element);
+	updateElement(element);
+
+	return this;
 }
+CBaseUIContainerBase *CBaseUIContainerBase::insertElement(CBaseUIElement *element, CBaseUIElement *index){
 
-void CBaseUIContainerBase::insertSlot(Slot *slot, Slot *index){
+	if (element == NULL || index == NULL) return this;
 
-	if (slot == NULL || index == NULL) return;
-
-	for (int i=0; i<m_vSlots.size(); i++)
+	for (int i=0; i<m_vElements.size(); i++)
 	{
-		if (m_vSlots[i] == index)
+		if (m_vElements[i] == index)
 		{
-			slot->element->setParent(this);
-
-			m_vSlots.insert(m_vSlots.begin() + clamp<int>(i, 0, m_vSlots.size()), slot);
-			updateSlot(slot);
-			return;
+			element->setParent(this);
+			m_vElements.insert(m_vElements.begin() + clamp<int>(i, 0, m_vElements.size()), element);
+			updateElement(element);
+			return this;
 		}
 	}
 
 	debugLog("Warning: CBaseUIContainerBase::insertSlot() couldn't find index\n");
+
+	return this;
 }
 
-void CBaseUIContainerBase::insertSlot(Slot *index, CBaseUIElement* element, bool scaleByHeightOnly)
+CBaseUIContainerBase *CBaseUIContainerBase::insertElementBack(CBaseUIElement *element, CBaseUIElement *index)
 {
-	if (element == NULL || index == NULL) return;
+	if (element == NULL || index == NULL) return this;
 
-	for (int i=0; i<m_vSlots.size(); i++)
+	for (int i=0; i<m_vElements.size(); i++)
 	{
-		if (m_vSlots[i] == index)
+		if (m_vElements[i] == index)
 		{
-			Slot *slot = new Slot;
-			slot->element = element;
-			slot->scaleByHeightOnly = scaleByHeightOnly;
-			slot->element->setParent(this);
-			m_vSlots.insert(m_vSlots.begin() + clamp<int>(i, 0, m_vSlots.size()), slot);
-			updateSlot(slot);
-			return;
-		}
-	}
-
-	debugLog("Warning: CBaseUIContainerBase::insertSlot() couldn't find index\n");
-}
-
-void CBaseUIContainerBase::insertSlotBack(Slot *index, Slot *slot)
-{
-	if (slot == NULL || index == NULL) return;
-
-	for (int i=0; i<m_vSlots.size(); i++)
-	{
-		if (m_vSlots[i] == index)
-		{
-			slot->element->setParent(this);
-			m_vSlots.insert(m_vSlots.begin() + clamp<int>(i+1, 0, m_vSlots.size()), slot);
-			updateSlot(slot);
-			return;
+			element->setParent(this);
+			m_vElements.insert(m_vElements.begin() + clamp<int>(i+1, 0, m_vElements.size()), element);
+			updateElement(element);
+			return this;
 		}
 	}
 
 	debugLog("Warning: CBaseUIContainerBase::insertSlotBack() couldn't find index\n");
+
+	return this;
 }
 
-void CBaseUIContainerBase::insertSlotBack(Slot *index, CBaseUIElement *element, bool scaleByHeightOnly)
+void CBaseUIContainerBase::removeElement(CBaseUIElement *element)
 {
-	if (element == NULL || index == NULL) return;
-
-	for (int i=0; i<m_vSlots.size(); i++)
+	for (int i=0; i<m_vElements.size(); i++)
 	{
-		if (m_vSlots[i] == index)
+		if (m_vElements[i] == element)
 		{
-			Slot *slot = new Slot;
-			slot->element = element;
-			slot->scaleByHeightOnly = scaleByHeightOnly;
-			slot->element->setParent(this);
-			m_vSlots.insert(m_vSlots.begin() + clamp<int>(i+1, 0, m_vSlots.size()), slot);
-			updateSlot(slot);
-			return;
-		}
-	}
-
-	debugLog("Warning: CBaseUIContainerBase::insertSlotBack() couldn't find index\n");
-}
-
-void CBaseUIContainerBase::removeSlot(Slot *slot)
-{
-	for (int i=0; i<m_vSlots.size(); i++)
-	{
-		if (m_vSlots[i] == slot)
-		{
-			m_vSlots[i]->element->setParent(nullptr);
-			m_vSlots.erase(m_vSlots.begin()+i);
+			m_vElements[i]->setParent(nullptr);
+			m_vElements.erase(m_vElements.begin()+i);
 			updateLayout();
 			return;
 		}
@@ -172,15 +111,14 @@ void CBaseUIContainerBase::removeSlot(Slot *slot)
 	debugLog("Warning: CBaseUIContainerBase::removeSlot() couldn't find element\n");
 }
 
-void CBaseUIContainerBase::deleteSlot(Slot *slot)
+void CBaseUIContainerBase::deleteElement(CBaseUIElement *element)
 {
-	for (int i=0; i<m_vSlots.size(); i++)
+	for (int i=0; i<m_vElements.size(); i++)
 	{
-		if (m_vSlots[i] == slot)
+		if (m_vElements[i] == element)
 		{
-			delete m_vSlots[i]->element;
-			delete m_vSlots[i];
-			m_vSlots.erase(m_vSlots.begin()+i);
+			delete m_vElements[i];
+			m_vElements.erase(m_vElements.begin()+i);
 			updateLayout();
 			return;
 		}
@@ -189,35 +127,25 @@ void CBaseUIContainerBase::deleteSlot(Slot *slot)
 	debugLog("Warning: CBaseUIContainerBase::removeSlot() couldn't find element\n");
 }
 
-CBaseUIContainerBase::Slot *CBaseUIContainerBase::getSlotByElementName(UString name)
+CBaseUIElement *CBaseUIContainerBase::getElementByName(UString name)
 {
-	for (int i=0; i<m_vSlots.size(); i++)
+	for (int i=0; i<m_vElements.size(); i++)
 	{
-		if (m_vSlots[i]->element->getName() == name)
-			return m_vSlots[i];
+		if (m_vElements[i]->getName() == name)
+			return m_vElements[i];
 	}
 
 	debugLog("Error: CBaseUIContainerBase::getSlotByElementName() \"%s\" does not exist!!!\n", name.toUtf8());
 	return NULL;
 }
 
-std::vector<CBaseUIElement*> CBaseUIContainerBase::getAllElements()
-{
-	std::vector<CBaseUIElement*> elements;
-
-	for (int i=0; i<m_vSlots.size(); i++)
-		elements.push_back(m_vSlots[i]->element);
-
-	return elements;
-}
-
 void CBaseUIContainerBase::draw(Graphics *g)
 {
 	if (!m_bVisible) return;
 
-	for (int i=0; i<m_vSlots.size(); i++)
+	for (int i=0; i<m_vElements.size(); i++)
 	{
-		m_vSlots[i]->element->draw(g);
+		m_vElements[i]->draw(g);
 	}
 }
 
@@ -225,6 +153,6 @@ void CBaseUIContainerBase::update()
 {
 	if (!m_bVisible) return;
 
-	for (int i=0; i<m_vSlots.size(); i++)
-		m_vSlots[i]->element->update();
+	for (int i=0; i<m_vElements.size(); i++)
+		m_vElements[i]->update();
 }

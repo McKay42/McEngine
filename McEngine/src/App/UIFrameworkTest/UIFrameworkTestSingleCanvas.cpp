@@ -43,11 +43,11 @@ UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) :
 	m_canvasTestHeightOnly->setAnchor(0.5, 0.5);
 
 	m_canvasTest = new CBaseUICanvas(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "TestCanvas");
-	m_canvasTest->addSlot(m_canvasTestTL);
-	m_canvasTest->addSlot(m_canvasTestTR);
-	m_canvasTest->addSlot(m_canvasTestBL);
-	m_canvasTest->addSlot(m_canvasTestBR);
-	m_canvasTest->addSlot(m_canvasTestHeightOnly, true);
+	m_canvasTest->addElement(m_canvasTestTL);
+	m_canvasTest->addElement(m_canvasTestTR);
+	m_canvasTest->addElement(m_canvasTestBL);
+	m_canvasTest->addElement(m_canvasTestBR);
+	m_canvasTest->addElement(m_canvasTestHeightOnly)->setScaleByHeightOnly(true);
 
 	m_canvasResizeButton = new CBaseUIButton(300, 500, 200, 25, "CanvasTestButton", "Resize Canvas");
 	m_canvasResizeButton->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestSingleCanvas::resizeCanvas));
