@@ -20,7 +20,6 @@ CBaseUICanvas::CBaseUICanvas(float xPos, float yPos, float xSize, float ySize, U
 
 CBaseUICanvas::~CBaseUICanvas()
 {
-	clear();
 }
 
 void CBaseUICanvas::drawDebug(Graphics *g, Color color)
@@ -37,55 +36,49 @@ void CBaseUICanvas::updateLayout()
 	if (m_parent != nullptr)
 		m_parent->updateLayout();
 
-	for (int i=0; i<m_vSlots.size(); i++)
+	for (int i=0; i<m_vElements.size(); i++)
 	{
-		if (!m_vSlots[i]->scaleByHeightOnly)
-			m_vSlots[i]->element->setSizeAbsolute(m_vSlots[i]->element->getRelSize() * m_vSize);
+		if (!m_vElements[i]->isScaledByHeightOnly())
+			m_vElements[i]->setSizeAbsolute(m_vElements[i]->getRelSize() * m_vSize);
 		else
-			m_vSlots[i]->element->setSizeAbsolute(m_vSlots[i]->element->getRelSize().x * ((m_vSize.y / 9) * 16), m_vSlots[i]->element->getRelSize().y * m_vSize.y);
+			m_vElements[i]->setSizeAbsolute(m_vElements[i]->getRelSize().x * ((m_vSize.y / 9) * 16), m_vElements[i]->getRelSize().y * m_vSize.y);
 
-		m_vSlots[i]->element->setPosAbsolute(m_vPos + m_vSlots[i]->element->getRelPos() * m_vSize);
+		m_vElements[i]->setPosAbsolute(m_vPos + m_vElements[i]->getRelPos() * m_vSize);
 	}
 }
 
-void CBaseUICanvas::updateSlot(Slot *slot)
+void CBaseUICanvas::updateElement(CBaseUIElement *element)
 {
-	if (dynamic_cast<CBaseUIContainerBase *>(slot->element) != NULL)
-	{
-		updateLayout();
-		return;
-	}
-
-	if (slot->scaleByHeightOnly)
-		slot->element->setSizeAbsolute(slot->element->getRelSize() * m_vSize);
+	if (element->isScaledByHeightOnly())
+		element->setSizeAbsolute(element->getRelSize() * m_vSize);
 	else
-		slot->element->setSizeAbsolute(slot->element->getRelSize().x * ((m_vSize.y / 9) * 16), slot->element->getRelSize().y * m_vSize.y);
+		element->setSizeAbsolute(element->getRelSize().x * ((m_vSize.y / 9) * 16), element->getRelSize().y * m_vSize.y);
 
-	slot->element->setPosAbsolute(m_vPos + slot->element->getRelPos() * m_vSize);
+	element->setPosAbsolute(m_vPos + element->getRelPos() * m_vSize);
 }
 
 void CBaseUICanvas::onMoved()
 {
-	for (int i=0; i<m_vSlots.size(); i++)
+	for (int i=0; i<m_vElements.size(); i++)
 	{
-		if (!m_vSlots[i]->scaleByHeightOnly)
-			m_vSlots[i]->element->setSizeAbsolute(m_vSlots[i]->element->getRelSize() * m_vSize);
+		if (!m_vElements[i]->isScaledByHeightOnly())
+			m_vElements[i]->setSizeAbsolute(m_vElements[i]->getRelSize() * m_vSize);
 		else
-			m_vSlots[i]->element->setSizeAbsolute(m_vSlots[i]->element->getRelSize().x * ((m_vSize.y / 9) * 16), m_vSlots[i]->element->getRelSize().y * m_vSize.y);
+			m_vElements[i]->setSizeAbsolute(m_vElements[i]->getRelSize().x * ((m_vSize.y / 9) * 16), m_vElements[i]->getRelSize().y * m_vSize.y);
 
-		m_vSlots[i]->element->setPosAbsolute(m_vPos + m_vSlots[i]->element->getRelPos() * m_vSize);
+		m_vElements[i]->setPosAbsolute(m_vPos + m_vElements[i]->getRelPos() * m_vSize);
 	}
 }
 
 void CBaseUICanvas::onResized()
 {
-	for (int i=0; i<m_vSlots.size(); i++)
+	for (int i=0; i<m_vElements.size(); i++)
 	{
-		if (!m_vSlots[i]->scaleByHeightOnly)
-			m_vSlots[i]->element->setSizeAbsolute(m_vSlots[i]->element->getRelSize() * m_vSize);
+		if (!m_vElements[i]->isScaledByHeightOnly())
+			m_vElements[i]->setSizeAbsolute(m_vElements[i]->getRelSize() * m_vSize);
 		else
-			m_vSlots[i]->element->setSizeAbsolute(m_vSlots[i]->element->getRelSize().x * ((m_vSize.y / 9) * 16), m_vSlots[i]->element->getRelPos().y * m_vSize.y);
+			m_vElements[i]->setSizeAbsolute(m_vElements[i]->getRelSize().x * ((m_vSize.y / 9) * 16), m_vElements[i]->getRelPos().y * m_vSize.y);
 
-		m_vSlots[i]->element->setPosAbsolute(m_vPos + m_vSlots[i]->element->getRelPos() * m_vSize);
+		m_vElements[i]->setPosAbsolute(m_vPos + m_vElements[i]->getRelPos() * m_vSize);
 	}
 }
