@@ -37,6 +37,9 @@ CBaseUIElement::CBaseUIElement(float xPos, float yPos, float xSize, float ySize,
 	m_bPositionManually = false;
 	m_bMouseInside = false;
 
+	// container options
+	m_bScaleByHeightOnly = false;
+
 	m_bMouseInsideCheck = false;
 	m_bMouseUpCheck = false;
 }

@@ -17,7 +17,7 @@ class CBaseUIContainer;
 class CBaseUIScrollView : public CBaseUIElement
 {
 public:
-	CBaseUIScrollView(float xPos, float yPos, float xSize, float ySize, UString name);
+	CBaseUIScrollView(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
 	virtual ~CBaseUIScrollView();
 
 	virtual void draw(Graphics *g);
@@ -41,22 +41,22 @@ public:
 	void scrollToTop();
 
 	// set
-	void setDrawBackground(bool drawBackground) {m_bDrawBackground = drawBackground;}
-	void setDrawFrame(bool drawFrame) {m_bDrawFrame = drawFrame;}
-	void setDrawScrollbars(bool drawScrollbars) {m_bDrawScrollbars = drawScrollbars;}
+	CBaseUIScrollView *setDrawBackground(bool drawBackground) {m_bDrawBackground = drawBackground; return this;}
+	CBaseUIScrollView *setDrawFrame(bool drawFrame) {m_bDrawFrame = drawFrame; return this;}
+	CBaseUIScrollView *setDrawScrollbars(bool drawScrollbars) {m_bDrawScrollbars = drawScrollbars; return this;}
 
-	void setBackgroundColor(Color backgroundColor) {m_backgroundColor = backgroundColor;}
-	void setFrameColor(Color frameColor) {m_frameColor = frameColor;}
-	void setFrameBrightColor(Color frameBrightColor) {m_frameBrightColor = frameBrightColor;}
-	void setFrameDarkColor(Color frameDarkColor) {m_frameDarkColor = frameDarkColor;}
-	void setScrollbarColor(Color scrollbarColor) {m_scrollbarColor = scrollbarColor;}
+	CBaseUIScrollView *setBackgroundColor(Color backgroundColor) {m_backgroundColor = backgroundColor; return this;}
+	CBaseUIScrollView *setFrameColor(Color frameColor) {m_frameColor = frameColor; return this;}
+	CBaseUIScrollView *setFrameBrightColor(Color frameBrightColor) {m_frameBrightColor = frameBrightColor; return this;}
+	CBaseUIScrollView *setFrameDarkColor(Color frameDarkColor) {m_frameDarkColor = frameDarkColor; return this;}
+	CBaseUIScrollView *setScrollbarColor(Color scrollbarColor) {m_scrollbarColor = scrollbarColor; return this;}
 
-	void setHorizontalScrolling(bool horizontalScrolling) {m_bHorizontalScrolling = horizontalScrolling;}
-	void setVerticalScrolling(bool verticalScrolling) {m_bVerticalScrolling = verticalScrolling;}
-	void setScrollSizeToContent(int border = 5);
-	void setScrollResistance(int scrollResistanceInPixels) {m_iScrollResistance = scrollResistanceInPixels;}
+	CBaseUIScrollView *setHorizontalScrolling(bool horizontalScrolling) {m_bHorizontalScrolling = horizontalScrolling; return this;}
+	CBaseUIScrollView *setVerticalScrolling(bool verticalScrolling) {m_bVerticalScrolling = verticalScrolling; return this;}
+	CBaseUIScrollView *setScrollSizeToContent(int border = 5);
+	CBaseUIScrollView *setScrollResistance(int scrollResistanceInPixels) {m_iScrollResistance = scrollResistanceInPixels; return this;}
 
-	void setBlockScrolling(bool block) {m_bBlockScrolling = block;} // means: disable scrolling, not scrolling in 'blocks'
+	CBaseUIScrollView *setBlockScrolling(bool block) {m_bBlockScrolling = block; return this;} // means: disable scrolling, not scrolling in 'blocks'
 
 	// get
 	inline CBaseUIContainer *getContainer() {return m_container;}
@@ -79,6 +79,69 @@ public:
 	void onFocusStolen();
 	void onEnabled();
 	void onDisabled();
+
+	// Overrides
+	virtual CBaseUIScrollView *setPos(float posX, float posY) {CBaseUIElement::setPos(posX, posY); return this;}
+	virtual CBaseUIScrollView *setPosX(float posX) {CBaseUIElement::setPosX(posX); return this;}
+	virtual CBaseUIScrollView *setPosY(float posY) {CBaseUIElement::setPosY(posY); return this;}
+	virtual CBaseUIScrollView *setPos(Vector2 pos) {CBaseUIElement::setPos(pos); return this;}
+
+	virtual CBaseUIScrollView *setPosAbsolute(float posX, float posY) {CBaseUIElement::setPosAbsolute(posX, posY); return this;}
+	virtual CBaseUIScrollView *setPosAbsoluteX(float posX) {CBaseUIElement::setPosAbsoluteX(posX); return this;}
+	virtual CBaseUIScrollView *setPosAbsoluteY(float posY) {CBaseUIElement::setPosAbsoluteY(posY); return this;}
+	virtual CBaseUIScrollView *setPosAbsolute(Vector2 pos) {CBaseUIElement::setPosAbsolute(pos); return this;}
+
+	virtual CBaseUIScrollView *setRelPos(float posX, float posY) {CBaseUIElement::setRelPos(posX, posY); return this;}
+	virtual CBaseUIScrollView *setRelPosX(float posX) {CBaseUIElement::setRelPosX(posX); return this;}
+	virtual CBaseUIScrollView *setRelPosY(float posY) {CBaseUIElement::setRelPosY(posY); return this;}
+	virtual CBaseUIScrollView *setRelPos(Vector2 pos) {CBaseUIElement::setRelPos(pos); return this;}
+
+	virtual CBaseUIScrollView *setRelPosAbsolute(float posX, float posY) {CBaseUIElement::setRelPosAbsolute(posX, posY); return this;}
+	virtual CBaseUIScrollView *setRelPosAbsoluteX(float posX) {CBaseUIElement::setRelPosAbsoluteX(posX); return this;}
+	virtual CBaseUIScrollView *setRelPosAbsoluteY(float posY) {CBaseUIElement::setRelPosAbsoluteY(posY); return this;}
+	virtual CBaseUIScrollView *setRelPosAbsolute(Vector2 pos) {CBaseUIElement::setRelPosAbsolute(pos); return this;}
+
+	virtual CBaseUIScrollView *setSize(float sizeX, float sizeY) {CBaseUIElement::setSize(sizeX, sizeY); return this;}
+	virtual CBaseUIScrollView *setSizeX(float sizeX) {CBaseUIElement::setSizeX(sizeX); return this;}
+	virtual CBaseUIScrollView *setSizeY(float sizeY) {CBaseUIElement::setSizeY(sizeY); return this;}
+	virtual CBaseUIScrollView *setSize(Vector2 size) {CBaseUIElement::setSize(size); return this;}
+
+	virtual CBaseUIScrollView *setSizeAbsolute(float sizeX, float sizeY) {CBaseUIElement::setSizeAbsolute(sizeX, sizeY); return this;}
+	virtual CBaseUIScrollView *setSizeAbsoluteX(float sizeX) {CBaseUIElement::setSizeAbsoluteX(sizeX); return this;}
+	virtual CBaseUIScrollView *setSizeAbsoluteY(float sizeY) {CBaseUIElement::setSizeAbsoluteY(sizeY); return this;}
+	virtual CBaseUIScrollView *setSizeAbsolute(Vector2 size) {CBaseUIElement::setSizeAbsolute(size); return this;}
+
+	virtual CBaseUIScrollView *setRelSize(float sizeX, float sizeY) {CBaseUIElement::setRelSize(sizeX, sizeY); return this;}
+	virtual CBaseUIScrollView *setRelSizeX(float sizeX) {CBaseUIElement::setRelSizeX(sizeX); return this;}
+	virtual CBaseUIScrollView *setRelSizeY(float sizeY) {CBaseUIElement::setRelSizeY(sizeY); return this;}
+	virtual CBaseUIScrollView *setRelSize(Vector2 size) {CBaseUIElement::setRelSize(size); return this;}
+
+	virtual CBaseUIScrollView *setRelSizeAbsolute(float sizeX, float sizeY) {CBaseUIElement::setRelSizeAbsolute(sizeX, sizeY); return this;}
+	virtual CBaseUIScrollView *setRelSizeAbsoluteX(float sizeX) {CBaseUIElement::setRelSizeAbsoluteX(sizeX); return this;}
+	virtual CBaseUIScrollView *setRelSizeAbsoluteY(float sizeY) {CBaseUIElement::setRelSizeAbsoluteY(sizeY); return this;}
+	virtual CBaseUIScrollView *setRelSizeAbsolute(Vector2 size) {CBaseUIElement::setRelSizeAbsolute(size); return this;}
+
+	virtual CBaseUIScrollView *setAnchor(float anchorX, float anchorY) {CBaseUIElement::setAnchor(anchorX, anchorY); return this;}
+	virtual CBaseUIScrollView *setAnchorX(float anchorX) {CBaseUIElement::setAnchorX(anchorX); return this;}
+	virtual CBaseUIScrollView *setAnchorY(float anchorY) {CBaseUIElement::setAnchorY(anchorY); return this;}
+	virtual CBaseUIScrollView *setAnchor(Vector2 anchor) {CBaseUIElement::setAnchor(anchor); return this;}
+
+	virtual CBaseUIScrollView *setAnchorAbsolute(float anchorX, float anchorY) {CBaseUIElement::setAnchorAbsolute(anchorX, anchorY); return this;}
+	virtual CBaseUIScrollView *setAnchorAbsoluteX(float anchorX) {CBaseUIElement::setAnchorAbsoluteX(anchorX); return this;}
+	virtual CBaseUIScrollView *setAnchorAbsoluteY(float anchorY) {CBaseUIElement::setAnchorAbsoluteY(anchorY); return this;}
+	virtual CBaseUIScrollView *setAnchorAbsolute(Vector2 anchor) {CBaseUIElement::setAnchorAbsolute(anchor); return this;}
+
+	virtual CBaseUIScrollView *setVisible(bool visible) {CBaseUIElement::setVisible(visible); return this;}
+	virtual CBaseUIScrollView *setActive(bool active) {CBaseUIElement::setActive(active); return this;}
+	virtual CBaseUIScrollView *setKeepActive(bool keepActive) {CBaseUIElement::setKeepActive(keepActive); return this;}
+	virtual CBaseUIScrollView *setDrawManually(bool drawManually) {CBaseUIElement::setDrawManually(drawManually); return this;}
+	virtual CBaseUIScrollView *setPositionManually(bool positionManually) {CBaseUIElement::setPositionManually(positionManually); return this;}
+	virtual CBaseUIScrollView *setEnabled(bool enabled) {CBaseUIElement::setEnabled(enabled); return this;}
+	virtual CBaseUIScrollView *setBusy(bool busy) {CBaseUIElement::setBusy(busy); return this;}
+	virtual CBaseUIScrollView *setName(UString name) {CBaseUIElement::setName(name); return this;}
+	virtual CBaseUIScrollView *setParent(CBaseUIElement *parent) {CBaseUIElement::setParent(parent); return this;}
+	virtual CBaseUIScrollView *setScaleByHeightOnly(bool scaleByHeightOnly) {CBaseUIElement::setScaleByHeightOnly(scaleByHeightOnly); return this;}
+
 
 protected:
 	virtual void onMoved();
