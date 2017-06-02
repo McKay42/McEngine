@@ -11,6 +11,7 @@
 #include "cbase.h"
 
 #include "Cursors.h"
+#include "KeyboardEvent.h"
 
 class ContextMenu;
 
@@ -100,6 +101,9 @@ public:
 	virtual void setCursorVisible(bool visible) = 0;
 	virtual void setMousePos(int x, int y) = 0;
 	virtual void setCursorClip(bool clip, Rect rect) = 0;
+
+	// keyboard
+	virtual UString keyCodeToString(KEYCODE keyCode) = 0;
 };
 
 extern Environment *env;

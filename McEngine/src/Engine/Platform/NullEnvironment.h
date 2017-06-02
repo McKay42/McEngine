@@ -83,6 +83,9 @@ public:
 	void setCursorVisible(bool visible) {;}
 	void setMousePos(int x, int y) {;}
 	void setCursorClip(bool clip, Rect rect) {;}
+
+	// keyboard
+	UString keyCodeToString(KEYCODE keyCode) {return UString::format("%lu", keyCode);}
 };
 
 #endif
