@@ -40,6 +40,9 @@ void OpenGLVertexArrayObject::init()
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Vector2) * m_texcoords[0].size(), &(m_texcoords[0][0]), usageToOpenGL(m_usage));
 	}
 
+	// we don't need the data in RAM anymore
+	clear();
+
 	m_bReady = true;
 }
 

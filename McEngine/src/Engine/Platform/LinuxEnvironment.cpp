@@ -693,6 +693,12 @@ void LinuxEnvironment::setCursorClip(bool clip, Rect rect)
 	}
 }
 
+UString LinuxEnvironment::keyCodeToString(KEYCODE keyCode)
+{
+	// TODO:
+	return UString::format("%lu", keyCode);
+}
+
 
 
 // helper functions
