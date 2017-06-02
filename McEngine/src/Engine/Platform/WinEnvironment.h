@@ -97,6 +97,9 @@ public:
 	void setMousePos(int x, int y);
 	void setCursorClip(bool clip, Rect rect);
 
+	// keyboard
+	UString keyCodeToString(KEYCODE keyCode);
+
 	// ILLEGAL:
 	inline HWND getHwnd() const {return m_hwnd;}
 	inline HINSTANCE getHInstance() const {return m_hInstance;}

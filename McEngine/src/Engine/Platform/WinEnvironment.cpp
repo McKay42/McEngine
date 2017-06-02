@@ -733,6 +733,29 @@ void WinEnvironment::setCursorClip(bool clip, Rect rect)
 		ClipCursor(NULL);
 }
 
+UString WinEnvironment::keyCodeToString(KEYCODE keyCode)
+{
+	UINT scanCode = MapVirtualKeyW(keyCode, MAPVK_VK_TO_VSC);
+
+	WCHAR keyNameString[256];
+	switch (keyCode)
+	{
+		case VK_LEFT: case VK_UP: case VK_RIGHT: case VK_DOWN:
+		case VK_PRIOR: case VK_NEXT:
+		case VK_END: case VK_HOME:
+		case VK_INSERT: case VK_DELETE:
+		case VK_DIVIDE:
+		case VK_NUMLOCK:
+			scanCode |= 0x100;
+			break;
+	}
+
+    if (!GetKeyNameTextW(scanCode << 16, keyNameString, 256))
+    	return UString::format("%lu", keyCode); // fallback to raw number (better than having an empty string)
+
+    return UString(keyNameString);
+}
+
 
 
 // helper functions

@@ -39,10 +39,14 @@ void VertexArrayObject::destroy()
 
 void VertexArrayObject::clear()
 {
-	m_vertices.clear();
-	m_texcoords.clear();
-	m_normals.clear();
-	m_colors.clear();
+	m_vertices = std::vector<Vector3>();
+	for (int i=0; i<m_texcoords.size(); i++)
+	{
+		m_texcoords[i] = std::vector<Vector2>();
+	}
+	m_texcoords = std::vector<std::vector<Vector2>>();
+	m_normals = std::vector<Vector3>();
+	m_colors = std::vector<Color>();
 }
 
 void VertexArrayObject::addVertex(Vector2 v)

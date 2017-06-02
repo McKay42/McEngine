@@ -62,6 +62,9 @@ void OpenGL3VertexArrayObject::init()
 	}
 	glBindVertexArray(vaoBackup); // restore vao
 
+	// we don't need the data in RAM anymore
+	clear();
+
 	m_bReady = true;
 }
 

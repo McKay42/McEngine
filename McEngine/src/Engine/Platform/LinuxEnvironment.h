@@ -93,6 +93,9 @@ public:
 	void setMousePos(int x, int y);
 	void setCursorClip(bool clip, Rect rect);
 
+	// keyboard
+	UString keyCodeToString(KEYCODE keyCode);
+
 	// ILLEGAL:
 	inline Display *getDisplay() const {return m_display;}
 	inline Window getWindow() const {return m_window;}
