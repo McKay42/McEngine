@@ -61,7 +61,7 @@ UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) :
 
 UIFrameworkTestSingleCanvas::~UIFrameworkTestSingleCanvas()
 {
-	m_canvasTest->clear();
+	m_canvasTest->empty();
 
 	SAFE_DELETE(m_canvasTest);
 	SAFE_DELETE(m_canvasResizeButton);

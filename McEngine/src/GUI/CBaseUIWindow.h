@@ -22,6 +22,8 @@ public:
 	CBaseUIWindow(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
 	~CBaseUIWindow();
 
+	ELEMENT_BODY(CBaseUIWindow)
+
 	virtual void draw(Graphics *g);
 	virtual void drawCustomContent(Graphics *g) {;}
 	virtual void update();
@@ -78,69 +80,6 @@ public:
 
 	virtual void onEnabled();
 	virtual void onDisabled();
-
-	// Overrides
-	virtual CBaseUIWindow *setPos(float posX, float posY) {CBaseUIElement::setPos(posX, posY); return this;}
-	virtual CBaseUIWindow *setPosX(float posX) {CBaseUIElement::setPosX(posX); return this;}
-	virtual CBaseUIWindow *setPosY(float posY) {CBaseUIElement::setPosY(posY); return this;}
-	virtual CBaseUIWindow *setPos(Vector2 pos) {CBaseUIElement::setPos(pos); return this;}
-
-	virtual CBaseUIWindow *setPosAbsolute(float posX, float posY) {CBaseUIElement::setPosAbsolute(posX, posY); return this;}
-	virtual CBaseUIWindow *setPosAbsoluteX(float posX) {CBaseUIElement::setPosAbsoluteX(posX); return this;}
-	virtual CBaseUIWindow *setPosAbsoluteY(float posY) {CBaseUIElement::setPosAbsoluteY(posY); return this;}
-	virtual CBaseUIWindow *setPosAbsolute(Vector2 pos) {CBaseUIElement::setPosAbsolute(pos); return this;}
-
-	virtual CBaseUIWindow *setRelPos(float posX, float posY) {CBaseUIElement::setRelPos(posX, posY); return this;}
-	virtual CBaseUIWindow *setRelPosX(float posX) {CBaseUIElement::setRelPosX(posX); return this;}
-	virtual CBaseUIWindow *setRelPosY(float posY) {CBaseUIElement::setRelPosY(posY); return this;}
-	virtual CBaseUIWindow *setRelPos(Vector2 pos) {CBaseUIElement::setRelPos(pos); return this;}
-
-	virtual CBaseUIWindow *setRelPosAbsolute(float posX, float posY) {CBaseUIElement::setRelPosAbsolute(posX, posY); return this;}
-	virtual CBaseUIWindow *setRelPosAbsoluteX(float posX) {CBaseUIElement::setRelPosAbsoluteX(posX); return this;}
-	virtual CBaseUIWindow *setRelPosAbsoluteY(float posY) {CBaseUIElement::setRelPosAbsoluteY(posY); return this;}
-	virtual CBaseUIWindow *setRelPosAbsolute(Vector2 pos) {CBaseUIElement::setRelPosAbsolute(pos); return this;}
-
-	virtual CBaseUIWindow *setSize(float sizeX, float sizeY) {CBaseUIElement::setSize(sizeX, sizeY); return this;}
-	virtual CBaseUIWindow *setSizeX(float sizeX) {CBaseUIElement::setSizeX(sizeX); return this;}
-	virtual CBaseUIWindow *setSizeY(float sizeY) {CBaseUIElement::setSizeY(sizeY); return this;}
-	virtual CBaseUIWindow *setSize(Vector2 size) {CBaseUIElement::setSize(size); return this;}
-
-	virtual CBaseUIWindow *setSizeAbsolute(float sizeX, float sizeY) {CBaseUIElement::setSizeAbsolute(sizeX, sizeY); return this;}
-	virtual CBaseUIWindow *setSizeAbsoluteX(float sizeX) {CBaseUIElement::setSizeAbsoluteX(sizeX); return this;}
-	virtual CBaseUIWindow *setSizeAbsoluteY(float sizeY) {CBaseUIElement::setSizeAbsoluteY(sizeY); return this;}
-	virtual CBaseUIWindow *setSizeAbsolute(Vector2 size) {CBaseUIElement::setSizeAbsolute(size); return this;}
-
-	virtual CBaseUIWindow *setRelSize(float sizeX, float sizeY) {CBaseUIElement::setRelSize(sizeX, sizeY); return this;}
-	virtual CBaseUIWindow *setRelSizeX(float sizeX) {CBaseUIElement::setRelSizeX(sizeX); return this;}
-	virtual CBaseUIWindow *setRelSizeY(float sizeY) {CBaseUIElement::setRelSizeY(sizeY); return this;}
-	virtual CBaseUIWindow *setRelSize(Vector2 size) {CBaseUIElement::setRelSize(size); return this;}
-
-	virtual CBaseUIWindow *setRelSizeAbsolute(float sizeX, float sizeY) {CBaseUIElement::setRelSizeAbsolute(sizeX, sizeY); return this;}
-	virtual CBaseUIWindow *setRelSizeAbsoluteX(float sizeX) {CBaseUIElement::setRelSizeAbsoluteX(sizeX); return this;}
-	virtual CBaseUIWindow *setRelSizeAbsoluteY(float sizeY) {CBaseUIElement::setRelSizeAbsoluteY(sizeY); return this;}
-	virtual CBaseUIWindow *setRelSizeAbsolute(Vector2 size) {CBaseUIElement::setRelSizeAbsolute(size); return this;}
-
-	virtual CBaseUIWindow *setAnchor(float anchorX, float anchorY) {CBaseUIElement::setAnchor(anchorX, anchorY); return this;}
-	virtual CBaseUIWindow *setAnchorX(float anchorX) {CBaseUIElement::setAnchorX(anchorX); return this;}
-	virtual CBaseUIWindow *setAnchorY(float anchorY) {CBaseUIElement::setAnchorY(anchorY); return this;}
-	virtual CBaseUIWindow *setAnchor(Vector2 anchor) {CBaseUIElement::setAnchor(anchor); return this;}
-
-	virtual CBaseUIWindow *setAnchorAbsolute(float anchorX, float anchorY) {CBaseUIElement::setAnchorAbsolute(anchorX, anchorY); return this;}
-	virtual CBaseUIWindow *setAnchorAbsoluteX(float anchorX) {CBaseUIElement::setAnchorAbsoluteX(anchorX); return this;}
-	virtual CBaseUIWindow *setAnchorAbsoluteY(float anchorY) {CBaseUIElement::setAnchorAbsoluteY(anchorY); return this;}
-	virtual CBaseUIWindow *setAnchorAbsolute(Vector2 anchor) {CBaseUIElement::setAnchorAbsolute(anchor); return this;}
-
-	virtual CBaseUIWindow *setVisible(bool visible) {CBaseUIElement::setVisible(visible); return this;}
-	virtual CBaseUIWindow *setActive(bool active) {CBaseUIElement::setActive(active); return this;}
-	virtual CBaseUIWindow *setKeepActive(bool keepActive) {CBaseUIElement::setKeepActive(keepActive); return this;}
-	virtual CBaseUIWindow *setDrawManually(bool drawManually) {CBaseUIElement::setDrawManually(drawManually); return this;}
-	virtual CBaseUIWindow *setPositionManually(bool positionManually) {CBaseUIElement::setPositionManually(positionManually); return this;}
-	virtual CBaseUIWindow *setEnabled(bool enabled) {CBaseUIElement::setEnabled(enabled); return this;}
-	virtual CBaseUIWindow *setBusy(bool busy) {CBaseUIElement::setBusy(busy); return this;}
-	virtual CBaseUIWindow *setName(UString name) {CBaseUIElement::setName(name); return this;}
-	virtual CBaseUIWindow *setParent(CBaseUIElement *parent) {CBaseUIElement::setParent(parent); return this;}
-	virtual CBaseUIWindow *setScaleByHeightOnly(bool scaleByHeightOnly) {CBaseUIElement::setScaleByHeightOnly(scaleByHeightOnly); return this;}
-
 
 protected:
 	void updateTitleBarMetrics();

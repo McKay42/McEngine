@@ -69,14 +69,14 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 			)
 
 			// Top Right
-			->addElement((new CBaseUICanvas)
+			->addElement(std::make_shared<CBaseUICanvas>()
 						 ->setRelPos(1, 0)
 						 ->setAnchor(1, 0)
 						 ->setRelSize(0.5, 0.5)
 						 ->setName("TopRightCanvas")
 
 						 // Top Left
-						 ->addElement((new CBaseUITextbox)
+						 ->addElement(std::make_shared<CBaseUITextbox>()
 									  ->setRelPos(0, 0)
 									  ->setRelSize(0.15, 0.1)
 									  ->setName("TopRight-TopLeft")
@@ -85,7 +85,7 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 						 )
 
 						 // Top Right
-						 ->addElement((new CBaseUITextbox)
+						 ->addElement(std::make_shared<CBaseUITextbox>()
 									  ->setRelPos(1, 0)
 									  ->setAnchor(1, 0)
 									  ->setRelSize(0.15, 0.1)
@@ -95,7 +95,7 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 						 )
 
 						 // Bottom Left
-						 ->addElement((new CBaseUITextbox)
+						 ->addElement(std::make_shared<CBaseUITextbox>()
 									  ->setRelPos(0, 1)
 									  ->setAnchor(0, 1)
 									  ->setRelSize(0.15, 0.1)
@@ -105,7 +105,7 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 						 )
 
 						 // Bottom Right
-						 ->addElement((new CBaseUITextbox)
+						 ->addElement(std::make_shared<CBaseUITextbox>()
 									  ->setRelPos(1, 1)
 									  ->setAnchor(1, 1)
 									  ->setRelSize(0.15, 0.1)
@@ -116,14 +116,14 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 				)
 
 				// Bottom Left
-				->addElement((new CBaseUICanvas)
+				->addElement(std::make_shared<CBaseUICanvas>()
 							 ->setRelPos(0, 1)
 							 ->setAnchor(0, 1)
 							 ->setRelSize(0.5, 0.5)
 							 ->setName("BottomLeftCanvas")
 
 							 // Top Left
-							 ->addElement((new CBaseUITextbox)
+							 ->addElement(std::make_shared<CBaseUITextbox>()
 										  ->setRelPos(0, 0)
 										  ->setRelSize(0.15, 0.1)
 										  ->setName("BottomLeft-TopLeft")
@@ -132,7 +132,7 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 							 )
 
 							 // Top Right
-							 ->addElement((new CBaseUITextbox)
+							 ->addElement(std::make_shared<CBaseUITextbox>()
 										  ->setRelPos(1, 0)
 										  ->setAnchor(1, 0)
 										  ->setRelSize(0.15, 0.1)
@@ -142,7 +142,7 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 							 )
 
 							 // Bottom Left
-							 ->addElement((new CBaseUITextbox)
+							 ->addElement(std::make_shared<CBaseUITextbox>()
 										  ->setRelPos(0, 1)
 										  ->setAnchor(0, 1)
 										  ->setRelSize(0.15, 0.1)
@@ -152,7 +152,7 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 							 )
 
 							 // Bottom Right
-							 ->addElement((new CBaseUITextbox)
+							 ->addElement(std::make_shared<CBaseUITextbox>()
 										  ->setRelPos(1, 1)
 										  ->setAnchor(1, 1)
 										  ->setRelSize(0.15, 0.1)
@@ -163,13 +163,13 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 					)
 
 					// Bottom Right
-					->addElement((new CBaseUICanvas)
+					->addElement(std::make_shared<CBaseUICanvas>()
 								 ->setRelPos(0, 0)
 								 ->setRelSize(0.5, 0.5)
 								 ->setName("BottomRightCanvas")
 
 								 // Top Left
-								 ->addElement((new CBaseUITextbox)
+								 ->addElement(std::make_shared<CBaseUITextbox>()
 											  ->setRelPos(0, 0)
 											  ->setRelSize(0.15, 0.1)
 											  ->setName("BottomRight-TopLeft")
@@ -178,7 +178,7 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 								 )
 
 								 // Top Right
-								 ->addElement((new CBaseUITextbox)
+								 ->addElement(std::make_shared<CBaseUITextbox>()
 											  ->setRelPos(1, 0)
 											  ->setAnchor(1, 0)
 											  ->setRelSize(0.15, 0.1)
@@ -188,7 +188,7 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 								 )
 
 								 // Bottom Left
-								 ->addElement((new CBaseUITextbox)
+								 ->addElement(std::make_shared<CBaseUITextbox>()
 											  ->setRelPos(0, 1)
 											  ->setAnchor(0, 1)
 											  ->setRelSize(0.15, 0.1)
@@ -198,7 +198,7 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 								 )
 
 								 // Bottom Right
-								 ->addElement((new CBaseUITextbox)
+								 ->addElement(std::make_shared<CBaseUITextbox>()
 											  ->setRelPos(1, 1)
 											  ->setAnchor(1, 1)
 											  ->setRelSize(0.15, 0.1)
@@ -206,16 +206,16 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 											  ->setText("BottomRight")
 											  ->setTextJustification(1)
 								 )
-						);
+					);
 
 	// Buttons
-	m_canvasMainResize 	= new CBaseUIButton(300, 600, 300, 25, "canvasMainResize", "Resize Main Canvas");
+	m_canvasMainResize 	= std::make_shared<CBaseUIButton>(300, 600, 300, 25, "canvasMainResize", "Resize Main Canvas");
 	m_canvasMainResize->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestMultiCanvas::canvasMainResize));
 
-	m_canvasMainMove 	= new CBaseUIButton(300, 500, 300, 25, "canvasMainMove", "Move Main Canvas");
+	m_canvasMainMove 	= std::make_shared<CBaseUIButton>(300, 500, 300, 25, "canvasMainMove", "Move Main Canvas");
 	m_canvasMainMove->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestMultiCanvas::canvasMainMove));
 
-	m_canvasInnerResize = new CBaseUIButton(300, 400, 300, 25, "canvasInnerResize", "Resize Inner Canvas");
+	m_canvasInnerResize = std::make_shared<CBaseUIButton>(300, 400, 300, 25, "canvasInnerResize", "Resize Inner Canvas");
 	m_canvasInnerResize->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestMultiCanvas::canvasInnerResize));
 
 	m_bCanvasMainResize=false;
@@ -225,10 +225,10 @@ UIFrameworkTestMultiCanvas::UIFrameworkTestMultiCanvas(UIFrameworkTest *app) : U
 
 UIFrameworkTestMultiCanvas::~UIFrameworkTestMultiCanvas()
 {
-	m_canvasMain->clear();
-	SAFE_DELETE(m_canvasMainResize);
-	SAFE_DELETE(m_canvasMainMove);
-	SAFE_DELETE(m_canvasInnerResize);
+	m_canvasMain.reset();
+	m_canvasMainResize.reset();
+	m_canvasMainMove.reset();
+	m_canvasInnerResize.reset();
 }
 
 void UIFrameworkTestMultiCanvas::draw(Graphics *g)
