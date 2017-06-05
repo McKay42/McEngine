@@ -32,11 +32,11 @@ public:
 
 public:
 	// UI Elements
-	CBaseUICanvas *m_canvasMain;
+	std::shared_ptr<CBaseUICanvas> m_canvasMain;
 
-	CBaseUIButton *m_canvasMainResize;
-	CBaseUIButton *m_canvasMainMove;
-	CBaseUIButton *m_canvasInnerResize;
+	std::shared_ptr<CBaseUIButton> m_canvasMainResize;
+	std::shared_ptr<CBaseUIButton> m_canvasMainMove;
+	std::shared_ptr<CBaseUIButton> m_canvasInnerResize;
 
 	bool m_bCanvasMainResize;
 	bool m_bCanvasMainMove;
