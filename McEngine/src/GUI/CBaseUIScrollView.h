@@ -17,8 +17,10 @@ class CBaseUIContainer;
 class CBaseUIScrollView : public CBaseUIElement
 {
 public:
-	CBaseUIScrollView(float xPos, float yPos, float xSize, float ySize, UString name);
+	CBaseUIScrollView(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
 	virtual ~CBaseUIScrollView();
+
+	ELEMENT_BODY(CBaseUIScrollView)
 
 	virtual void draw(Graphics *g);
 	virtual void update();
@@ -41,22 +43,22 @@ public:
 	void scrollToTop();
 
 	// set
-	void setDrawBackground(bool drawBackground) {m_bDrawBackground = drawBackground;}
-	void setDrawFrame(bool drawFrame) {m_bDrawFrame = drawFrame;}
-	void setDrawScrollbars(bool drawScrollbars) {m_bDrawScrollbars = drawScrollbars;}
+	CBaseUIScrollView *setDrawBackground(bool drawBackground) {m_bDrawBackground = drawBackground; return this;}
+	CBaseUIScrollView *setDrawFrame(bool drawFrame) {m_bDrawFrame = drawFrame; return this;}
+	CBaseUIScrollView *setDrawScrollbars(bool drawScrollbars) {m_bDrawScrollbars = drawScrollbars; return this;}
 
-	void setBackgroundColor(Color backgroundColor) {m_backgroundColor = backgroundColor;}
-	void setFrameColor(Color frameColor) {m_frameColor = frameColor;}
-	void setFrameBrightColor(Color frameBrightColor) {m_frameBrightColor = frameBrightColor;}
-	void setFrameDarkColor(Color frameDarkColor) {m_frameDarkColor = frameDarkColor;}
-	void setScrollbarColor(Color scrollbarColor) {m_scrollbarColor = scrollbarColor;}
+	CBaseUIScrollView *setBackgroundColor(Color backgroundColor) {m_backgroundColor = backgroundColor; return this;}
+	CBaseUIScrollView *setFrameColor(Color frameColor) {m_frameColor = frameColor; return this;}
+	CBaseUIScrollView *setFrameBrightColor(Color frameBrightColor) {m_frameBrightColor = frameBrightColor; return this;}
+	CBaseUIScrollView *setFrameDarkColor(Color frameDarkColor) {m_frameDarkColor = frameDarkColor; return this;}
+	CBaseUIScrollView *setScrollbarColor(Color scrollbarColor) {m_scrollbarColor = scrollbarColor; return this;}
 
-	void setHorizontalScrolling(bool horizontalScrolling) {m_bHorizontalScrolling = horizontalScrolling;}
-	void setVerticalScrolling(bool verticalScrolling) {m_bVerticalScrolling = verticalScrolling;}
-	void setScrollSizeToContent(int border = 5);
-	void setScrollResistance(int scrollResistanceInPixels) {m_iScrollResistance = scrollResistanceInPixels;}
+	CBaseUIScrollView *setHorizontalScrolling(bool horizontalScrolling) {m_bHorizontalScrolling = horizontalScrolling; return this;}
+	CBaseUIScrollView *setVerticalScrolling(bool verticalScrolling) {m_bVerticalScrolling = verticalScrolling; return this;}
+	CBaseUIScrollView *setScrollSizeToContent(int border = 5);
+	CBaseUIScrollView *setScrollResistance(int scrollResistanceInPixels) {m_iScrollResistance = scrollResistanceInPixels; return this;}
 
-	void setBlockScrolling(bool block) {m_bBlockScrolling = block;} // means: disable scrolling, not scrolling in 'blocks'
+	CBaseUIScrollView *setBlockScrolling(bool block) {m_bBlockScrolling = block; return this;} // means: disable scrolling, not scrolling in 'blocks'
 
 	// get
 	inline CBaseUIContainer *getContainer() {return m_container;}

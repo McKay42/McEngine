@@ -91,19 +91,21 @@ void CBaseUIBoxShadow::renderOffscreen(Graphics *g)
 	}
 }
 
-void CBaseUIBoxShadow::setColor(Color color)
+CBaseUIBoxShadow *CBaseUIBoxShadow::setColor(Color color)
 {
 	m_blur->setColor(color);
 	m_color = color;
+	return this;
 }
 
-void CBaseUIBoxShadow::setShadowColor(Color color)
+CBaseUIBoxShadow *CBaseUIBoxShadow::setShadowColor(Color color)
 {
 	m_bNeedsRedraw = true;
 	m_shadowColor = color;
+	return this;
 }
 
-void CBaseUIBoxShadow::setColoredContent(bool coloredContent)
+CBaseUIBoxShadow *CBaseUIBoxShadow::setColoredContent(bool coloredContent)
 {
 	m_bColoredContent = coloredContent;
 
@@ -111,6 +113,8 @@ void CBaseUIBoxShadow::setColoredContent(bool coloredContent)
 		m_blur->setSize(Vector2(m_vSize.x+m_fRadius*5, m_vSize.y+m_fRadius*5));
 
 	m_bNeedsRedraw = true;
+
+	return this;
 }
 
 void CBaseUIBoxShadow::onResized()

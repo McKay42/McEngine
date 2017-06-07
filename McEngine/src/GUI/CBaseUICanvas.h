@@ -9,7 +9,7 @@
 #define GUI_WINDOWS_CBASEUICANVAS_H_
 
 #include "cbase.h"
-#include "CBaseUIElement.h"
+#include "CBaseUIContainerBase.h"
 
 /*
  * UI Canvas Container
@@ -18,53 +18,23 @@
  * Set scaleByHeightOnly per element to avoid stretching/squashing on aspect ratio changes. Uses a 16:9 (Widescreen) aspect ratio for assumed desired width
  */
 
-class CBaseUICanvas : public CBaseUIElement
+class CBaseUICanvas : public CBaseUIContainerBase
 {
 public:
-	struct Slot{
-		CBaseUIElement *element;
-		bool scaleByHeightOnly=false;
-	};
-
-	CBaseUICanvas(float xPos, float yPos, float xSize, float ySize, UString name);
+	CBaseUICanvas(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
 	virtual ~CBaseUICanvas();
 
+	CONTAINER_BODY(CBaseUICanvas)
+
 	// main
-	virtual void draw(Graphics *g);
 	virtual void drawDebug(Graphics *g, Color color=COLOR(255,255,0,0));
-	virtual void update();
-
-	// container
-	void addSlot(Slot *slot);
-	void addSlot(CBaseUIElement *element, bool scaleByHeightOnly=false);
-	void addSlotBack(Slot *slot);
-	void addSlotBack(CBaseUIElement *element, bool scaleByHeightOnly=false);
-
-	void insertSlot(Slot *slot, Slot *index);
-	void insertSlot(CBaseUIElement *element, bool scaleByHeightOnly, Slot *index);
-	void insertSlot(CBaseUIElement *element, Slot *index);
-	void insertSlotBack(Slot *slot, Slot *index);
-	void insertSlotBack(CBaseUIElement *element, Slot *index);
-	void insertSlotBack(CBaseUIElement *element, bool scaleByHeightOnly, Slot *index);
-
-	void removeSlot(Slot *slot);
-	void deleteSlot(Slot *slot);
-
-	Slot *getSlotByElementName(UString name);
-	inline std::vector<Slot*> getAllSlots(){return m_vSlots;}
-	inline std::vector<Slot*> *getAllSlotPointer(){return &m_vSlots;}
-	std::vector<CBaseUIElement*> getAllElements();
-
-	virtual void clear();
-	virtual void empty();
 
 protected:
 	// events
 	virtual void onMoved();
 	virtual void onResized();
 	virtual void updateLayout();
-
-	std::vector<Slot*> m_vSlots;
+	virtual void updateElement(CBaseUIElement *element);
 };
 
 #endif /* GUI_WINDOWS_CBASEUICANVAS_H_ */
