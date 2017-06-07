@@ -513,7 +513,7 @@ void CBaseUIScrollView::updateScrollbars()
 	}
 }
 
-void CBaseUIScrollView::setScrollSizeToContent(int border)
+CBaseUIScrollView *CBaseUIScrollView::setScrollSizeToContent(int border)
 {
 	m_vScrollSize.x = m_vScrollSize.y = 0;
 
@@ -544,6 +544,8 @@ void CBaseUIScrollView::setScrollSizeToContent(int border)
 		scrollToX(1);
 
 	updateScrollbars();
+
+	return this;
 }
 
 Vector2 CBaseUIScrollView::getVelocity()

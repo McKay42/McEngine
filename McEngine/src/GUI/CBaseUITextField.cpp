@@ -40,11 +40,12 @@ void CBaseUITextField::onResized()
 	setScrollSizeToContent(0);
 }
 
-void CBaseUITextField::append(UString text)
+CBaseUITextField *CBaseUITextField::append(UString text)
 {
 	UString oldText = m_textObject->getText();
 	oldText.append(text);
 	m_textObject->setText(oldText);
+	return this;
 }
 
 
@@ -111,10 +112,11 @@ void CBaseUITextField::TextObject::updateStringMetrics()
 	m_fStringHeight = m_font->getHeight();
 }
 
-void CBaseUITextField::TextObject::setText(UString text)
+CBaseUIElement *CBaseUITextField::TextObject::setText(UString text)
 {
 	m_sText = text;
 	updateStringMetrics();
+	return this;
 }
 
 void CBaseUITextField::TextObject::onResized()

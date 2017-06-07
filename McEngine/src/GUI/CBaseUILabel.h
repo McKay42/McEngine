@@ -21,26 +21,28 @@ public:
 	};
 
 public:
-	CBaseUILabel(float xPos, float yPos, float xSize, float ySize, UString name, UString text);
+	CBaseUILabel(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="", UString text="");
 	virtual ~CBaseUILabel() {;}
+
+	ELEMENT_BODY(CBaseUILabel)
 
 	virtual void draw(Graphics *g);
 	virtual void update();
 
 	// set
-	void setDrawFrame(bool drawFrame) {m_bDrawFrame = drawFrame;}
-	void setDrawBackground(bool drawBackground) {m_bDrawBackground = drawBackground;}
+	CBaseUILabel *setDrawFrame(bool drawFrame) {m_bDrawFrame = drawFrame; return this;}
+	CBaseUILabel *setDrawBackground(bool drawBackground) {m_bDrawBackground = drawBackground; return this;}
 
-	void setFrameColor(Color frameColor) {m_frameColor = frameColor;}
-	void setBackgroundColor(Color backgroundColor) {m_backgroundColor = backgroundColor;}
-	void setTextColor(Color textColor) {m_textColor = textColor;}
+	CBaseUILabel *setFrameColor(Color frameColor) {m_frameColor = frameColor; return this;}
+	CBaseUILabel *setBackgroundColor(Color backgroundColor) {m_backgroundColor = backgroundColor; return this;}
+	CBaseUILabel *setTextColor(Color textColor) {m_textColor = textColor; return this;}
 
-	void setText(UString text) {m_sText = text; updateStringMetrics();}
-	void setFont(McFont *font) {m_font = font; updateStringMetrics();}
+	CBaseUILabel *setText(UString text) {m_sText = text; updateStringMetrics(); return this;}
+	CBaseUILabel *setFont(McFont *font) {m_font = font; updateStringMetrics(); return this;}
 
-	void setSizeToContent(int horizontalBorderSize = 1, int verticalBorderSize = 1) {setSize(m_fStringWidth+2*horizontalBorderSize, m_fStringHeight + 2*verticalBorderSize);}
-	void setWidthToContent(int horizontalBorderSize = 1) {setSizeX(m_fStringWidth+2*horizontalBorderSize);}
-	void setTextJustification(TEXT_JUSTIFICATION textJustification) {m_textJustification = textJustification;}
+	CBaseUILabel *setSizeToContent(int horizontalBorderSize = 1, int verticalBorderSize = 1) {setSize(m_fStringWidth+2*horizontalBorderSize, m_fStringHeight + 2*verticalBorderSize); return this;}
+	CBaseUILabel *setWidthToContent(int horizontalBorderSize = 1) {setSizeX(m_fStringWidth+2*horizontalBorderSize); return this;}
+	CBaseUILabel *setTextJustification(TEXT_JUSTIFICATION textJustification) {m_textJustification = textJustification; return this;}
 
 	// DEPRECATED! use setTextJustification() instead
 	void setCenterText(bool centerText) {m_bCenterText = centerText;}
