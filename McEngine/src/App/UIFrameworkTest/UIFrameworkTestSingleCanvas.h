@@ -31,14 +31,9 @@ public:
 
 protected:
 	// Canvas Test
-	CBaseUICanvas *m_canvasTest;
-	CBaseUITextbox *m_canvasTestTL;
-	CBaseUITextbox *m_canvasTestTR;
-	CBaseUITextbox *m_canvasTestBL;
-	CBaseUITextbox *m_canvasTestBR;
-	CBaseUITextbox *m_canvasTestHeightOnly;
-	CBaseUIButton *m_canvasResizeButton;
-	CBaseUIButton *m_canvasMoveButton;
+	std::shared_ptr<CBaseUICanvas> m_canvasTest;
+	std::shared_ptr<CBaseUIButton> m_canvasResizeButton;
+	std::shared_ptr<CBaseUIButton> m_canvasMoveButton;
 
 	bool m_bCanvasResized;
 	bool m_bCanvasMoved;

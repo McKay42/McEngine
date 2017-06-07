@@ -26,9 +26,13 @@ public:
 
 	void loadUIFrameworkTestSingleCanvas();
 	void loadUIFrameworkTestMultiCanvas();
+	void loadUIFrameworkTestHorizontalBox();
+	void loadUIFrameworkTestVerticalBox();
 
-	CBaseUIButton *m_UIFrameworkTestSingleCanvas;
-	CBaseUIButton *m_UIFrameworkTestMultiCanvas;
+	std::shared_ptr<CBaseUIButton> m_UIFrameworkTestSingleCanvas;
+	std::shared_ptr<CBaseUIButton> m_UIFrameworkTestMultiCanvas;
+	std::shared_ptr<CBaseUIButton> m_UIFrameworkTestHorizontalBox;
+	std::shared_ptr<CBaseUIButton> m_UIFrameworkTestVerticalBox;
 };
 
 #endif /* APP_UIFRAMEWORKTEST_UIFRAMEWORKTESTMENU_H_ */
