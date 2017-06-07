@@ -305,10 +305,11 @@ void CBaseUIWindow::onChar(KeyboardEvent &e)
 	m_container->onChar(e);
 }
 
-void CBaseUIWindow::setTitle(UString text)
+CBaseUIWindow *CBaseUIWindow::setTitle(UString text)
 {
 	m_sTitle = text;
 	updateTitleBarMetrics();
+	return this;
 }
 
 void CBaseUIWindow::updateWindowLogic()
@@ -450,11 +451,11 @@ void CBaseUIWindow::minimize()
 		env->minimize();
 }
 
-void CBaseUIWindow::setSizeToContent(int horizontalBorderSize, int verticalBorderSize)
+CBaseUIWindow *CBaseUIWindow::setSizeToContent(int horizontalBorderSize, int verticalBorderSize)
 {
 	std::vector<CBaseUIElement*> *elements = m_container->getAllBaseUIElementsPointer();
 	if (elements->size() < 1)
-		return;
+		return this;
 
 	Vector2 newSize = Vector2(horizontalBorderSize, verticalBorderSize);
 
@@ -471,14 +472,18 @@ void CBaseUIWindow::setSizeToContent(int horizontalBorderSize, int verticalBorde
 	newSize.y = newSize.y + m_titleBarContainer->getSize().y;
 
 	setSize(newSize);
+
+	return this;
 }
 
-void CBaseUIWindow::enableCoherenceMode()
+CBaseUIWindow *CBaseUIWindow::enableCoherenceMode()
 {
 	m_bCoherenceMode = true;
 	m_minimizeButton->setVisible(true);
 	setPos(0,0);
 	env->setWindowSize(m_vSize.x+1, m_vSize.y+1);
+
+	return this;
 }
 
 void CBaseUIWindow::onMouseDownInside()

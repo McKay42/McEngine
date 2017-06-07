@@ -24,6 +24,7 @@ public:
 
 	virtual void draw(Graphics *g);
 	virtual void update();
+	virtual void onResolutionChanged(Vector2 newResolution);
 
 	void canvasMainResize();
 	void canvasMainMove();
@@ -31,36 +32,11 @@ public:
 
 public:
 	// UI Elements
-	CBaseUICanvas *m_canvasMain;
+	std::shared_ptr<CBaseUICanvas> m_canvasMain;
 
-	CBaseUICanvas *m_canvasTL;
-	CBaseUICanvas *m_canvasTR;
-	CBaseUICanvas *m_canvasBL;
-	CBaseUICanvas *m_canvasBR;
-
-	CBaseUITextbox *m_canvasHelperTL_TL;
-	CBaseUITextbox *m_canvasHelperTL_TR;
-	CBaseUITextbox *m_canvasHelperTL_BL;
-	CBaseUITextbox *m_canvasHelperTL_BR;
-
-	CBaseUITextbox *m_canvasHelperTR_TL;
-	CBaseUITextbox *m_canvasHelperTR_TR;
-	CBaseUITextbox *m_canvasHelperTR_BL;
-	CBaseUITextbox *m_canvasHelperTR_BR;
-
-	CBaseUITextbox *m_canvasHelperBL_TL;
-	CBaseUITextbox *m_canvasHelperBL_TR;
-	CBaseUITextbox *m_canvasHelperBL_BL;
-	CBaseUITextbox *m_canvasHelperBL_BR;
-
-	CBaseUITextbox *m_canvasHelperBR_TL;
-	CBaseUITextbox *m_canvasHelperBR_TR;
-	CBaseUITextbox *m_canvasHelperBR_BL;
-	CBaseUITextbox *m_canvasHelperBR_BR;
-
-	CBaseUIButton *m_canvasMainResize;
-	CBaseUIButton *m_canvasMainMove;
-	CBaseUIButton *m_canvasInnerResize;
+	std::shared_ptr<CBaseUIButton> m_canvasMainResize;
+	std::shared_ptr<CBaseUIButton> m_canvasMainMove;
+	std::shared_ptr<CBaseUIButton> m_canvasInnerResize;
 
 	bool m_bCanvasMainResize;
 	bool m_bCanvasMainMove;
