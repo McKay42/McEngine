@@ -16,43 +16,59 @@
 
 UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) : UIFrameworkTestScreen(app)
 {
-	// Canvas Container
-	m_canvasTestTL = new CBaseUITextbox(0, 0, 0.2, 0.1, "CanvasTestTopLeft");
-	m_canvasTestTL->setText("Top Left");
-	m_canvasTestTL->setTextJustification(1);
-	m_canvasTestTL->setAnchor(0, 0);
+	m_canvasTest = std::shared_ptr<CBaseUICanvas>((new CBaseUICanvas)
+					->setSize(engine->getScreenSize())
+					->setName("TestCanvas")
 
-	m_canvasTestTR = new CBaseUITextbox(1, 0, 0.2, 0.1, "CanvasTestTopRight");
-	m_canvasTestTR->setText("Top Right");
-	m_canvasTestTR->setTextJustification(1);
-	m_canvasTestTR->setAnchor(1, 0);
+					->addElement((new CBaseUITextbox)
+								 ->setRelSize(0.2, 0.1)
+								 ->setName("CanvasTestTopLeft")
+								 ->setText("Top Left")
+								 ->setTextJustification(1)
+					)
 
-	m_canvasTestBL = new CBaseUITextbox(0, 1, 0.2, 0.1, "CanvasTestBottomLeft");
-	m_canvasTestBL->setText("Bottom Left");
-	m_canvasTestBL->setTextJustification(1);
-	m_canvasTestBL->setAnchor(0, 1);
+					->addElement((new CBaseUITextbox)
+								 ->setRelPos(1, 0)
+								 ->setRelSize(0.2, 0.1)
+								 ->setAnchor(1, 0)
+								 ->setName("CanvasTestTopRight")
+								 ->setText("Top Right")
+								 ->setTextJustification(1)
+					)
 
-	m_canvasTestBR = new CBaseUITextbox(1, 1, 0.2, 0.1, "CanvasTestBottomRight");
-	m_canvasTestBR->setText("Bottom Right");
-	m_canvasTestBR->setTextJustification(1);
-	m_canvasTestBR->setAnchor(1, 1);
+					->addElement((new CBaseUITextbox)
+								 ->setRelPos(0, 1)
+								 ->setRelSize(0.2, 0.1)
+								 ->setAnchor(0, 1)
+								 ->setName("CanvasTestBottomLeft")
+								 ->setText("Bottom Left")
+								 ->setTextJustification(1)
+					)
 
-	m_canvasTestHeightOnly = new CBaseUITextbox(0.5, 0.2, 0.1125, 0.2, "CanvasTestHeightOnly");
-	m_canvasTestHeightOnly->setText("Height Only");
-	m_canvasTestHeightOnly->setTextJustification(1);
-	m_canvasTestHeightOnly->setAnchor(0.5, 0.5);
+					->addElement((new CBaseUITextbox)
+								 ->setRelPos(1, 1)
+								 ->setRelSize(0.2, 0.1)
+								 ->setAnchor(1, 1)
+								 ->setName("CanvasTestBottomRight")
+								 ->setText("Bottom Right")
+								 ->setTextJustification(1)
+					)
 
-	m_canvasTest = new CBaseUICanvas(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "TestCanvas");
-	m_canvasTest->addElement(m_canvasTestTL);
-	m_canvasTest->addElement(m_canvasTestTR);
-	m_canvasTest->addElement(m_canvasTestBL);
-	m_canvasTest->addElement(m_canvasTestBR);
-	m_canvasTest->addElement(m_canvasTestHeightOnly)->setScaleByHeightOnly(true);
+					->addElement((new CBaseUITextbox)
+								 ->setRelPos(0.5, 0.2)
+								 ->setRelSize(0.1125, 0.2)
+								 ->setAnchor(0.5, 0.5)
+								 ->setName("CanvasTestHeightOnly")
+								 ->setText("Height Only")
+								 ->setTextJustification(1)
+								 ->setScaleByHeightOnly(true)
+					)
+	);
 
-	m_canvasResizeButton = new CBaseUIButton(300, 500, 200, 25, "CanvasTestButton", "Resize Canvas");
+	m_canvasResizeButton = std::make_shared<CBaseUIButton>(300, 500, 200, 25, "CanvasTestButton", "Resize Canvas");
 	m_canvasResizeButton->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestSingleCanvas::resizeCanvas));
 
-	m_canvasMoveButton = new CBaseUIButton(300, 400, 200, 25, "CanvasMoveButton", "Move Canvas");
+	m_canvasMoveButton = std::make_shared<CBaseUIButton>(300, 400, 200, 25, "CanvasMoveButton", "Move Canvas");
 	m_canvasMoveButton->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestSingleCanvas::moveCanvas));
 
 	m_bCanvasResized = false;
@@ -61,11 +77,7 @@ UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) :
 
 UIFrameworkTestSingleCanvas::~UIFrameworkTestSingleCanvas()
 {
-	m_canvasTest->empty();
 
-	SAFE_DELETE(m_canvasTest);
-	SAFE_DELETE(m_canvasResizeButton);
-	SAFE_DELETE(m_canvasMoveButton);
 }
 
 void UIFrameworkTestSingleCanvas::resizeCanvas()

@@ -8,7 +8,8 @@
 #ifndef GUI_CBASEUICONTAINERBASE_H_
 #define GUI_CBASEUICONTAINERBASE_H_
 
-#define CONTAINER_BODY(T) ELEMENT_BODY(T) \
+#define CONTAINER_BODY(T) ELEMENT_BODY(T)\
+	\
 	virtual T *addElement(CBaseUIElement *element, bool back=false) {CBaseUIContainerBase::addElement(element, back); return this;} \
 	virtual T *addElement(std::shared_ptr<CBaseUIElement> element, bool back=false) {CBaseUIContainerBase::addElement(element, back); return this;} \
 	virtual T *insertElement(CBaseUIElement *element, CBaseUIElement *index, bool back=false) {CBaseUIContainerBase::insertElement(element, index, back); return this;} \
