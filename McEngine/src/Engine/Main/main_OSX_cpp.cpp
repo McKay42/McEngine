@@ -49,7 +49,8 @@ MacOSWrapper::MacOSWrapper()
 	m_fPrevTime = 0.0f;
 
 	// initialize engine
-	g_engine = new Engine(new MacOSEnvironment(this));
+	// TODO: args
+	g_engine = new Engine(new MacOSEnvironment(this), "");
 }
 
 MacOSWrapper::~MacOSWrapper()
