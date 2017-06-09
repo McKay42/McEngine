@@ -10,7 +10,7 @@
 #ifndef WINSWGRAPHICSINTERFACE_H
 #define WINSWGRAPHICSINTERFACE_H
 
-#include <SWGraphicsInterface.h>
+#include "SWGraphicsInterface.h"
 #include <Windows.h>
 
 class WinSWGraphicsInterface : public SWGraphicsInterface

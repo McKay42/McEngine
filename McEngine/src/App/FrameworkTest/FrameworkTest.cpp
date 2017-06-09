@@ -95,7 +95,7 @@ void FrameworkTest::draw(Graphics *g)
 
 	// test text
 	UString testText = "It's working!";
-	g->push3DScene(Rect(800, 300, testFont->getStringWidth(testText), testFont->getHeight()));
+	g->push3DScene(McRect(800, 300, testFont->getStringWidth(testText), testFont->getHeight()));
 	g->rotate3DScene(0, engine->getTime()*200, 0);
 		g->pushTransform();
 			g->translate(800, 300 + testFont->getHeight());

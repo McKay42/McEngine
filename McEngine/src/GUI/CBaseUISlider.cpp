@@ -343,7 +343,7 @@ void CBaseUISlider::onMouseDownInside()
 {
 	m_fPrevValue = m_fCurValue;
 
-	if (Rect(m_vPos.x+m_vBlockPos.x,m_vPos.y+m_vBlockPos.y,m_vBlockSize.x,m_vBlockSize.y).contains(engine->getMouse()->getPos()))
+	if (McRect(m_vPos.x+m_vBlockPos.x,m_vPos.y+m_vBlockPos.y,m_vBlockSize.x,m_vBlockSize.y).contains(engine->getMouse()->getPos()))
 		m_vGrabBackup = engine->getMouse()->getPos()-m_vBlockPos;
 	else
 		m_vGrabBackup = m_vPos + m_vBlockSize/2;

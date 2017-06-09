@@ -78,7 +78,7 @@ void LinuxEnvironment::update()
 	}
 	m_bCursorRequest = false;
 
-	m_bIsCursorInsideWindow = Rect(0, 0, engine->getScreenWidth(), engine->getScreenHeight()).contains(getMousePos());
+	m_bIsCursorInsideWindow = McRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight()).contains(getMousePos());
 }
 
 Graphics *LinuxEnvironment::createRenderer()
@@ -576,17 +576,17 @@ Vector2 LinuxEnvironment::getNativeScreenSize()
 	return Vector2(WidthOfScreen(DefaultScreenOfDisplay(m_display)), HeightOfScreen(DefaultScreenOfDisplay(m_display)));
 }
 
-Rect LinuxEnvironment::getVirtualScreenRect()
+McRect LinuxEnvironment::getVirtualScreenRect()
 {
 	// TODO:
-	return Rect(0,0,1,1);
+	return McRect(0,0,1,1);
 }
 
-Rect LinuxEnvironment::getDesktopRect()
+McRect LinuxEnvironment::getDesktopRect()
 {
 	// TODO:
 	Vector2 screen = getNativeScreenSize();
-	return Rect(0, 0, screen.x, screen.y);
+	return McRect(0, 0, screen.x, screen.y);
 }
 
 bool LinuxEnvironment::isCursorInWindow()
@@ -617,7 +617,7 @@ Vector2 LinuxEnvironment::getMousePos()
 	return Vector2(childX, childY);
 }
 
-Rect LinuxEnvironment::getCursorClip()
+McRect LinuxEnvironment::getCursorClip()
 {
 	return m_cursorClip;
 }
@@ -672,7 +672,7 @@ void LinuxEnvironment::setMousePos(int x, int y)
 	XFlush(m_display);
 }
 
-void LinuxEnvironment::setCursorClip(bool clip, Rect rect)
+void LinuxEnvironment::setCursorClip(bool clip, McRect rect)
 {
 	if (clip)
 	{

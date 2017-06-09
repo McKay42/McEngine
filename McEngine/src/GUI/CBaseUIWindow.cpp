@@ -114,7 +114,7 @@ void CBaseUIWindow::draw(Graphics *g)
 		// HACKHACK: shadows can't render inside a 3DScene
 		m_shadow->renderOffscreen(g);
 
-		g->push3DScene(Rect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y));
+		g->push3DScene(McRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y));
 			g->rotate3DScene(0, (m_bAnimIn ? -1 : 1) * (1-m_fAnimation)*10, 0);
 			g->translate3DScene(0, 0, -(1-m_fAnimation)*100);
 			m_shadow->draw(g);
@@ -154,10 +154,10 @@ void CBaseUIWindow::draw(Graphics *g)
 		}
 
 		// draw window contents
-		g->pushClipRect(Rect(m_vPos.x+1, m_vPos.y+2, m_vSize.x-1, m_vSize.y-1));
+		g->pushClipRect(McRect(m_vPos.x+1, m_vPos.y+2, m_vSize.x-1, m_vSize.y-1));
 		{
 			// draw main container
-			g->pushClipRect(Rect(m_vPos.x+1, m_vPos.y+2, m_vSize.x-1, m_vSize.y-1));
+			g->pushClipRect(McRect(m_vPos.x+1, m_vPos.y+2, m_vSize.x-1, m_vSize.y-1));
 				m_container->draw(g);
 				drawCustomContent(g);
 			g->popClipRect();
@@ -184,7 +184,7 @@ void CBaseUIWindow::draw(Graphics *g)
 			g->popTransform();
 
 			// draw title bar container
-			g->pushClipRect(Rect(m_vPos.x+1, m_vPos.y+2, m_vSize.x-1, m_iTitleBarHeight));
+			g->pushClipRect(McRect(m_vPos.x+1, m_vPos.y+2, m_vSize.x-1, m_iTitleBarHeight));
 				m_titleBarContainer->draw(g);
 			g->popClipRect();
 
@@ -212,7 +212,7 @@ void CBaseUIWindow::draw(Graphics *g)
 
 		m_rt->setColor(COLOR((int)(m_fAnimation*255.0f), 255, 255, 255));
 
-		g->push3DScene(Rect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y));
+		g->push3DScene(McRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y));
 			g->rotate3DScene((m_bAnimIn ? -1 : 1) * (1-m_fAnimation)*10, 0, 0);
 			g->translate3DScene(0, 0, -(1-m_fAnimation)*100);
 			m_rt->draw(g, m_vPos.x, m_vPos.y);
@@ -342,14 +342,14 @@ void CBaseUIWindow::udpateResizeAndMoveLogic(bool captureMouse)
 		m_iResizeType = 0;
 
 		int resizeHandleSize = 5;
-		Rect resizeTopLeft = Rect(m_vPos.x, m_vPos.y, resizeHandleSize, resizeHandleSize);
-		Rect resizeLeft = Rect(m_vPos.x, m_vPos.y, resizeHandleSize, m_vSize.y);
-		Rect resizeBottomLeft = Rect(m_vPos.x, m_vPos.y + m_vSize.y - resizeHandleSize, resizeHandleSize, resizeHandleSize);
-		Rect resizeBottom = Rect(m_vPos.x, m_vPos.y + m_vSize.y - resizeHandleSize, m_vSize.x, resizeHandleSize);
-		Rect resizeBottomRight = Rect(m_vPos.x + m_vSize.x - resizeHandleSize, m_vPos.y + m_vSize.y - resizeHandleSize, resizeHandleSize, resizeHandleSize);
-		Rect resizeRight = Rect(m_vPos.x + m_vSize.x - resizeHandleSize, m_vPos.y, resizeHandleSize, m_vSize.y);
-		Rect resizeTopRight = Rect(m_vPos.x + m_vSize.x - resizeHandleSize, m_vPos.y, resizeHandleSize, resizeHandleSize);
-		Rect resizeTop = Rect(m_vPos.x, m_vPos.y, m_vSize.x, resizeHandleSize);
+		McRect resizeTopLeft = McRect(m_vPos.x, m_vPos.y, resizeHandleSize, resizeHandleSize);
+		McRect resizeLeft = McRect(m_vPos.x, m_vPos.y, resizeHandleSize, m_vSize.y);
+		McRect resizeBottomLeft = McRect(m_vPos.x, m_vPos.y + m_vSize.y - resizeHandleSize, resizeHandleSize, resizeHandleSize);
+		McRect resizeBottom = McRect(m_vPos.x, m_vPos.y + m_vSize.y - resizeHandleSize, m_vSize.x, resizeHandleSize);
+		McRect resizeBottomRight = McRect(m_vPos.x + m_vSize.x - resizeHandleSize, m_vPos.y + m_vSize.y - resizeHandleSize, resizeHandleSize, resizeHandleSize);
+		McRect resizeRight = McRect(m_vPos.x + m_vSize.x - resizeHandleSize, m_vPos.y, resizeHandleSize, m_vSize.y);
+		McRect resizeTopRight = McRect(m_vPos.x + m_vSize.x - resizeHandleSize, m_vPos.y, resizeHandleSize, resizeHandleSize);
+		McRect resizeTop = McRect(m_vPos.x, m_vPos.y, m_vSize.x, resizeHandleSize);
 
 		if (resizeTopLeft.contains(m_vMousePosBackup))
 		{
@@ -407,7 +407,7 @@ void CBaseUIWindow::udpateResizeAndMoveLogic(bool captureMouse)
 	else if (captureMouse)
 	{
 		// handle moving
-		Rect titleBarGrab = Rect(m_vPos.x, m_vPos.y, m_vSize.x, m_iTitleBarHeight);
+		McRect titleBarGrab = McRect(m_vPos.x, m_vPos.y, m_vSize.x, m_iTitleBarHeight);
 		if (titleBarGrab.contains(m_vMousePosBackup))
 			m_bMoving = true;
 	}

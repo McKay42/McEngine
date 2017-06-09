@@ -142,11 +142,11 @@ void VulkanGraphicsInterface::drawVAO(VertexArrayObject *vao)
 {
 }
 
-void VulkanGraphicsInterface::setClipRect(Rect clipRect)
+void VulkanGraphicsInterface::setClipRect(McRect clipRect)
 {
 }
 
-void VulkanGraphicsInterface::pushClipRect(Rect clipRect)
+void VulkanGraphicsInterface::pushClipRect(McRect clipRect)
 {
 }
 
