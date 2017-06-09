@@ -341,7 +341,7 @@ void SWGraphicsInterface::drawVAO(VertexArrayObject *vao)
 	*/
 }
 
-void SWGraphicsInterface::setClipRect(Rect clipRect)
+void SWGraphicsInterface::setClipRect(McRect clipRect)
 {
 	///if (r_debug_disable_cliprect.getBool()) return;
 	//if (m_bIs3DScene) return;
@@ -360,7 +360,7 @@ void SWGraphicsInterface::setClipRect(Rect clipRect)
 	*/
 }
 
-void SWGraphicsInterface::pushClipRect(Rect clipRect)
+void SWGraphicsInterface::pushClipRect(McRect clipRect)
 {
 	if (m_clipRectStack.size() > 0)
 		m_clipRectStack.push(m_clipRectStack.top().intersect(clipRect));

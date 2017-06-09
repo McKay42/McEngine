@@ -52,8 +52,8 @@ public:
 	virtual void drawVAO(VertexArrayObject *vao);
 
 	// DEPRECATED: 2d clipping
-	virtual void setClipRect(Rect clipRect);
-	virtual void pushClipRect(Rect clipRect);
+	virtual void setClipRect(McRect clipRect);
+	virtual void pushClipRect(McRect clipRect);
 	virtual void popClipRect();
 
 	// stencil
@@ -126,7 +126,7 @@ private:
 	Color m_color;
 
 	// clipping
-	std::stack<Rect> m_clipRectStack;
+	std::stack<McRect> m_clipRectStack;
 };
 
 #endif

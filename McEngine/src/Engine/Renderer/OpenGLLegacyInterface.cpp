@@ -415,7 +415,7 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao)
 	glEnd();
 }
 
-void OpenGLLegacyInterface::setClipRect(Rect clipRect)
+void OpenGLLegacyInterface::setClipRect(McRect clipRect)
 {
 	if (r_debug_disable_cliprect->getBool()) return;
 	//if (m_bIs3DScene) return; // HACKHACK:TODO:
@@ -432,7 +432,7 @@ void OpenGLLegacyInterface::setClipRect(Rect clipRect)
 	//debugLog("scissor = %i, %i, %i, %i\n", (int)clipRect.getX()+viewport[0], viewport[3]-((int)clipRect.getY()-viewport[1]-1+(int)clipRect.getHeight()), (int)clipRect.getWidth(), (int)clipRect.getHeight());
 }
 
-void OpenGLLegacyInterface::pushClipRect(Rect clipRect)
+void OpenGLLegacyInterface::pushClipRect(McRect clipRect)
 {
 	if (m_clipRectStack.size() > 0)
 		m_clipRectStack.push(m_clipRectStack.top().intersect(clipRect));
