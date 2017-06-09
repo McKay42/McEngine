@@ -81,8 +81,8 @@ public:
 	Vector2 getWindowPos();
 	Vector2 getWindowSize();
 	Vector2 getNativeScreenSize();
-	Rect getVirtualScreenRect();
-	Rect getDesktopRect();
+	McRect getVirtualScreenRect();
+	McRect getDesktopRect();
 	bool isFullscreen() {return m_bFullScreen;}
 	bool isWindowResizable() {return m_bResizable;}
 
@@ -91,11 +91,11 @@ public:
 	bool isCursorVisible();
 	bool isCursorClipped();
 	Vector2 getMousePos();
-	Rect getCursorClip();
+	McRect getCursorClip();
 	void setCursor(CURSORTYPE cur);
 	void setCursorVisible(bool visible);
 	void setMousePos(int x, int y);
-	void setCursorClip(bool clip, Rect rect);
+	void setCursorClip(bool clip, McRect rect);
 
 	// keyboard
 	UString keyCodeToString(KEYCODE keyCode);
@@ -121,7 +121,7 @@ private:
 
 	// mouse
 	bool m_bCursorClipped;
-	Rect m_cursorClip;
+	McRect m_cursorClip;
 	bool m_bIsCursorInsideWindow;
 	HCURSOR m_mouseCursor;
 	HCURSOR m_mouseCursorArrow;

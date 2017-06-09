@@ -81,7 +81,7 @@ void CBaseUITextbox::draw(Graphics *g)
 	// draw text
 	if (m_font == NULL) return;
 
-	g->pushClipRect(Rect(m_vPos.x+1,m_vPos.y+1,m_vSize.x-1,m_vSize.y));
+	g->pushClipRect(McRect(m_vPos.x+1,m_vPos.y+1,m_vSize.x-1,m_vSize.y));
 
 		// draw selection box
 		if (hasSelectedText())

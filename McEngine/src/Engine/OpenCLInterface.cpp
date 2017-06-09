@@ -6,11 +6,12 @@
 //===============================================================================//
 
 #include "OpenCLInterface.h"
+
 #include "ConVar.h"
+#include "WinGLLegacyInterface.h"
 
 #include <string.h>
 #include <glew.h>
-#include <WinGLLegacyInterface.h>
 
 #ifdef MCENGINE_FEATURE_OPENCL
 

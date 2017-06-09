@@ -581,7 +581,7 @@ void OpenGL3Interface::drawVAO(VertexArrayObject *vao)
 	glDrawArrays(primitiveToOpenGL(primitive), 0, finalVertices.size());
 }
 
-void OpenGL3Interface::setClipRect(Rect clipRect)
+void OpenGL3Interface::setClipRect(McRect clipRect)
 {
 	if (r_debug_disable_cliprect->getBool()) return;
 	//if (m_bIs3DScene) return; // HACKHACK:TODO:
@@ -598,7 +598,7 @@ void OpenGL3Interface::setClipRect(Rect clipRect)
 	//debugLog("scissor = %i, %i, %i, %i\n", (int)clipRect.getX()+viewport[0], viewport[3]-((int)clipRect.getY()-viewport[1]-1+(int)clipRect.getHeight()), (int)clipRect.getWidth(), (int)clipRect.getHeight());
 }
 
-void OpenGL3Interface::pushClipRect(Rect clipRect)
+void OpenGL3Interface::pushClipRect(McRect clipRect)
 {
 	if (m_clipRectStack.size() > 0)
 		m_clipRectStack.push(m_clipRectStack.top().intersect(clipRect));

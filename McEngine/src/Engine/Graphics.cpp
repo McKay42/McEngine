@@ -114,7 +114,7 @@ Matrix4 Graphics::getProjectionMatrix()
 	return m_projectionTransformStack.top();
 }
 
-void Graphics::push3DScene(Rect region)
+void Graphics::push3DScene(McRect region)
 {
 	if (r_debug_disable_3dscene->getBool()) return;
 

@@ -67,7 +67,7 @@ void CBaseUIButton::drawText(Graphics *g)
 {
 	if (m_font != NULL && m_sText.length() > 0)
 	{
-		g->pushClipRect(Rect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1));
+		g->pushClipRect(McRect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1));
 
 			g->setColor(m_textColor);
 			g->pushTransform();

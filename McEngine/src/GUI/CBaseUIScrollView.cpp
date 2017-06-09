@@ -83,7 +83,7 @@ void CBaseUIScrollView::draw(Graphics *g)
 	}
 
 	// draw elements & scrollbars
-	g->pushClipRect(Rect(m_vPos.x+1, m_vPos.y+2, m_vSize.x-1, m_vSize.y-1));
+	g->pushClipRect(McRect(m_vPos.x+1, m_vPos.y+2, m_vSize.x-1, m_vSize.y-1));
 
 		m_container->draw(g);
 
@@ -464,12 +464,12 @@ void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int xOffset, in
 void CBaseUIScrollView::updateClipping()
 {
 	std::vector<CBaseUIElement*> *elements = m_container->getAllBaseUIElementsPointer();
-	Rect me = Rect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
+	McRect me = McRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
 	int counter = 0;
 	for (int i=0; i<elements->size(); i++)
 	{
 		CBaseUIElement *e = (*elements)[i];
-		Rect elementBounds = Rect(e->getPos().x, e->getPos().y, e->getSize().x, e->getSize().y);
+		McRect elementBounds = McRect(e->getPos().x, e->getPos().y, e->getSize().x, e->getSize().y);
 		if (me.intersects(elementBounds))
 		{
 			if (!e->isVisible())
@@ -499,7 +499,7 @@ void CBaseUIScrollView::updateScrollbars()
 
 		float verticalHeightPercent = ((m_vSize.y - verticalBlockWidth*2) / m_vScrollSize.y);
 		float verticalBlockHeight = clamp<float>(std::max(verticalHeightPercent * m_vSize.y, verticalBlockWidth)*overscroll, verticalBlockWidth, m_vSize.y);
-		m_verticalScrollbar = Rect(m_vPos.x + m_vSize.x - verticalBlockWidth, m_vPos.y + verticalPercent*(m_vSize.y-verticalBlockWidth*2 - verticalBlockHeight) + verticalBlockWidth + 1, verticalBlockWidth, verticalBlockHeight);
+		m_verticalScrollbar = McRect(m_vPos.x + m_vSize.x - verticalBlockWidth, m_vPos.y + verticalPercent*(m_vSize.y-verticalBlockWidth*2 - verticalBlockHeight) + verticalBlockWidth + 1, verticalBlockWidth, verticalBlockHeight);
 	}
 
 	// update horizontal scrollbar
@@ -509,7 +509,7 @@ void CBaseUIScrollView::updateScrollbars()
 		float horizontalBlockWidth = ui_scrollview_scrollbarwidth.getInt();
 		float horizontalHeightPercent = ((m_vSize.x - horizontalBlockWidth*2) / m_vScrollSize.x);
 		float horizontalBlockHeight = std::max(horizontalHeightPercent * m_vSize.x, horizontalBlockWidth);
-		m_horizontalScrollbar = Rect(m_vPos.x + horizontalPercent*(m_vSize.x-horizontalBlockWidth*2 - horizontalBlockHeight) + horizontalBlockWidth + 1, m_vPos.y + m_vSize.y - horizontalBlockWidth, horizontalBlockHeight, horizontalBlockWidth);
+		m_horizontalScrollbar = McRect(m_vPos.x + horizontalPercent*(m_vSize.x-horizontalBlockWidth*2 - horizontalBlockHeight) + horizontalBlockWidth + 1, m_vPos.y + m_vSize.y - horizontalBlockWidth, horizontalBlockHeight, horizontalBlockWidth);
 	}
 }
 
