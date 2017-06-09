@@ -10,7 +10,7 @@
 
 CBaseUIContainerBase::CBaseUIContainerBase(UString name) : CBaseUIElement(0, 0, 0, 0, name)
 {
-
+	m_bClipping = false;
 }
 
 CBaseUIContainerBase::~CBaseUIContainerBase()
@@ -231,10 +231,16 @@ void CBaseUIContainerBase::draw(Graphics *g)
 {
 	if (!m_bVisible) return;
 
+	if (m_bClipping)
+		g->pushClipRect(Rect(m_vPos.x+1,m_vPos.y+1,m_vSize.x-1,m_vSize.y));
+
 	for (int i=0; i<m_vElements.size(); i++)
 	{
 		m_vElements[i]->draw(g);
 	}
+
+	if (m_bClipping)
+		g->popClipRect();
 }
 
 void CBaseUIContainerBase::update()

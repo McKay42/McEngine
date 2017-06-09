@@ -15,7 +15,8 @@
 	virtual T *insertElement(CBaseUIElement *element, CBaseUIElement *index, bool back=false) {CBaseUIContainerBase::insertElement(element, index, back); return this;} \
 	virtual T *insertElement(std::shared_ptr<CBaseUIElement> element, CBaseUIElement *index, bool back=false) {CBaseUIContainerBase::insertElement(element, index, back); return this;} \
 	virtual T *insertElement(CBaseUIElement *element, std::shared_ptr<CBaseUIElement> index, bool back=false) {CBaseUIContainerBase::insertElement(element, index, back); return this;} \
-	virtual T *insertElement(std::shared_ptr<CBaseUIElement> element, std::shared_ptr<CBaseUIElement> index, bool back=false) {CBaseUIContainerBase::insertElement(element, index, back); return this;}
+	virtual T *insertElement(std::shared_ptr<CBaseUIElement> element, std::shared_ptr<CBaseUIElement> index, bool back=false) {CBaseUIContainerBase::insertElement(element, index, back); return this;} \
+	virtual T *setClipping(bool clipping) {CBaseUIContainerBase::setClipping(clipping); return this;}
 
 #include "CBaseUIElement.h"
 #include "cbase.h"
@@ -39,6 +40,8 @@ public:
 	virtual void removeElement(CBaseUIElement *element);
 	virtual void removeElement(std::shared_ptr<CBaseUIElement> element);
 
+	virtual CBaseUIContainerBase *setClipping(bool clipping) {m_bClipping = clipping; return this;}
+
 	CBaseUIElement *getElementByName(UString name, bool searchNestedContainers=false);
 	std::shared_ptr<CBaseUIElement> getElementSharedByName(UString name, bool searchNestedContainers=false);
 	std::vector<CBaseUIElement*> getAllElements();
@@ -55,6 +58,7 @@ protected:
 	// events
 	virtual void updateElement(CBaseUIElement *element) {;}
 
+	bool m_bClipping;
 	std::vector<std::shared_ptr<CBaseUIElement>> m_vElements;
 };
 
