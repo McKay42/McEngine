@@ -127,6 +127,7 @@ UIFrameworkTestVerticalBox::UIFrameworkTestVerticalBox(UIFrameworkTest *app) : U
 				->setPadding(10)
 				->setMargin(10)
 				->setScaleByHeightOnly(true)
+				->setClipping(true)
 
 				->addElement((new CBaseUITextbox)
 							 ->setText("1")
@@ -181,7 +182,7 @@ UIFrameworkTestVerticalBox::UIFrameworkTestVerticalBox(UIFrameworkTest *app) : U
 						->setDrawBackground(false)
 						->setSizeToContent();
 
-	m_boxSizeByHeightOnlyLabel = std::make_shared<CBaseUILabel>(850, 675, 0, 0, "ScaleByWidthOnly", "Padding: 10 - Margin: 10 - Scale By Width Only");
+	m_boxSizeByHeightOnlyLabel = std::make_shared<CBaseUILabel>(850, 675, 0, 0, "ScaleByWidthOnly", "Padding: 10 - Margin: 10 - Scale By Width Only - Clipping");
 	m_boxSizeByHeightOnlyLabel
 						->setAnchor(0.5, 0)
 						->setTextJustification(CBaseUILabel::TEXT_JUSTIFICATION::TEXT_JUSTIFICATION_CENTERED)
@@ -272,10 +273,10 @@ void UIFrameworkTestVerticalBox::resizeBoxesWidth()
 {
 	if (!m_bWidthResized)
 	{
-		m_boxNormal->setSizeX(125);
-		m_boxWithPadding->setSizeX(125);
-		m_boxHeightOverride->setSizeX(125);
-		m_boxSizeByHeightOnly->setSizeX(125);
+		m_boxNormal->setSizeX(175);
+		m_boxWithPadding->setSizeX(175);
+		m_boxHeightOverride->setSizeX(175);
+		m_boxSizeByHeightOnly->setSizeX(175);
 		m_bWidthResized = true;
 	}
 

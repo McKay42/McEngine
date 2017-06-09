@@ -127,6 +127,7 @@ UIFrameworkTestHorizontalBox::UIFrameworkTestHorizontalBox(UIFrameworkTest *app)
 				->setPadding(10)
 				->setMargin(10)
 				->setScaleByHeightOnly(true)
+				->setClipping(true)
 
 				->addElement((new CBaseUITextbox)
 							 ->setText("1")
@@ -181,7 +182,7 @@ UIFrameworkTestHorizontalBox::UIFrameworkTestHorizontalBox(UIFrameworkTest *app)
 						->setDrawBackground(false)
 						->setSizeToContent();
 
-	m_boxSizeByHeightOnlyLabel = std::make_shared<CBaseUILabel>(550, 525, 0, 0, "ScaleByHeightOnly", "Padding: 10 - Margin: 10 - Scale By Height Only");
+	m_boxSizeByHeightOnlyLabel = std::make_shared<CBaseUILabel>(550, 525, 0, 0, "ScaleByHeightOnly", "Padding: 10 - Margin: 10 - Scale By Height Only - Clipping");
 	m_boxSizeByHeightOnlyLabel
 						->setAnchor(0.5, 0)
 						->setTextJustification(CBaseUILabel::TEXT_JUSTIFICATION::TEXT_JUSTIFICATION_CENTERED)
