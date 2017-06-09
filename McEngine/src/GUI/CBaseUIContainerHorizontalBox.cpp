@@ -33,7 +33,6 @@ void CBaseUIContainerHorizontalBox::drawDebug(Graphics *g, Color color)
 
 	g->setColor(color);
 	g->drawRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
-
 }
 
 void CBaseUIContainerHorizontalBox::updateLayout()
