@@ -33,4 +33,14 @@
 
 #endif
 
+#ifdef __APPLE__
+
+#define GLEW_STATIC
+#include <glew.h>
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#include <GLUT/glut.h>
+
+#endif
+
 #endif

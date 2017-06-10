@@ -14,9 +14,7 @@
 #include "OpenGLImage.h"
 #include "OpenGLRenderTarget.h"
 #include "OpenGLShader.h"
-
-#include "VertexArrayObject.h"
-#include "VertexBuffer.h"
+#include "OpenGL3VertexArrayObject.h"
 
 #include "OpenGLHeaders.h"
 
@@ -431,6 +429,31 @@ void OpenGL3Interface::drawVAO(VertexArrayObject *vao)
 
 	updateTransform();
 
+	// if baked, then we can directly draw the buffer
+	if (vao->isReady())
+	{
+		OpenGL3VertexArrayObject *glvao = (OpenGL3VertexArrayObject*)vao;
+
+		// configure shader
+		if (glvao->getNumTexcoords0() > 0)
+		{
+			if (!m_bShaderTexturedGenericIsTextureEnabled)
+			{
+				m_shaderTexturedGeneric->setUniform1i("type", 1);
+				m_bShaderTexturedGenericIsTextureEnabled = true;
+			}
+		}
+		else if (m_bShaderTexturedGenericIsTextureEnabled)
+		{
+			m_bShaderTexturedGenericIsTextureEnabled = false;
+			m_shaderTexturedGeneric->setUniform1i("type", 0);
+		}
+
+		// draw
+		glvao->draw();
+		return;
+	}
+
 	const std::vector<Vector3> &vertices = vao->getVertices();
 	const std::vector<Vector3> &normals = vao->getNormals();
 	const std::vector<std::vector<Vector2>> &texcoords = vao->getTexcoords();
@@ -558,16 +581,7 @@ void OpenGL3Interface::drawVAO(VertexArrayObject *vao)
 	glDrawArrays(primitiveToOpenGL(primitive), 0, finalVertices.size());
 }
 
-void OpenGL3Interface::drawVB(VertexBuffer *vb)
-{
-	if (vb == NULL) return;
-
-	updateTransform();
-
-	vb->draw(this);
-}
-
-void OpenGL3Interface::setClipRect(Rect clipRect)
+void OpenGL3Interface::setClipRect(McRect clipRect)
 {
 	if (r_debug_disable_cliprect->getBool()) return;
 	//if (m_bIs3DScene) return; // HACKHACK:TODO:
@@ -584,7 +598,7 @@ void OpenGL3Interface::setClipRect(Rect clipRect)
 	//debugLog("scissor = %i, %i, %i, %i\n", (int)clipRect.getX()+viewport[0], viewport[3]-((int)clipRect.getY()-viewport[1]-1+(int)clipRect.getHeight()), (int)clipRect.getWidth(), (int)clipRect.getHeight());
 }
 
-void OpenGL3Interface::pushClipRect(Rect clipRect)
+void OpenGL3Interface::pushClipRect(McRect clipRect)
 {
 	if (m_clipRectStack.size() > 0)
 		m_clipRectStack.push(m_clipRectStack.top().intersect(clipRect));
@@ -752,6 +766,11 @@ Shader *OpenGL3Interface::createShaderFromFile(UString vertexShaderFilePath, USt
 Shader *OpenGL3Interface::createShaderFromSource(UString vertexShader, UString fragmentShader)
 {
 	return new OpenGLShader(vertexShader, fragmentShader, true);
+}
+
+VertexArrayObject *OpenGL3Interface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
+{
+	return new OpenGL3VertexArrayObject(primitive, usage);
 }
 
 void OpenGL3Interface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)

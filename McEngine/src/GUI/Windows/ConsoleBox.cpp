@@ -116,7 +116,7 @@ void ConsoleBox::draw(Graphics *g)
 	// draw textbox + suggestions
 	if (anim->isAnimating(&m_fConsoleAnimation))
 	{
-		g->push3DScene(Rect(m_textbox->getPos().x, m_textbox->getPos().y, m_textbox->getSize().x, m_textbox->getSize().y));
+		g->push3DScene(McRect(m_textbox->getPos().x, m_textbox->getPos().y, m_textbox->getSize().x, m_textbox->getSize().y));
 		g->rotate3DScene(((m_fConsoleAnimation/CONSOLE_YPOS)*130-130),0,0);
 		g->translate3DScene(0,0, ((m_fConsoleAnimation/CONSOLE_YPOS)*500-500));
 			m_textbox->draw(g);

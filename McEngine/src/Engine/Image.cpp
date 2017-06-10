@@ -147,7 +147,11 @@ bool Image::loadRawImage()
 			}
 
 			jpeg_mem_src(&cinfo, (unsigned char*)data, file.getFileSize());
+#ifdef __APPLE__
+			int headerRes = jpeg_read_header(&cinfo, boolean::TRUE); // HACKHACK MACMAC: wtf is this boolean enum here suddenly
+#else
 			int headerRes = jpeg_read_header(&cinfo, TRUE);
+#endif
 			if (headerRes != JPEG_HEADER_OK)
 			{
 				jpeg_destroy_decompress(&cinfo);

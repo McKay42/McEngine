@@ -68,7 +68,7 @@ void Tetris::draw(Graphics *g)
 	int blockHeight = m_vSize.y / m_tetris->getHeight();
 	m_vPos = Vector2(engine->getScreenWidth()/2 - (m_tetris->getWidth()*blockWidth)/2, engine->getScreenHeight()/2 - ((m_tetris->getHeight()+HIDDEN_TOP)*blockHeight)/2); //HACKHACK:
 
-	g->push3DScene(Rect(0,0,engine->getScreenWidth(),engine->getScreenHeight()));
+	g->push3DScene(McRect(0,0,engine->getScreenWidth(),engine->getScreenHeight()));
 	g->translate3DScene(0,0,m_fZoom);
 	g->rotate3DScene(-m_vRotation.y, m_vRotation.x, 0);
 

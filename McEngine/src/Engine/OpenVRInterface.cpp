@@ -1219,11 +1219,11 @@ void OpenVRInterface::onKeyDown(KeyboardEvent &e)
 		if (m_bCaptureMouse)
 		{
 			engine->getMouse()->setCursorVisible(false);
-			engine->getEnvironment()->setCursorClip(true, Rect());
+			engine->getEnvironment()->setCursorClip(true, McRect());
 		}
 		else
 		{
-			engine->getEnvironment()->setCursorClip(false, Rect());
+			engine->getEnvironment()->setCursorClip(false, McRect());
 			engine->getMouse()->setCursorVisible(true);
 		}
 	}
