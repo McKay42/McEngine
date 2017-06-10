@@ -6,13 +6,14 @@
  */
 
 #include "UIFrameworkTest.h"
-#include "CBaseUIButton.h"
 #include "UIFrameworkTestScreen.h"
 #include "UIFrameworkTestSingleCanvas.h"
 #include "UIFrameworkTestMultiCanvas.h"
 #include "UIFrameworkTestHorizontalBox.h"
 #include "UIFrameworkTestVerticalBox.h"
 #include "UIFrameworkTestMenu.h"
+
+#include "CBaseUI.h"
 
 UIFrameworkTest::UIFrameworkTest()
 {
@@ -23,7 +24,7 @@ UIFrameworkTest::UIFrameworkTest()
 	m_verticalBoxScreen = std::shared_ptr<UIFrameworkTestVerticalBox>(new UIFrameworkTestVerticalBox(this));
 	m_currentScreen = m_menuScreen;
 
-	m_menuButton = std::make_shared<CBaseUIButton>(0, 500, 200, 25, "Menu Button", "Menu");
+	m_menuButton = std::make_shared<UI::Button>(0, 500, 200, 25, "Menu Button", "Menu");
 	m_menuButton->setTextColor(COLOR(255, 255, 50, 50));
 	m_menuButton->setFrameColor(COLOR(255, 255, 50, 50));
 	m_menuButton->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTest::menuClick));

@@ -10,24 +10,22 @@
 #include "Engine.h"
 #include "UIFrameworkTest.h"
 
-#include "CBaseUIButton.h"
-#include "CBaseUICanvas.h"
-#include "CBaseUITextbox.h"
+#include "CBaseUI.h"
 
 UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) : UIFrameworkTestScreen(app)
 {
-	m_canvasTest = std::shared_ptr<CBaseUICanvas>((new CBaseUICanvas)
+	m_canvasTest = std::shared_ptr<UI::Canvas>((new UI::Canvas)
 					->setSize(engine->getScreenSize())
 					->setName("TestCanvas")
 
-					->addElement((new CBaseUITextbox)
+					->addElement((new UI::Textbox)
 								 ->setRelSize(0.2, 0.1)
 								 ->setName("CanvasTestTopLeft")
 								 ->setText("Top Left")
 								 ->setTextJustification(1)
 					)
 
-					->addElement((new CBaseUITextbox)
+					->addElement((new UI::Textbox)
 								 ->setRelPos(1, 0)
 								 ->setRelSize(0.2, 0.1)
 								 ->setAnchor(1, 0)
@@ -36,7 +34,7 @@ UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) :
 								 ->setTextJustification(1)
 					)
 
-					->addElement((new CBaseUITextbox)
+					->addElement((new UI::Textbox)
 								 ->setRelPos(0, 1)
 								 ->setRelSize(0.2, 0.1)
 								 ->setAnchor(0, 1)
@@ -45,7 +43,7 @@ UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) :
 								 ->setTextJustification(1)
 					)
 
-					->addElement((new CBaseUITextbox)
+					->addElement((new UI::Textbox)
 								 ->setRelPos(1, 1)
 								 ->setRelSize(0.2, 0.1)
 								 ->setAnchor(1, 1)
@@ -54,7 +52,7 @@ UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) :
 								 ->setTextJustification(1)
 					)
 
-					->addElement((new CBaseUITextbox)
+					->addElement((new UI::Textbox)
 								 ->setRelPos(0.5, 0.2)
 								 ->setRelSize(0.1125, 0.2)
 								 ->setAnchor(0.5, 0.5)
@@ -65,10 +63,10 @@ UIFrameworkTestSingleCanvas::UIFrameworkTestSingleCanvas(UIFrameworkTest *app) :
 					)
 	);
 
-	m_canvasResizeButton = std::make_shared<CBaseUIButton>(300, 500, 200, 25, "CanvasTestButton", "Resize Canvas");
+	m_canvasResizeButton = std::make_shared<UI::Button>(300, 500, 200, 25, "CanvasTestButton", "Resize Canvas");
 	m_canvasResizeButton->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestSingleCanvas::resizeCanvas));
 
-	m_canvasMoveButton = std::make_shared<CBaseUIButton>(300, 400, 200, 25, "CanvasMoveButton", "Move Canvas");
+	m_canvasMoveButton = std::make_shared<UI::Button>(300, 400, 200, 25, "CanvasMoveButton", "Move Canvas");
 	m_canvasMoveButton->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestSingleCanvas::moveCanvas));
 
 	m_bCanvasResized = false;

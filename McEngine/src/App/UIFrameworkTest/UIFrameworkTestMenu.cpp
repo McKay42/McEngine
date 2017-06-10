@@ -6,22 +6,22 @@
  */
 
 #include "UIFrameworkTestMenu.h"
-#include "CBaseUICanvas.h"
-#include "CBaseUIButton.h"
 #include "UIFrameworkTest.h"
+
+#include "CBaseUI.h"
 
 UIFrameworkTestMenu::UIFrameworkTestMenu(UIFrameworkTest *app) : UIFrameworkTestScreen(app)
 {
-	m_UIFrameworkTestSingleCanvas = std::make_shared<CBaseUIButton>(100, 100, 200, 25, "UIFrameworkTestSingleCanvasButton", "Single Canvas");
+	m_UIFrameworkTestSingleCanvas = std::make_shared<UI::Button>(100, 100, 200, 25, "UIFrameworkTestSingleCanvasButton", "Single Canvas");
 	m_UIFrameworkTestSingleCanvas->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestMenu::loadUIFrameworkTestSingleCanvas));
 
-	m_UIFrameworkTestMultiCanvas = std::make_shared<CBaseUIButton>(100, 200, 200, 25, "UIFrameworkTestMultiCanvasButton", "Multi Canvas");
+	m_UIFrameworkTestMultiCanvas = std::make_shared<UI::Button>(100, 200, 200, 25, "UIFrameworkTestMultiCanvasButton", "Multi Canvas");
 	m_UIFrameworkTestMultiCanvas->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestMenu::loadUIFrameworkTestMultiCanvas));
 
-	m_UIFrameworkTestHorizontalBox = std::make_shared<CBaseUIButton>(100, 300, 200, 25, "UIFrameworkTestHorizontalBox", "Horizontal Box");
+	m_UIFrameworkTestHorizontalBox = std::make_shared<UI::Button>(100, 300, 200, 25, "UIFrameworkTestHorizontalBox", "Horizontal Box");
 	m_UIFrameworkTestHorizontalBox->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestMenu::loadUIFrameworkTestHorizontalBox));
 
-	m_UIFrameworkTestVerticalBox = std::make_shared<CBaseUIButton>(100, 400, 200, 25, "UIFrameworkTestVerticalBox", "Vertical Box");
+	m_UIFrameworkTestVerticalBox = std::make_shared<UI::Button>(100, 400, 200, 25, "UIFrameworkTestVerticalBox", "Vertical Box");
 	m_UIFrameworkTestVerticalBox->setClickCallback(fastdelegate::MakeDelegate(this, &UIFrameworkTestMenu::loadUIFrameworkTestVerticalBox));
 }
 
