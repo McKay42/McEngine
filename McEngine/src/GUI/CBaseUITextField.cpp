@@ -71,7 +71,7 @@ void CBaseUITextField::TextObject::draw(Graphics *g)
 	//g->drawRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
 
 	g->setColor(m_textColor);
-	g->pushClipRect(Rect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y));
+	g->pushClipRect(McRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y));
 
 		std::vector<UString> words = m_sText.split(" ");
 		float spaceWidth = m_font->getStringWidth(" ");

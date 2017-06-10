@@ -16,6 +16,10 @@
 
 #include "LinuxTimer.h"
 
+#elif defined __APPLE__
+
+#include "MacOSTimer.h"
+
 #endif
 
 Timer::Timer()
@@ -30,7 +34,14 @@ Timer::Timer()
 
 	m_timer = new LinuxTimer();
 
+#elif defined __APPLE__
+
+	m_timer = new MacOSTimer();
+
+#else
+#error Missing Timer implementation for OS!
 #endif
+
 }
 
 Timer::~Timer()

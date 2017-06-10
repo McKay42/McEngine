@@ -107,8 +107,8 @@ private:
 	Vector2 m_vScrollPosBackup;
 	Vector2 m_vMouseBackup;
 
-	Rect m_verticalScrollbar;
-	Rect m_horizontalScrollbar;
+	McRect m_verticalScrollbar;
+	McRect m_horizontalScrollbar;
 
 	// scroll logic
 	bool m_bScrolling;

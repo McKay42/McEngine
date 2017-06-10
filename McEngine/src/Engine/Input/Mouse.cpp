@@ -60,7 +60,7 @@ void Mouse::draw(Graphics *g)
 	// red = cursor clip
 	if (env->isCursorClipped())
 	{
-		Rect cursorClip = env->getCursorClip();
+		McRect cursorClip = env->getCursorClip();
 		g->drawRect(cursorClip.getMinX(), cursorClip.getMinY(), cursorClip.getWidth()-1, cursorClip.getHeight()-1);
 	}
 
@@ -166,7 +166,7 @@ void Mouse::update()
 				else
 				{
                     // shift and scale to desktop
-					Rect screen = m_bVirtualDesktop ? env->getVirtualScreenRect() : desktopRect;
+					McRect screen = m_bVirtualDesktop ? env->getVirtualScreenRect() : desktopRect;
 					const Vector2 posInScreenCoords = Vector2((m_vRawDelta.x/rawRangeX) * screen.getWidth() + screen.getX(), (m_vRawDelta.y/rawRangeY) * screen.getHeight() + screen.getY());
 
 					// offset to window
@@ -186,7 +186,7 @@ void Mouse::update()
 	else
 	{
 		// this block here handles relative movement, both for raw input and non-raw input (mouse, touchpad)
-		Rect windowRect = Rect(0, 0, engine->getScreenWidth(), engine->getScreenHeight());
+		McRect windowRect = McRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight());
 
 		if (!m_bSwitch) // auto-detect mode switches
 		{
@@ -216,7 +216,7 @@ void Mouse::update()
 			// respect cursor clipping
 			if (env->isCursorClipped())
 			{
-				Rect cursorClip = env->getCursorClip();
+				McRect cursorClip = env->getCursorClip();
 				m_vActualPos.x = clamp<float>(m_vActualPos.x, cursorClip.getMinX(), cursorClip.getMaxX());
 				m_vActualPos.y = clamp<float>(m_vActualPos.y, cursorClip.getMinY(), cursorClip.getMaxY());
 			}

@@ -48,11 +48,10 @@ public:
 
 	// 3d type drawing
 	virtual void drawVAO(VertexArrayObject *vao) {;}
-	virtual void drawVB(VertexBuffer *vb) {;}
 
 	// DEPRECATED: 2d clipping
-	virtual void setClipRect(Rect clipRect) {;}
-	virtual void pushClipRect(Rect clipRect) {;}
+	virtual void setClipRect(McRect clipRect) {;}
+	virtual void pushClipRect(McRect clipRect) {;}
 	virtual void popClipRect() {;}
 
 	// stencil
@@ -90,6 +89,7 @@ public:
 	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
 	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
+	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage);
 
 protected:
 	void init() {;}

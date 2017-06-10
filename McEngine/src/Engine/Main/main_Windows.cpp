@@ -48,7 +48,7 @@ PGPI g_GetPointerInfo = (PGPI)GetProcAddress(GetModuleHandle(TEXT("user32.dll"))
 #include "Timer.h"
 #include "Mouse.h"
 
-#include <WinGLLegacyInterface.h>
+#include "WinGLLegacyInterface.h"
 #include "WinEnvironment.h"
 
 #define WINDOW_TITLE L"McEngine"
@@ -183,7 +183,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 					// fake window moving
 					Vector2 mousePos = g_engine->getEnvironment()->getMousePos();
-					Rect dragging = Rect(40, 4, engine->getScreenWidth()-80, 20); // HACKHACK: hardcoded 40 for stuff
+					McRect dragging = McRect(40, 4, engine->getScreenWidth()-80, 20); // HACKHACK: hardcoded 40 for stuff
 					if (dragging.contains(mousePos))
 						val = HTCAPTION;
 
@@ -191,10 +191,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						return val;
 
 					// fake window resizing
-					Rect resizeN = Rect(0, 0, engine->getScreenWidth(), 4);
-					Rect resizeW = Rect(0, 0, 4, engine->getScreenHeight());
-					Rect resizeO = Rect(engine->getScreenWidth()-5, 0, engine->getScreenWidth(), engine->getScreenHeight());
-					Rect resizeS = Rect(0, engine->getScreenHeight()-5, engine->getScreenWidth(), engine->getScreenHeight());
+					McRect resizeN = McRect(0, 0, engine->getScreenWidth(), 4);
+					McRect resizeW = McRect(0, 0, 4, engine->getScreenHeight());
+					McRect resizeO = McRect(engine->getScreenWidth()-5, 0, engine->getScreenWidth(), engine->getScreenHeight());
+					McRect resizeS = McRect(0, engine->getScreenHeight()-5, engine->getScreenWidth(), engine->getScreenHeight());
 					if (resizeN.contains(mousePos))
 						val = HTTOP;
 					if (resizeW.contains(mousePos))

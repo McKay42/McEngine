@@ -7,22 +7,46 @@
 
 #include "VertexArrayObject.h"
 
-VertexArrayObject::VertexArrayObject(Graphics::PRIMITIVE primitive, VertexArrayObject::USAGE usage)
+#include "Engine.h"
+
+VertexArrayObject::VertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage) : Resource()
 {
 	m_primitive = primitive;
 	m_usage = usage;
+
+	m_iDrawPercentNearestMultiple = 0;
+	m_fDrawPercentFromPercent = 0.0f;
+	m_fDrawPercentToPercent = 1.0f;
 }
 
 VertexArrayObject::~VertexArrayObject()
 {
 }
 
+void VertexArrayObject::init()
+{
+	m_bReady = true;
+}
+
+void VertexArrayObject::initAsync()
+{
+	m_bAsyncReady = true;
+}
+
+void VertexArrayObject::destroy()
+{
+}
+
 void VertexArrayObject::clear()
 {
-	m_vertices.clear();
-	m_texcoords.clear();
-	m_normals.clear();
-	m_colors.clear();
+	m_vertices = std::vector<Vector3>();
+	for (int i=0; i<m_texcoords.size(); i++)
+	{
+		m_texcoords[i] = std::vector<Vector2>();
+	}
+	m_texcoords = std::vector<std::vector<Vector2>>();
+	m_normals = std::vector<Vector3>();
+	m_colors = std::vector<Color>();
 }
 
 void VertexArrayObject::addVertex(Vector2 v)
@@ -72,6 +96,13 @@ void VertexArrayObject::setType(Graphics::PRIMITIVE primitive)
 	m_primitive = primitive;
 }
 
+void VertexArrayObject::setDrawPercent(float fromPercent, float toPercent, int nearestMultiple)
+{
+	m_fDrawPercentFromPercent = fromPercent;
+	m_fDrawPercentToPercent = toPercent;
+	m_iDrawPercentNearestMultiple = nearestMultiple;
+}
+
 void VertexArrayObject::updateTexcoordArraySize(unsigned int textureUnit)
 {
 	while (m_texcoords.size() < textureUnit+1)
@@ -79,4 +110,14 @@ void VertexArrayObject::updateTexcoordArraySize(unsigned int textureUnit)
 		std::vector<Vector2> emptyVector;
 		m_texcoords.push_back(emptyVector);
 	}
+}
+
+int VertexArrayObject::nearestMultipleOf(int number, int multiple)
+{
+	int result = number + multiple/2;
+
+	if (multiple > 0)
+		result -= result % multiple;
+
+	return result;
 }
