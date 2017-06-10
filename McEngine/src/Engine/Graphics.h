@@ -11,9 +11,9 @@
 #include <vector>
 #include <stack>
 
-#include "Rect.h"
 #include "Matrices.h"
 #include "Vectors.h"
+#include "Rect.h"
 
 class ConVar;
 class UString;
@@ -24,7 +24,6 @@ class Shader;
 class RenderTarget;
 
 class VertexArrayObject;
-class VertexBuffer;
 
 typedef unsigned long Color;
 
@@ -39,6 +38,13 @@ public:
 		PRIMITIVE_TRIANGLE_FAN,
 		PRIMITIVE_TRIANGLE_STRIP,
 		PRIMITIVE_QUADS
+	};
+
+	enum class USAGE_TYPE
+	{
+		USAGE_STATIC,
+		USAGE_DYNAMIC,
+		USAGE_STREAM
 	};
 
 	enum class DRAWPIXELS_TYPE
@@ -105,11 +111,10 @@ public:
 
 	// 3d type drawing
 	virtual void drawVAO(VertexArrayObject *vao) = 0;
-	virtual void drawVB(VertexBuffer *vb) = 0;
 
 	// DEPRECATED: 2d clipping
-	virtual void setClipRect(Rect clipRect) = 0;
-	virtual void pushClipRect(Rect clipRect) = 0;
+	virtual void setClipRect(McRect clipRect) = 0;
+	virtual void pushClipRect(McRect clipRect) = 0;
 	virtual void popClipRect() = 0;
 
 	// stencil buffer
@@ -147,6 +152,7 @@ public:
 	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType) = 0;
 	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath) = 0;
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader) = 0;
+	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage) = 0;
 
 public:
 	// provided core functions (api independent)
@@ -167,7 +173,7 @@ public:
 	Matrix4 getProjectionMatrix();
 
 	// 3d gui scenes
-	void push3DScene(Rect region);
+	void push3DScene(McRect region);
 	void pop3DScene();
 	void translate3DScene(float x, float y, float z = 0);
 	void rotate3DScene(float rotx, float roty, float rotz);
@@ -197,7 +203,7 @@ protected:
 	// 3d gui scenes
 	bool m_bIs3dScene;
 	std::stack<bool> m_3dSceneStack;
-	Rect m_3dSceneRegion;
+	McRect m_3dSceneRegion;
 	Vector3 m_v3dSceneOffset;
 	Matrix4 m_3dSceneWorldMatrix;
 	Matrix4 m_3dSceneProjectionMatrix;

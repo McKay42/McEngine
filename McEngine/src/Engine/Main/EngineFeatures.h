@@ -11,7 +11,7 @@
 /*
  * ENet & CURL networking
  */
-#define MCENGINE_FEATURE_NETWORKING
+//#define MCENGINE_FEATURE_NETWORKING
 
 /*
  * BASS sound
