@@ -499,7 +499,7 @@ int main(int argc, const char * argv[])
         
         // create window, launch
         AppDelegate *appDelegate = [[AppDelegate alloc] init];
-        [NSApp setDelegate:appDelegate];
+        [(NSApplication*)NSApp setDelegate:appDelegate];
         [NSApp finishLaunching];
         
         // WARNING: we can NOT create the wrapper here, since the application has not finished launching yet (no opengl context).
