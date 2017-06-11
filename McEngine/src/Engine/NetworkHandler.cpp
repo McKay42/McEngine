@@ -24,6 +24,8 @@
 void DUMMY_ARGS_CONNECT(UString args) {;}
 void DUMMY_DISCONNECT() {;}
 
+ConVar __name("name", "McKay");
+
 #ifdef MCENGINE_FEATURE_NETWORKING
 
 ConVar __connect("connect", DUMMY_ARGS_CONNECT);
@@ -40,7 +42,6 @@ ConVar __status("status", DUMMY_DISCONNECT);
 ConVar debug_network("debug_network", false);
 ConVar debug_network_time("debug_network_time", false);
 
-ConVar __name("name", "McKay");
 ConVar __name_admin("name_admin", "ADMIN");
 ConVar __say("say", DUMMY_ARGS_CONNECT);
 ConVar __kick("kick", DUMMY_ARGS_CONNECT);
