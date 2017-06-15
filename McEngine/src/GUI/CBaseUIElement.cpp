@@ -47,7 +47,7 @@ CBaseUIElement::CBaseUIElement(float xPos, float yPos, float xSize, float ySize,
 void CBaseUIElement::update()
 {
 	// check if mouse is inside element
-	Rect temp = Rect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1);
+	McRect temp = McRect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1);
 	if (temp.contains(engine->getMouse()->getPos()))
 	{
 		if (!m_bMouseInside)
