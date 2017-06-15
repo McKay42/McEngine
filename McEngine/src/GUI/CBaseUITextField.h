@@ -15,14 +15,16 @@
 class CBaseUITextField : public CBaseUIScrollView
 {
 public:
-	CBaseUITextField(float xPos, float yPos, float xSize, float ySize, UString name, UString text);
+	CBaseUITextField(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="", UString text="");
 	virtual ~CBaseUITextField() {;}
+
+	ELEMENT_BODY(CBaseUITextField)
 
 	virtual void draw(Graphics *g);
 
-	void setFont(McFont *font) {m_textObject->setFont(font);}
+	CBaseUITextField *setFont(McFont *font) {m_textObject->setFont(font); return this;}
 
-	void append(UString text);
+	CBaseUITextField *append(UString text);
 
 	void onResized();
 
@@ -39,11 +41,11 @@ protected:
 
 		void draw(Graphics *g);
 
-		void setText(UString text);
-		void setFont(McFont *font) {m_font = font; updateStringMetrics();}
+		CBaseUIElement *setText(UString text);
+		CBaseUIElement *setFont(McFont *font) {m_font = font; updateStringMetrics(); return this;}
 
-		void setTextColor(Color textColor) {m_textColor = textColor;}
-		void setParentSize(Vector2 parentSize) {m_vParentSize = parentSize;onResized();}
+		CBaseUIElement *setTextColor(Color textColor) {m_textColor = textColor; return this;}
+		CBaseUIElement *setParentSize(Vector2 parentSize) {m_vParentSize = parentSize;onResized(); return this;}
 
 		inline Color getTextColor() const {return m_textColor;}
 

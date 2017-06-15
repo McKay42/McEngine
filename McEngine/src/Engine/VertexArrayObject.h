@@ -8,19 +8,12 @@
 #ifndef VERTEXARRAYOBJECT_H
 #define VERTEXARRAYOBJECT_H
 
-#include "cbase.h"
+#include "Resource.h"
 
-class VertexArrayObject
+class VertexArrayObject : public Resource
 {
 public:
-	enum class USAGE
-	{
-		USAGE_STATIC,
-		USAGE_DYNAMIC,
-		USAGE_STREAM
-	};
-
-	VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, VertexArrayObject::USAGE usage = VertexArrayObject::USAGE::USAGE_STATIC);
+	VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC);
 	virtual ~VertexArrayObject();
 
 	void clear();
@@ -38,25 +31,36 @@ public:
 	void addColor(Color color);
 
 	void setType(Graphics::PRIMITIVE primitive);
+	void setDrawPercent(float fromPercent = 0.0f, float toPercent = 1.0f, int nearestMultiple = 0);
 
 	inline Graphics::PRIMITIVE getPrimitive() {return m_primitive;}
-	inline USAGE getUsage() {return m_usage;}
+	inline Graphics::USAGE_TYPE getUsage() {return m_usage;}
 
 	const std::vector<Vector3> &getVertices() const {return m_vertices;}
 	const std::vector<std::vector<Vector2>> &getTexcoords() const {return m_texcoords;}
 	const std::vector<Vector3> &getNormals() const {return m_normals;}
 	const std::vector<Color> &getColors() const {return m_colors;}
 
-private:
+protected:
+	static int nearestMultipleOf(int number, int multiple);
+
+	virtual void init();
+	virtual void initAsync();
+	virtual void destroy();
+
 	void updateTexcoordArraySize(unsigned int textureUnit);
 
 	Graphics::PRIMITIVE m_primitive;
-	USAGE m_usage;
+	Graphics::USAGE_TYPE m_usage;
 
 	std::vector<Vector3> m_vertices;
 	std::vector<std::vector<Vector2>> m_texcoords;
 	std::vector<Vector3> m_normals;
 	std::vector<Color> m_colors;
+
+	int m_iDrawPercentNearestMultiple;
+	float m_fDrawPercentFromPercent;
+	float m_fDrawPercentToPercent;
 };
 
 #endif

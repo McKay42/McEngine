@@ -44,7 +44,7 @@ WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance)
 
 void WinEnvironment::update()
 {
-	m_bIsCursorInsideWindow = Rect(0, 0, engine->getScreenWidth(), engine->getScreenHeight()).contains(getMousePos());
+	m_bIsCursorInsideWindow = McRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight()).contains(getMousePos());
 }
 
 Graphics *WinEnvironment::createRenderer()
@@ -581,12 +581,12 @@ Vector2 WinEnvironment::getNativeScreenSize()
 	return Vector2(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
 }
 
-Rect WinEnvironment::getVirtualScreenRect()
+McRect WinEnvironment::getVirtualScreenRect()
 {
-	return Rect(GetSystemMetrics(SM_XVIRTUALSCREEN), GetSystemMetrics(SM_YVIRTUALSCREEN), GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CYVIRTUALSCREEN));
+	return McRect(GetSystemMetrics(SM_XVIRTUALSCREEN), GetSystemMetrics(SM_YVIRTUALSCREEN), GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CYVIRTUALSCREEN));
 }
 
-Rect WinEnvironment::getDesktopRect()
+McRect WinEnvironment::getDesktopRect()
 {
 	HMONITOR monitor = MonitorFromWindow(m_hwnd, MONITOR_DEFAULTTONEAREST);
 
@@ -595,7 +595,7 @@ Rect WinEnvironment::getDesktopRect()
 
 	GetMonitorInfo(monitor, &info);
 
-	return Rect(info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right - info.rcMonitor.left, info.rcMonitor.bottom - info.rcMonitor.top);
+	return McRect(info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right - info.rcMonitor.left, info.rcMonitor.bottom - info.rcMonitor.top);
 }
 
 bool WinEnvironment::isCursorInWindow()
@@ -625,7 +625,7 @@ Vector2 WinEnvironment::getMousePos()
 	return Vector2(mpos.x, mpos.y);
 }
 
-Rect WinEnvironment::getCursorClip()
+McRect WinEnvironment::getCursorClip()
 {
 	return m_cursorClip;
 }
@@ -693,7 +693,7 @@ void WinEnvironment::setMousePos(int x, int y)
 	SetCursorPos((int)temp.x,(int)temp.y);
 }
 
-void WinEnvironment::setCursorClip(bool clip, Rect rect)
+void WinEnvironment::setCursorClip(bool clip, McRect rect)
 {
 	m_bCursorClipped = clip;
 	m_cursorClip = rect;
@@ -722,7 +722,7 @@ void WinEnvironment::setCursorClip(bool clip, Rect rect)
 			windowRect.right = bottomRight.x;
 			windowRect.bottom = bottomRight.y;
 
-			m_cursorClip = Rect(0, 0, windowRect.right-windowRect.left, windowRect.bottom-windowRect.top);
+			m_cursorClip = McRect(0, 0, windowRect.right-windowRect.left, windowRect.bottom-windowRect.top);
 		}
 
 		// TODO: custom rect (only fullscreen works atm)
@@ -731,6 +731,29 @@ void WinEnvironment::setCursorClip(bool clip, Rect rect)
 	}
 	else
 		ClipCursor(NULL);
+}
+
+UString WinEnvironment::keyCodeToString(KEYCODE keyCode)
+{
+	UINT scanCode = MapVirtualKeyW(keyCode, MAPVK_VK_TO_VSC);
+
+	WCHAR keyNameString[256];
+	switch (keyCode)
+	{
+		case VK_LEFT: case VK_UP: case VK_RIGHT: case VK_DOWN:
+		case VK_PRIOR: case VK_NEXT:
+		case VK_END: case VK_HOME:
+		case VK_INSERT: case VK_DELETE:
+		case VK_DIVIDE:
+		case VK_NUMLOCK:
+			scanCode |= 0x100;
+			break;
+	}
+
+    if (!GetKeyNameTextW(scanCode << 16, keyNameString, 256))
+    	return UString::format("%lu", keyCode); // fallback to raw number (better than having an empty string)
+
+    return UString(keyNameString);
 }
 
 

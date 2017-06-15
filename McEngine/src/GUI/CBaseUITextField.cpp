@@ -40,11 +40,12 @@ void CBaseUITextField::onResized()
 	setScrollSizeToContent(0);
 }
 
-void CBaseUITextField::append(UString text)
+CBaseUITextField *CBaseUITextField::append(UString text)
 {
 	UString oldText = m_textObject->getText();
 	oldText.append(text);
 	m_textObject->setText(oldText);
+	return this;
 }
 
 
@@ -70,7 +71,7 @@ void CBaseUITextField::TextObject::draw(Graphics *g)
 	//g->drawRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
 
 	g->setColor(m_textColor);
-	g->pushClipRect(Rect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y));
+	g->pushClipRect(McRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y));
 
 		std::vector<UString> words = m_sText.split(" ");
 		float spaceWidth = m_font->getStringWidth(" ");
@@ -111,10 +112,11 @@ void CBaseUITextField::TextObject::updateStringMetrics()
 	m_fStringHeight = m_font->getHeight();
 }
 
-void CBaseUITextField::TextObject::setText(UString text)
+CBaseUIElement *CBaseUITextField::TextObject::setText(UString text)
 {
 	m_sText = text;
 	updateStringMetrics();
+	return this;
 }
 
 void CBaseUITextField::TextObject::onResized()

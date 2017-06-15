@@ -15,6 +15,8 @@
 #include "NullRenderTarget.h"
 #include "NullShader.h"
 
+#include "VertexArrayObject.h"
+
 VulkanGraphicsInterface::VulkanGraphicsInterface()
 {
 	if (!vulkan->isReady())
@@ -140,15 +142,11 @@ void VulkanGraphicsInterface::drawVAO(VertexArrayObject *vao)
 {
 }
 
-void VulkanGraphicsInterface::drawVB(VertexBuffer *vb)
+void VulkanGraphicsInterface::setClipRect(McRect clipRect)
 {
 }
 
-void VulkanGraphicsInterface::setClipRect(Rect clipRect)
-{
-}
-
-void VulkanGraphicsInterface::pushClipRect(Rect clipRect)
+void VulkanGraphicsInterface::pushClipRect(McRect clipRect)
 {
 }
 
@@ -259,6 +257,11 @@ Shader *VulkanGraphicsInterface::createShaderFromFile(UString vertexShaderFilePa
 Shader *VulkanGraphicsInterface::createShaderFromSource(UString vertexShader, UString fragmentShader)
 {
 	return new NullShader(vertexShader, fragmentShader, true);
+}
+
+VertexArrayObject *VulkanGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
+{
+	return new VertexArrayObject(primitive, usage);
 }
 
 void VulkanGraphicsInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)

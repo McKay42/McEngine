@@ -16,8 +16,10 @@
 class CBaseUISlider : public CBaseUIElement
 {
 public:
-	CBaseUISlider(float xPos, float yPos, float xSize, float ySize, UString name);
+	CBaseUISlider(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
 	virtual ~CBaseUISlider(){;}
+
+	ELEMENT_BODY(CBaseUISlider)
 
 	virtual void draw(Graphics *g);
 	virtual void update();
@@ -38,15 +40,15 @@ public:
 
 	// callbacks, either void or with ourself as the argument
 	typedef fastdelegate::FastDelegate1<CBaseUISlider*> SliderChangeCallback;
-	void setChangeCallback(SliderChangeCallback changeCallback) {m_sliderChangeCallback = changeCallback;}
+	CBaseUISlider *setChangeCallback(SliderChangeCallback changeCallback) {m_sliderChangeCallback = changeCallback; return this;}
 
-	void setAllowMouseWheel(bool allowMouseWheel) {m_bAllowMouseWheel = allowMouseWheel;}
-	void setAnimated(bool animated) {m_bAnimated = animated;}
-	void setLiveUpdate(bool liveUpdate) {m_bLiveUpdate = liveUpdate;}
-	void setBounds(float minValue, float maxValue);
-	void setKeyDelta(float keyDelta) {m_fKeyDelta = keyDelta;}
-	void setValue(float value, bool animate = true);
-	void setInitialValue(float value);
+	CBaseUISlider *setAllowMouseWheel(bool allowMouseWheel) {m_bAllowMouseWheel = allowMouseWheel; return this;}
+	CBaseUISlider *setAnimated(bool animated) {m_bAnimated = animated; return this;}
+	CBaseUISlider *setLiveUpdate(bool liveUpdate) {m_bLiveUpdate = liveUpdate; return this;}
+	CBaseUISlider *setBounds(float minValue, float maxValue);
+	CBaseUISlider *setKeyDelta(float keyDelta) {m_fKeyDelta = keyDelta; return this;}
+	CBaseUISlider *setValue(float value, bool animate = true);
+	CBaseUISlider *setInitialValue(float value);
 
 	inline float getFloat() {return m_fCurValue;}
 	inline int getInt() {return (int)m_fCurValue;}
