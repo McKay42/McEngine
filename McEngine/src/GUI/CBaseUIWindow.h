@@ -19,8 +19,10 @@ class RenderTarget;
 class CBaseUIWindow : public CBaseUIElement
 {
 public:
-	CBaseUIWindow(float xPos, float yPos, float xSize, float ySize, UString name);
+	CBaseUIWindow(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
 	~CBaseUIWindow();
+
+	ELEMENT_BODY(CBaseUIWindow)
 
 	virtual void draw(Graphics *g);
 	virtual void drawCustomContent(Graphics *g) {;}
@@ -37,25 +39,25 @@ public:
 	void minimize();
 
 	// BETA: mimic native window
-	void enableCoherenceMode();
+	CBaseUIWindow *enableCoherenceMode();
 
 	// set
-	void setSizeToContent(int horizontalBorderSize = 1, int verticalBorderSize = 1);
-	void setTitleBarHeight(int height) {m_iTitleBarHeight = height; updateTitleBarMetrics();}
-	void setTitle(UString text);
-	void setTitleFont(McFont *titleFont) {m_titleFont = titleFont; updateTitleBarMetrics();}
-	void setResizeLimit(int maxWidth, int maxHeight) {m_vResizeLimit = Vector2(maxWidth, maxHeight);}
-	void setResizeable(bool resizeable) {m_bResizeable = resizeable;}
-	void setDrawTitleBarLine(bool drawTitleBarLine) {m_bDrawTitleBarLine = drawTitleBarLine;}
-	void setDrawFrame(bool drawFrame) {m_bDrawFrame = drawFrame;}
-	void setDrawBackground(bool drawBackground) {m_bDrawBackground = drawBackground;}
-	void setRoundedRectangle(bool roundedRectangle) {m_bRoundedRectangle = roundedRectangle;}
+	CBaseUIWindow *setSizeToContent(int horizontalBorderSize = 1, int verticalBorderSize = 1);
+	CBaseUIWindow *setTitleBarHeight(int height) {m_iTitleBarHeight = height; updateTitleBarMetrics(); return this;}
+	CBaseUIWindow *setTitle(UString text);
+	CBaseUIWindow *setTitleFont(McFont *titleFont) {m_titleFont = titleFont; updateTitleBarMetrics(); return this;}
+	CBaseUIWindow *setResizeLimit(int maxWidth, int maxHeight) {m_vResizeLimit = Vector2(maxWidth, maxHeight); return this;}
+	CBaseUIWindow *setResizeable(bool resizeable) {m_bResizeable = resizeable; return this;}
+	CBaseUIWindow *setDrawTitleBarLine(bool drawTitleBarLine) {m_bDrawTitleBarLine = drawTitleBarLine; return this;}
+	CBaseUIWindow *setDrawFrame(bool drawFrame) {m_bDrawFrame = drawFrame; return this;}
+	CBaseUIWindow *setDrawBackground(bool drawBackground) {m_bDrawBackground = drawBackground; return this;}
+	CBaseUIWindow *setRoundedRectangle(bool roundedRectangle) {m_bRoundedRectangle = roundedRectangle; return this;}
 
-	void setBackgroundColor(Color backgroundColor) {m_backgroundColor = backgroundColor;}
-	void setFrameColor(Color frameColor) {m_frameColor = frameColor;}
-	void setFrameBrightColor(Color frameBrightColor) {m_frameBrightColor = frameBrightColor;}
-	void setFrameDarkColor(Color frameDarkColor) {m_frameDarkColor = frameDarkColor;}
-	void setTitleColor(Color titleColor) {m_titleColor = titleColor;}
+	CBaseUIWindow *setBackgroundColor(Color backgroundColor) {m_backgroundColor = backgroundColor; return this;}
+	CBaseUIWindow *setFrameColor(Color frameColor) {m_frameColor = frameColor; return this;}
+	CBaseUIWindow *setFrameBrightColor(Color frameBrightColor) {m_frameBrightColor = frameBrightColor; return this;}
+	CBaseUIWindow *setFrameDarkColor(Color frameDarkColor) {m_frameDarkColor = frameDarkColor; return this;}
+	CBaseUIWindow *setTitleColor(Color titleColor) {m_titleColor = titleColor; return this;}
 
 	// get
 	virtual bool isBusy();

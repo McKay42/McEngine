@@ -13,8 +13,11 @@
 class CBaseUIContainer : public CBaseUIElement
 {
 public:
-	CBaseUIContainer(float xPos, float yPos, float xSize, float ySize, UString name);
+	CBaseUIContainer(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
 	virtual ~CBaseUIContainer();
+
+	ELEMENT_BODY(CBaseUIContainer)
+
 	void clear();
 	void empty();
 
@@ -26,16 +29,16 @@ public:
 	void onKeyDown(KeyboardEvent &e);
 	void onChar(KeyboardEvent &e);
 
-	void addBaseUIElement(CBaseUIElement *element, float xPos, float yPos);
-	void addBaseUIElement(CBaseUIElement *element);
-	void addBaseUIElementBack(CBaseUIElement *element, float xPos, float yPos);
-	void addBaseUIElementBack(CBaseUIElement *element);
+	CBaseUIContainer *addBaseUIElement(CBaseUIElement *element, float xPos, float yPos);
+	CBaseUIContainer *addBaseUIElement(CBaseUIElement *element);
+	CBaseUIContainer *addBaseUIElementBack(CBaseUIElement *element, float xPos, float yPos);
+	CBaseUIContainer *addBaseUIElementBack(CBaseUIElement *element);
 
-	void insertBaseUIElement(CBaseUIElement *element, CBaseUIElement *index);
-	void insertBaseUIElementBack(CBaseUIElement *element, CBaseUIElement *index);
+	CBaseUIContainer *insertBaseUIElement(CBaseUIElement *element, CBaseUIElement *index);
+	CBaseUIContainer *insertBaseUIElementBack(CBaseUIElement *element, CBaseUIElement *index);
 
-	void removeBaseUIElement(CBaseUIElement *element);
-	void deleteBaseUIElement(CBaseUIElement *element);
+	CBaseUIContainer *removeBaseUIElement(CBaseUIElement *element);
+	CBaseUIContainer *deleteBaseUIElement(CBaseUIElement *element);
 
 	CBaseUIElement *getBaseUIElement(UString name);
 	inline std::vector<CBaseUIElement*> getAllBaseUIElements(){return m_vElements;}

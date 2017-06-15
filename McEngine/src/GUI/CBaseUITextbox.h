@@ -17,8 +17,10 @@ class McFont;
 class CBaseUITextbox : public CBaseUIElement
 {
 public:
-	CBaseUITextbox(float xPos, float yPos, float xSize, float ySize, UString name);
+	CBaseUITextbox(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
 	virtual ~CBaseUITextbox(){;}
+
+	ELEMENT_BODY(CBaseUITextbox)
 
 	virtual void draw(Graphics *g);
 	virtual void update();
@@ -26,21 +28,21 @@ public:
 	virtual void onChar(KeyboardEvent &e);
 	virtual void onKeyDown(KeyboardEvent &e);
 
-	void setDrawFrame(bool drawFrame){m_bDrawFrame = drawFrame;}
-	void setDrawBackground(bool drawBackground){m_bDrawBackground = drawBackground;}
+	CBaseUITextbox *setDrawFrame(bool drawFrame){m_bDrawFrame = drawFrame; return this;}
+	CBaseUITextbox *setDrawBackground(bool drawBackground){m_bDrawBackground = drawBackground; return this;}
 
-	void setBackgroundColor(Color backgroundColor){m_backgroundColor = backgroundColor;}
-	void setTextColor(Color textColor){m_textColor = textColor;}
-	void setCaretColor(Color caretColor){m_caretColor = caretColor;}
-	void setFrameColor(Color frameColor){m_frameColor = frameColor;}
-	void setFrameBrightColor(Color frameBrightColor) {m_frameBrightColor = frameBrightColor;}
-	void setFrameDarkColor(Color frameDarkColor) {m_frameDarkColor = frameDarkColor;}
+	CBaseUITextbox *setBackgroundColor(Color backgroundColor){m_backgroundColor = backgroundColor; return this;}
+	CBaseUITextbox *setTextColor(Color textColor){m_textColor = textColor; return this;}
+	CBaseUITextbox *setCaretColor(Color caretColor){m_caretColor = caretColor; return this;}
+	CBaseUITextbox *setFrameColor(Color frameColor){m_frameColor = frameColor; return this;}
+	CBaseUITextbox *setFrameBrightColor(Color frameBrightColor) {m_frameBrightColor = frameBrightColor; return this;}
+	CBaseUITextbox *setFrameDarkColor(Color frameDarkColor) {m_frameDarkColor = frameDarkColor; return this;}
 
-	virtual void setText(UString text);
-	void setFont(McFont *font);
-	void setTextAddX(float textAddX) {m_iTextAddX = textAddX;}
-	void setCaretWidth(int caretWidth) {m_iCaretWidth = caretWidth;}
-	void setTextJustification(int textJustification) {m_iTextJustification = textJustification;setText(m_sText);}
+	virtual CBaseUITextbox *setText(UString text);
+	CBaseUITextbox *setFont(McFont *font);
+	CBaseUITextbox *setTextAddX(float textAddX) {m_iTextAddX = textAddX; return this;}
+	CBaseUITextbox *setCaretWidth(int caretWidth) {m_iCaretWidth = caretWidth; return this;}
+	CBaseUITextbox *setTextJustification(int textJustification) {m_iTextJustification = textJustification;setText(m_sText); return this;}
 
 	void setCursorPosRight();
 
