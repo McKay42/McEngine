@@ -46,13 +46,15 @@ void CBaseUIImageButton::draw(Graphics *g)
 	}
 }
 
-void CBaseUIImageButton::setImageResourceName(UString imageResourceName)
+CBaseUIImageButton *CBaseUIImageButton::setImageResourceName(UString imageResourceName)
 {
 	m_sImageResourceName = imageResourceName;
 
 	Image *image = engine->getResourceManager()->getImage(m_sImageResourceName);
 	if (image != NULL)
 		setSize(Vector2(image->getWidth(), image->getHeight()));
+
+	return this;
 }
 
 void CBaseUIImageButton::onResized()

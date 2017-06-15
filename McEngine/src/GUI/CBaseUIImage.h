@@ -13,25 +13,27 @@
 class CBaseUIImage : public CBaseUIElement
 {
 public:
-	CBaseUIImage(UString imageResourceName, float xPos, float yPos, float xSize, float ySize, UString name);
+	CBaseUIImage(UString imageResourceName="", float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
 	virtual ~CBaseUIImage(){;}
+
+	ELEMENT_BODY(CBaseUIImage)
 
 	virtual void draw(Graphics *g);
 
 	void setImage(Image *img);
 
-	void setDrawFrame(bool drawFrame){m_bDrawFrame = drawFrame;}
-	void setDrawBackground(bool drawBackground){m_bDrawBackground = drawBackground;}
+	CBaseUIImage *setDrawFrame(bool drawFrame){m_bDrawFrame = drawFrame; return this;}
+	CBaseUIImage *setDrawBackground(bool drawBackground){m_bDrawBackground = drawBackground; return this;}
 
-	void setFrameColor(Color frameColor){m_frameColor = frameColor;}
-	void setColor(Color color){m_color = color;}
-	void setAlpha(float alpha){m_color &= 0x00ffffff; m_color |= ((int)(255.0f * alpha)) << 24;}
-	void setBackgroundColor(Color backgroundColor){m_backgroundColor = backgroundColor;}
+	CBaseUIImage *setFrameColor(Color frameColor){m_frameColor = frameColor; return this;}
+	CBaseUIImage *setColor(Color color){m_color = color; return this;}
+	CBaseUIImage *setAlpha(float alpha){m_color &= 0x00ffffff; m_color |= ((int)(255.0f * alpha)) << 24; return this;}
+	CBaseUIImage *setBackgroundColor(Color backgroundColor){m_backgroundColor = backgroundColor; return this;}
 
-	void setRotationDeg(float rotation){m_fRot = rotation;}
-	void setScale(float xScale, float yScale){m_vScale.x = xScale;m_vScale.y = yScale;}
-	void setScale(Vector2 scale){m_vScale.x = scale.x; m_vScale.y = scale.y;}
-	void setScaleToFit(bool scaleToFit) {m_bScaleToFit = scaleToFit;}
+	CBaseUIImage *setRotationDeg(float rotation){m_fRot = rotation; return this;}
+	CBaseUIImage *setScale(float xScale, float yScale){m_vScale.x = xScale;m_vScale.y = yScale; return this;}
+	CBaseUIImage *setScale(Vector2 scale){m_vScale.x = scale.x; m_vScale.y = scale.y; return this;}
+	CBaseUIImage *setScaleToFit(bool scaleToFit) {m_bScaleToFit = scaleToFit; return this;}
 
 	inline float getRotationDeg() const {return m_fRot;}
 	inline Vector2 getScale() const {return m_vScale;}
