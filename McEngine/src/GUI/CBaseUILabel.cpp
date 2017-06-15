@@ -65,7 +65,7 @@ void CBaseUILabel::drawText(Graphics *g)
 			break;
 		}
 
-		//g->pushClipRect(Rect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y));
+		//g->pushClipRect(McRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y));
 
 			g->setColor(m_textColor);
 			g->pushTransform();
