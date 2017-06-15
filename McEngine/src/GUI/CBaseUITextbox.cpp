@@ -81,7 +81,7 @@ void CBaseUITextbox::draw(Graphics *g)
 	// draw text
 	if (m_font == NULL) return;
 
-	g->pushClipRect(Rect(m_vPos.x+1,m_vPos.y+1,m_vSize.x-1,m_vSize.y));
+	g->pushClipRect(McRect(m_vPos.x+1,m_vPos.y+1,m_vSize.x-1,m_vSize.y));
 
 		// draw selection box
 		if (hasSelectedText())
@@ -453,7 +453,7 @@ bool CBaseUITextbox::hasSelectedText()
 	return (m_iSelectStart - m_iSelectEnd != 0);
 }
 
-void CBaseUITextbox::setText(UString text)
+CBaseUITextbox *CBaseUITextbox::setText(UString text)
 {
 	m_sText = text;
 	m_iCaretPosition = clamp<int>(m_iCaretPosition,0,text.length());
@@ -493,12 +493,16 @@ void CBaseUITextbox::setText(UString text)
 	m_iTextAddY = addY > 0 ? addY : 0;
 
 	updateCaretX();
+
+	return this;
 }
 
-void CBaseUITextbox::setFont(McFont *font)
+CBaseUITextbox *CBaseUITextbox::setFont(McFont *font)
 {
 	m_font = font;
 	setText(m_sText);
+
+	return this;
 }
 
 void CBaseUITextbox::setCursorPosRight()

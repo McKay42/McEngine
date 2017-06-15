@@ -83,7 +83,7 @@ private:
 	Vector2 m_vActualPos;
 	Vector2 m_vOffset;
 	Vector2 m_vScale;
-	Rect desktopRect;
+	McRect desktopRect;
 
 	struct FAKELAG_PACKET
 	{

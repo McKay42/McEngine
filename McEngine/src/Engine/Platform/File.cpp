@@ -103,8 +103,9 @@ StdFile::StdFile(UString filePath)
 	// check if directory
 	// on some operating systems, std::ifstream may also be a directory (!)
 	// we need to call getline() before any error/fail bits are set, which we can then check with good()
-	std::getline(m_ifstream, m_sBuffer);
-	if (!m_ifstream.good())
+	std::string tempLine;
+	std::getline(m_ifstream, tempLine);
+	if (!m_ifstream.good() && m_iFileSize < 1)
 	{
 		debugLog("File Error: File %s is a directory.\n", filePath.toUtf8());
 		return;

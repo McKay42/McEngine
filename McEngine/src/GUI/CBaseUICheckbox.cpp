@@ -47,7 +47,7 @@ void CBaseUICheckbox::draw(Graphics *g)
 	// draw text
 	if (m_font != NULL && m_sText.length() > 0)
 	{
-		//g->pushClipRect(Rect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1));
+		//g->pushClipRect(McRect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1));
 
 			g->setColor(m_textColor);
 			g->pushTransform();
@@ -65,7 +65,7 @@ void CBaseUICheckbox::draw(Graphics *g)
 	}
 }
 
-void CBaseUICheckbox::setChecked(bool checked, bool fireChangeEvent)
+CBaseUICheckbox *CBaseUICheckbox::setChecked(bool checked, bool fireChangeEvent)
 {
 	if (m_bChecked != checked)
 	{
@@ -73,6 +73,8 @@ void CBaseUICheckbox::setChecked(bool checked, bool fireChangeEvent)
 		if (m_changeCallback != NULL && fireChangeEvent)
 			m_changeCallback(this);
 	}
+
+	return this;
 }
 
 void CBaseUICheckbox::onPressed()
@@ -82,18 +84,22 @@ void CBaseUICheckbox::onPressed()
 		m_changeCallback(this);
 }
 
-void CBaseUICheckbox::setSizeToContent(int horizontalBorderSize, int verticalBorderSize)
+CBaseUICheckbox *CBaseUICheckbox::setSizeToContent(int horizontalBorderSize, int verticalBorderSize)
 {
 	// HACKHACK: broken
 	CBaseUIButton::setSizeToContent(horizontalBorderSize, verticalBorderSize);
 	///setSize(m_fStringWidth+2*horizontalBorderSize, m_fStringHeight + 2*verticalBorderSize);
 	setSize(getBlockBorder()*2 + getBlockSize() + getBlockBorder() + m_fStringWidth + horizontalBorderSize*2, m_fStringHeight + verticalBorderSize*2);
+
+	return this;
 }
 
-void CBaseUICheckbox::setWidthToContent(int horizontalBorderSize)
+CBaseUICheckbox *CBaseUICheckbox::setWidthToContent(int horizontalBorderSize)
 {
 	// HACKHACK: broken
 	CBaseUIButton::setWidthToContent(horizontalBorderSize);
 	///setSize(m_fStringWidth+2*horizontalBorderSize, m_fStringHeight + 2*verticalBorderSize);
 	setSizeX(getBlockBorder()*2 + getBlockSize() + getBlockBorder() + m_fStringWidth + horizontalBorderSize*2);
+
+	return this;
 }

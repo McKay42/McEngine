@@ -5,24 +5,26 @@
 // $NoKeywords: $rect
 //===============================================================================//
 
+// TODO: temporarily renamed from Rect to McRect, until we have a namespace
+
 #ifndef RECT_H
 #define RECT_H
 
 #include "Vectors.h"
 
-class Rect
+class McRect
 {
 public:
-	Rect(float x = 0, float y = 0, float width = 0, float height = 0, bool isCentered = false);
-	virtual ~Rect() {;}
+	McRect(float x = 0, float y = 0, float width = 0, float height = 0, bool isCentered = false);
+	virtual ~McRect() {;}
 
 	void set(float x, float y, float width, float height, bool isCentered = false);
-	virtual Rect &operator = (const Rect &rect);
+	virtual McRect &operator = (const McRect &rect);
 
 	virtual bool contains(const Vector2 &point);
-	virtual Rect intersect(const Rect &rect);
-	virtual bool intersects(const Rect &rect);
-	virtual Rect Union(const Rect &rect);
+	virtual McRect intersect(const McRect &rect);
+	virtual bool intersects(const McRect &rect);
+	virtual McRect Union(const McRect &rect);
 
 	inline float getX() const {return mMinX;}
 	inline float getY() const {return mMinY;}

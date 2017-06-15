@@ -20,17 +20,20 @@ class GaussianBlurKernel;
 class CBaseUIBoxShadow : public CBaseUIElement
 {
 public:
-	CBaseUIBoxShadow(Color color, float radius, float xPos, float yPos, float xSize, float ySize, UString name);
+	CBaseUIBoxShadow(Color color=COLOR(0, 0, 0, 0), float radius=0, float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
 	virtual ~CBaseUIBoxShadow();
+
+	ELEMENT_BODY(CBaseUIBoxShadow)
 
 	virtual void draw(Graphics *g);
 	void renderOffscreen(Graphics *g);
 
 	void forceRedraw() {m_bNeedsRedraw = true;}
 
-	void setColoredContent(bool coloredContent);
-	void setColor(Color color);
-	void setShadowColor(Color color);
+	CBaseUIBoxShadow *setColoredContent(bool coloredContent);
+	CBaseUIBoxShadow *setColor(Color color);
+	CBaseUIBoxShadow *setShadowColor(Color color);
+
 	inline float getRadius() const {return m_fRadius;}
 
 	virtual void onResized();

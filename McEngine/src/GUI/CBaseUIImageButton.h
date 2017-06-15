@@ -13,18 +13,20 @@
 class CBaseUIImageButton : public CBaseUIButton
 {
 public:
-	CBaseUIImageButton(UString imageResourceName, float xPos, float yPos, float xSize, float ySize, UString name);
+	CBaseUIImageButton(UString imageResourceName="", float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
 	virtual ~CBaseUIImageButton() {;}
+
+	ELEMENT_BODY(CBaseUIImageButton)
 
 	virtual void draw(Graphics *g);
 
 	virtual void onResized();
 
-	void setImageResourceName(UString imageResourceName);
-	void setRotationDeg(float deg) {m_fRot = deg;}
-	void setScale(float xScale, float yScale) {m_vScale.x = xScale; m_vScale.y = yScale;}
-	void setScaleToFit(bool scaleToFit) {m_bScaleToFit = scaleToFit;}
-	void setKeepAspectRatio(bool keepAspectRatio) {m_bKeepAspectRatio = keepAspectRatio;}
+	CBaseUIImageButton *setImageResourceName(UString imageResourceName);
+	CBaseUIImageButton *setRotationDeg(float deg) {m_fRot = deg; return this;}
+	CBaseUIImageButton *setScale(float xScale, float yScale) {m_vScale.x = xScale; m_vScale.y = yScale; return this;}
+	CBaseUIImageButton *setScaleToFit(bool scaleToFit) {m_bScaleToFit = scaleToFit; return this;}
+	CBaseUIImageButton *setKeepAspectRatio(bool keepAspectRatio) {m_bKeepAspectRatio = keepAspectRatio; return this;}
 
 	inline UString getImageResourceName() const {return m_sImageResourceName;}
 	inline Vector2 getScale() const {return m_vScale;}

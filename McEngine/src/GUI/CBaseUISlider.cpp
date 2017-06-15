@@ -239,15 +239,17 @@ void CBaseUISlider::updateBlockPos()
 		m_vBlockPos.y = m_vSize.y/2.0f - m_vBlockSize.y/2.0f;
 }
 
-void CBaseUISlider::setBounds(float minValue, float maxValue)
+CBaseUISlider *CBaseUISlider::setBounds(float minValue, float maxValue)
 {
 	m_fMinValue = minValue;
 	m_fMaxValue = maxValue;
 
 	m_fKeyDelta = (m_fMaxValue - m_fMinValue) / 10.0f;
+
+	return this;
 }
 
-void CBaseUISlider::setValue(float value, bool animate)
+CBaseUISlider *CBaseUISlider::setValue(float value, bool animate)
 {
 	bool changeCallbackCheck = false;
 	if (value != m_fCurValue)
@@ -278,9 +280,11 @@ void CBaseUISlider::setValue(float value, bool animate)
 		m_sliderChangeCallback(this);
 
 	updateBlockPos();
+
+	return this;
 }
 
-void CBaseUISlider::setInitialValue(float value)
+CBaseUISlider *CBaseUISlider::setInitialValue(float value)
 {
 	m_fCurValue = clamp<float>(value, m_fMinValue, m_fMaxValue);
 	float percent = getPercent();
@@ -294,6 +298,8 @@ void CBaseUISlider::setInitialValue(float value)
 		m_vBlockPos.x = (m_vSize.x-m_vBlockSize.x)*percent;
 
 	updateBlockPos();
+
+	return this;
 }
 
 void CBaseUISlider::setBlockSize(float xSize, float ySize)
@@ -343,7 +349,7 @@ void CBaseUISlider::onMouseDownInside()
 {
 	m_fPrevValue = m_fCurValue;
 
-	if (Rect(m_vPos.x+m_vBlockPos.x,m_vPos.y+m_vBlockPos.y,m_vBlockSize.x,m_vBlockSize.y).contains(engine->getMouse()->getPos()))
+	if (McRect(m_vPos.x+m_vBlockPos.x,m_vPos.y+m_vBlockPos.y,m_vBlockSize.x,m_vBlockSize.y).contains(engine->getMouse()->getPos()))
 		m_vGrabBackup = engine->getMouse()->getPos()-m_vBlockPos;
 	else
 		m_vGrabBackup = m_vPos + m_vBlockSize/2;

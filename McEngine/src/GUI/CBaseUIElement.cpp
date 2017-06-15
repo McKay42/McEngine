@@ -19,7 +19,12 @@ CBaseUIElement::CBaseUIElement(float xPos, float yPos, float xSize, float ySize,
 	m_vmPos.y = m_vPos.y;
 	m_vSize.x = xSize;
 	m_vSize.y = ySize;
+	m_vmSize.x = m_vSize.x;
+	m_vmSize.y = m_vSize.y;
+	m_vAnchor.x = 0;
+	m_vAnchor.y = 0;
 	m_sName = name;
+	m_parent = nullptr;
 
 	// attributes
 	m_bVisible = true;
@@ -32,6 +37,9 @@ CBaseUIElement::CBaseUIElement(float xPos, float yPos, float xSize, float ySize,
 	m_bPositionManually = false;
 	m_bMouseInside = false;
 
+	// container options
+	m_bScaleByHeightOnly = false;
+
 	m_bMouseInsideCheck = false;
 	m_bMouseUpCheck = false;
 }
@@ -39,7 +47,7 @@ CBaseUIElement::CBaseUIElement(float xPos, float yPos, float xSize, float ySize,
 void CBaseUIElement::update()
 {
 	// check if mouse is inside element
-	Rect temp = Rect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1);
+	McRect temp = McRect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1);
 	if (temp.contains(engine->getMouse()->getPos()))
 	{
 		if (!m_bMouseInside)

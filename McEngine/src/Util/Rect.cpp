@@ -7,12 +7,12 @@
 
 #include "Rect.h"
 
-Rect::Rect(float x, float y, float width, float height, bool isCentered)
+McRect::McRect(float x, float y, float width, float height, bool isCentered)
 {
 	set(x, y, width, height, isCentered);
 }
 
-void Rect::set(float x, float y, float width, float height, bool isCentered)
+void McRect::set(float x, float y, float width, float height, bool isCentered)
 {
 	if (isCentered)
 	{
@@ -30,7 +30,7 @@ void Rect::set(float x, float y, float width, float height, bool isCentered)
 	}
 }
 
-Rect &Rect::operator = (const Rect &rect)
+McRect &McRect::operator = (const McRect &rect)
 {
 	mMinX = rect.mMinX;
 	mMaxX = rect.mMaxX;
@@ -40,14 +40,14 @@ Rect &Rect::operator = (const Rect &rect)
 	return *this;
 }
 
-bool Rect::contains(const Vector2 &point)
+bool McRect::contains(const Vector2 &point)
 {
 	return point.x >= mMinX && point.x <= mMaxX && point.y >= mMinY && point.y <= mMaxY;
 }
 
-Rect Rect::intersect(const Rect &rect)
+McRect McRect::intersect(const McRect &rect)
 {
-	Rect intersection;
+	McRect intersection;
 
 	intersection.mMinX = std::max(mMinX, rect.mMinX);
 	intersection.mMinY = std::max(mMinY, rect.mMinY);
@@ -67,9 +67,9 @@ Rect Rect::intersect(const Rect &rect)
 	return intersection;
 }
 
-Rect Rect::Union(const Rect &rect)
+McRect McRect::Union(const McRect &rect)
 {
-	Rect Union;
+	McRect Union;
 
 	Union.mMinX = std::min(mMinX, rect.mMinX);
 	Union.mMinY = std::min(mMinY, rect.mMinY);
@@ -79,7 +79,7 @@ Rect Rect::Union(const Rect &rect)
 	return Union;
 }
 
-bool Rect::intersects(const Rect &rect)
+bool McRect::intersects(const McRect &rect)
 {
 	const float minx = std::max(mMinX, rect.mMinX);
 	const float miny = std::max(mMinY, rect.mMinY);

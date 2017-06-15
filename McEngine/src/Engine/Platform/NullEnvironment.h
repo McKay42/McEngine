@@ -69,8 +69,8 @@ public:
 	Vector2 getWindowPos() {return Vector2(0, 0);}
 	Vector2 getWindowSize() {return Vector2(1280, 720);}
 	Vector2 getNativeScreenSize() {return Vector2(1920, 1080);}
-	Rect getVirtualScreenRect() {return Rect(0, 0, 1920, 1080);}
-	Rect getDesktopRect() {return Rect(0, 0, 1920, 1080);}
+	McRect getVirtualScreenRect() {return McRect(0, 0, 1920, 1080);}
+	McRect getDesktopRect() {return McRect(0, 0, 1920, 1080);}
 	bool isFullscreen() {return false;}
 
 	// mouse
@@ -78,11 +78,14 @@ public:
 	bool isCursorVisible() {return true;}
 	bool isCursorClipped() {return false;}
 	Vector2 getMousePos() {return Vector2(0, 0);}
-	Rect getCursorClip() {return Rect(0, 0, 0, 0);}
+	McRect getCursorClip() {return McRect(0, 0, 0, 0);}
 	void setCursor(CURSORTYPE cur) {;}
 	void setCursorVisible(bool visible) {;}
 	void setMousePos(int x, int y) {;}
-	void setCursorClip(bool clip, Rect rect) {;}
+	void setCursorClip(bool clip, McRect rect) {;}
+
+	// keyboard
+	UString keyCodeToString(KEYCODE keyCode) {return UString::format("%lu", keyCode);}
 };
 
 #endif
