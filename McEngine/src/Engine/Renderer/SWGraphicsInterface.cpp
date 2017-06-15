@@ -10,13 +10,13 @@
 #include "Engine.h"
 #include "ConVar.h"
 #include "Camera.h"
+#include "VertexArrayObject.h"
 
 #include "Font.h"
 #include "SWImage.h"
 #include "SWRenderTarget.h"
 #include "SWShader.h"
 
-#include "VertexArrayObject.h"
 
 SWGraphicsInterface::SWGraphicsInterface() : Graphics()
 {
@@ -341,14 +341,7 @@ void SWGraphicsInterface::drawVAO(VertexArrayObject *vao)
 	*/
 }
 
-void SWGraphicsInterface::drawVB(VertexBuffer *vb)
-{
-	updateTransform();
-
-	///vb->draw(this);
-}
-
-void SWGraphicsInterface::setClipRect(Rect clipRect)
+void SWGraphicsInterface::setClipRect(McRect clipRect)
 {
 	///if (r_debug_disable_cliprect.getBool()) return;
 	//if (m_bIs3DScene) return;
@@ -367,7 +360,7 @@ void SWGraphicsInterface::setClipRect(Rect clipRect)
 	*/
 }
 
-void SWGraphicsInterface::pushClipRect(Rect clipRect)
+void SWGraphicsInterface::pushClipRect(McRect clipRect)
 {
 	if (m_clipRectStack.size() > 0)
 		m_clipRectStack.push(m_clipRectStack.top().intersect(clipRect));
@@ -532,6 +525,11 @@ Shader *SWGraphicsInterface::createShaderFromFile(UString vertexShaderFilePath, 
 Shader *SWGraphicsInterface::createShaderFromSource(UString vertexShader, UString fragmentShader)
 {
 	return new SWShader(vertexShader, fragmentShader, true);
+}
+
+VertexArrayObject *SWGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
+{
+	return new VertexArrayObject(primitive, usage);
 }
 
 void SWGraphicsInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)

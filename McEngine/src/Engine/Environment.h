@@ -11,6 +11,7 @@
 #include "cbase.h"
 
 #include "Cursors.h"
+#include "KeyboardEvent.h"
 
 class ContextMenu;
 
@@ -85,8 +86,8 @@ public:
 	virtual Vector2 getWindowPos() = 0;
 	virtual Vector2 getWindowSize() = 0;
 	virtual Vector2 getNativeScreenSize() = 0;
-	virtual Rect getVirtualScreenRect() = 0;
-	virtual Rect getDesktopRect() = 0;
+	virtual McRect getVirtualScreenRect() = 0;
+	virtual McRect getDesktopRect() = 0;
 	virtual bool isFullscreen() = 0;
 	virtual bool isWindowResizable() = 0;
 
@@ -95,11 +96,14 @@ public:
 	virtual bool isCursorVisible() = 0;
 	virtual bool isCursorClipped() = 0;
 	virtual Vector2 getMousePos() = 0;
-	virtual Rect getCursorClip() = 0;
+	virtual McRect getCursorClip() = 0;
 	virtual void setCursor(CURSORTYPE cur) = 0;
 	virtual void setCursorVisible(bool visible) = 0;
 	virtual void setMousePos(int x, int y) = 0;
-	virtual void setCursorClip(bool clip, Rect rect) = 0;
+	virtual void setCursorClip(bool clip, McRect rect) = 0;
+
+	// keyboard
+	virtual UString keyCodeToString(KEYCODE keyCode) = 0;
 };
 
 extern Environment *env;
