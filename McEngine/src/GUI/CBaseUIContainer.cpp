@@ -31,46 +31,54 @@ void CBaseUIContainer::empty()
 	m_vElements = std::vector<CBaseUIElement*>();
 }
 
-void CBaseUIContainer::addBaseUIElement(CBaseUIElement *element, float xPos, float yPos)
+CBaseUIContainer *CBaseUIContainer::addBaseUIElement(CBaseUIElement *element, float xPos, float yPos)
 {
-	if (element == NULL) return;
+	if (element == NULL) return this;
 
 	element->setRelPos(xPos, yPos);
 	element->setPos(m_vPos + element->getRelPos());
 	m_vElements.push_back(element);
+
+	return this;
 }
 
-void CBaseUIContainer::addBaseUIElement(CBaseUIElement *element)
+CBaseUIContainer *CBaseUIContainer::addBaseUIElement(CBaseUIElement *element)
 {
-	if (element == NULL) return;
+	if (element == NULL) return this;
 
 	element->setRelPos(element->getPos().x, element->getPos().y);
 	element->setPos(m_vPos + element->getRelPos());
 	m_vElements.push_back(element);
+
+	return this;
 }
 
-void CBaseUIContainer::addBaseUIElementBack(CBaseUIElement *element, float xPos, float yPos)
+CBaseUIContainer *CBaseUIContainer::addBaseUIElementBack(CBaseUIElement *element, float xPos, float yPos)
 {
-	if (element == NULL) return;
+	if (element == NULL) return this;
 
 	element->setRelPos(xPos, yPos);
 	element->setPos(m_vPos + element->getRelPos());
 	m_vElements.insert(m_vElements.begin(), element);
+
+	return this;
 }
 
 
-void CBaseUIContainer::addBaseUIElementBack(CBaseUIElement *element)
+CBaseUIContainer *CBaseUIContainer::addBaseUIElementBack(CBaseUIElement *element)
 {
-	if (element == NULL) return;
+	if (element == NULL) return this;
 
 	element->setRelPos(element->getPos().x, element->getPos().y);
 	element->setPos(m_vPos + element->getRelPos());
 	m_vElements.insert(m_vElements.begin(), element);
+
+	return this;
 }
 
-void CBaseUIContainer::insertBaseUIElement(CBaseUIElement *element, CBaseUIElement *index)
+CBaseUIContainer *CBaseUIContainer::insertBaseUIElement(CBaseUIElement *element, CBaseUIElement *index)
 {
-	if (element == NULL || index == NULL) return;
+	if (element == NULL || index == NULL) return this;
 
 	element->setRelPos(element->getPos().x, element->getPos().y);
 	element->setPos(m_vPos + element->getRelPos());
@@ -79,16 +87,18 @@ void CBaseUIContainer::insertBaseUIElement(CBaseUIElement *element, CBaseUIEleme
 		if (m_vElements[i] == index)
 		{
 			m_vElements.insert(m_vElements.begin() + clamp<int>(i, 0, m_vElements.size()), element);
-			return;
+			return this;
 		}
 	}
 
 	debugLog("Warning: CBaseUIContainer::insertBaseUIElement() couldn't find index\n");
+
+	return this;
 }
 
-void CBaseUIContainer::insertBaseUIElementBack(CBaseUIElement *element, CBaseUIElement *index)
+CBaseUIContainer *CBaseUIContainer::insertBaseUIElementBack(CBaseUIElement *element, CBaseUIElement *index)
 {
-	if (element == NULL || index == NULL) return;
+	if (element == NULL || index == NULL) return this;
 
 	element->setRelPos(element->getPos().x, element->getPos().y);
 	element->setPos(m_vPos + element->getRelPos());
@@ -97,28 +107,32 @@ void CBaseUIContainer::insertBaseUIElementBack(CBaseUIElement *element, CBaseUIE
 		if (m_vElements[i] == index)
 		{
 			m_vElements.insert(m_vElements.begin() + clamp<int>(i+1, 0, m_vElements.size()), element);
-			return;
+			return this;
 		}
 	}
 
 	debugLog("Warning: CBaseUIContainer::insertBaseUIElementBack() couldn't find index\n");
+
+	return this;
 }
 
-void CBaseUIContainer::removeBaseUIElement(CBaseUIElement *element)
+CBaseUIContainer *CBaseUIContainer::removeBaseUIElement(CBaseUIElement *element)
 {
 	for (int i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i] == element)
 		{
 			m_vElements.erase(m_vElements.begin()+i);
-			return;
+			return this;
 		}
 	}
 
 	debugLog("Warning: CBaseUIContainer::removeBaseUIElement() couldn't find element\n");
+
+	return this;
 }
 
-void CBaseUIContainer::deleteBaseUIElement(CBaseUIElement *element)
+CBaseUIContainer *CBaseUIContainer::deleteBaseUIElement(CBaseUIElement *element)
 {
 	for (int i=0; i<m_vElements.size(); i++)
 	{
@@ -126,11 +140,13 @@ void CBaseUIContainer::deleteBaseUIElement(CBaseUIElement *element)
 		{
 			delete element;
 			m_vElements.erase(m_vElements.begin()+i);
-			return;
+			return this;
 		}
 	}
 
 	debugLog("Warning: CBaseUIContainer::deleteBaseUIElement() couldn't find element\n");
+
+	return this;
 }
 
 CBaseUIElement *CBaseUIContainer::getBaseUIElement(UString name)
