@@ -24,12 +24,14 @@ public:
 	UString(const UString &ustr);
 	~UString();
 
-	int length() const;
+	void clear();
 
-	const char *toUtf8() const;
-	const wchar_t *wc_str() const;  // WARNING: may return NULL for empty strings
-	int fromUtf8(const char *utf8);
-	UString substr(int offset, int charCount = -1) const;
+	// get
+	inline int length() const {return mLength;}
+	inline const char *toUtf8() const {return mUtf8;}
+	inline const wchar_t *wc_str() const {return mUnicode;} // WARNING: may return NULL for empty strings
+	inline bool isAsciiOnly() const {return mIsAsciiOnly;}
+	bool isWhitespaceOnly();
 
 	int findChar(wchar_t ch, int start = 0, bool respectEscapeChars = false) const;
 	int findChar(const UString &str, int start = 0, bool respectEscapeChars = false) const;
@@ -38,20 +40,19 @@ public:
 	int findLast(const UString &str, int start = 0) const;
 	int findLast(const UString &str, int start, int end) const;
 
-	std::vector<UString> split(UString delim);
-
+	// modifiers
+	void collapseEscapes();
 	void append(const UString &str);
 	void insert(int offset, const UString &str);
 	void insert(int offset, wchar_t ch);
 	void erase(int offset, int count);
-	void clear();
 
-	bool isAsciiOnly();
-	bool isWhitespaceOnly();
-	void collapseEscapes();
-
+	// actions (non-modifying)
+	UString substr(int offset, int charCount = -1) const;
+	std::vector<UString> split(UString delim);
 	UString trim();
 
+	// conversions
 	float toFloat() const;
 	int toInt() const;
 	long toLong() const;
@@ -64,17 +65,23 @@ public:
 	bool operator < (const UString &ustr) const;
 
 private:
+	int fromUtf8(const char *utf8);
+
 	int decode(const char *utf8, wchar_t *unicode);
 	int encode(const wchar_t *unicode, int length, char *utf8, bool *isAsciiOnly) const;
+
 	wchar_t getCodePoint(const char *utf8, int offset, int numBytes, unsigned char firstByteMask);
+
 	void getUtf8(wchar_t ch, char *utf8, int numBytes, int firstByteValue) const;
+
 	void updateUtf8();
 
 private:
-	wchar_t *mUnicode;
-	char *mUtf8;
 	int mLength;
 	bool mIsAsciiOnly;
+
+	wchar_t *mUnicode;
+	char *mUtf8;
 };
 
 #endif
