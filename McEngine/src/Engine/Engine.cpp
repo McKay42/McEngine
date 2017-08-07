@@ -592,20 +592,20 @@ void Engine::debugLog(const char *fmt, ...)
 	if (numChars < 1 || numChars > 65534)
 		goto cleanup;
 
-	{
 	// write to engine console
-	// numChars = vsnprintf(NULL, 0, fmt, ap2);
-	char *buffer = new char[numChars+1];
-	buffer[numChars-1] = '\0';
-	vsnprintf(buffer, numChars+1, fmt, ap2);
+	{
+		char *buffer = new char[numChars+1]; // +1 for null termination later
+		vsnprintf(buffer, numChars+1, fmt, ap2); // "The generated string has a length of at most n-1, leaving space for the additional terminating null character."
+		buffer[numChars] = '\0'; // null terminate
 
-	UString actualBuffer = UString(buffer);
-	delete[] buffer;
+		UString actualBuffer = UString(buffer);
+		delete[] buffer;
 
-	if (m_consoleBox != NULL)
-		m_consoleBox->log(actualBuffer);
-	if (m_console != NULL)
-		m_console->log(actualBuffer);
+		// WARNING: these calls here are not threadsafe by default
+		if (m_consoleBox != NULL)
+			m_consoleBox->log(actualBuffer);
+		if (m_console != NULL)
+			m_console->log(actualBuffer);
 	}
 
 cleanup:
@@ -628,20 +628,20 @@ void Engine::debugLog(Color color, const char *fmt, ...)
 	if (numChars < 1 || numChars > 65534)
 		goto cleanup;
 
-	{
 	// write to engine console
-	// numChars = vsnprintf(NULL, 0, fmt, ap2);
-	char *buffer = new char[numChars+1];
-	buffer[numChars-1] = '\0';
-	vsnprintf(buffer, numChars+1, fmt, ap2);
+	{
+		char *buffer = new char[numChars+1]; // +1 for null termination later
+		vsnprintf(buffer, numChars+1, fmt, ap2); // "The generated string has a length of at most n-1, leaving space for the additional terminating null character."
+		buffer[numChars] = '\0'; // null terminate
 
-	UString actualBuffer = UString(buffer);
-	delete[] buffer;
+		UString actualBuffer = UString(buffer);
+		delete[] buffer;
 
-	if (m_consoleBox != NULL)
-		m_consoleBox->log(actualBuffer);
-	if (m_console != NULL)
-		m_console->log(actualBuffer, color);
+		// WARNING: these calls here are not threadsafe by default
+		if (m_consoleBox != NULL)
+			m_consoleBox->log(actualBuffer);
+		if (m_console != NULL)
+			m_console->log(actualBuffer, color);
 	}
 
 cleanup:
