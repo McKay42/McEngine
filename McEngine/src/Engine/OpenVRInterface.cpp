@@ -49,6 +49,7 @@ ConVar vr_background_brightness("vr_background_brightness", 0.1f);
 ConVar vr_spectator_mode("vr_spectator_mode", false);
 ConVar vr_auto_switch_primary_controller("vr_auto_switch_primary_controller", true);
 ConVar vr_fake_camera_movement("vr_fake_camera_movement", false);
+ConVar vr_fake_controller_movement("vr_fake_controller_movement", false);
 ConVar vr_reset_fake_camera_movement("vr_reset_fake_camera_movement");
 ConVar vr_noclip_walk_speed("vr_noclip_walk_speed", 4.0f);
 ConVar vr_noclip_sprint_speed("vr_noclip_sprint_speed", 20.0f);
@@ -1161,7 +1162,7 @@ void OpenVRInterface::update()
 				m_fakeCamera->rotateX(rawDelta.y*vr_mousespeed.getFloat());
 				m_fakeCamera->rotateY(-rawDelta.x*vr_mousespeed.getFloat());
 			}
-			engine->getMouse()->setPos(engine->getScreenSize()/2);
+			engine->getMouse()->setPos(engine->getScreenSize() - Vector2(2, 2)); // HACKHACK:
 		}
 
 		// translation
@@ -1184,6 +1185,13 @@ void OpenVRInterface::update()
 			camVelocity *= speed;
 			Vector3 nextPos = m_fakeCamera->getPos() + camVelocity;
 			m_fakeCamera->setPos(nextPos);
+		}
+
+		// fake controller
+		if (vr_fake_controller_movement.getBool())
+		{
+			m_controller->updateDebug(engine->getMouse()->isLeftDown() ? 1.0f : 0.0f);
+			m_controller->updateMatrixPoseDebug(-m_fakeCamera->getPos(), -m_fakeCamera->getViewDirection(), m_fakeCamera->getViewUp(), -m_fakeCamera->getViewRight());
 		}
 	}
 
@@ -1214,19 +1222,11 @@ void OpenVRInterface::onKeyDown(KeyboardEvent &e)
 
 	// toggle fake camera on ALT + C
 	if (e == KEY_C && engine->getKeyboard()->isAltDown())
-	{
-		m_bCaptureMouse = !m_bCaptureMouse;
-		if (m_bCaptureMouse)
-		{
-			engine->getMouse()->setCursorVisible(false);
-			engine->getEnvironment()->setCursorClip(true, McRect());
-		}
-		else
-		{
-			engine->getEnvironment()->setCursorClip(false, McRect());
-			engine->getMouse()->setCursorVisible(true);
-		}
-	}
+		toggleFakeCameraMouseCapture();
+
+	// always release fake camera mouse capture on ESC
+	if (e == KEY_ESCAPE && m_bCaptureMouse)
+		toggleFakeCameraMouseCapture();
 
 #endif
 }
@@ -1338,6 +1338,18 @@ void OpenVRInterface::resetFakeCameraMovement()
 
 	m_fakeCamera->setPos(Vector3(0, 0, 0));
 	m_fakeCamera->setRotation(0, 0, 0);
+
+#endif
+}
+
+void OpenVRInterface::resetFakeCameraMouseCapture()
+{
+	if (!m_bReady) return;
+
+#ifdef MCENGINE_FEATURE_OPENVR
+
+	if (m_bCaptureMouse)
+		toggleFakeCameraMouseCapture();
 
 #endif
 }
@@ -1786,6 +1798,22 @@ void OpenVRInterface::onHeadRenderModelChange(UString oldValue, UString newValue
 }
 
 #endif
+
+void OpenVRInterface::toggleFakeCameraMouseCapture()
+{
+	m_bCaptureMouse = !m_bCaptureMouse;
+	if (m_bCaptureMouse)
+	{
+		engine->getMouse()->setCursorVisible(false);
+		engine->getEnvironment()->setCursorClip(true, McRect());
+	}
+	else
+	{
+		engine->getEnvironment()->setCursorClip(false, McRect());
+		engine->getMouse()->setCursorVisible(true);
+		engine->getMouse()->setPos(engine->getScreenSize()/2);
+	}
+}
 
 
 
