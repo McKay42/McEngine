@@ -11,6 +11,9 @@
 #include "ConVar.h"
 #include "ResourceManager.h"
 
+#include <mutex>
+#include "WinMinGW.Mutex.h"
+
 #include "CBaseUIContainer.h"
 #include "CBaseUITextbox.h"
 #include "CBaseUIScrollView.h"
@@ -28,6 +31,8 @@ ConVar console_logging("console_logging", true);
 ConVar _clear("clear", DUMMY_ARGS_CLEAR);
 
 std::vector<UString> Console::g_commandQueue;
+
+std::mutex g_consoleLogMutex;
 
 Console::Console() : CBaseUIWindow(350, 100, 620, 550, "Console")
 {
@@ -247,6 +252,8 @@ void Console::update()
 
 void Console::log(UString text, Color textColor)
 {
+	std::lock_guard<std::mutex> lk(g_consoleLogMutex);
+
 	if (text.length() < 1)
 		return;
 

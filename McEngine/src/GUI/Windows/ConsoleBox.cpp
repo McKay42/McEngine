@@ -12,6 +12,9 @@
 #include "Mouse.h"
 #include "ConVar.h"
 
+#include <mutex>
+#include "WinMinGW.Mutex.h"
+
 #include "Console.h"
 
 #include "CBaseUITextbox.h"
@@ -27,6 +30,8 @@ ConVar console_animspeed("console_animspeed", 6.0f);
 ConVar console_animspeed2("console_animspeed2", 12.0f);
 ConVar console_overlay("console_overlay", true);
 ConVar console_overlay_lines("console_overlay_lines", 6.0f);
+
+std::mutex g_consoleBoxLogOverlayMutex;
 
 ConsoleBox::ConsoleBox() : CBaseUIElement(0,0,0,0,"")
 {
@@ -76,7 +81,7 @@ ConsoleBox::~ConsoleBox()
 
 void ConsoleBox::draw(Graphics *g)
 {
-	g->setAntialiasing(false);
+	g->setAntialiasing(false); // HACKHACK
 
 	g->pushTransform();
 
@@ -86,6 +91,8 @@ void ConsoleBox::draw(Graphics *g)
 	// draw overlay
 	if (console_overlay.getBool() || m_textbox->isVisible())
 	{
+		std::lock_guard<std::mutex> lk(g_consoleBoxLogOverlayMutex);
+
 		g->setColor(0xff000000);
 		if (m_fLogYPos != 0.0f)
 			g->setAlpha(1.0f - (m_fLogYPos / (m_logFont->getHeight()*(console_overlay_lines.getInt()+1))));
@@ -498,6 +505,8 @@ void ConsoleBox::clearSuggestions()
 
 void ConsoleBox::log(UString text)
 {
+	std::lock_guard<std::mutex> lk(g_consoleBoxLogOverlayMutex);
+
 	int newline = text.find("\n",0);
 	while (newline != -1)
 	{
