@@ -61,7 +61,9 @@ public:
 	OpenVRController(vr::IVRSystem *hmd, OpenVRController::ROLE role);
 
 	void update(uint64_t buttonPressed, uint64_t buttonTouched, vr::VRControllerAxis_t axes[vr::k_unControllerStateAxisCount]);
+	void updateDebug(float triggerValue);
 	void updateMatrixPose(Matrix4 &deviceToAbsoluteTracking);
+	void updateMatrixPoseDebug(Vector3 pos, Vector3 forward, Vector3 up, Vector3 right);
 
 	void setHmd(vr::IVRSystem *hmd) {m_hmd = hmd;}
 

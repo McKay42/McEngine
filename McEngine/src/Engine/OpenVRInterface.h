@@ -55,6 +55,7 @@ public:
 
 	void updatePlayAreaMetrics();
 	void resetFakeCameraMovement();
+	void resetFakeCameraMouseCapture();
 
 	typedef fastdelegate::FastDelegate1<Graphics*> DrawCallback;
 	void setDrawCallback(DrawCallback drawCallback) {m_drawCallback = drawCallback;}
@@ -125,6 +126,8 @@ private:
 	static Matrix4 convertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
 
 #endif
+
+	void toggleFakeCameraMouseCapture();
 
 	bool m_bReady;
 

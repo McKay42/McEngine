@@ -59,15 +59,18 @@ UString::UString(const UString &ustr)
 UString::UString(const wchar_t *str)
 {
 	// get length
-	mLength = (int)wcslen(str);
+	mLength = (str != NULL ? (int)std::wcslen(str) : 0);
 
 	// allocate new mem for unicode data
-	mUnicode = new wchar_t[mLength+1];
+	mUnicode = new wchar_t[mLength+1]; // +1 for null termination later
 
 	// copy contents and null terminate
-	memcpy(mUnicode, str, (mLength+1)*sizeof(wchar_t));
+	if (str != NULL && mLength > 0)
+		memcpy(mUnicode, str, (mLength)*sizeof(wchar_t));
 
-	// null out the utf version
+	mUnicode[mLength] = 0; // null terminate
+
+	// null out and rebuild the utf version
 	mUtf8 = NULL;
 	mIsAsciiOnly = false;
 
@@ -524,7 +527,7 @@ UString &UString::operator = (const UString &ustr)
 	wchar_t *newUnicode = NULL;
 
 	// if this is not a null string
-	if (ustr.mLength > 0)
+	if (ustr.mLength > 0 && ustr.mUnicode != NULL)
 	{
 		// allocate new mem for unicode data
 		newUnicode = new wchar_t[ustr.mLength+1];
@@ -581,6 +584,7 @@ bool UString::operator < (const UString &ustr) const
 
 int UString::fromUtf8(const char *utf8)
 {
+	// TODO: make this create an empty null terminated string even if utf8 is NULL?
 	if (utf8 == NULL)
 		return 0;
 
