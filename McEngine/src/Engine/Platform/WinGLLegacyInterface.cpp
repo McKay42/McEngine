@@ -8,6 +8,9 @@
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
 #include "WinGLLegacyInterface.h"
+
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include "WinEnvironment.h"
 #include "Engine.h"
 
@@ -34,6 +37,10 @@ PIXELFORMATDESCRIPTOR getPixelFormatDescriptor()
 	pfd.cDepthBits = 24;
 	pfd.cStencilBits = 1;
 	pfd.iLayerType = PFD_MAIN_PLANE;
+
+	// experimental, for ghost mode
+	///pfd.cAlphaBits = 8;
+
 	return pfd;
 }
 
@@ -197,8 +204,6 @@ WinGLLegacyInterface::WinGLLegacyInterface(HWND hwnd) : OpenGLLegacyInterface()
 		engine->showMessageErrorFatal("OpenGL Error", "Couldn't wglCreateContext()!\nThe engine will quit now.");
 		engine->shutdown();
 	}
-
-	init();
 }
 
 WinGLLegacyInterface::~WinGLLegacyInterface()
@@ -246,5 +251,7 @@ bool WinGLLegacyInterface::checkGLHardwareAcceleration()
 	ReleaseDC(((WinEnvironment*)env)->getHwnd(), hdc);
 	return pixelFormat;
 }
+
+#endif
 
 #endif

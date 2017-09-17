@@ -10,6 +10,8 @@
 
 #include "VertexArrayObject.h"
 
+#ifdef MCENGINE_FEATURE_OPENGL
+
 class OpenGL3VertexArrayObject : public VertexArrayObject
 {
 public:
@@ -32,8 +34,9 @@ private:
 	unsigned int m_iVertexBuffer;
 	unsigned int m_iTexcoordBuffer;
 
-	unsigned int m_iNumVertices;
 	unsigned int m_iNumTexcoords;
 };
+
+#endif
 
 #endif

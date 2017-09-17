@@ -8,7 +8,9 @@
 #ifndef OPENGL3INTERFACE_H
 #define OPENGL3INTERFACE_H
 
-#include "Graphics.h"
+#include "cbase.h"
+
+#ifdef MCENGINE_FEATURE_OPENGL
 
 class OpenGLShader;
 
@@ -128,5 +130,7 @@ private:
 	// clipping
 	std::stack<McRect> m_clipRectStack;
 };
+
+#endif
 
 #endif

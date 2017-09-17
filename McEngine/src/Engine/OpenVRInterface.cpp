@@ -269,11 +269,11 @@ OpenVRInterface::OpenVRInterface()
 	updatePlayAreaMetrics();
 
 	// get device strings
-	m_strDriver = "No Driver";
+	m_sTrackingSystemName = "No Driver";
 	m_strDisplay = "No Display";
-	m_strDriver = getTrackedDeviceString(m_pHMD, vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String);
+	m_sTrackingSystemName = UString::format("%s", getTrackedDeviceString(m_pHMD, vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String).c_str());
 	m_strDisplay = getTrackedDeviceString(m_pHMD, vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_SerialNumber_String);
-	debugLog("OpenVR: driver = %s, display = %s\n", m_strDriver.c_str(), m_strDisplay.c_str());
+	debugLog("OpenVR: driver = %s, display = %s\n", m_sTrackingSystemName.toUtf8(), m_strDisplay.c_str());
 
 	// engine setting overrides
 	convar->getConVarByName("fps_unlimited")->setValue(1.0f);
@@ -285,16 +285,21 @@ OpenVRInterface::OpenVRInterface()
 
 	// debugging
 	//convar->getConVarByName("debug_shaders")->setValue(1.0f);
-	std::string strWindowTitle = "McEngine VR - " + m_strDriver + " " + m_strDisplay;
-	engine->getEnvironment()->setWindowTitle(strWindowTitle.c_str());
+	UString windowTitle = "McEngine VR - ";
+	windowTitle.append(m_sTrackingSystemName);
+	windowTitle.append(" ");
+	windowTitle.append(UString::format("%s", m_strDisplay.c_str()));
+	engine->getEnvironment()->setWindowTitle(windowTitle);
 
 	m_fakeCamera = new Camera();
 
-	if (m_strDriver == "null") // autodetect SteamVR null driver when debugging
+	if (m_sTrackingSystemName == "null") // autodetect SteamVR null driver when debugging
 	{
 		vr_fake_camera_movement.setValue(1.0f);
 		vr_console_overlay.setValue(1.0f);
 	}
+
+	loadFakeCamera();
 
 	m_bReady = true;
 
@@ -1812,7 +1817,19 @@ void OpenVRInterface::toggleFakeCameraMouseCapture()
 		engine->getEnvironment()->setCursorClip(false, McRect());
 		engine->getMouse()->setCursorVisible(true);
 		engine->getMouse()->setPos(engine->getScreenSize()/2);
+
+		saveFakeCamera();
 	}
+}
+
+void OpenVRInterface::saveFakeCamera()
+{
+	// TODO:
+}
+
+void OpenVRInterface::loadFakeCamera()
+{
+	// TODO:
 }
 
 

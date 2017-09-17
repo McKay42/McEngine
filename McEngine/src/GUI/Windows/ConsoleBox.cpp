@@ -428,7 +428,10 @@ void ConsoleBox::processCommand(UString command)
 {
 	clearSuggestions();
 	m_iSelectedHistory = -1;
-	m_commandHistory.push_back(command);
+
+	if (command.length() > 0)
+		m_commandHistory.push_back(command);
+
 	Console::processCommand(command);
 }
 

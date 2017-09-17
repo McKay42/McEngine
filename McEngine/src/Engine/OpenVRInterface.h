@@ -62,6 +62,8 @@ public:
 
 	void setControllerColorOverride(Color controllerColor);
 
+	inline UString getTrackingSystemName() {return m_sTrackingSystemName;}
+
 	inline Matrix4 getCurrentModelMatrix() {return m_matCurrentM;}
 	inline Matrix4 getCurrentViewProjectionMatrix() {return m_matCurrentVP;}
 	inline Matrix4 getCurrentModelViewProjectionMatrix() {return m_matCurrentMVP;}
@@ -128,8 +130,11 @@ private:
 #endif
 
 	void toggleFakeCameraMouseCapture();
+	void saveFakeCamera();
+	void loadFakeCamera();
 
 	bool m_bReady;
+	UString m_sTrackingSystemName;
 
 	// main draw callback
 	DrawCallback m_drawCallback;
@@ -187,7 +192,6 @@ private:
 	// openvr system
 	vr::IVRSystem *m_pHMD;
 	vr::IVRRenderModels *m_pRenderModels;
-	std::string m_strDriver;
 	std::string m_strDisplay;
 	vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
 	Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];

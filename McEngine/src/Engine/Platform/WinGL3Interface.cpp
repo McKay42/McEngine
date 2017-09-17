@@ -8,8 +8,11 @@
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
 #include "WinGL3Interface.h"
-#include "WinEnvironment.h"
+
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include "Engine.h"
+#include "WinEnvironment.h"
 
 #include "OpenGLHeaders.h"
 
@@ -81,8 +84,6 @@ WinGL3Interface::WinGL3Interface(HWND hwnd) : OpenGL3Interface()
 		engine->showMessageErrorFatal("Fatal OpenGL Error", "Couldn't wglCreateContext()!\nThe engine will quit now.");
 		exit(0);
 	}
-
-	init();
 }
 
 WinGL3Interface::~WinGL3Interface()
@@ -119,5 +120,7 @@ bool WinGL3Interface::checkGLHardwareAcceleration()
 	ReleaseDC(((WinEnvironment*)env)->getHwnd(), hdc);
 	return pixelFormat;
 }
+
+#endif
 
 #endif

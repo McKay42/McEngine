@@ -10,6 +10,8 @@
 
 #include "Shader.h"
 
+#ifdef MCENGINE_FEATURE_OPENGL
+
 class OpenGLShader : public Shader
 {
 public:
@@ -50,5 +52,7 @@ private:
 
 	int m_iProgramBackup;
 };
+
+#endif
 
 #endif

@@ -11,6 +11,7 @@
 #include <mutex>
 #include "WinMinGW.Mutex.h"
 
+#include "SquirrelInterface.h"
 #include "OpenCLInterface.h"
 #include "OpenVRInterface.h"
 #include "VulkanInterface.h"
@@ -35,8 +36,6 @@
 
 //#include "Osu.h"
 #include "FrameworkTest.h"
-
-#include <cstdarg>
 
 
 
@@ -119,7 +118,7 @@ Engine::Engine(Environment *environment, const char *args)
 
 	// init platform specific interfaces
 	m_vulkan = new VulkanInterface(); // needs to be created before Graphics
-	m_graphics = env->createRenderer();
+	m_graphics = env->createRenderer(); m_graphics->init(); // needs init() separation due to potential engine->getGraphics() access
 	m_contextMenu = env->createContextMenu();
 
 	// and the rest
@@ -130,7 +129,9 @@ Engine::Engine(Environment *environment, const char *args)
 	m_openVR = new OpenVRInterface();
 	m_networkHandler = new NetworkHandler();
 
-	// default launch options/changes
+	m_squirrel = new SquirrelInterface();
+
+	// default launch overrides
 	m_graphics->setVSync(false);
 
 	// engine time starts now
@@ -173,6 +174,9 @@ Engine::~Engine()
 	debugLog("Engine: Freeing network handler...\n");
 	SAFE_DELETE(m_networkHandler);
 
+	debugLog("Engine: Freeing Squirrel...\n");
+	SAFE_DELETE(m_squirrel);
+
 	debugLog("Engine: Freeing input devices...\n");
 	for (int i=0; i<m_inputDevices.size(); i++)
 	{
@@ -193,6 +197,7 @@ Engine::~Engine()
 	SAFE_DELETE(m_environment);
 
 	debugLog("Engine: Goodbye.");
+
 	engine = NULL;
 }
 
@@ -577,17 +582,15 @@ double const Engine::getTimeReal()
 	return m_timer->getElapsedTime();
 }
 
-void Engine::debugLog(const char *fmt, ...)
+void Engine::debugLog(const char *fmt, va_list args)
 {
-	if (fmt == NULL)
-		return;
+	if (fmt == NULL) return;
 
-	va_list ap,ap2;
-	va_start(ap, fmt);
-	va_copy(ap2, ap);
+	va_list ap2;
+	va_copy(ap2, args);
 
 	// write to console
-	int numChars = vprintf(fmt, ap);
+	int numChars = vprintf(fmt, args);
 
 	if (numChars < 1 || numChars > 65534)
 		goto cleanup;
@@ -610,20 +613,17 @@ void Engine::debugLog(const char *fmt, ...)
 
 cleanup:
 	va_end(ap2);
-	va_end(ap);
 }
 
-void Engine::debugLog(Color color, const char *fmt, ...)
+void Engine::debugLog(Color color, const char *fmt, va_list args)
 {
-	if (fmt == NULL)
-		return;
+	if (fmt == NULL) return;
 
-	va_list ap,ap2;
-	va_start(ap, fmt);
-	va_copy(ap2, ap);
+	va_list ap2;
+	va_copy(ap2, args);
 
 	// write to console
-	int numChars = vprintf(fmt, ap);
+	int numChars = vprintf(fmt, args);
 
 	if (numChars < 1 || numChars > 65534)
 		goto cleanup;
@@ -646,6 +646,29 @@ void Engine::debugLog(Color color, const char *fmt, ...)
 
 cleanup:
 	va_end(ap2);
+}
+
+void Engine::debugLog(const char *fmt, ...)
+{
+	if (fmt == NULL) return;
+
+	va_list ap;
+	va_start(ap, fmt);
+
+	debugLog(fmt, ap);
+
+	va_end(ap);
+}
+
+void Engine::debugLog(Color color, const char *fmt, ...)
+{
+	if (fmt == NULL) return;
+
+	va_list ap;
+	va_start(ap, fmt);
+
+	debugLog(color, fmt, ap);
+
 	va_end(ap);
 }
 

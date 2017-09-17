@@ -210,12 +210,25 @@ bool Image::loadRawImage()
 		}
 	}
 
+	// error checking
+	if (m_rawImage.size() < m_iWidth*m_iHeight*m_iNumChannels) // sanity check
+	{
+		engine->showMessageError("Image Error", UString::format("Loaded image has only %i/%i bytes in file %s", m_rawImage.size(), m_iWidth*m_iHeight*m_iNumChannels, m_sFilePath.toUtf8()));
+		return false;
+	}
+
+	if (m_iNumChannels != 4 && m_iNumChannels != 3 && m_iNumChannels != 1) // another sanity check
+	{
+		engine->showMessageError("Image Error", UString::format("Unsupported number of color channels (%i) in file %s", m_iNumChannels, m_sFilePath.toUtf8()));
+		return false;
+	}
+
 	return true;
 }
 
 void Image::setPixel(int x, int y, Color color)
 {
-	if ((4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
+	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
 		return;
 
 	m_rawImage[4 * y * m_iWidth + 4 * x + 0] = COLOR_GET_Ri(color);
@@ -226,7 +239,7 @@ void Image::setPixel(int x, int y, Color color)
 
 Color Image::getPixel(int x, int y)
 {
-	if ((4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
+	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
 		return 0xffffff00;
 
 	uint32_t r = m_rawImage[4 * y * m_iWidth + 4 * x + 0];
@@ -234,7 +247,7 @@ Color Image::getPixel(int x, int y)
 	uint32_t b = m_rawImage[4 * y * m_iWidth + 4 * x + 2];
 	uint32_t a = m_rawImage[4 * y * m_iWidth + 4 * x + 3];
 
-	return COLOR(a,r,g,b);
+	return COLOR(a, r, g, b);
 }
 
 void Image::writeToFile(UString folder)
