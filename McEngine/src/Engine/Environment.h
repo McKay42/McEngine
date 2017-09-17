@@ -27,7 +27,7 @@ public:
 	};
 
 public:
-	Environment() {;}
+	Environment();
 	virtual ~Environment() {;}
 
 	virtual void update() {;}
@@ -104,6 +104,16 @@ public:
 
 	// keyboard
 	virtual UString keyCodeToString(KEYCODE keyCode) = 0;
+
+public:
+	// built-in convenience
+
+	// window
+	virtual void setFullscreenWindowedBorderless(bool fullscreenWindowedBorderless);
+	virtual bool isFullscreenWindowedBorderless() {return m_bFullscreenWindowedBorderless;}
+
+protected:
+	bool m_bFullscreenWindowedBorderless;
 };
 
 extern Environment *env;

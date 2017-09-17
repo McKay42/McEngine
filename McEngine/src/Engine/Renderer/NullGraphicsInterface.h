@@ -13,7 +13,7 @@
 class NullGraphicsInterface : public Graphics
 {
 public:
-	NullGraphicsInterface() {;}
+	NullGraphicsInterface() : Graphics() {;}
 	virtual ~NullGraphicsInterface() {;}
 
 	// scene

@@ -423,7 +423,7 @@ VertexArrayObject *ResourceManager::createVertexArrayObject(Graphics::PRIMITIVE 
 	// create instance and load it
 	VertexArrayObject *vao = engine->getGraphics()->createVertexArrayObject(primitive, usage);
 
-	loadResource(vao, true);
+	loadResource(vao, false); // doesn't need to be loaded, since vaos will be filled by the user and then engine->getResourceManager()->loadResource()'d later
 
 	return vao;
 }

@@ -10,6 +10,8 @@
 
 #include "Image.h"
 
+#ifdef MCENGINE_FEATURE_OPENGL
+
 class OpenGLImage : public Image
 {
 public:
@@ -33,5 +35,7 @@ private:
 	unsigned int m_GLTexture;
 	unsigned int m_iTextureUnitBackup;
 };
+
+#endif
 
 #endif

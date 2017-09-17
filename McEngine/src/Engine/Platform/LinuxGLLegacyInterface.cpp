@@ -8,6 +8,9 @@
 #ifdef __linux__
 
 #include "LinuxGLLegacyInterface.h"
+
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include "LinuxEnvironment.h"
 #include "Engine.h"
 #include "ConVar.h"
@@ -31,8 +34,6 @@ LinuxGLLegacyInterface::LinuxGLLegacyInterface(Display *display, Window window)
 		return;
 	}
 	glXMakeCurrent(m_display, m_window, m_glc);
-
-	init();
 }
 
 LinuxGLLegacyInterface::~LinuxGLLegacyInterface()
@@ -66,5 +67,7 @@ void LinuxGLLegacyInterface::setVSync(bool vsync)
 			wglSwapIntervalEXT(m_display, glXGetCurrentDrawable(), vsync ? 1 : 0);
 	}
 }
+
+#endif
 
 #endif

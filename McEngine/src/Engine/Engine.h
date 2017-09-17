@@ -25,6 +25,7 @@ class OpenVRInterface;
 class VulkanInterface;
 class ResourceManager;
 class AnimationHandler;
+class SquirrelInterface;
 
 class CBaseUIContainer;
 class ConsoleBox;
@@ -33,6 +34,8 @@ class Console;
 class Engine
 {
 public:
+	static void debugLog(const char *fmt, va_list args);
+	static void debugLog(Color color, const char *fmt, va_list args);
 	static void debugLog(const char *fmt, ...);
 	static void debugLog(Color color, const char *fmt, ...);
 
@@ -87,6 +90,7 @@ public:
 	void removeGamepad(Gamepad *gamepad);
 
 	// interfaces
+	inline App *getApp() const {return m_app;}
 	inline Graphics *getGraphics() const {return m_graphics;}
 	inline SoundEngine *getSound() const {return m_sound;}
 	inline ResourceManager *getResourceManager() const {return m_resourceManager;}
@@ -141,6 +145,7 @@ private:
 	NetworkHandler *m_networkHandler;
 	ResourceManager *m_resourceManager;
 	AnimationHandler *m_animationHandler;
+	SquirrelInterface *m_squirrel;
 
 	// input devices
 	Mouse *m_mouse;

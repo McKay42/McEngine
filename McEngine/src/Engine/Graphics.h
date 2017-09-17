@@ -195,6 +195,8 @@ protected:
 
 	void checkStackLeaks();
 
+	friend class Engine;
+
 	// transforms
 	bool m_bTransformUpToDate;
 	std::stack<Matrix4> m_worldTransformStack;

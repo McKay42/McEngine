@@ -14,6 +14,8 @@ typedef unsigned char BYTE;
 
 #include "OpenGLLegacyInterface.h"
 
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -42,6 +44,8 @@ private:
 	Window m_window;
 	GLXContext m_glc;
 };
+
+#endif
 
 #endif
 

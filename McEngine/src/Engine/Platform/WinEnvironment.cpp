@@ -11,6 +11,7 @@
 #include "Engine.h"
 #include "Mouse.h"
 
+#include "DirectX11Interface.h"
 #include "WinGLLegacyInterface.h"
 #include "WinGL3Interface.h"
 #include "WinSWGraphicsInterface.h"
@@ -29,7 +30,7 @@ bool g_bCursorVisible = true;
 
 bool WinEnvironment::m_bResizable = true;
 
-WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance)
+WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance) : Environment()
 {
 	m_hwnd = hwnd;
 	m_hInstance = hinstance;
@@ -53,6 +54,7 @@ Graphics *WinEnvironment::createRenderer()
 	//return new WinSWGraphicsInterface(m_hwnd);
 	return new WinGLLegacyInterface(m_hwnd);
 	//return new WinGL3Interface(m_hwnd);
+	//return new DirectX11Interface(m_hwnd);
 }
 
 ContextMenu *WinEnvironment::createContextMenu()
@@ -473,9 +475,9 @@ void WinEnvironment::enableFullscreen()
 {
 	if (m_bFullScreen) return;
 
-	// backup screen size
+	// get fullscreen resolution, backup screen size
 	int width = GetSystemMetrics(SM_CXSCREEN);
-	int height = GetSystemMetrics(SM_CYSCREEN);
+	int height = GetSystemMetrics(SM_CYSCREEN) + (m_bFullscreenWindowedBorderless ? 1 : 0);
 	m_vLastWindowSize = m_vWindowSize;
 
 	// get screen pos

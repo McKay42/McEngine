@@ -55,7 +55,7 @@ PGPI g_GetPointerInfo = (PGPI)GetProcAddress(GetModuleHandle(TEXT("user32.dll"))
 
 // #define WINDOW_FRAMELESS
 // #define WINDOW_MAXIMIZED // start maximized
-// #define WINDOW_GHOST // click-through overlay mode (experimental)
+// #define WINDOW_GHOST // click-through overlay mode (experimental); NOTE: must uncomment "pfd.cAlphaBits = 8;" in WinGLLegacyInterface.cpp!
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
@@ -235,7 +235,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		// paint nothing on repaint
 		case WM_PAINT:
 			{
-				// at least call BeginPaint() and EndPaint(), to mark the window as not being dirty (else windows spams us with WM_PAINT)
+				ValidateRect(hwnd, NULL);
+				/*
 				PAINTSTRUCT ps;
 				HDC hdc = BeginPaint(hwnd,&ps);
 
@@ -245,13 +246,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				br = (HBRUSH)GetStockObject(BLACK_BRUSH);
 				FillRect(hdc, &wr, br);
 
-				/*
-				br = (HBRUSH)GetStockObject(GRAY_BRUSH);
-				wr.right = 100;
-				wr.bottom = 100;
-				FillRect(hdc, &wr, br);
-				*/
+				///br = (HBRUSH)GetStockObject(GRAY_BRUSH);
+				///wr.right = 100;
+				///wr.bottom = 100;
+				///FillRect(hdc, &wr, br);
+
 				EndPaint(hwnd,&ps);
+				*/
 			}
 			return 0;
 
@@ -817,7 +818,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	printf("DwmEnableBlurBehindWindow() = %x\n", (int)DwmEnableBlurBehindWindow(hwnd, &bb));
 
-	SetLayeredWindowAttributes(hwnd, 0x0, 0, LWA_COLORKEY);
+	SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 0, LWA_COLORKEY);
 
 #endif
 
