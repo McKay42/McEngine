@@ -8,6 +8,9 @@
 #ifdef __APPLE__
 
 #include "MacOSGLLegacyInterface.h"
+
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include "MacOSEnvironment.h"
 #include "main_OSX_cpp.h"
 #include "Engine.h"
@@ -16,7 +19,6 @@
 
 MacOSGLLegacyInterface::MacOSGLLegacyInterface() : OpenGLLegacyInterface()
 {
-	init();
 }
 
 MacOSGLLegacyInterface::~MacOSGLLegacyInterface()
@@ -32,5 +34,7 @@ void MacOSGLLegacyInterface::setVSync(bool vsync)
 {
 	((MacOSEnvironment *)(env))->getWrapper()->setVSync(vsync);
 }
+
+#endif
 
 #endif

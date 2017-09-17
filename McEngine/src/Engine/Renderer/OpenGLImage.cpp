@@ -7,6 +7,8 @@
 
 #include "OpenGLImage.h"
 
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include "ResourceManager.h"
 #include "Environment.h"
 #include "Engine.h"
@@ -29,18 +31,6 @@ OpenGLImage::OpenGLImage(int width, int height, bool mipmapped) : Image(width, h
 void OpenGLImage::init()
 {
 	if (m_GLTexture != 0 || !m_bAsyncReady) return; // only load if we are not already loaded
-
-	if (m_rawImage.size() < m_iWidth*m_iHeight*m_iNumChannels) // sanity check
-	{
-		engine->showMessageError("Image Error", UString::format("Loaded image has only %i/%i bytes in file %s", m_rawImage.size(), m_iWidth*m_iHeight*m_iNumChannels, m_sFilePath.toUtf8()));
-		return;
-	}
-
-	if (m_iNumChannels != 4 && m_iNumChannels != 3 && m_iNumChannels != 1) // another sanity check
-	{
-		engine->showMessageError("Image Error", UString::format("Unsupported number of color channels (%i) in file %s", m_iNumChannels, m_sFilePath.toUtf8()));
-		return;
-	}
 
 	// DEPRECATED LEGACY
 	glEnable(GL_TEXTURE_2D);
@@ -104,8 +94,10 @@ void OpenGLImage::initAsync()
 void OpenGLImage::destroy()
 {
 	if (m_GLTexture != 0)
+	{
 		glDeleteTextures(1, &m_GLTexture);
-	m_GLTexture = 0;
+		m_GLTexture = 0;
+	}
 
 	m_rawImage = std::vector<unsigned char>();
 }
@@ -143,8 +135,7 @@ void OpenGLImage::unbind()
 
 void OpenGLImage::setFilterMode(Graphics::FILTER_MODE filterMode)
 {
-	if (!m_bReady)
-		return;
+	if (!m_bReady) return;
 
 	bind();
 	{
@@ -169,8 +160,7 @@ void OpenGLImage::setFilterMode(Graphics::FILTER_MODE filterMode)
 
 void OpenGLImage::setWrapMode(Graphics::WRAP_MODE wrapMode)
 {
-	if (!m_bReady)
-		return;
+	if (!m_bReady) return;
 
 	bind();
 	{
@@ -195,3 +185,5 @@ void OpenGLImage::handleGLErrors()
 	if (GLerror != 0)
 		debugLog("OpenGL Image Error: %i on file %s!\n", GLerror, m_sFilePath.toUtf8());
 }
+
+#endif

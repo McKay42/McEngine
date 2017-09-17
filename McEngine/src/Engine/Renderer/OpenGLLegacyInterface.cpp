@@ -6,6 +6,9 @@
 //===============================================================================//
 
 #include "OpenGLLegacyInterface.h"
+
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include "Engine.h"
 #include "ConVar.h"
 #include "Camera.h"
@@ -688,3 +691,5 @@ void OpenGLLegacyInterface::handleGLErrors()
 	if (error != 0)
 		debugLog("OpenGL Error: %i on frame %i\n",error,engine->getFrameCount());
 }
+
+#endif

@@ -10,6 +10,8 @@
 
 #include "RenderTarget.h"
 
+#ifdef MCENGINE_FEATURE_OPENGL
+
 class OpenGLRenderTarget : public RenderTarget
 {
 public:
@@ -22,12 +24,11 @@ public:
 	virtual void bind(unsigned int textureUnit = 0);
 	virtual void unbind();
 
-	inline unsigned int getFrameBuffer() const {return m_iFrameBuffer;}
-	inline unsigned int getRenderTexture() const {return m_iRenderTexture;}
-
 	// ILLEGAL:
 	void blitResolveFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt);
 	void blitFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt);
+	inline unsigned int getFrameBuffer() const {return m_iFrameBuffer;}
+	inline unsigned int getRenderTexture() const {return m_iRenderTexture;}
 	inline unsigned int getResolveFrameBuffer() const {return m_iResolveFrameBuffer;}
 	inline unsigned int getResolveTexture() const {return m_iResolveTexture;}
 
@@ -46,5 +47,7 @@ private:
 	unsigned int m_iTextureUnitBackup;
 	int m_iViewportBackup[4];
 };
+
+#endif
 
 #endif

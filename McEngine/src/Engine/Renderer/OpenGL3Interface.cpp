@@ -6,6 +6,9 @@
 //===============================================================================//
 
 #include "OpenGL3Interface.h"
+
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include "Engine.h"
 #include "ConVar.h"
 #include "Camera.h"
@@ -809,3 +812,5 @@ int OpenGL3Interface::primitiveToOpenGL(Graphics::PRIMITIVE primitive)
 
 	return GL_TRIANGLES;
 }
+
+#endif

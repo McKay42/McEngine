@@ -7,9 +7,11 @@
 
 #include "OpenGL3VertexArrayObject.h"
 
-#include "Engine.h"
+#ifdef MCENGINE_FEATURE_OPENGL
 
+#include "Engine.h"
 #include "OpenGL3Interface.h"
+
 #include "OpenGLHeaders.h"
 
 OpenGL3VertexArrayObject::OpenGL3VertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage) : VertexArrayObject(primitive, usage)
@@ -18,7 +20,6 @@ OpenGL3VertexArrayObject::OpenGL3VertexArrayObject(Graphics::PRIMITIVE primitive
 	m_iVertexBuffer = 0;
 	m_iTexcoordBuffer = 0;
 
-	m_iNumVertices = 0;
 	m_iNumTexcoords = 0;
 }
 
@@ -37,7 +38,6 @@ void OpenGL3VertexArrayObject::init()
 	glBindVertexArray(m_iVAO);
 	{
 		// populate a vertex buffer
-		m_iNumVertices = m_vertices.size();
 		glGenBuffers(1, &m_iVertexBuffer);
 		glBindBuffer(GL_ARRAY_BUFFER, m_iVertexBuffer);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Vector3) * m_vertices.size(), &(m_vertices[0]), usageToOpenGL(m_usage));
@@ -75,6 +75,8 @@ void OpenGL3VertexArrayObject::initAsync()
 
 void OpenGL3VertexArrayObject::destroy()
 {
+	VertexArrayObject::destroy();
+
 	if (m_iVAO > 0)
 	{
 		glDeleteBuffers(1, &m_iVertexBuffer);
@@ -95,8 +97,8 @@ void OpenGL3VertexArrayObject::draw()
 		return;
 	}
 
-	int start = clamp<int>(nearestMultipleOf((int)(m_iNumVertices*m_fDrawPercentFromPercent), m_iDrawPercentNearestMultiple), 0, m_iNumVertices);
-	int end = clamp<int>(nearestMultipleOf((int)(m_iNumVertices*m_fDrawPercentToPercent), m_iDrawPercentNearestMultiple), 0, m_iNumVertices);
+	int start = clamp<int>(nearestMultipleUp((int)(m_iNumVertices*m_fDrawPercentFromPercent), m_iDrawPercentNearestMultiple), 0, m_iNumVertices); // HACKHACK: osu sliders
+	int end = clamp<int>(nearestMultipleDown((int)(m_iNumVertices*m_fDrawPercentToPercent), m_iDrawPercentNearestMultiple), 0, m_iNumVertices); // HACKHACK: osu sliders
 
 	if (start > end || std::abs(end-start) == 0)
 		return;
@@ -148,3 +150,5 @@ unsigned int OpenGL3VertexArrayObject::usageToOpenGL(Graphics::USAGE_TYPE usage)
 
 	return GL_STATIC_DRAW;
 }
+
+#endif

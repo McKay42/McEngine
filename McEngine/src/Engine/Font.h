@@ -46,7 +46,7 @@ public:
 
 protected:
 	virtual void init();
-	virtual void initAsync() {;}
+	virtual void initAsync();
 	virtual void destroy();
 
 	void drawAtlasGlyph(Graphics *g, wchar_t ch);

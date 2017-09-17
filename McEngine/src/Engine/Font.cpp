@@ -145,6 +145,11 @@ void McFont::init()
 	m_bReady = true;
 }
 
+void McFont::initAsync()
+{
+	m_bAsyncReady = true;
+}
+
 void McFont::destroy()
 {
 	SAFE_DELETE(m_textureAtlas);

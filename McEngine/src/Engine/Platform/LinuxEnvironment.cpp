@@ -37,7 +37,7 @@ typedef struct
 
 bool LinuxEnvironment::m_bResizable = true;
 
-LinuxEnvironment::LinuxEnvironment(Display *display, Window window)
+LinuxEnvironment::LinuxEnvironment(Display *display, Window window) : Environment()
 {
 	m_display = display;
 	m_window = window;

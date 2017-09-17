@@ -17,8 +17,10 @@
 #include "RenderTarget.h"
 #include "GaussianBlurKernel.h"
 
+/*
 // HACKHACK: renderer dependent
 #include "OpenGLHeaders.h"
+*/
 
 ConVar debug_box_shadows("debug_box_shadows", false);
 
@@ -54,22 +56,28 @@ void CBaseUIBoxShadow::draw(Graphics *g)
 
 	if (!m_bVisible) return;
 
+	/*
 	// HACKHACK: switching blend funcs
 	if (m_bColoredContent)
 		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	*/
 
 	g->setColor(m_color);
 		m_blur->draw(g, m_vPos.x-m_fRadius, m_vPos.y-m_fRadius);
 
+	/*
 	if (m_bColoredContent)
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	*/
 }
 
 void CBaseUIBoxShadow::render(Graphics *g)
 {
+	/*
 	// HACKHACK: switching blend funcs
 	if (m_bColoredContent)
 		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	*/
 
 	g->setClipping(false);
 		m_blur->enable();
@@ -78,8 +86,10 @@ void CBaseUIBoxShadow::render(Graphics *g)
 		m_blur->disable(g);
 	g->setClipping(true);
 
+	/*
 	if (m_bColoredContent)
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	*/
 }
 
 void CBaseUIBoxShadow::renderOffscreen(Graphics *g)
