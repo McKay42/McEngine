@@ -15,9 +15,13 @@
 #include "OpenGLHeaders.h"
 #include <string>
 
-#ifdef MCENGINE_FEATURE_OPENVR
+#if defined(MCENGINE_FEATURE_OPENVR)
 
 #include <openvr_mingw.hpp>
+
+#elif defined(MCENGINE_FEATURE_HYPEREALVR)
+
+#include "Hypereal_VR.h"
 
 #endif
 
@@ -26,6 +30,8 @@ class Camera;
 class RenderTarget;
 class OpenVRController;
 
+class DirectX11Interface;
+class DirectX11RenderTarget;
 class CGLRenderModel;
 
 class OpenVRInterface : public KeyboardListener
@@ -83,7 +89,14 @@ public:
 
 private:
 
-#ifdef MCENGINE_FEATURE_OPENVR
+	// shared public
+	// TODO: ifdef openvr OR hyperealvr
+
+	enum class EYE
+	{
+		EYE_LEFT,
+		EYE_RIGHT
+	};
 
 	bool initRenderer();
 	bool initCompositor();
@@ -93,39 +106,45 @@ private:
 
 	void renderStereoTargets(Graphics *g);
 	void renderSpectatorTarget(Graphics *g);
-	void renderScene(Graphics *g, vr::Hmd_Eye eye);
+	void renderScene(Graphics *g, OpenVRInterface::EYE eye);
 	void renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 &matCurrentM, Matrix4 &matCurrentP, Matrix4 &matCurrentVP, Matrix4 &matCurrentMVP);
 	void renderStereoToWindow(Graphics *g);
 
-	void updateControllerAxes(); // for debugging
-	void updateStaticMatrices(); // eye position offset and projection
-	bool updateMatrixPoses(); // pose matrices
-	void updateRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
-	CGLRenderModel *findOrLoadRenderModel(const char *pchRenderModelName);
+	bool updateMatrixPoses();
 
-	Matrix4 getHMDMatrixProjectionEye(vr::Hmd_Eye eye);
-	Matrix4 getHMDMatrixPoseEye(vr::Hmd_Eye eye);
-	Matrix4 getCurrentModelViewProjectionMatrix(vr::Hmd_Eye eye);
-	Matrix4 getCurrentViewProjectionMatrix(vr::Hmd_Eye eye);
-	Matrix4 getCurrentProjectionMatrix(vr::Hmd_Eye eye);
-	Matrix4 getCurrentEyePosMatrix(vr::Hmd_Eye eye);
+	Matrix4 getHMDMatrixProjectionEye(OpenVRInterface::EYE eye);
+	Matrix4 getHMDMatrixPoseEye(OpenVRInterface::EYE eye);
+	Matrix4 getCurrentModelViewProjectionMatrix(OpenVRInterface::EYE eye);
+	Matrix4 getCurrentViewProjectionMatrix(OpenVRInterface::EYE eye);
+	Matrix4 getCurrentProjectionMatrix(OpenVRInterface::EYE eye);
+	Matrix4 getCurrentEyePosMatrix(OpenVRInterface::EYE eye);
 
 	void onSSChange(UString oldValue, UString newValue);
 	void onSSCompositorChange(UString oldValue, UString newValue);
 	void onCompositorSubmitDoubleChange(UString oldValue, UString newValue);
 	void onAAChange(UString oldValue, UString newValue);
-	void onClippingPlaneChange(UString oldValue, UString newValue);
 	void onBackgroundBrightnessChange(UString oldValue, UString newValue);
 	void onHeadRenderModelChange(UString oldValue, UString newValue);
+
+#ifdef MCENGINE_FEATURE_OPENVR
+
+	void updateControllerAxes(); // for debugging
+	void updateRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
+	CGLRenderModel *findOrLoadRenderModel(const char *pchRenderModelName);
 
 #endif
 
 private:
 
-#ifdef MCENGINE_FEATURE_OPENVR
+#if defined(MCENGINE_FEATURE_OPENVR)
 
 	static std::string getTrackedDeviceString(vr::IVRSystem *pHmd, vr::TrackedDeviceIndex_t unDevice, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
 	static Matrix4 convertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
+	static vr::Hmd_Eye eyeToOpenVR(OpenVRInterface::EYE eye);
+
+#elif defined(MCENGINE_FEATURE_HYPEREALVR)
+
+	static Matrix4 convertHyperealVRPoseToMatrix4(const HyPose &pose, bool isHMDPose);
 
 #endif
 
@@ -165,6 +184,12 @@ private:
 	RenderTarget *m_compositorEye2;
 	RenderTarget *m_debugOverlay;
 
+	// shaders
+	Shader *m_renderModelShader;
+	Shader *m_controllerAxisShader;
+	Shader *m_genericTexturedShader;
+	Shader *m_genericUntexturedShader;
+
 	// play area
 	Vector2 m_vPlayAreaSize;
 	PLAY_AREA_RECT m_playAreaRect;
@@ -183,7 +208,13 @@ private:
 	bool m_bCtrlDown;
 	bool m_bIsSpectatorDraw;
 
-#ifdef MCENGINE_FEATURE_OPENVR
+	// custom
+	float m_fPrevSSMultiplier;
+	float m_fCompositorSSMultiplier;
+	float m_fPrevAA;
+	bool m_bSteamVRBugWorkaroundCompositorSSChangeAllowed;
+
+#if defined(MCENGINE_FEATURE_OPENVR)
 
 	std::vector<CGLRenderModel*> m_vecRenderModels;
 	CGLRenderModel *m_rTrackedDeviceToRenderModel[vr::k_unMaxTrackedDeviceCount];
@@ -196,30 +227,25 @@ private:
 	vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
 	Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
 
-	// shaders
-	Shader *m_renderModelShader;
-	Shader *m_controllerAxisShader;
-	Shader *m_genericTexturedShader;
-	Shader *m_genericUntexturedShader;
-
 	// tracking
 	int m_iTrackedControllerCount;
 	int m_iTrackedControllerCount_Last;
 	int m_iValidPoseCount;
 	int m_iValidPoseCount_Last;
-	std::string m_strPoseClasses;                            // what classes we saw poses for this frame
-	char m_rDevClassChar[ vr::k_unMaxTrackedDeviceCount ];   // for each device, a character representing its class
+	std::string m_strPoseClasses; // what classes we saw poses for this frame
+	char m_rDevClassChar[vr::k_unMaxTrackedDeviceCount]; // for each device, a character representing its class
 
 	// TEMP: mesh buffers
 	GLuint m_glControllerVertBuffer;
 	GLuint m_unControllerVAO;
 	unsigned int m_uiControllerVertcount;
 
-	// custom
-	float m_fPrevSSMultiplier;
-	float m_fCompositorSSMultiplier;
-	float m_fPrevAA;
-	bool m_bSteamVRBugWorkaroundCompositorSSChangeAllowed;
+#elif defined(MCENGINE_FEATURE_HYPEREALVR)
+
+	HyDevice *m_device;
+	HyGraphicsContext *m_graphicsContext;
+	DirectX11Interface *m_directx;
+	DirectX11RenderTarget *m_dxrt1;
 
 #endif
 };

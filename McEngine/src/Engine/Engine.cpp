@@ -429,6 +429,14 @@ void Engine::onResolutionChange(Vector2 newResolution)
 		m_app->onResolutionChanged(newResolution);
 }
 
+void Engine::onShutdown()
+{
+	if (m_bBlackout || (m_app != NULL && !m_app->onShutdown())) return;
+
+	m_bBlackout = true;
+	m_environment->shutdown();
+}
+
 void Engine::onMouseRawMove(int xDelta, int yDelta, bool absolute, bool virtualDesktop)
 {
 	m_mouse->onRawMove(xDelta, yDelta, absolute, virtualDesktop);
@@ -484,19 +492,12 @@ void Engine::onKeyboardChar(KEYCODE charCode)
 
 void Engine::shutdown()
 {
-	if (m_app != NULL && !m_app->onShutdown())
-		return;
-
-	m_bBlackout = true;
-	m_environment->shutdown();
+	onShutdown();
 }
 
 void Engine::restart()
 {
-	if (m_app != NULL && !m_app->onShutdown())
-		return;
-
-	m_bBlackout = true;
+	onShutdown();
 	m_environment->restart();
 }
 

@@ -199,11 +199,13 @@ void SWGraphicsInterface::fillRect(int x, int y, int width, int height)
 
 void SWGraphicsInterface::fillRoundedRect(int x, int y, int width, int height, int radius)
 {
+	/*
 	float xOffset= x + radius;
 	float yOffset = y + radius;
 
 	double i = 0;
 	double factor = 0.05;
+	*/
 
 	updateTransform();
 
@@ -305,10 +307,12 @@ void SWGraphicsInterface::drawString(McFont *font, UString text)
 
 void SWGraphicsInterface::drawVAO(VertexArrayObject *vao)
 {
+	/*
 	const std::vector<Vector3> &vertices = vao->getVertices();
 	const std::vector<Vector3> &normals = vao->getNormals();
 	const std::vector<std::vector<Vector2>> &texcoords = vao->getTexcoords();
 	const std::vector<Color> &colors = vao->getColors();
+	*/
 
 	updateTransform();
 

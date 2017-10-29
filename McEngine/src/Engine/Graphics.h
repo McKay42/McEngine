@@ -196,6 +196,7 @@ protected:
 	void checkStackLeaks();
 
 	friend class Engine;
+	friend class OpenVRInterface;
 
 	// transforms
 	bool m_bTransformUpToDate;
