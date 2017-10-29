@@ -57,6 +57,7 @@ public:
 	void onMaximized();
 	void onRestored();
 	void onResolutionChange(Vector2 newResolution);
+	void onShutdown();
 
 	// primary mouse messages
 	void onMouseRawMove(int xDelta, int yDelta, bool absolute = false, bool virtualDesktop = false);
