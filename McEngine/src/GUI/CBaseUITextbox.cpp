@@ -405,7 +405,9 @@ void CBaseUITextbox::onChar(KeyboardEvent &e)
 	// add the pressed letter to the text
 	KEYCODE charCode = e.getCharCode();
 	///debugLog("charCode = %i\n", charCode);
-	m_sText.insert(m_iCaretPosition, UString((wchar_t*)&charCode));
+	UString stringChar = "";
+	stringChar.insert(0, charCode);
+	m_sText.insert(m_iCaretPosition, stringChar);
 	m_iCaretPosition++;
 	setText(m_sText);
 

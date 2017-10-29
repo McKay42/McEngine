@@ -223,6 +223,25 @@ bool Image::loadRawImage()
 		return false;
 	}
 
+	// optimization: ignore completely transparent images (don't render)
+	bool foundNonTransparentPixel = false;
+	for (int x=0; x<m_iWidth; x++)
+	{
+		for (int y=0; y<m_iHeight; y++)
+		{
+			if (COLOR_GET_Ai(getPixel(x, y)) > 0)
+			{
+				foundNonTransparentPixel = true;
+				break;
+			}
+		}
+	}
+	if (!foundNonTransparentPixel)
+	{
+		debugLog("Image: Ignoring empty transparent image \"%s\".\n", m_sFilePath.toUtf8());
+		return false;
+	}
+
 	return true;
 }
 
@@ -242,10 +261,28 @@ Color Image::getPixel(int x, int y)
 	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
 		return 0xffffff00;
 
-	uint32_t r = m_rawImage[4 * y * m_iWidth + 4 * x + 0];
-	uint32_t g = m_rawImage[4 * y * m_iWidth + 4 * x + 1];
-	uint32_t b = m_rawImage[4 * y * m_iWidth + 4 * x + 2];
-	uint32_t a = m_rawImage[4 * y * m_iWidth + 4 * x + 3];
+	uint32_t r = 255;
+	uint32_t g = 255;
+	uint32_t b = 0;
+	uint32_t a = 255;
+
+	r = m_rawImage[4 * y * m_iWidth + 4 * x + 0];
+	if (m_iNumChannels > 1)
+	{
+		g = m_rawImage[4 * y * m_iWidth + 4 * x + 1];
+		b = m_rawImage[4 * y * m_iWidth + 4 * x + 2];
+
+		if (m_iNumChannels > 3)
+			a = m_rawImage[4 * y * m_iWidth + 4 * x + 3];
+		else
+			a = 255;
+	}
+	else
+	{
+		g = r;
+		b = r;
+		a = r;
+	}
 
 	return COLOR(a, r, g, b);
 }

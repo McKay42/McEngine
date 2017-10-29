@@ -229,7 +229,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		// alt-f4, window X button press, right click > close, "exit" ConCommand and WM_DESTROY will all send WM_CLOSE
         case WM_CLOSE:
-			g_bRunning = false;
+        	if (g_bRunning)
+        	{
+        		g_bRunning = false;
+				if (g_engine != NULL)
+					g_engine->onShutdown();
+        	}
 			return 0;
 
 		// paint nothing on repaint

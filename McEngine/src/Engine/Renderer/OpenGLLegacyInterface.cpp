@@ -31,6 +31,8 @@
 #define TEXTURE_FREE_MEMORY_ATI                 0x87FC
 #define RENDERBUFFER_FREE_MEMORY_ATI            0x87FD
 
+ConVar r_image_unbind_after_drawimage("r_image_unbind_after_drawimage", true);
+
 OpenGLLegacyInterface::OpenGLLegacyInterface() : Graphics()
 {
 	// renderer
@@ -353,7 +355,8 @@ void OpenGLLegacyInterface::drawImage(Image *image)
 
 	glEnd();
 
-	image->unbind();
+	if (r_image_unbind_after_drawimage.getBool())
+		image->unbind();
 
 	if (r_debug_drawimage->getBool())
 	{

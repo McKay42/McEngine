@@ -14,6 +14,8 @@
 
 #include "d3d11.h"
 
+class DirectX11Interface;
+
 class DirectX11RenderTarget : public RenderTarget
 {
 public:
@@ -26,6 +28,10 @@ public:
 	virtual void bind(unsigned int textureUnit = 0);
 	virtual void unbind();
 
+	// ILLEGAL:
+	inline ID3D11Texture2D *getRenderTexture() const {return m_renderTexture;}
+	void setDirectX11InterfaceHack(DirectX11Interface *dxi) {m_interfaceOverrideHack = dxi;}
+
 private:
 	virtual void init();
 	virtual void initAsync();
@@ -34,6 +40,8 @@ private:
 	ID3D11Texture2D *m_renderTexture;
 	ID3D11RenderTargetView *m_renderTargetView;
 	ID3D11ShaderResourceView *m_shaderResourceView;
+
+	DirectX11Interface *m_interfaceOverrideHack;
 };
 
 #endif

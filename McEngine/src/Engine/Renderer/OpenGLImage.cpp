@@ -109,7 +109,7 @@ void OpenGLImage::bind(unsigned int textureUnit)
 	m_iTextureUnitBackup = textureUnit;
 
 	// switch texture units before enabling+binding
-	glActiveTexture(GL_TEXTURE0 + m_iTextureUnitBackup);
+	glActiveTexture(GL_TEXTURE0 + textureUnit);
 
 	// set texture
 	glBindTexture(GL_TEXTURE_2D, m_GLTexture);

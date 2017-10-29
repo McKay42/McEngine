@@ -5,8 +5,8 @@
 // $NoKeywords: $glvao
 //===============================================================================//
 
-#ifndef OPENGLVERTEXARRAYOBJECT_H
-#define OPENGLVERTEXARRAYOBJECT_H
+#ifndef OPENGL3VERTEXARRAYOBJECT_H
+#define OPENGL3VERTEXARRAYOBJECT_H
 
 #include "VertexArrayObject.h"
 
