@@ -31,7 +31,7 @@ CBaseUISlider::CBaseUISlider(float xPos, float yPos, float xSize, float ySize, U
 	m_fMaxValue = 1.0f;
 	m_fKeyDelta = 0.1f;
 
-	m_vBlockSize = Vector2(xSize,10);
+	m_vBlockSize = Vector2(xSize < ySize ? xSize : ySize, xSize < ySize ? xSize : ySize);
 
 	m_sliderChangeCallback = NULL;
 
@@ -46,17 +46,17 @@ void CBaseUISlider::draw(Graphics *g)
 	if (m_bDrawBackground)
 	{
 		g->setColor(m_backgroundColor);
-		g->fillRect(m_vPos.x,m_vPos.y,m_vSize.x,m_vSize.y);
+		g->fillRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y + 1);
 	}
 
 	// draw frame
 	g->setColor(m_frameColor);
 	if (m_bDrawFrame)
-		g->drawRect(m_vPos.x,m_vPos.y,m_vSize.x,m_vSize.y+1);
+		g->drawRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y + 1);
 
 	// draw sliding line
 	if (!m_bHorizontal)
-		g->drawLine(m_vPos.x + m_vSize.x/2.0f,m_vPos.y + m_vBlockSize.y/2.0, m_vPos.x + m_vSize.x/2.0f, m_vPos.y + m_vSize.y - m_vBlockSize.y/2.0f);
+		g->drawLine(m_vPos.x + m_vSize.x/2.0f, m_vPos.y + m_vBlockSize.y/2.0, m_vPos.x + m_vSize.x/2.0f, m_vPos.y + m_vSize.y - m_vBlockSize.y/2.0f);
 	else
 		g->drawLine(m_vPos.x + (m_vBlockSize.x-1)/2 + 1, m_vPos.y + m_vSize.y/2.0f + 1, m_vPos.x + m_vSize.x - (m_vBlockSize.x-1)/2, m_vPos.y + m_vSize.y/2.0f + 1);
 
@@ -65,17 +65,14 @@ void CBaseUISlider::draw(Graphics *g)
 
 void CBaseUISlider::drawBlock(Graphics *g)
 {
-	// TODO: m_vBlockSize is fucked, vertical sliders are also fucked
-
 	// draw block
 	Vector2 center = m_vPos + Vector2(m_vBlockSize.x/2 + (m_vSize.x-m_vBlockSize.x)*getPercent(), m_vSize.y/2);
 	Vector2 topLeft = center - m_vBlockSize/2;
 	Vector2 topRight = center + Vector2(m_vBlockSize.x/2 + 1, -m_vBlockSize.y/2);
 	Vector2 halfLeft = center + Vector2(-m_vBlockSize.x/2, 1);
 	Vector2 halfRight = center + Vector2(m_vBlockSize.x/2 + 1, 1);
-	Vector2 bottomLeft = center + Vector2(-m_vBlockSize.x/2, m_vBlockSize.y/2);
-	Vector2 bottomRight = center + Vector2(m_vBlockSize.x/2 + 1, m_vBlockSize.y/2);
-
+	Vector2 bottomLeft = center + Vector2(-m_vBlockSize.x/2, m_vBlockSize.y/2 + 1);
+	Vector2 bottomRight = center + Vector2(m_vBlockSize.x/2 + 1, m_vBlockSize.y/2 + 1);
 
 	g->drawQuad(topLeft,
 				topRight,
@@ -173,10 +170,12 @@ void CBaseUISlider::update()
 			int wheelDelta = engine->getMouse()->getWheelDeltaVertical();
 			if (wheelDelta != 0)
 			{
+				const int multiplier = std::max(1, std::abs(wheelDelta) / 120);
+
 				if (wheelDelta > 0)
-					setValue(m_fCurValue + ( (std::abs(m_fMinValue)+std::abs(m_fMaxValue))/(m_bHorizontal ? m_vSize.x : m_vSize.y) ), m_bAnimated);
+					setValue(m_fCurValue + m_fKeyDelta*multiplier, m_bAnimated);
 				else
-					setValue(m_fCurValue - ( (std::abs(m_fMinValue)+std::abs(m_fMaxValue))/(m_bHorizontal ? m_vSize.x : m_vSize.y) ), m_bAnimated);
+					setValue(m_fCurValue - m_fKeyDelta*multiplier, m_bAnimated);
 			}
 		}
 	}

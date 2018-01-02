@@ -400,6 +400,15 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 			break;
 
+			// this logic below would mean that we have to handle the cursor when moving from resizing into the client area
+			// seems very annoying; unfinished
+			/*
+			if (LOWORD(lParam) == HTCLIENT) // if we are inside the client area, we handle the cursor
+				return TRUE;
+			else
+				break; // if not, let DefWindowProc do its thing
+			*/
+
 		// raw input experiments
 		/*
 		case WM_INPUT_DEVICE_CHANGE:

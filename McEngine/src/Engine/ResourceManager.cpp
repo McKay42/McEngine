@@ -34,7 +34,6 @@ void *resourceLoaderThread(void *data);
 ResourceManager::ResourceManager()
 {
 	m_bNextLoadAsync = false;
-	m_bNextLoadUnmanaged = false;
 
 	// build loading thread
 	int ret = pthread_create(&m_loadingThread, NULL, resourceLoaderThread, (void*)&m_loadingWork);
@@ -208,7 +207,7 @@ void ResourceManager::requestNextLoadAsync()
 
 void ResourceManager::requestNextLoadUnmanaged()
 {
-	m_bNextLoadUnmanaged = true;
+	m_nextLoadUnmanagedStack.push(true);
 }
 
 Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool mipmapped)
@@ -418,6 +417,17 @@ RenderTarget *ResourceManager::createRenderTarget(int width, int height, Graphic
 	return createRenderTarget(0, 0, width, height, multiSampleType);
 }
 
+TextureAtlas *ResourceManager::createTextureAtlas(int width, int height)
+{
+	// create instance and load it
+	TextureAtlas *ta = new TextureAtlas(width, height);
+	ta->setName(UString::format("<TA_(%ix%i)>", width, height));
+
+	loadResource(ta, false);
+
+	return ta;
+}
+
 VertexArrayObject *ResourceManager::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
 {
 	// create instance and load it
@@ -478,10 +488,11 @@ Shader *ResourceManager::getShader(UString resourceName)
 
 void ResourceManager::loadResource(Resource *res, bool load)
 {
-	if (!m_bNextLoadUnmanaged)
+	if (m_nextLoadUnmanagedStack.size() < 1 || !m_nextLoadUnmanagedStack.top())
 		m_vResources.push_back(res); // add managed resource
-	else
-		m_bNextLoadUnmanaged = false;
+
+	if (m_nextLoadUnmanagedStack.size() > 0)
+		m_nextLoadUnmanagedStack.pop();
 
 	if (!load) return;
 

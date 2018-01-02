@@ -262,7 +262,7 @@ OpenVRInterface::OpenVRInterface()
 	memset(m_rDevClassChar, 0, sizeof(m_rDevClassChar));
 
 	///return;
-	if (engine->getArgs().find("novr") != -1)
+	if (engine->getArgs().length() > 0 && engine->getArgs().find("novr") != -1)
 		return;
 
 	// check if openvr runtime is installed
@@ -287,7 +287,8 @@ OpenVRInterface::OpenVRInterface()
 		}
 
 		char buf[1024];
-		sprintf_s(buf, sizeof(buf), "%s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
+		memset(buf, '\0', 1024);
+		snprintf(buf, sizeof(buf), "%s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
 		engine->showMessageError("OpenVR Error", UString::format("Couldn't VR_Init() (%s)", buf));
 		return;
 	}
@@ -305,7 +306,8 @@ OpenVRInterface::OpenVRInterface()
 		vr::VR_Shutdown();
 
 		char buf[1024];
-		sprintf_s(buf, sizeof(buf), "Unable to get render model interface: %s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
+		memset(buf, '\0', 1024);
+		snprintf(buf, sizeof(buf), "Unable to get render model interface: %s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
 		engine->showMessageError("OpenVR Error", UString::format("Couldn't VR_GetGenericInterface() (%s)", buf));
 		return;
 	}
@@ -1824,7 +1826,7 @@ CGLRenderModel *OpenVRInterface::findOrLoadRenderModel(const char *pchRenderMode
 	CGLRenderModel *pRenderModel = NULL;
 	for (std::vector<CGLRenderModel*>::iterator i = m_vecRenderModels.begin(); i != m_vecRenderModels.end(); i++)
 	{
-		if (!stricmp((*i)->getName().c_str(), pchRenderModelName))
+		if (!strcmp((*i)->getName().c_str(), pchRenderModelName))
 		{
 			pRenderModel = *i;
 			break;

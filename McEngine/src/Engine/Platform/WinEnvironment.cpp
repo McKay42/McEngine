@@ -39,6 +39,7 @@ WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance) : Environment()
 	m_bFullScreen = false;
 	m_vWindowSize = getWindowSize();
 	m_bCursorClipped = false;
+	//m_bWasCursorModified = false;
 
 	m_bIsRestartScheduled = false;
 }
@@ -46,6 +47,16 @@ WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance) : Environment()
 void WinEnvironment::update()
 {
 	m_bIsCursorInsideWindow = McRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight()).contains(getMousePos());
+
+	/*
+	if (!m_bWasCursorModified && m_cursorType != CURSORTYPE::CURSOR_NORMAL)
+	{
+		//debugLog("WinEnvironment::update() resetting cursor to normal.\n");
+		setCursor(CURSORTYPE::CURSOR_NORMAL);
+	}
+
+	m_bWasCursorModified = false;
+	*/
 }
 
 Graphics *WinEnvironment::createRenderer()
@@ -632,8 +643,16 @@ McRect WinEnvironment::getCursorClip()
 	return m_cursorClip;
 }
 
+CURSORTYPE WinEnvironment::getCursor()
+{
+	return m_cursorType;
+}
+
 void WinEnvironment::setCursor(CURSORTYPE cur)
 {
+	m_cursorType = cur;
+	//m_bWasCursorModified = true;
+
 	switch (cur)
 	{
 	case CURSOR_NORMAL:

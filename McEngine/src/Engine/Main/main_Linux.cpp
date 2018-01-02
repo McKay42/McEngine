@@ -182,6 +182,8 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 
 	// destroy
 	case ClientMessage:
+		if (g_engine != NULL)
+			g_engine->onShutdown();
 		g_bRunning = false;
 		break;
 	}
@@ -209,8 +211,9 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 				}
 				break;
 			}
+
+			XFreeEventData(dpy, &xev.xcookie);
 		}
-		XFreeEventData(dpy, &xev.xcookie);
 	}
 }
 
