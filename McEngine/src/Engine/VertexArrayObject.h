@@ -16,7 +16,9 @@ public:
 	VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC);
 	virtual ~VertexArrayObject();
 
+	// TODO: fix the naming schema. clear = empty = just empty the containers, but not necessarily release memory
 	void clear();
+	void empty();
 
 	void addVertex(Vector2 v);
 	void addVertex(Vector3 v);

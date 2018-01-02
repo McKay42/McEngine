@@ -108,6 +108,8 @@ bool SoundEngine::initializeOutputDevice(int id)
 {
 #ifdef MCENGINE_FEATURE_SOUND
 
+	debugLog("SoundEngine: initializeOutputDevice( %i ) ...\n", id);
+
 	m_iCurrentOutputDevice = id;
 
 	// cleanup potential previous device
@@ -254,11 +256,11 @@ void SoundEngine::setOutputDevice(UString outputDeviceName)
 
 				if (!initializeOutputDevice(m_outputDevices[i].id))
 					initializeOutputDevice(previousOutputDevice); // if something went wrong, automatically switch back to the previous device
-
-				return;
 			}
 			else
 				debugLog("SoundEngine::setOutputDevice() \"%s\" already is the current device.\n", outputDeviceName.toUtf8());
+
+			return;
 		}
 	}
 

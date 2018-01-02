@@ -52,6 +52,18 @@ void VertexArrayObject::clear()
 	m_colors = std::vector<Color>();
 }
 
+void VertexArrayObject::empty()
+{
+	m_vertices.clear();
+	for (int i=0; i<m_texcoords.size(); i++)
+	{
+		m_texcoords[i].clear();
+	}
+	m_texcoords.clear();
+	m_normals.clear();
+	m_colors.clear();
+}
+
 void VertexArrayObject::addVertex(Vector2 v)
 {
 	addVertex(Vector3(v.x, v.y, 0));

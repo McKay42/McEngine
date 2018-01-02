@@ -10,13 +10,16 @@
 
 #include "Resource.h"
 
+class Image;
+class TextureAtlas;
+
 class McFont : public Resource
 {
 protected:
 	const wchar_t UNKNOWN_CHAR = 63; // ascii '?'
 
 public:
-	McFont(UString filepath, unsigned int fontSize, bool antialiasing = true);
+	McFont(UString filepath, unsigned int fontSize = 16, bool antialiasing = true);
 	virtual ~McFont() {destroy();}
 
 	void drawString(Graphics *g, UString text);
@@ -24,7 +27,7 @@ public:
 
 	void setSize(int fontSize);
 
-	inline Image *getTextureAtlas() {return m_textureAtlas;}
+	inline TextureAtlas *getTextureAtlas() {return m_textureAtlas;}
 	float getStringWidth(UString text);
 	inline float getHeight() const {return m_fHeight;}
 	float getStringHeight(UString text);
@@ -32,12 +35,17 @@ public:
 	struct GLYPH_METRICS // this needs to be public because of the global renderFTGlyphToTextureAtlas() function
 	{
 		wchar_t character;
-		Vector2 uv;
-		Vector2 size;
+
+		unsigned int uvPixelsX;
+		unsigned int uvPixelsY;
+		unsigned int sizePixelsX;
+		unsigned int sizePixelsY;
+
 		int left;
 		int top;
 		int width;
 		int rows;
+
 		float advance_x;
 	};
 
@@ -49,12 +57,16 @@ protected:
 	virtual void initAsync();
 	virtual void destroy();
 
+	bool addGlyph(wchar_t ch);
+
 	void drawAtlasGlyph(Graphics *g, wchar_t ch);
 
 	unsigned int m_iFontSize;
 	bool m_bAntialiasing;
 
-	Image *m_textureAtlas;
+	std::vector<wchar_t> m_vGlyphs;
+	std::unordered_map<wchar_t, bool> m_vGlyphExistence;
+	TextureAtlas *m_textureAtlas;
 	std::unordered_map<wchar_t, GLYPH_METRICS> m_vGlyphMetrics;
 	GLYPH_METRICS m_errorGlyph;
 	float m_fHeight;
