@@ -287,6 +287,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 		else if (!m_bConsoleAnimateOut && !m_bSuggestionAnimateOut)
 		{
 			m_textbox->setVisible(true);
+			m_textbox->setActive(true);
 			m_textbox->setBusy(true);
 			m_bConsoleAnimateIn = true;
 

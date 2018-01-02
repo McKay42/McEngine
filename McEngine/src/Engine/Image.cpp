@@ -245,17 +245,6 @@ bool Image::loadRawImage()
 	return true;
 }
 
-void Image::setPixel(int x, int y, Color color)
-{
-	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
-		return;
-
-	m_rawImage[4 * y * m_iWidth + 4 * x + 0] = COLOR_GET_Ri(color);
-	m_rawImage[4 * y * m_iWidth + 4 * x + 1] = COLOR_GET_Gi(color);
-	m_rawImage[4 * y * m_iWidth + 4 * x + 2] = COLOR_GET_Bi(color);
-	m_rawImage[4 * y * m_iWidth + 4 * x + 3] = COLOR_GET_Ai(color);
-}
-
 Color Image::getPixel(int x, int y)
 {
 	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
@@ -285,6 +274,22 @@ Color Image::getPixel(int x, int y)
 	}
 
 	return COLOR(a, r, g, b);
+}
+
+void Image::setPixel(int x, int y, Color color)
+{
+	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
+		return;
+
+	m_rawImage[4 * y * m_iWidth + 4 * x + 0] = COLOR_GET_Ri(color);
+	m_rawImage[4 * y * m_iWidth + 4 * x + 1] = COLOR_GET_Gi(color);
+	m_rawImage[4 * y * m_iWidth + 4 * x + 2] = COLOR_GET_Bi(color);
+	m_rawImage[4 * y * m_iWidth + 4 * x + 3] = COLOR_GET_Ai(color);
+}
+
+void Image::setPixels(std::vector<unsigned char> pixels)
+{
+	m_rawImage = pixels;
 }
 
 void Image::writeToFile(UString folder)
