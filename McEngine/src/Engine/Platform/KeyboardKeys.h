@@ -144,16 +144,16 @@
 #define KEY_Z				XK_Z
 
 // numbers
-#define KEY_0				XK_0
-#define KEY_1				XK_1
-#define KEY_2				XK_2
-#define KEY_3				XK_3
-#define KEY_4				XK_4
-#define KEY_5				XK_5
-#define KEY_6				XK_6
-#define KEY_7				XK_7
-#define KEY_8				XK_8
-#define KEY_9				XK_9
+#define KEY_0				XK_equal		// XK_0
+#define KEY_1				XK_exclam		// XK_1
+#define KEY_2				XK_quotedbl		// XK_2
+#define KEY_3				XK_section		// XK_3
+#define KEY_4				XK_dollar		// XK_4
+#define KEY_5				XK_percent		// XK_5
+#define KEY_6				XK_ampersand	// XK_6
+#define KEY_7				XK_slash		// XK_7
+#define KEY_8				XK_quoteright 	// XK_8
+#define KEY_9				XK_parenleft	// XK_9
 
 // numpad
 #define KEY_NUMPAD0			XK_KP_0

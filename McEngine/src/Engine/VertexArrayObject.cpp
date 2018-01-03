@@ -14,6 +14,8 @@ VertexArrayObject::VertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::US
 	m_primitive = primitive;
 	m_usage = usage;
 
+	m_iNumVertices = 0;
+
 	m_iDrawPercentNearestMultiple = 0;
 	m_fDrawPercentFromPercent = 0.0f;
 	m_fDrawPercentToPercent = 1.0f;
@@ -35,6 +37,7 @@ void VertexArrayObject::initAsync()
 
 void VertexArrayObject::destroy()
 {
+	clear();
 }
 
 void VertexArrayObject::clear()
@@ -47,6 +50,18 @@ void VertexArrayObject::clear()
 	m_texcoords = std::vector<std::vector<Vector2>>();
 	m_normals = std::vector<Vector3>();
 	m_colors = std::vector<Color>();
+}
+
+void VertexArrayObject::empty()
+{
+	m_vertices.clear();
+	for (int i=0; i<m_texcoords.size(); i++)
+	{
+		m_texcoords[i].clear();
+	}
+	m_texcoords.clear();
+	m_normals.clear();
+	m_colors.clear();
 }
 
 void VertexArrayObject::addVertex(Vector2 v)
@@ -62,6 +77,7 @@ void VertexArrayObject::addVertex(float x, float y, float z)
 void VertexArrayObject::addVertex(Vector3 v)
 {
 	m_vertices.push_back(v);
+	m_iNumVertices = m_vertices.size();
 }
 
 void VertexArrayObject::addTexcoord(float u, float v, unsigned int textureUnit)
@@ -98,8 +114,8 @@ void VertexArrayObject::setType(Graphics::PRIMITIVE primitive)
 
 void VertexArrayObject::setDrawPercent(float fromPercent, float toPercent, int nearestMultiple)
 {
-	m_fDrawPercentFromPercent = fromPercent;
-	m_fDrawPercentToPercent = toPercent;
+	m_fDrawPercentFromPercent = clamp<float>(fromPercent, 0.0f, 1.0f);
+	m_fDrawPercentToPercent = clamp<float>(toPercent, 0.0f, 1.0f);
 	m_iDrawPercentNearestMultiple = nearestMultiple;
 }
 
@@ -112,6 +128,7 @@ void VertexArrayObject::updateTexcoordArraySize(unsigned int textureUnit)
 	}
 }
 
+// TODO: delet this
 int VertexArrayObject::nearestMultipleOf(int number, int multiple)
 {
 	int result = number + multiple/2;
@@ -120,4 +137,28 @@ int VertexArrayObject::nearestMultipleOf(int number, int multiple)
 		result -= result % multiple;
 
 	return result;
+}
+
+int VertexArrayObject::nearestMultipleUp(int number, int multiple)
+{
+	if (multiple == 0)
+		return number;
+
+	int remainder = number % multiple;
+	if (remainder == 0)
+		return number;
+
+	return number + multiple - remainder;
+}
+
+int VertexArrayObject::nearestMultipleDown(int number, int multiple)
+{
+	if (multiple == 0)
+		return number;
+
+	int remainder = number % multiple;
+	if (remainder == 0)
+		return number;
+
+	return number - remainder;
 }

@@ -6,6 +6,9 @@
 //===============================================================================//
 
 #include "OpenGLRenderTarget.h"
+
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include "Engine.h"
 #include "ConVar.h"
 #include "VertexArrayObject.h"
@@ -277,3 +280,5 @@ void OpenGLRenderTarget::blitFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt)
  	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
+
+#endif

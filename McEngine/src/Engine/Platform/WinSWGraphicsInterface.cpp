@@ -27,8 +27,6 @@ WinSWGraphicsInterface::WinSWGraphicsInterface(HWND hwnd) : SWGraphicsInterface(
 	// set pixel format
 	BOOL result = SetPixelFormat(m_hdc, pixelFormat, &pfd);
 	debugLog("SWRasterizer: SetPixelFormat() = %i\n", result);
-
-	init();
 }
 
 WinSWGraphicsInterface::~WinSWGraphicsInterface()

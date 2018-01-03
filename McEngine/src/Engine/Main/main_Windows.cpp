@@ -55,7 +55,7 @@ PGPI g_GetPointerInfo = (PGPI)GetProcAddress(GetModuleHandle(TEXT("user32.dll"))
 
 // #define WINDOW_FRAMELESS
 // #define WINDOW_MAXIMIZED // start maximized
-// #define WINDOW_GHOST // click-through overlay mode (experimental)
+// #define WINDOW_GHOST // click-through overlay mode (experimental); NOTE: must uncomment "pfd.cAlphaBits = 8;" in WinGLLegacyInterface.cpp!
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
@@ -229,13 +229,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		// alt-f4, window X button press, right click > close, "exit" ConCommand and WM_DESTROY will all send WM_CLOSE
         case WM_CLOSE:
-			g_bRunning = false;
+        	if (g_bRunning)
+        	{
+        		g_bRunning = false;
+				if (g_engine != NULL)
+					g_engine->onShutdown();
+        	}
 			return 0;
 
 		// paint nothing on repaint
 		case WM_PAINT:
 			{
-				// at least call BeginPaint() and EndPaint(), to mark the window as not being dirty (else windows spams us with WM_PAINT)
+				ValidateRect(hwnd, NULL);
+				/*
 				PAINTSTRUCT ps;
 				HDC hdc = BeginPaint(hwnd,&ps);
 
@@ -245,13 +251,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				br = (HBRUSH)GetStockObject(BLACK_BRUSH);
 				FillRect(hdc, &wr, br);
 
-				/*
-				br = (HBRUSH)GetStockObject(GRAY_BRUSH);
-				wr.right = 100;
-				wr.bottom = 100;
-				FillRect(hdc, &wr, br);
-				*/
+				///br = (HBRUSH)GetStockObject(GRAY_BRUSH);
+				///wr.right = 100;
+				///wr.bottom = 100;
+				///FillRect(hdc, &wr, br);
+
 				EndPaint(hwnd,&ps);
+				*/
 			}
 			return 0;
 
@@ -393,6 +399,15 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 			}
 			break;
+
+			// this logic below would mean that we have to handle the cursor when moving from resizing into the client area
+			// seems very annoying; unfinished
+			/*
+			if (LOWORD(lParam) == HTCLIENT) // if we are inside the client area, we handle the cursor
+				return TRUE;
+			else
+				break; // if not, let DefWindowProc do its thing
+			*/
 
 		// raw input experiments
 		/*
@@ -817,7 +832,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	printf("DwmEnableBlurBehindWindow() = %x\n", (int)DwmEnableBlurBehindWindow(hwnd, &bb));
 
-	SetLayeredWindowAttributes(hwnd, 0x0, 0, LWA_COLORKEY);
+	SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 0, LWA_COLORKEY);
 
 #endif
 

@@ -115,11 +115,7 @@ void Mouse::update()
 	if (!m_bAbsolute)
 		m_vRawDeltaActual.zero();
 
-	m_iWheelDeltaVertical = m_iWheelDeltaVerticalActual;
-	m_iWheelDeltaVerticalActual = 0;
-
-	m_iWheelDeltaHorizontal = m_iWheelDeltaHorizontalActual;
-	m_iWheelDeltaHorizontalActual = 0;
+	resetWheelDelta();
 
 	if (!engine->hasFocus() || env->isCursorVisible() || !env->isCursorInWindow() || m_bAbsolute)
 	{
@@ -267,6 +263,15 @@ void Mouse::removeListener(MouseListener *mouseListener)
 			i--;
 		}
 	}
+}
+
+void Mouse::resetWheelDelta()
+{
+	m_iWheelDeltaVertical = m_iWheelDeltaVerticalActual;
+	m_iWheelDeltaVerticalActual = 0;
+
+	m_iWheelDeltaHorizontal = m_iWheelDeltaHorizontalActual;
+	m_iWheelDeltaHorizontalActual = 0;
 }
 
 void Mouse::onPosChange(Vector2 pos)

@@ -27,7 +27,7 @@ public:
 	};
 
 public:
-	Environment() {;}
+	Environment();
 	virtual ~Environment() {;}
 
 	virtual void update() {;}
@@ -97,6 +97,7 @@ public:
 	virtual bool isCursorClipped() = 0;
 	virtual Vector2 getMousePos() = 0;
 	virtual McRect getCursorClip() = 0;
+	virtual CURSORTYPE getCursor() = 0;
 	virtual void setCursor(CURSORTYPE cur) = 0;
 	virtual void setCursorVisible(bool visible) = 0;
 	virtual void setMousePos(int x, int y) = 0;
@@ -104,6 +105,16 @@ public:
 
 	// keyboard
 	virtual UString keyCodeToString(KEYCODE keyCode) = 0;
+
+public:
+	// built-in convenience
+
+	// window
+	virtual void setFullscreenWindowedBorderless(bool fullscreenWindowedBorderless);
+	virtual bool isFullscreenWindowedBorderless() {return m_bFullscreenWindowedBorderless;}
+
+protected:
+	bool m_bFullscreenWindowedBorderless;
 };
 
 extern Environment *env;

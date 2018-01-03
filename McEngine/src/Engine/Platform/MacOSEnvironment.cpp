@@ -20,7 +20,7 @@
 
 extern bool g_bRunning;
 
-MacOSEnvironment::MacOSEnvironment(MacOSWrapper *wrapper)
+MacOSEnvironment::MacOSEnvironment(MacOSWrapper *wrapper) : Environment()
 {
 	m_wrapper = wrapper;
 

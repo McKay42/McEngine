@@ -12,6 +12,8 @@
 
 #include "OpenGLLegacyInterface.h"
 
+#ifdef MCENGINE_FEATURE_OPENGL
+
 class MacOSGLLegacyInterface : public OpenGLLegacyInterface
 {
 public:
@@ -26,6 +28,8 @@ public:
 
 private:
 };
+
+#endif
 
 #endif
 
