@@ -25,6 +25,8 @@ public:
 	void addListener(MouseListener *mouseListener, bool insertOnTop = false);
 	void removeListener(MouseListener *mouseListener);
 
+	void resetWheelDelta();
+
 	void onPosChange(Vector2 pos);
 	void onRawMove(int xDelta, int yDelta, bool absolute = false, bool virtualDesktop = false);
 

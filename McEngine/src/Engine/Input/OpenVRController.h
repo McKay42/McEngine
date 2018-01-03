@@ -16,6 +16,12 @@
 
 #endif
 
+#ifdef MCENGINE_FEATURE_HYPEREALVR
+
+#include "Hypereal_VR.h"
+
+#endif
+
 class OpenVRController : public InputDevice
 {
 public:
@@ -52,22 +58,36 @@ public:
 
 public:
 
-#ifndef MCENGINE_FEATURE_OPENVR
+#if !defined(MCENGINE_FEATURE_OPENVR) && !defined(MCENGINE_FEATURE_HYPEREALVR)
 
 	OpenVRController();
 
-#else
+#endif
+
+#ifdef MCENGINE_FEATURE_OPENVR
 
 	OpenVRController(vr::IVRSystem *hmd, OpenVRController::ROLE role);
 
 	void update(uint64_t buttonPressed, uint64_t buttonTouched, vr::VRControllerAxis_t axes[vr::k_unControllerStateAxisCount]);
-	void updateDebug(float triggerValue);
 	void updateMatrixPose(Matrix4 &deviceToAbsoluteTracking);
-	void updateMatrixPoseDebug(Vector3 pos, Vector3 forward, Vector3 up, Vector3 right);
 
 	void setHmd(vr::IVRSystem *hmd) {m_hmd = hmd;}
 
 #endif
+
+#ifdef MCENGINE_FEATURE_HYPEREALVR
+
+	OpenVRController(HyDevice *device, OpenVRController::ROLE role);
+
+	void update(uint32_t buttons, float trigger, float grip, Vector2 touchpad);
+	void updateMatrixPose(Matrix4 deviceToAbsoluteTracking);
+
+	void setDevice(HyDevice *device) {m_device = device;}
+
+#endif
+
+	void updateDebug(float triggerValue);
+	void updateMatrixPoseDebug(Vector3 pos, Vector3 forward, Vector3 up, Vector3 right);
 
 	void triggerHapticPulse(unsigned short durationMicroSec = 500, OpenVRController::BUTTON button = OpenVRController::BUTTON::BUTTON_STEAMVR_TOUCHPAD);
 
@@ -88,6 +108,13 @@ public:
 
 	static vr::EVRButtonId buttonIdToOpenVR(OpenVRController::BUTTON buttonId);
 	static vr::ETrackedControllerRole roleIdToOpenVR(OpenVRController::ROLE roleId);
+
+#endif
+
+#ifdef MCENGINE_FEATURE_HYPEREALVR
+
+	static HyButton buttonIdToHyperealVR(OpenVRController::BUTTON buttonId);
+	static HySubDevice roleIdToHyperealVR(OpenVRController::ROLE roleId);
 
 #endif
 
@@ -116,6 +143,17 @@ private:
 		OpenVRController::BUTTON  button;
 	};
 	std::vector<TRIGGER_HAPTIC_PULSE_EVENT> m_triggerHapticPulseBuffer;
+
+#endif
+
+#ifdef MCENGINE_FEATURE_HYPEREALVR
+
+	HyDevice *m_device;
+
+	uint32_t m_buttonPressed;
+	float m_fTrigger;
+	float m_fGrip;
+	Vector2 m_vTouchpad;
 
 #endif
 };

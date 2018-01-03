@@ -33,8 +33,9 @@ public:
 	virtual void setFilterMode(Graphics::FILTER_MODE filterMode) = 0;
 	virtual void setWrapMode(Graphics::WRAP_MODE wrapMode) = 0;
 
-	Color getPixel(int x, int y);
 	void setPixel(int x, int y, Color color);
+	void setPixels(std::vector<unsigned char> pixels);
+	Color getPixel(int x, int y);
 
 	inline Image::TYPE getType() const {return m_type;}
 	inline int getNumChannels() const {return m_iNumChannels;}

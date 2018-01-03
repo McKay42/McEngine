@@ -210,12 +210,75 @@ bool Image::loadRawImage()
 		}
 	}
 
+	// error checking
+	if (m_rawImage.size() < m_iWidth*m_iHeight*m_iNumChannels) // sanity check
+	{
+		engine->showMessageError("Image Error", UString::format("Loaded image has only %i/%i bytes in file %s", m_rawImage.size(), m_iWidth*m_iHeight*m_iNumChannels, m_sFilePath.toUtf8()));
+		return false;
+	}
+
+	if (m_iNumChannels != 4 && m_iNumChannels != 3 && m_iNumChannels != 1) // another sanity check
+	{
+		engine->showMessageError("Image Error", UString::format("Unsupported number of color channels (%i) in file %s", m_iNumChannels, m_sFilePath.toUtf8()));
+		return false;
+	}
+
+	// optimization: ignore completely transparent images (don't render)
+	bool foundNonTransparentPixel = false;
+	for (int x=0; x<m_iWidth; x++)
+	{
+		for (int y=0; y<m_iHeight; y++)
+		{
+			if (COLOR_GET_Ai(getPixel(x, y)) > 0)
+			{
+				foundNonTransparentPixel = true;
+				break;
+			}
+		}
+	}
+	if (!foundNonTransparentPixel)
+	{
+		debugLog("Image: Ignoring empty transparent image \"%s\".\n", m_sFilePath.toUtf8());
+		return false;
+	}
+
 	return true;
+}
+
+Color Image::getPixel(int x, int y)
+{
+	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
+		return 0xffffff00;
+
+	uint32_t r = 255;
+	uint32_t g = 255;
+	uint32_t b = 0;
+	uint32_t a = 255;
+
+	r = m_rawImage[4 * y * m_iWidth + 4 * x + 0];
+	if (m_iNumChannels > 1)
+	{
+		g = m_rawImage[4 * y * m_iWidth + 4 * x + 1];
+		b = m_rawImage[4 * y * m_iWidth + 4 * x + 2];
+
+		if (m_iNumChannels > 3)
+			a = m_rawImage[4 * y * m_iWidth + 4 * x + 3];
+		else
+			a = 255;
+	}
+	else
+	{
+		g = r;
+		b = r;
+		a = r;
+	}
+
+	return COLOR(a, r, g, b);
 }
 
 void Image::setPixel(int x, int y, Color color)
 {
-	if ((4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
+	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
 		return;
 
 	m_rawImage[4 * y * m_iWidth + 4 * x + 0] = COLOR_GET_Ri(color);
@@ -224,17 +287,9 @@ void Image::setPixel(int x, int y, Color color)
 	m_rawImage[4 * y * m_iWidth + 4 * x + 3] = COLOR_GET_Ai(color);
 }
 
-Color Image::getPixel(int x, int y)
+void Image::setPixels(std::vector<unsigned char> pixels)
 {
-	if ((4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
-		return 0xffffff00;
-
-	uint32_t r = m_rawImage[4 * y * m_iWidth + 4 * x + 0];
-	uint32_t g = m_rawImage[4 * y * m_iWidth + 4 * x + 1];
-	uint32_t b = m_rawImage[4 * y * m_iWidth + 4 * x + 2];
-	uint32_t a = m_rawImage[4 * y * m_iWidth + 4 * x + 3];
-
-	return COLOR(a,r,g,b);
+	m_rawImage = pixels;
 }
 
 void Image::writeToFile(UString folder)

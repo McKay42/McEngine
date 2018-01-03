@@ -11,6 +11,9 @@
 #define WINGLINTERFACE_H
 
 #include "OpenGLLegacyInterface.h"
+
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include <Windows.h>
 
 PIXELFORMATDESCRIPTOR getPixelFormatDescriptor();
@@ -48,6 +51,8 @@ private:
 	HGLRC m_hglrc;
 	HDC m_hdc;
 };
+
+#endif
 
 #endif
 

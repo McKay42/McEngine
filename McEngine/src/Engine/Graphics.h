@@ -25,7 +25,7 @@ class RenderTarget;
 
 class VertexArrayObject;
 
-typedef unsigned long Color;
+typedef uint32_t Color;
 
 class Graphics
 {
@@ -194,6 +194,9 @@ protected:
 	void updateTransform(bool force = false);
 
 	void checkStackLeaks();
+
+	friend class Engine;
+	friend class OpenVRInterface;
 
 	// transforms
 	bool m_bTransformUpToDate;
