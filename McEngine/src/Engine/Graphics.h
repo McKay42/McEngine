@@ -25,7 +25,7 @@ class RenderTarget;
 
 class VertexArrayObject;
 
-typedef unsigned long Color;
+typedef uint32_t Color;
 
 class Graphics
 {
