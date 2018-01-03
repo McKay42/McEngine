@@ -6,6 +6,9 @@
 //===============================================================================//
 
 #include "OpenGLLegacyInterface.h"
+
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include "Engine.h"
 #include "ConVar.h"
 #include "Camera.h"
@@ -27,6 +30,8 @@
 #define VBO_FREE_MEMORY_ATI                     0x87FB
 #define TEXTURE_FREE_MEMORY_ATI                 0x87FC
 #define RENDERBUFFER_FREE_MEMORY_ATI            0x87FD
+
+ConVar r_image_unbind_after_drawimage("r_image_unbind_after_drawimage", true);
 
 OpenGLLegacyInterface::OpenGLLegacyInterface() : Graphics()
 {
@@ -350,7 +355,8 @@ void OpenGLLegacyInterface::drawImage(Image *image)
 
 	glEnd();
 
-	image->unbind();
+	if (r_image_unbind_after_drawimage.getBool())
+		image->unbind();
 
 	if (r_debug_drawimage->getBool())
 	{
@@ -688,3 +694,5 @@ void OpenGLLegacyInterface::handleGLErrors()
 	if (error != 0)
 		debugLog("OpenGL Error: %i on frame %i\n",error,engine->getFrameCount());
 }
+
+#endif

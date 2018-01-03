@@ -287,6 +287,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 		else if (!m_bConsoleAnimateOut && !m_bSuggestionAnimateOut)
 		{
 			m_textbox->setVisible(true);
+			m_textbox->setActive(true);
 			m_textbox->setBusy(true);
 			m_bConsoleAnimateIn = true;
 
@@ -428,7 +429,10 @@ void ConsoleBox::processCommand(UString command)
 {
 	clearSuggestions();
 	m_iSelectedHistory = -1;
-	m_commandHistory.push_back(command);
+
+	if (command.length() > 0)
+		m_commandHistory.push_back(command);
+
 	Console::processCommand(command);
 }
 

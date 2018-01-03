@@ -12,6 +12,8 @@
 
 #include "OpenGL3Interface.h"
 
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include <Windows.h>
 
 class WinGL3Interface : public OpenGL3Interface
@@ -40,6 +42,8 @@ private:
 	HGLRC m_hglrc;
 	HDC m_hdc;
 };
+
+#endif
 
 #endif
 

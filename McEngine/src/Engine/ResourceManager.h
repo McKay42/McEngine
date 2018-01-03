@@ -15,6 +15,7 @@
 #include "Sound.h"
 #include "Shader.h"
 #include "RenderTarget.h"
+#include "TextureAtlas.h"
 #include "VertexArrayObject.h"
 
 #include "pthread.h"
@@ -58,6 +59,9 @@ public:
 	// rendertargets
 	RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
 	RenderTarget *createRenderTarget(int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
+
+	// texture atlas
+	TextureAtlas *createTextureAtlas(int width, int height);
 
 	// models/meshes
 	VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC);
@@ -108,7 +112,7 @@ private:
 	std::vector<LOAD_THREAD*> m_threads;
 
 	bool m_bNextLoadAsync;
-	bool m_bNextLoadUnmanaged;
+	std::stack<bool> m_nextLoadUnmanagedStack;
 
 	std::vector<std::pair<Resource*, MobileAtomicBool>> m_loadingWork;
 	std::vector<Resource*> m_loadingWorkAsyncDestroy;

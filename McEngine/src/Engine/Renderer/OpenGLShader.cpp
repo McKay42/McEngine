@@ -6,6 +6,9 @@
 //===============================================================================//
 
 #include "OpenGLShader.h"
+
+#ifdef MCENGINE_FEATURE_OPENGL
+
 #include "Engine.h"
 #include "ConVar.h"
 
@@ -284,3 +287,5 @@ int OpenGLShader::createShaderFromFile(UString fileName, int shaderType)
 
 	return createShaderFromString(shaderSourcePtr, shaderType);
 }
+
+#endif

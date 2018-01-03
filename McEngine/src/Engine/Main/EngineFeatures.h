@@ -9,6 +9,18 @@
 #define ENGINEFEATURES_H
 
 /*
+ * OpenGL graphics
+ */
+
+#define MCENGINE_FEATURE_OPENGL
+
+/*
+ * DirectX graphics
+ */
+
+//#define MCENGINE_FEATURE_DIRECTX
+
+/*
  * ENet & CURL networking
  */
 //#define MCENGINE_FEATURE_NETWORKING
@@ -34,8 +46,18 @@
 //#define MCENGINE_FEATURE_VULKAN
 
 /*
- * OpenVR
+ * OpenVR (XOR HyperealVR!)
  */
 //#define MCENGINE_FEATURE_OPENVR
+
+/*
+ * HyperealVR (XOR OpenVR!)
+ */
+//#define MCENGINE_FEATURE_HYPEREALVR
+
+/*
+ * Squirrel Scripting
+ */
+//#define MCENGINE_FEATURE_SQUIRREL
 
 #endif

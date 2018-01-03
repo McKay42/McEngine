@@ -88,7 +88,7 @@ WinFile::WinFile(UString filePath)
 #endif
 
 	if (File::debug->getBool())
-		debugLog("WinFile: Opening %s\n", filePath.toUtf8());
+		debugLog("WinFile: Opening %s, m_iFileSize = %i\n", filePath.toUtf8(), m_iFileSize);
 
 	m_bReady = true;
 }

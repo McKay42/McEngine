@@ -11,10 +11,10 @@
 #include "WinGLLegacyInterface.h"
 
 #include <string.h>
-#include <glew.h>
 
 #ifdef MCENGINE_FEATURE_OPENCL
 
+#include "OpenGLHeaders.h"
 #include "cl_gl.h"
 
 #endif

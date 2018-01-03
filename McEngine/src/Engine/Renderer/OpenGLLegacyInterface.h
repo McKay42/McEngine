@@ -8,7 +8,9 @@
 #ifndef LEGACYOPENGLINTERFACE_H
 #define LEGACYOPENGLINTERFACE_H
 
-#include "Graphics.h"
+#include "cbase.h"
+
+#ifdef MCENGINE_FEATURE_OPENGL
 
 class OpenGLLegacyInterface : public Graphics
 {
@@ -111,5 +113,7 @@ private:
 	// clipping
 	std::stack<McRect> m_clipRectStack;
 };
+
+#endif
 
 #endif

@@ -16,7 +16,9 @@ public:
 	VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC);
 	virtual ~VertexArrayObject();
 
+	// TODO: fix the naming schema. clear = empty = just empty the containers, but not necessarily release memory
 	void clear();
+	void empty();
 
 	void addVertex(Vector2 v);
 	void addVertex(Vector3 v);
@@ -41,8 +43,12 @@ public:
 	const std::vector<Vector3> &getNormals() const {return m_normals;}
 	const std::vector<Color> &getColors() const {return m_colors;}
 
+	inline unsigned int getNumVertices() const {return m_iNumVertices;}
+
 protected:
 	static int nearestMultipleOf(int number, int multiple);
+	static int nearestMultipleUp(int number, int multiple);
+	static int nearestMultipleDown(int number, int multiple);
 
 	virtual void init();
 	virtual void initAsync();
@@ -57,6 +63,8 @@ protected:
 	std::vector<std::vector<Vector2>> m_texcoords;
 	std::vector<Vector3> m_normals;
 	std::vector<Color> m_colors;
+
+	unsigned int m_iNumVertices;
 
 	int m_iDrawPercentNearestMultiple;
 	float m_fDrawPercentFromPercent;

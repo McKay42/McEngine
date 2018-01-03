@@ -92,6 +92,7 @@ public:
 	bool isCursorClipped();
 	Vector2 getMousePos();
 	McRect getCursorClip();
+	CURSORTYPE getCursor();
 	void setCursor(CURSORTYPE cur);
 	void setCursorVisible(bool visible);
 	void setMousePos(int x, int y);
@@ -125,6 +126,8 @@ private:
 	bool m_bIsCursorInsideWindow;
 	HCURSOR m_mouseCursor;
 	HCURSOR m_mouseCursorArrow;
+	CURSORTYPE m_cursorType;
+	//bool m_bWasCursorModified;
 
 	// custom
 	bool m_bIsRestartScheduled;
