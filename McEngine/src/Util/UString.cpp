@@ -467,6 +467,8 @@ UString UString::substr(int offset, int charCount) const
 std::vector<UString> UString::split(UString delim)
 {
 	std::vector<UString> results;
+	if (delim.length() < 1 || mLength < 1) return results;
+
 	int start = 0;
 	int end = 0;
 
