@@ -44,7 +44,10 @@ bool g_bUpdate = true;
 bool g_bDraw = true;
 bool g_bDrawing = false;
 
-ConVar fps_max("fps_max", 60.0f);
+bool g_bHasFocus = false; // for fps_max_background
+
+ConVar fps_max("fps_max", 60);
+ConVar fps_max_background("fps_max_background", 30);
 ConVar fps_unlimited("fps_unlimited", false);
 
 Display                 *dpy;
@@ -78,6 +81,22 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 
 	case KeymapNotify:
 		XRefreshKeyboardMapping(&xev.xmapping);
+		break;
+
+	case FocusIn:
+		g_bHasFocus = true;
+		if (g_bRunning && g_engine != NULL)
+		{
+			g_engine->onFocusGained();
+		}
+		break;
+
+	case FocusOut:
+		g_bHasFocus = false;
+		if (g_bRunning && g_engine != NULL)
+		{
+			g_engine->onFocusLost();
+		}
 		break;
 
 	// clipboard
@@ -207,7 +226,9 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 					if (XIMaskIsSet(rawev->valuators.mask, 1))
 						rawY = rawev->valuators.values[1];
 
-					g_engine->onMouseRawMove(rawX, rawY);
+					// TODO: apparently this is in 0-65536 units, convert properly
+					//printf("x = %i, y = %i\n", rawX, rawY);
+					//g_engine->onMouseRawMove(rawX, rawY);
 				}
 				break;
 			}
@@ -256,7 +277,7 @@ int main(int argc, char *argv[])
 
 	// set window attributes
 	swa.colormap = cmap;
-	swa.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | StructureNotifyMask | KeymapStateMask;
+	swa.event_mask = ExposureMask | FocusChangeMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | StructureNotifyMask | KeymapStateMask;
 
 	Screen *defaultScreen = DefaultScreenOfDisplay(dpy);
 	win = XCreateWindow(dpy, root, defaultScreen->width/2 - WINDOW_WIDTH/2, defaultScreen->height/2 - WINDOW_HEIGHT/2, WINDOW_WIDTH, WINDOW_HEIGHT, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
@@ -368,15 +389,26 @@ int main(int argc, char *argv[])
 
 		engine->setFrameTime(deltaTimer->getDelta());
 
-		if (!fps_unlimited.getBool())
+		const bool inBackground = /*g_bMinimized ||*/ !g_bHasFocus;
+		if (!fps_unlimited.getBool() || inBackground)
 		{
 			double delayStart = frameTimer->getElapsedTime();
-			double delayTime = (1.0 / (double)fps_max.getFloat()) - frameTimer->getDelta();
+			double delayTime;
+			if (inBackground)
+				delayTime = (1.0 / (double)fps_max_background.getFloat()) - frameTimer->getDelta();
+			else
+				delayTime = (1.0 / (double)fps_max.getFloat()) - frameTimer->getDelta();
 
-			// more accurate "busy" waiting, but giving away the rest of the timeslice
 			while (delayTime > 0.0)
 			{
-				usleep(1);
+				if (inBackground) // real waiting (very inaccurate, but very good for little background cpu utilization)
+					usleep(1000 * (unsigned int)((1.0f / fps_max_background.getFloat())*1000.0f));
+				else // more or less "busy" waiting, but giving away the rest of the timeslice at least
+					usleep(1);
+
+				// decrease the delayTime by the time we spent in this loop
+				// if the loop is executed more than once, note how delayStart now gets the value of the previous iteration from getElapsedTime()
+				// this works because the elapsed time is only updated in update(). now we can easily calculate the time the Sleep() took and subtract it from the delayTime
 				delayStart = frameTimer->getElapsedTime();
 				frameTimer->update();
 				delayTime -= (frameTimer->getElapsedTime() - delayStart);

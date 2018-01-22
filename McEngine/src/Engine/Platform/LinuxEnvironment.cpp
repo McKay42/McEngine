@@ -49,6 +49,7 @@ LinuxEnvironment::LinuxEnvironment(Display *display, Window window) : Environmen
 	m_bIsCursorInsideWindow = false;
 	m_mouseCursor = XCreateFontCursor(m_display, XC_left_ptr);
 	m_invisibleCursor = makeBlankCursor();
+	m_cursorType = CURSORTYPE::CURSOR_NORMAL;
 
 	m_atom_UTF8_STRING = XInternAtom(m_display, "UTF8_STRING", False);
 	m_atom_CLIPBOARD = XInternAtom(m_display, "CLIPBOARD", False);
@@ -425,7 +426,7 @@ void LinuxEnvironment::enableFullscreen()
 		&xev);
 
 	// force top window
-	XMapRaised(m_display, m_window);
+	focus();
 
 	m_bFullScreen = true;
 }
@@ -622,8 +623,15 @@ McRect LinuxEnvironment::getCursorClip()
 	return m_cursorClip;
 }
 
+CURSORTYPE LinuxEnvironment::getCursor()
+{
+	return m_cursorType;
+}
+
 void LinuxEnvironment::setCursor(CURSORTYPE cur)
 {
+	m_cursorType = cur;
+
 	if (!m_bCursorVisible) return;
 
 	switch (cur)
@@ -669,34 +677,29 @@ void LinuxEnvironment::setCursorVisible(bool visible)
 void LinuxEnvironment::setMousePos(int x, int y)
 {
 	XWarpPointer(m_display, None, m_window, 0, 0, 0, 0, x, y);
-	XFlush(m_display);
+	XSync(m_display, False);
 }
 
 void LinuxEnvironment::setCursorClip(bool clip, McRect rect)
 {
 	if (clip)
 	{
-		// TODO: is a custom rectangle even possible?
-		/*
-		if (XGrabPointer(m_display, m_window, True, 0, GrabModeAsync, GrabModeAsync, m_window, None, CurrentTime) == GrabSuccess)
-			m_bCursorClipped = true;
-		else
-			m_bCursorClipped = false;
-		*/
-
-		// TODO: this is fucked
+		const unsigned int eventMask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask | FocusChangeMask;
+		m_bCursorClipped = (XGrabPointer(m_display, m_window, True, eventMask, GrabModeAsync, GrabModeAsync, m_window, None, CurrentTime) == GrabSuccess);
 	}
 	else
 	{
-		XUngrabPointer(m_display, CurrentTime);
 		m_bCursorClipped = false;
+
+		XUngrabPointer(m_display, CurrentTime);
+		XSync(m_display, False);
 	}
 }
 
 UString LinuxEnvironment::keyCodeToString(KEYCODE keyCode)
 {
-	// TODO:
-	return UString::format("%lu", keyCode);
+	const char *name = XKeysymToString(keyCode);
+	return name != NULL ? UString(name) : UString("");
 }
 
 

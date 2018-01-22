@@ -88,6 +88,7 @@ public:
 	bool isCursorClipped();
 	Vector2 getMousePos();
 	McRect getCursorClip();
+	CURSORTYPE getCursor();
 	void setCursor(CURSORTYPE cur);
 	void setCursorVisible(bool visible);
 	void setMousePos(int x, int y);
@@ -134,6 +135,7 @@ private:
 	bool m_bIsCursorInsideWindow;
 	Cursor m_mouseCursor;
 	Cursor m_invisibleCursor;
+	CURSORTYPE m_cursorType;
 
 	// clipboard
 	UString m_sLocalClipboardContent;
