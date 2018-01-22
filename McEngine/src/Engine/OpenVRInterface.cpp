@@ -9,6 +9,7 @@
 
 #include "Engine.h"
 #include "ConVar.h"
+#include "Console.h"
 #include "Environment.h"
 #include "ResourceManager.h"
 #include "Shader.h"
@@ -60,6 +61,8 @@ ConVar vr_controller_model_brightness_multiplier("vr_controller_model_brightness
 ConVar vr_background_brightness("vr_background_brightness", 0.1f);
 
 ConVar vr_spectator_mode("vr_spectator_mode", false);
+ConVar vr_spectator_camera_rotation("vr_spectator_camera_rotation", "0 0 0", "rotation of the camera (in degrees): yaw pitch roll");
+ConVar vr_spectator_camera_position("vr_spectator_camera_position", "0 0 0", "position of the camera (in meters): x y z");
 ConVar vr_auto_switch_primary_controller("vr_auto_switch_primary_controller", true);
 ConVar vr_fake_camera_movement("vr_fake_camera_movement", false);
 ConVar vr_fake_controller_movement("vr_fake_controller_movement", false);
@@ -229,6 +232,8 @@ OpenVRInterface::OpenVRInterface()
 	vr_showkeyboard.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::showKeyboard));
 	vr_hidekeyboard.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::hideKeyboard));
 	vr_reset_fake_camera_movement.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::resetFakeCameraMovement));
+	vr_spectator_camera_position.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onSpectatorCameraPositionChange));
+	vr_spectator_camera_rotation.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onSpectatorCameraRotationChange));
 
 	// debugging
 	m_fakeCamera = new Camera();
@@ -2162,6 +2167,28 @@ void OpenVRInterface::onHeadRenderModelChange(UString oldValue, UString newValue
 #endif
 }
 
+void OpenVRInterface::onSpectatorCameraPositionChange(UString oldValue, UString newValue)
+{
+#ifdef MCENGINE_FEATURE_OPENVR
+
+	std::vector<UString> tokens = newValue.split(" ");
+	if (tokens.size() > 2)
+		m_fakeCamera->setPos(Vector3(tokens[0].toFloat(), tokens[1].toFloat(), tokens[2].toFloat()));
+
+#endif
+}
+
+void OpenVRInterface::onSpectatorCameraRotationChange(UString oldValue, UString newValue)
+{
+#ifdef MCENGINE_FEATURE_OPENVR
+
+	std::vector<UString> tokens = newValue.split(" ");
+	if (tokens.size() > 2)
+		m_fakeCamera->setRotation(tokens[0].toFloat(), tokens[1].toFloat(), tokens[2].toFloat());
+
+#endif
+}
+
 void OpenVRInterface::toggleFakeCameraMouseCapture()
 {
 	m_bCaptureMouse = !m_bCaptureMouse;
@@ -2182,12 +2209,29 @@ void OpenVRInterface::toggleFakeCameraMouseCapture()
 
 void OpenVRInterface::saveFakeCamera()
 {
-	// TODO:
+	debugLog("OpenVRInterface::saveFakeCamera()\n");
+
+	vr_spectator_camera_position.setValue(UString::format("%f %f %f", m_fakeCamera->getPos().x, m_fakeCamera->getPos().y, m_fakeCamera->getPos().z));
+	vr_spectator_camera_rotation.setValue(UString::format("%f %f %f", m_fakeCamera->getYaw(), m_fakeCamera->getPitch(), m_fakeCamera->getRoll()));
+
+	std::ofstream out("cfg/vrspectatorcamera.cfg");
+	if (!out.good())
+	{
+		debugLog("OpenVRInterface::saveFakeCamera() failed!\n");
+		return;
+	}
+
+	out << vr_spectator_camera_position.getName().toUtf8() << " " << vr_spectator_camera_position.getString().toUtf8();
+	out << "\n";
+	out << vr_spectator_camera_rotation.getName().toUtf8() << " " << vr_spectator_camera_rotation.getString().toUtf8();
+	out << "\n";
+
+	out.close();
 }
 
 void OpenVRInterface::loadFakeCamera()
 {
-	// TODO:
+	Console::execConfigFile("vrspectatorcamera");
 }
 
 
