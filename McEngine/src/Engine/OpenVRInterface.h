@@ -125,6 +125,8 @@ private:
 	void onAAChange(UString oldValue, UString newValue);
 	void onBackgroundBrightnessChange(UString oldValue, UString newValue);
 	void onHeadRenderModelChange(UString oldValue, UString newValue);
+	void onSpectatorCameraPositionChange(UString oldValue, UString newValue);
+	void onSpectatorCameraRotationChange(UString oldValue, UString newValue);
 
 #ifdef MCENGINE_FEATURE_OPENVR
 
