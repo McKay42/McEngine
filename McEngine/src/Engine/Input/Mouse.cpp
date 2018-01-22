@@ -117,7 +117,8 @@ void Mouse::update()
 
 	resetWheelDelta();
 
-	if (!engine->hasFocus() || env->isCursorVisible() || !env->isCursorInWindow() || m_bAbsolute)
+	// HACKHACK: linux hack
+	if (!engine->hasFocus() || env->isCursorVisible() || !env->isCursorInWindow() || env->getOS() == Environment::OS::OS_LINUX || m_bAbsolute)
 	{
 		// this block here handles movement if the OS cursor is visible, or if we have an absolute input device (tablet)
 
