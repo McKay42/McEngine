@@ -1502,6 +1502,9 @@ void OpenVRInterface::update()
 			m_controller->updateDebug(engine->getMouse()->isLeftDown() ? 1.0f : 0.0f);
 			m_controller->updateMatrixPoseDebug(-m_fakeCamera->getPos(), -m_fakeCamera->getViewDirection(), m_fakeCamera->getViewUp(), -m_fakeCamera->getViewRight());
 		}
+
+		if (!engine->hasFocus() && m_bCaptureMouse)
+			toggleFakeCameraMouseCapture();
 	}
 }
 
