@@ -62,10 +62,14 @@ private:
 	void setPosXY(float x, float y); // shit hack
 
 	Vector2 m_vPos;
-	Vector2 m_vPrevPos;
+	Vector2 m_vPosWithoutOffset;
+	Vector2 m_vPrevOsMousePos;
 	Vector2 m_vDelta;
+
 	Vector2 m_vRawDelta;
 	Vector2 m_vRawDeltaActual;
+	Vector2 m_vRawDeltaAbsolute;
+	Vector2 m_vRawDeltaAbsoluteActual;
 
 	bool m_bMouseLeftDown;
 	bool m_bMouseMiddleDown;
@@ -81,7 +85,6 @@ private:
 	// custom
 	bool m_bAbsolute;
 	bool m_bVirtualDesktop;
-	bool m_bSwitch;
 	Vector2 m_vActualPos;
 	Vector2 m_vOffset;
 	Vector2 m_vScale;

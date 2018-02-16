@@ -629,11 +629,7 @@ bool WinEnvironment::isCursorVisible()
 Vector2 WinEnvironment::getMousePos()
 {
 	POINT mpos;
-	if (GetCursorPos(&mpos) == 0)
-	{
-		debugLog("WinEnvironment Error: GetCursorPos() returned 0!\n");
-		return Vector2();
-	}
+	GetCursorPos(&mpos);
 	ScreenToClient(m_hwnd, &mpos);
 	return Vector2(mpos.x, mpos.y);
 }
@@ -710,8 +706,8 @@ void WinEnvironment::setMousePos(int x, int y)
 	POINT temp;
 	temp.x = (LONG)x;
 	temp.y = (LONG)y;
-	ClientToScreen(m_hwnd,&temp);
-	SetCursorPos((int)temp.x,(int)temp.y);
+	ClientToScreen(m_hwnd, &temp);
+	SetCursorPos((int)temp.x, (int)temp.y);
 }
 
 void WinEnvironment::setCursorClip(bool clip, McRect rect)
