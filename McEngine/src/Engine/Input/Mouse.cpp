@@ -33,10 +33,9 @@ Mouse::Mouse() : InputDevice()
 
 	m_bAbsolute = false;
 	m_bVirtualDesktop = false;
-	m_bSwitch = false;
-	m_vOffset = Vector2(0,0);
-	m_vScale = Vector2(1,1);
-	m_vActualPos = m_vPrevPos = m_vPos = env->getMousePos();
+	m_vOffset = Vector2(0, 0);
+	m_vScale = Vector2(1, 1);
+	m_vActualPos = m_vPosWithoutOffset = m_vPos = env->getMousePos();
 	desktopRect = env->getDesktopRect();
 }
 
@@ -65,8 +64,8 @@ void Mouse::draw(Graphics *g)
 	}
 
 	// green = scaled & offset virtual area
-	const Vector2 scaledOffset = m_vOffset*m_vScale;
-	const Vector2 scaledEngineScreenSize = engine->getScreenSize()*m_vScale + 2*scaledOffset;
+	const Vector2 scaledOffset = m_vOffset;
+	const Vector2 scaledEngineScreenSize = engine->getScreenSize()*m_vScale;
 	g->setColor(0xff00ff00);
 	g->drawRect(-scaledOffset.x, -scaledOffset.y, scaledEngineScreenSize.x, scaledEngineScreenSize.y);
 }
@@ -111,14 +110,143 @@ void Mouse::drawDebug(Graphics *g)
 
 void Mouse::update()
 {
+	m_vDelta.zero();
+
 	m_vRawDelta = m_vRawDeltaActual;
-	if (!m_bAbsolute)
-		m_vRawDeltaActual.zero();
+	m_vRawDeltaActual.zero();
+
+	m_vRawDeltaAbsolute = m_vRawDeltaAbsoluteActual; // don't zero an absolute!
 
 	resetWheelDelta();
 
-	// HACKHACK: linux hack
-	if (!engine->hasFocus() || env->isCursorVisible() || !env->isCursorInWindow() || env->getOS() == Environment::OS::OS_LINUX || m_bAbsolute)
+	// if the operating system cursor is potentially being used or visible in any way, do not interfere with it! (sensitivity, setCursorPos(), etc.)
+	// same goes for a sensitivity of 1 without raw input, it is not necessary to call setPos() in that case
+
+	McRect windowRect = McRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight());
+	const bool osCursorVisible = env->isCursorVisible() || !env->isCursorInWindow() || !engine->hasFocus();
+	const bool sensitivityAdjustmentNeeded = mouse_sensitivity.getFloat() != 1.0f;
+
+	const Vector2 osMousePos = env->getMousePos();
+
+	Vector2 nextPos = osMousePos;
+
+	if (osCursorVisible || (!sensitivityAdjustmentNeeded && !mouse_raw_input.getBool()) || m_bAbsolute || env->getOS() == Environment::OS::OS_LINUX) // HACKHACK: linux hack
+	{
+		// this block handles visible/active OS cursor movement without sensitivity adjustments, and absolute input device movement
+		if (m_bAbsolute)
+		{
+			// absolute input (with sensitivity)
+			if (!tablet_sensitivity_ignore.getBool())
+			{
+				// NOTE: these range values work on windows only!
+				// TODO: standardize the input values before they even reach the engine, this should not be in here
+				float rawRangeX = 65536; // absolute coord range, but what if I want to have a tablet that's more accurate than 1/65536-th? >:(
+				float rawRangeY = 65536;
+
+				// if enabled, uses the screen resolution as the coord range, instead of 65536
+				if (win_ink_workaround.getBool())
+				{
+					rawRangeX = env->getNativeScreenSize().x;
+					rawRangeY = env->getNativeScreenSize().y;
+				}
+
+				if (mouse_raw_input_absolute_to_window.getBool())
+				{
+					const Vector2 scaledOffset = m_vOffset;
+					const Vector2 scaledEngineScreenSize = engine->getScreenSize() + 2*scaledOffset;
+
+					nextPos.x = (((float)((m_vRawDeltaAbsolute.x - rawRangeX/2) * mouse_sensitivity.getFloat()) + rawRangeX/2) / rawRangeX) * scaledEngineScreenSize.x - scaledOffset.x;
+					nextPos.y = (((float)((m_vRawDeltaAbsolute.y - rawRangeY/2) * mouse_sensitivity.getFloat()) + rawRangeY/2) / rawRangeY) * scaledEngineScreenSize.y - scaledOffset.y;
+				}
+				else
+				{
+                    // shift and scale to desktop
+					McRect screen = m_bVirtualDesktop ? env->getVirtualScreenRect() : desktopRect;
+					const Vector2 posInScreenCoords = Vector2((m_vRawDeltaAbsolute.x/rawRangeX) * screen.getWidth() + screen.getX(), (m_vRawDeltaAbsolute.y/rawRangeY) * screen.getHeight() + screen.getY());
+
+					// offset to window
+					nextPos = posInScreenCoords - env->getWindowPos();
+
+					// apply sensitivity, scale and offset to engine
+					nextPos.x = ((nextPos.x - engine->getScreenSize().x / 2) * mouse_sensitivity.getFloat() + engine->getScreenSize().x / 2);
+					nextPos.y = ((nextPos.y - engine->getScreenSize().y / 2) * mouse_sensitivity.getFloat() + engine->getScreenSize().y / 2);
+				}
+			}
+		}
+		else
+		{
+			// relative input (without sensitivity)
+			// (nothing to do here except updating the delta, since nextPos is already set to env->getMousePos() by default)
+			m_vDelta = osMousePos - m_vPrevOsMousePos;
+		}
+	}
+	else
+	{
+		// this block handles relative input with sensitivity adjustments, either raw or non-raw
+
+		// calculate delta (either raw, or non-raw)
+		if (mouse_raw_input.getBool())
+			m_vDelta = m_vRawDelta; // this is already scaled to the sensitivity
+		else
+		{
+			// non-raw input is always in pixels, sub-pixel movement is handled/buffered by the operating system
+			if ((int)osMousePos.x != (int)m_vPrevOsMousePos.x || (int)osMousePos.y != (int)m_vPrevOsMousePos.y) // without this check some people would get mouse drift
+				m_vDelta = (osMousePos - m_vPrevOsMousePos) * mouse_sensitivity.getFloat();
+		}
+
+		nextPos = m_vPosWithoutOffset + m_vDelta;
+
+		// special case: relative input is ALWAYS clipped/confined to the window
+		nextPos.x = clamp<float>(nextPos.x, windowRect.getMinX(), windowRect.getMaxX());
+		nextPos.y = clamp<float>(nextPos.y, windowRect.getMinY(), windowRect.getMaxY());
+	}
+
+	// clip/confine cursor
+	if (env->isCursorClipped())
+	{
+		const McRect cursorClip = env->getCursorClip();
+		nextPos.x = clamp<float>(nextPos.x, cursorClip.getMinX() - m_vOffset.x + 1, cursorClip.getMaxX() + m_vOffset.x - 1);
+		nextPos.y = clamp<float>(nextPos.y, cursorClip.getMinY() - m_vOffset.y + 1, cursorClip.getMaxY() + m_vOffset.y - 1);
+	}
+
+	// set new virtual cursor position (this applies the offset as well)
+	onPosChange(nextPos);
+
+	// set new os cursor position, but only if the osMousePos is still within the window and the sensitivity is not 1;
+	// raw input ALWAYS needs setPos()
+	// absolute input NEVER needs setPos()
+	// also update prevOsMousePos
+	if (windowRect.contains(osMousePos) && (sensitivityAdjustmentNeeded || mouse_raw_input.getBool()) && !m_bAbsolute)
+	{
+		const Vector2 newOsMousePos = m_vPosWithoutOffset;
+
+		env->setMousePos(newOsMousePos.x, newOsMousePos.y);
+
+		// assume that the operating system has set the cursor to nextPos quickly enough for the next frame
+		// also, force clamp to pixels, as this happens there too (to avoid drifting in the non-raw delta calculation)
+		m_vPrevOsMousePos = newOsMousePos;
+		m_vPrevOsMousePos.x = (int)m_vPrevOsMousePos.x;
+		m_vPrevOsMousePos.y = (int)m_vPrevOsMousePos.y;
+
+		// 3 cases can happen in the next frame:
+		// 1) the operating system did not update the cursor quickly enough. osMousePos != nextPos
+		// 2) the operating system did update the cursor quickly enough, but the user moved the mouse in the meantime. osMousePos != nextPos
+		// 3) the operating system did update the cursor quickly enough, and the user did not move the mouse in the meantime. osMousePos == nextPos
+
+		// it's impossible to determine if osMousePos != nextPos was caused by the user moving the mouse, or by the operating system not updating the cursor position quickly enough
+
+		// 2 cases can happen after trusting the operating system to apply nextPos correctly:
+		// 1) delta is applied twice, due to the operating system not updating quickly enough, cursor jumps too far
+		// 2) delta is applied once, cursor works as expected
+
+		// all of this shit can be avoided by just enabling mouse_raw_input
+	}
+	else
+		m_vPrevOsMousePos = osMousePos;
+
+	// old implementation:
+	/*
+	if (!engine->hasFocus() || env->isCursorVisible() || !env->isCursorInWindow() || env->getOS() == Environment::OS::OS_LINUX || m_bAbsolute) // HACKHACK: linux hack
 	{
 		// this block here handles movement if the OS cursor is visible, or if we have an absolute input device (tablet)
 
@@ -238,6 +366,7 @@ void Mouse::update()
 			m_vPrevPos = m_vPos = m_vActualPos;
 		}
 	}
+	*/
 }
 
 void Mouse::addListener(MouseListener *mouseListener, bool insertOnTop)
@@ -277,11 +406,14 @@ void Mouse::resetWheelDelta()
 
 void Mouse::onPosChange(Vector2 pos)
 {
-	m_vPos = (m_vOffset + pos)*m_vScale;
-	m_vPos.x = (int)m_vPos.x;
-	m_vPos.y = (int)m_vPos.y;
+	m_vPos = (m_vOffset + pos);
+	m_vPosWithoutOffset = pos;
 
-	m_vPrevPos = m_vActualPos = m_vPos;
+	// old implementation had rounding here
+	//m_vPos.x = (int)m_vPos.x;
+	//m_vPos.y = (int)m_vPos.y;
+
+	m_vActualPos = m_vPos;
 
 	setPosXY(m_vPos.x, m_vPos.y);
 }
@@ -323,9 +455,9 @@ void Mouse::onRawMove(int xDelta, int yDelta, bool absolute, bool virtualDesktop
 	if (xDelta != 0 || yDelta != 0) // sanity check, else some people get mouse drift like above, I don't even
 	{
 		if (!m_bAbsolute) // mouse
-			m_vRawDeltaActual += Vector2(xDelta, yDelta)*mouse_sensitivity.getFloat();
+			m_vRawDeltaActual += Vector2(xDelta, yDelta) * mouse_sensitivity.getFloat();
 		else // tablet
-			m_vRawDeltaActual = Vector2(xDelta, yDelta);
+			m_vRawDeltaAbsoluteActual = Vector2(xDelta, yDelta);
 	}
 }
 
