@@ -202,7 +202,7 @@ void Mouse::update()
 	}
 
 	// clip/confine cursor
-	if (env->isCursorClipped())
+	if (env->isCursorClipped() && env->getOS() != Environment::OS::OS_LINUX) // HACKHACK: linux hack
 	{
 		const McRect cursorClip = env->getCursorClip();
 		nextPos.x = clamp<float>(nextPos.x, cursorClip.getMinX() - m_vOffset.x + 1, cursorClip.getMaxX() + m_vOffset.x - 1);
