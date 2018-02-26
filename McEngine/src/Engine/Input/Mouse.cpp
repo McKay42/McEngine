@@ -119,6 +119,8 @@ void Mouse::update()
 
 	resetWheelDelta();
 
+	// TODO: clean up OS specific handling, specifically all the linux blocks
+
 	// if the operating system cursor is potentially being used or visible in any way, do not interfere with it! (sensitivity, setCursorPos(), etc.)
 	// same goes for a sensitivity of 1 without raw input, it is not necessary to call setPos() in that case
 
@@ -216,7 +218,7 @@ void Mouse::update()
 	// raw input ALWAYS needs setPos()
 	// absolute input NEVER needs setPos()
 	// also update prevOsMousePos
-	if (windowRect.contains(osMousePos) && (sensitivityAdjustmentNeeded || mouse_raw_input.getBool()) && !m_bAbsolute)
+	if (windowRect.contains(osMousePos) && (sensitivityAdjustmentNeeded || mouse_raw_input.getBool()) && !m_bAbsolute && env->getOS() != Environment::OS::OS_LINUX) // HACKHACK: linux hack
 	{
 		const Vector2 newOsMousePos = m_vPosWithoutOffset;
 
