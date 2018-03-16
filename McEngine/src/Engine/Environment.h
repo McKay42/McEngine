@@ -83,8 +83,11 @@ public:
 	virtual void setWindowSize(int width, int height) = 0;
 	virtual void setWindowResizable(bool resizable) = 0;
 	virtual void setWindowGhostCorporeal(bool corporeal) = 0;
+	virtual void setMonitor(int monitor) = 0;
 	virtual Vector2 getWindowPos() = 0;
 	virtual Vector2 getWindowSize() = 0;
+	virtual int getMonitor() = 0;
+	virtual std::vector<McRect> getMonitors() = 0;
 	virtual Vector2 getNativeScreenSize() = 0;
 	virtual McRect getVirtualScreenRect() = 0;
 	virtual McRect getDesktopRect() = 0;
@@ -114,6 +117,8 @@ public:
 	virtual bool isFullscreenWindowedBorderless() {return m_bFullscreenWindowedBorderless;}
 
 protected:
+	static ConVar *debug_env;
+
 	bool m_bFullscreenWindowedBorderless;
 };
 

@@ -74,8 +74,11 @@ public:
 	void setWindowSize(int width, int height);
 	void setWindowResizable(bool resizable);
 	void setWindowGhostCorporeal(bool corporeal);
+	void setMonitor(int monitor);
 	Vector2 getWindowPos();
 	Vector2 getWindowSize();
+	int getMonitor();
+	std::vector<McRect> getMonitors();
 	Vector2 getNativeScreenSize();
 	McRect getVirtualScreenRect();
 	McRect getDesktopRect();
@@ -116,9 +119,11 @@ private:
 	void setClipBoardTextInt(UString clipText);
 	UString getClipboardTextInt();
 
-
 	Display *m_display;
 	Window m_window;
+
+	// monitors
+	static std::vector<McRect> m_vMonitors;
 
 	// window
 	static bool m_bResizable;
