@@ -66,7 +66,8 @@ LinuxEnvironment::LinuxEnvironment(Display *display, Window window) : Environmen
 	if (m_vMonitors.size() < 1)
 	{
 		debugLog("WARNING: No monitors found! Adding default monitor ...\n");
-		m_vMonitors.push_back(McRect(0, 0, m_vWindowSize.x, m_vWindowSize.y));
+		const Vector2 windowSize = getWindowSize();
+		m_vMonitors.push_back(McRect(0, 0, windowSize.x, windowSize.y));
 	}
 }
 
