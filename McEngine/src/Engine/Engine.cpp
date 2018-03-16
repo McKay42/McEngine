@@ -53,6 +53,7 @@ void __host_timescale( UString oldValue, UString newValue )
 ConVar epilepsy("epilepsy", false);
 ConVar debug_engine("debug_engine", false);
 ConVar minimize_on_focus_lost_if_fullscreen("minimize_on_focus_lost_if_fullscreen", true);
+ConVar minimize_on_focus_lost_if_borderless_windowed_fullscreen("minimize_on_focus_lost_if_borderless_windowed_fullscreen", false);
 ConVar _win_realtimestylus("win_realtimestylus", false, "if compiled on Windows, enables native RealTimeStylus support for tablet clicks");
 ConVar *win_realtimestylus = &_win_realtimestylus;
 
@@ -364,8 +365,13 @@ void Engine::onFocusLost()
 	if (m_app != NULL)
 		m_app->onFocusLost();
 
-	if (m_environment->isFullscreen() && minimize_on_focus_lost_if_fullscreen.getBool())
-		m_environment->minimize();
+	// auto minimize on certain conditions
+	if (m_environment->isFullscreen() && !m_environment->isFullscreenWindowedBorderless() && minimize_on_focus_lost_if_fullscreen.getBool())
+	{
+		if ((!m_environment->isFullscreenWindowedBorderless() && minimize_on_focus_lost_if_fullscreen.getBool())
+		  || (m_environment->isFullscreenWindowedBorderless() && minimize_on_focus_lost_if_borderless_windowed_fullscreen.getBool()))
+			m_environment->minimize();
+	}
 }
 
 void Engine::onMinimized()
