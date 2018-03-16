@@ -14,15 +14,14 @@ class Image;
 
 class TextureAtlas : public Resource
 {
-private:
-	static const int PADDING = 1;
-
 public:
 	TextureAtlas(int width = 512, int height = 512);
 	virtual ~TextureAtlas() {destroy();}
 
 	Vector2 put(int width, int height, Color *pixels) {return put(width, height, false, false, pixels);}
 	Vector2 put(int width, int height, bool flipHorizontal, bool flipVertical, Color *pixels);
+
+	void setPadding(int padding) {m_iPadding = padding;}
 
 	inline int getWidth() const {return m_iWidth;}
 	inline int getHeight() const {return m_iHeight;}
@@ -32,6 +31,8 @@ private:
 	virtual void init();
 	virtual void initAsync();
 	virtual void destroy();
+
+	int m_iPadding;
 
 	int m_iWidth;
 	int m_iHeight;
