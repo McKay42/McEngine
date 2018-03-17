@@ -17,7 +17,6 @@
 class WinEnvironment : public Environment
 {
 public:
-	// ILLEGAL:
 	static long getWindowStyleWindowed();
 	static long getWindowStyleFullscreen();
 
@@ -78,8 +77,11 @@ public:
 	void setWindowSize(int width, int height);
 	void setWindowResizable(bool resizable);
 	void setWindowGhostCorporeal(bool corporeal);
+	void setMonitor(int monitor);
 	Vector2 getWindowPos();
 	Vector2 getWindowSize();
+	int getMonitor();
+	std::vector<McRect> getMonitors();
 	Vector2 getNativeScreenSize();
 	McRect getVirtualScreenRect();
 	McRect getDesktopRect();
@@ -109,9 +111,14 @@ public:
 private:
 	void path_strip_filename(TCHAR *Path);
 	void handleShowMessageFullscreen();
+	void enumerateMonitors();
+	static BOOL CALLBACK monitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 
 	HWND m_hwnd;
 	HINSTANCE m_hInstance;
+
+	// monitors
+	static std::vector<McRect> m_vMonitors;
 
 	// window
 	static bool m_bResizable;
@@ -127,7 +134,6 @@ private:
 	HCURSOR m_mouseCursor;
 	HCURSOR m_mouseCursorArrow;
 	CURSORTYPE m_cursorType;
-	//bool m_bWasCursorModified;
 
 	// custom
 	bool m_bIsRestartScheduled;

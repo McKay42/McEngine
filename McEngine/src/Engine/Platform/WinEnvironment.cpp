@@ -9,8 +9,10 @@
 
 #include "WinEnvironment.h"
 #include "Engine.h"
+#include "ConVar.h"
 #include "Mouse.h"
 
+#include "NullGraphicsInterface.h"
 #include "DirectX11Interface.h"
 #include "WinGLLegacyInterface.h"
 #include "WinGL3Interface.h"
@@ -29,6 +31,7 @@
 bool g_bCursorVisible = true;
 
 bool WinEnvironment::m_bResizable = true;
+std::vector<McRect> WinEnvironment::m_vMonitors;
 
 WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance) : Environment()
 {
@@ -39,28 +42,27 @@ WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance) : Environment()
 	m_bFullScreen = false;
 	m_vWindowSize = getWindowSize();
 	m_bCursorClipped = false;
-	//m_bWasCursorModified = false;
 
 	m_bIsRestartScheduled = false;
+
+	// init
+	enumerateMonitors();
+
+	if (m_vMonitors.size() < 1)
+	{
+		debugLog("WARNING: No monitors found! Adding default monitor ...\n");
+		m_vMonitors.push_back(McRect(0, 0, m_vWindowSize.x, m_vWindowSize.y));
+	}
 }
 
 void WinEnvironment::update()
 {
 	m_bIsCursorInsideWindow = McRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight()).contains(getMousePos());
-
-	/*
-	if (!m_bWasCursorModified && m_cursorType != CURSORTYPE::CURSOR_NORMAL)
-	{
-		//debugLog("WinEnvironment::update() resetting cursor to normal.\n");
-		setCursor(CURSORTYPE::CURSOR_NORMAL);
-	}
-
-	m_bWasCursorModified = false;
-	*/
 }
 
 Graphics *WinEnvironment::createRenderer()
 {
+	//return new NullGraphicsInterface();
 	//return new VulkanGraphicsInterface();
 	//return new WinSWGraphicsInterface(m_hwnd);
 	return new WinGLLegacyInterface(m_hwnd);
@@ -93,24 +95,30 @@ UString WinEnvironment::getUsername()
 {
 	DWORD username_len = UNLEN+1;
 	wchar_t username[username_len];
+
 	if (GetUserNameW(username, &username_len))
 		return UString(username);
+
 	return UString("");
 }
 
 UString WinEnvironment::getUserDataPath()
 {
 	wchar_t path[PATH_MAX];
+
 	if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, path)))
 		return UString(path);
+
 	return UString("");
 }
 
 UString WinEnvironment::getExecutablePath()
 {
 	wchar_t path[MAX_PATH];
+
 	if (GetModuleFileNameW(NULL, path, MAX_PATH))
 		return UString(path);
+
 	return UString("");
 }
 
@@ -449,27 +457,32 @@ void WinEnvironment::focus()
 
 void WinEnvironment::center()
 {
-	RECT rect;
-	GetClientRect(m_hwnd, &rect);
+	RECT clientRect;
+	GetClientRect(m_hwnd, &clientRect);
 
-	int width = rect.right - rect.left;
-	int height = rect.bottom - rect.top;
-	int xPos = (GetSystemMetrics(SM_CXSCREEN)/2) - (int)(width/2);
-	int yPos = (GetSystemMetrics(SM_CYSCREEN)/2) - (int)(height/2);
+	// get nearest monitor and center on that, build windowed pos + size
+	const McRect desktopRect = getDesktopRect();
+	int width = std::abs(clientRect.right - clientRect.left);
+	int height = std::abs(clientRect.bottom - clientRect.top);
+	int xPos = desktopRect.getX() + (desktopRect.getWidth()/2) - (int)(width/2);
+	int yPos = desktopRect.getY() + (desktopRect.getHeight()/2) - (int)(height/2);
 
+	// calculate window size for client size (to respect borders etc.)
 	RECT clientArea;
 	clientArea.left = xPos;
 	clientArea.top = yPos;
-	clientArea.right = xPos+width;
-	clientArea.bottom = yPos+height;
+	clientArea.right = xPos + width;
+	clientArea.bottom = yPos + height;
 	AdjustWindowRect(&clientArea, getWindowStyleWindowed(), FALSE);
 
+	// set window pos as prev pos, apply it
 	xPos = clientArea.left;
 	yPos = clientArea.top;
-	width = clientArea.right - clientArea.left;
-	height = clientArea.bottom - clientArea.top;
-
-	MoveWindow(m_hwnd, xPos, yPos, width, height, FALSE);
+	width = std::abs(clientArea.right - clientArea.left);
+	height = std::abs(clientArea.bottom - clientArea.top);
+	m_vLastWindowPos.x = xPos;
+	m_vLastWindowPos.y = yPos;
+	MoveWindow(m_hwnd, xPos, yPos, width, height, FALSE); // non-client width/height!
 }
 
 void WinEnvironment::minimize()
@@ -486,20 +499,21 @@ void WinEnvironment::enableFullscreen()
 {
 	if (m_bFullScreen) return;
 
-	// get fullscreen resolution, backup screen size
-	int width = GetSystemMetrics(SM_CXSCREEN);
-	int height = GetSystemMetrics(SM_CYSCREEN) + (m_bFullscreenWindowedBorderless ? 1 : 0);
-	m_vLastWindowSize = m_vWindowSize;
-
-	// get screen pos
+	// backup prev window pos + size
 	RECT rect;
 	GetWindowRect(m_hwnd, &rect);
 	m_vLastWindowPos.x = rect.left;
 	m_vLastWindowPos.y = rect.top;
+	m_vLastWindowSize = m_vWindowSize;
 
-	// revert
+	// get nearest monitor, build fullscreen resolution
+	const McRect desktopRect = getDesktopRect();
+	const int width = desktopRect.getWidth();
+	const int height = desktopRect.getHeight() + (m_bFullscreenWindowedBorderless ? 1 : 0);
+
+	// and apply everything (move + resize)
 	SetWindowLongPtr(m_hwnd, GWL_STYLE, getWindowStyleFullscreen());
-	MoveWindow(m_hwnd, 0, 0, width, height, FALSE);
+	MoveWindow(m_hwnd, (int)(desktopRect.getX()), (int)(desktopRect.getY()), width, height, FALSE);
 
 	m_bFullScreen = true;
 }
@@ -508,16 +522,13 @@ void WinEnvironment::disableFullscreen()
 {
 	if (!m_bFullScreen) return;
 
-	RECT rect;
-	rect.left = 0;
-	rect.top = 0;
-	rect.right = m_vLastWindowSize.x;
-	rect.bottom = m_vLastWindowSize.y;
+	// clamp window size to monitor
+	const McRect desktopRect = getDesktopRect();
+	m_vLastWindowSize.x = std::min(m_vLastWindowSize.x, desktopRect.getWidth());
+	m_vLastWindowSize.y = std::min(m_vLastWindowSize.y, desktopRect.getHeight());
 
-	// maximize
 	SetWindowLongPtr(m_hwnd, GWL_STYLE, getWindowStyleWindowed());
-	AdjustWindowRect(&rect, getWindowStyleWindowed(), FALSE);
-	MoveWindow(m_hwnd, m_vLastWindowPos.x, m_vLastWindowPos.y, m_vLastWindowSize.x, m_vLastWindowSize.y, FALSE);
+	MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vLastWindowSize.x, (int)m_vLastWindowSize.y, FALSE); // non-client width/height!
 
 	m_bFullScreen = false;
 }
@@ -529,30 +540,30 @@ void WinEnvironment::setWindowTitle(UString title)
 
 void WinEnvironment::setWindowPos(int x, int y)
 {
-	RECT clientRect;
-	GetClientRect(m_hwnd, &clientRect);
-	m_vLastWindowSize = Vector2(clientRect.right,clientRect.bottom);
-
-	MoveWindow(m_hwnd, x, y, m_vLastWindowSize.x, m_vLastWindowSize.y, FALSE);
+	SetWindowPos(m_hwnd, m_hwnd, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOOWNERZORDER | SWP_NOACTIVATE);
 }
 
 void WinEnvironment::setWindowSize(int width, int height)
 {
-	// backup last position
+	// backup last window pos
 	RECT rect;
 	GetWindowRect(m_hwnd, &rect);
 	m_vLastWindowPos.x = rect.left;
 	m_vLastWindowPos.y = rect.top;
 
 	// request window size based on client size
-	rect = {0, 0, width, height};
+	rect.left = 0;
+	rect.top = 0;
+	rect.right = width;
+	rect.bottom = height;
 	AdjustWindowRect(&rect, getWindowStyleWindowed(), FALSE);
 
-	// remember and set the new size
-	m_vWindowSize.x = rect.right - rect.left;
-	m_vWindowSize.y = rect.bottom - rect.top;
+	// build new size, set it as the last size
+	m_vWindowSize.x = std::abs(rect.right - rect.left);
+	m_vWindowSize.y = std::abs(rect.bottom - rect.top);
 	m_vLastWindowSize = m_vWindowSize;
-	MoveWindow(m_hwnd, m_vLastWindowPos.x, m_vLastWindowPos.y, m_vWindowSize.x, m_vWindowSize.y, FALSE);
+
+	MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vWindowSize.x, (int)m_vWindowSize.y, FALSE); // non-client width/height!
 }
 
 void WinEnvironment::setWindowResizable(bool resizable)
@@ -572,13 +583,38 @@ void WinEnvironment::setWindowGhostCorporeal(bool corporeal)
 	SetWindowLongPtr(m_hwnd, GWL_EXSTYLE, exStyle);
 }
 
+void WinEnvironment::setMonitor(int monitor)
+{
+	monitor = clamp<int>(monitor, 0, m_vMonitors.size()-1);
+	if (monitor == getMonitor()) return;
+
+	const McRect desktopRect = m_vMonitors[monitor];
+	const bool wasFullscreen = m_bFullScreen;
+
+	if (wasFullscreen)
+		disableFullscreen();
+
+	// build new window size, clamp to monitor size (otherwise the borders would be hidden offscreen)
+	RECT windowRect;
+	GetWindowRect(m_hwnd, &windowRect);
+	const Vector2 windowSize = Vector2(std::abs((int)(windowRect.right - windowRect.left)), std::abs((int)(windowRect.bottom - windowRect.top)));
+	const int width = std::min((int)windowSize.x, (int)desktopRect.getWidth());
+	const int height = std::min((int)windowSize.y, (int)desktopRect.getHeight());
+
+	// move and resize, force center
+	MoveWindow(m_hwnd, desktopRect.getX(), desktopRect.getY(), width, height, FALSE); // non-client width/height!
+	center();
+
+	if (wasFullscreen)
+		enableFullscreen();
+}
+
 Vector2 WinEnvironment::getWindowPos()
 {
-	// this respects the window border, because the engine only works in client coordinates
 	POINT p;
 	p.x = 0;
 	p.y = 0;
-	ClientToScreen(m_hwnd, &p);
+	ClientToScreen(m_hwnd, &p); // this respects the window border, because the engine only works in client coordinates
 	return Vector2(p.x, p.y);
 }
 
@@ -589,9 +625,29 @@ Vector2 WinEnvironment::getWindowSize()
 	return Vector2(clientRect.right, clientRect.bottom);
 }
 
+int WinEnvironment::getMonitor()
+{
+	const McRect desktopRect = getDesktopRect();
+
+	for (int i=0; i<m_vMonitors.size(); i++)
+	{
+		if (((int)m_vMonitors[i].getX()) == ((int)desktopRect.getX()) && ((int)m_vMonitors[i].getY()) == ((int)desktopRect.getY()))
+			return i;
+	}
+
+	debugLog("WARNING: Environment::getMonitor() found no matching monitor, returning default monitor ...\n");
+	return 0;
+}
+
+std::vector<McRect> WinEnvironment::getMonitors()
+{
+	return m_vMonitors;
+}
+
 Vector2 WinEnvironment::getNativeScreenSize()
 {
-	return Vector2(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
+	const McRect desktopRect = getDesktopRect();
+	return Vector2(desktopRect.getWidth(), desktopRect.getHeight());
 }
 
 McRect WinEnvironment::getVirtualScreenRect()
@@ -608,7 +664,7 @@ McRect WinEnvironment::getDesktopRect()
 
 	GetMonitorInfo(monitor, &info);
 
-	return McRect(info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right - info.rcMonitor.left, info.rcMonitor.bottom - info.rcMonitor.top);
+	return McRect(info.rcMonitor.left, info.rcMonitor.top, std::abs(info.rcMonitor.left - info.rcMonitor.right), std::abs(info.rcMonitor.top - info.rcMonitor.bottom));
 }
 
 bool WinEnvironment::isCursorInWindow()
@@ -647,7 +703,6 @@ CURSORTYPE WinEnvironment::getCursor()
 void WinEnvironment::setCursor(CURSORTYPE cur)
 {
 	m_cursorType = cur;
-	//m_bWasCursorModified = true;
 
 	switch (cur)
 	{
@@ -823,6 +878,31 @@ void WinEnvironment::handleShowMessageFullscreen()
 		minimize();
 		focus();
 	}
+}
+
+void WinEnvironment::enumerateMonitors()
+{
+	m_vMonitors.clear();
+	EnumDisplayMonitors(NULL, NULL, WinEnvironment::monitorEnumProc, 0);
+}
+
+BOOL CALLBACK WinEnvironment::monitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+{
+	MONITORINFO monitorInfo;
+	monitorInfo.cbSize = sizeof(MONITORINFO);
+	GetMonitorInfo(hMonitor, &monitorInfo);
+
+	const bool isPrimaryMonitor = (monitorInfo.dwFlags & MONITORINFOF_PRIMARY);
+	const McRect monitorRect = McRect(lprcMonitor->left, lprcMonitor->top, std::abs(lprcMonitor->left - lprcMonitor->right), std::abs(lprcMonitor->top - lprcMonitor->bottom));
+	if (isPrimaryMonitor)
+		m_vMonitors.insert(m_vMonitors.begin(), monitorRect);
+	else
+		m_vMonitors.push_back(monitorRect);
+
+	if (debug_env->getBool())
+		debugLog("Monitor %i: (right = %ld, bottom = %ld, left = %ld, top = %ld), isPrimaryMonitor = %i\n", m_vMonitors.size(), lprcMonitor->right, lprcMonitor->bottom, lprcMonitor->left, lprcMonitor->top, (int)isPrimaryMonitor);
+
+	return TRUE;
 }
 
 long WinEnvironment::getWindowStyleWindowed()

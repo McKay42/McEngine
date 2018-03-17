@@ -36,6 +36,7 @@ typedef struct
 } Hints;
 
 bool LinuxEnvironment::m_bResizable = true;
+std::vector<McRect> LinuxEnvironment::m_vMonitors;
 
 LinuxEnvironment::LinuxEnvironment(Display *display, Window window) : Environment()
 {
@@ -60,6 +61,14 @@ LinuxEnvironment::LinuxEnvironment(Display *display, Window window) : Environmen
 	m_bIsRestartScheduled = false;
 	m_bResizeDelayHack = false;
 	m_bPrevCursorHack = false;
+
+	// TODO: init monitors
+	if (m_vMonitors.size() < 1)
+	{
+		debugLog("WARNING: No monitors found! Adding default monitor ...\n");
+		const Vector2 windowSize = getWindowSize();
+		m_vMonitors.push_back(McRect(0, 0, windowSize.x, windowSize.y));
+	}
 }
 
 LinuxEnvironment::~LinuxEnvironment()
@@ -528,6 +537,11 @@ void LinuxEnvironment::setWindowGhostCorporeal(bool corporeal)
 	// TODO:
 }
 
+void LinuxEnvironment::setMonitor(int monitor)
+{
+	// TODO:
+}
+
 Vector2 LinuxEnvironment::getWindowPos()
 {
 	// client coordinates
@@ -570,6 +584,17 @@ Vector2 LinuxEnvironment::getWindowSize()
 	XGetGeometry(m_display, m_window, &rootRet, &x, &y, &width, &height, &borderWidth, &depth);
 
 	return Vector2(width, height);
+}
+
+int LinuxEnvironment::getMonitor()
+{
+	// TODO:
+	return 0;
+}
+
+std::vector<McRect> LinuxEnvironment::getMonitors()
+{
+	return m_vMonitors;
 }
 
 Vector2 LinuxEnvironment::getNativeScreenSize()
