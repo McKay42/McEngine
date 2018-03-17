@@ -15,6 +15,9 @@
 
 #include "Engine.h"
 #include "ConVar.h"
+#include "Environment.h"
+#include "WinEnvironment.h"
+
 #include "Sound.h"
 
 ConVar snd_output_device("snd_output_device", "Default");
@@ -117,14 +120,28 @@ bool SoundEngine::initializeOutputDevice(int id)
 		BASS_Free();
 
 	// init
-	if (BASS_Init(id, 44100, BASS_DEVICE_3D | BASS_DEVICE_LATENCY, 0, NULL))
-		m_bReady = true;
-	else
+	const int freq = 44100;
+	const unsigned int flags = /*BASS_DEVICE_3D | BASS_DEVICE_LATENCY | */0;
+	bool ret = false;
+
+#if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
+
+		ret = BASS_Init(id, freq, flags, ((WinEnvironment*)env)->getHwnd(), NULL);
+
+#else
+
+		ret = BASS_Init(id, freq, flags, 0, NULL);
+
+#endif
+
+	if (!ret)
 	{
-		engine->showMessageError("Sound Error", "BASS_Init() failed!");
 		m_bReady = false;
+		engine->showMessageError("Sound Error", "BASS_Init() failed!");
 		return false;
 	}
+
+	m_bReady = true;
 
 	for (int i=0; i<m_outputDevices.size(); i++)
 	{
@@ -136,10 +153,12 @@ bool SoundEngine::initializeOutputDevice(int id)
 	}
 	debugLog("SoundEngine: Output Device = \"%s\"\n", m_sCurrentOutputDevice.toUtf8());
 
+	/*
 	BASS_INFO info;
 	BASS_GetInfo(&info);
 	m_iLatency = info.minbuf;
-	debugLog("SoundEngine: Minimum Latency = %i ms\n", info.latency);
+	debugLog("SoundEngine: Minimum Latency = %i ms\n", info.latency); // NOTE: needs BASS_DEVICE_LATENCY in init
+	*/
 
 	return true;
 
@@ -317,3 +336,16 @@ float SoundEngine::getAmplitude(Sound *snd)
 	return 0.0f;
 #endif
 }
+
+
+
+//*********************//
+//	Sound ConCommands  //
+//*********************//
+
+void _volume(UString oldValue, UString newValue)
+{
+	engine->getSound()->setVolume(newValue.toFloat());
+}
+
+ConVar __volume("volume", 1.0f, _volume);

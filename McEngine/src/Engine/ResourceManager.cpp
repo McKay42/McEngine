@@ -13,30 +13,31 @@
 #include <mutex>
 #include "WinMinGW.Mutex.h"
 
-#define RM_IMAGE_FOLDER "materials/"
-#define RM_FONT_FOLDER "fonts/"
-#define RM_SOUND_FOLDER "sounds/"
-#define RM_SHADER_FOLDER "shaders/"
-
 ConVar rm_warnings("rm_warnings", false);
 ConVar rm_async_rand_delay("rm_async_rand_delay", 0.0f);
 ConVar debug_rm("debug_rm", false);
 
 extern bool g_bRunning;
 
+// TODO: rewrite this garbage. support any number of parallel resource loading threads (default to 2)
 std::mutex g_resourceManagerMutex;
 std::mutex g_resourceManagerLoadingMutex;
 std::mutex g_resourceManagerLoadingWorkMutex;
 
-void *resourceLoadThread(void *data);
-void *resourceLoaderThread(void *data);
+void *_resourceLoadThread(void *data);
+void *_resourceLoaderThread(void *data);
+
+const char *ResourceManager::PATH_DEFAULT_IMAGES = "materials/";
+const char *ResourceManager::PATH_DEFAULT_FONTS = "fonts/";
+const char *ResourceManager::PATH_DEFAULT_SOUNDS = "sounds/";
+const char *ResourceManager::PATH_DEFAULT_SHADERS = "shaders/";
 
 ResourceManager::ResourceManager()
 {
 	m_bNextLoadAsync = false;
 
 	// build loading thread
-	int ret = pthread_create(&m_loadingThread, NULL, resourceLoaderThread, (void*)&m_loadingWork);
+	int ret = pthread_create(&m_loadingThread, NULL, _resourceLoaderThread, (void*)&m_loadingWork);
 	if (ret)
 		engine->showMessageError("ResourceManager Error", UString::format("pthread_create() returned %i!", ret));
 
@@ -51,6 +52,7 @@ ResourceManager::~ResourceManager()
 
 	if (m_loadingWork.size() < 1)
 		g_resourceManagerLoadingMutex.unlock(); // let it exit
+
 	pthread_join(m_loadingThread, NULL); // TODO: not the best solution. will block shutdown until all loading work is done
 }
 
@@ -77,7 +79,9 @@ void ResourceManager::update()
 				Resource *rs = m_loadingWork[i].first;
 
 				g_resourceManagerLoadingWorkMutex.lock();
+				{
 					m_loadingWork.erase(m_loadingWork.begin()+i);
+				}
 				g_resourceManagerLoadingWorkMutex.unlock();
 				i--;
 
@@ -220,7 +224,7 @@ Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool m
 	}
 
 	// create instance and load it
-	filepath.insert(0, RM_IMAGE_FOLDER);
+	filepath.insert(0, PATH_DEFAULT_IMAGES);
 	Image *img = engine->getGraphics()->createImage(filepath, mipmapped);
 	img->setName(resourceName);
 
@@ -232,7 +236,7 @@ Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool m
 Image *ResourceManager::loadImageUnnamed(UString filepath, bool mipmapped)
 {
 	// create instance and load it
-	filepath.insert(0, RM_IMAGE_FOLDER);
+	filepath.insert(0, PATH_DEFAULT_IMAGES);
 	Image *img = engine->getGraphics()->createImage(filepath, mipmapped);
 
 	loadResource(img, true);
@@ -295,7 +299,7 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, unsign
 	}
 
 	// create instance and load it
-	filepath.insert(0, RM_FONT_FOLDER);
+	filepath.insert(0, PATH_DEFAULT_FONTS);
 	McFont *fnt = new McFont(filepath, fontSize, antialiasing);
 	fnt->setName(resourceName);
 
@@ -314,7 +318,7 @@ Sound *ResourceManager::loadSound(UString filepath, UString resourceName, bool s
 	}
 
 	// create instance and load it
-	filepath.insert(0, RM_SOUND_FOLDER);
+	filepath.insert(0, PATH_DEFAULT_SOUNDS);
 	Sound *snd = new Sound(filepath, stream, threeD, loop, prescan);
 	snd->setName(resourceName);
 
@@ -351,8 +355,8 @@ Shader *ResourceManager::loadShader(UString vertexShaderFilePath, UString fragme
 	}
 
 	// create instance and load it
-	vertexShaderFilePath.insert(0, RM_SHADER_FOLDER);
-	fragmentShaderFilePath.insert(0, RM_SHADER_FOLDER);
+	vertexShaderFilePath.insert(0, PATH_DEFAULT_SHADERS);
+	fragmentShaderFilePath.insert(0, PATH_DEFAULT_SHADERS);
 	Shader *shader = engine->getGraphics()->createShaderFromFile(vertexShaderFilePath, fragmentShaderFilePath);
 	shader->setName(resourceName);
 
@@ -364,8 +368,8 @@ Shader *ResourceManager::loadShader(UString vertexShaderFilePath, UString fragme
 Shader *ResourceManager::loadShader(UString vertexShaderFilePath, UString fragmentShaderFilePath)
 {
 	// create instance and load it
-	vertexShaderFilePath.insert(0, RM_SHADER_FOLDER);
-	fragmentShaderFilePath.insert(0, RM_SHADER_FOLDER);
+	vertexShaderFilePath.insert(0, PATH_DEFAULT_SHADERS);
+	fragmentShaderFilePath.insert(0, PATH_DEFAULT_SHADERS);
 	Shader *shader = engine->getGraphics()->createShaderFromFile(vertexShaderFilePath, fragmentShaderFilePath);
 
 	loadResource(shader, true);
@@ -519,6 +523,7 @@ void ResourceManager::loadResource(Resource *res, bool load)
 			// let the loading thread run
 			if (m_loadingWork.size() == 1)
 				g_resourceManagerLoadingMutex.unlock();
+
 			g_resourceManagerLoadingWorkMutex.unlock();
 		}
 		g_resourceManagerMutex.unlock();
@@ -559,7 +564,7 @@ Resource *ResourceManager::exists(UString resourceName)
 
 
 
-void *resourceLoadThread(void *data)
+void *_resourceLoadThread(void *data)
 {
 	// debugging
 	if (rm_async_rand_delay.getInt() > 0)
@@ -579,7 +584,7 @@ void *resourceLoadThread(void *data)
 	return NULL;
 }
 
-void *resourceLoaderThread(void *data)
+void *_resourceLoaderThread(void *data)
 {
 	std::vector<std::pair<Resource*, ResourceManager::MobileAtomicBool>> *todo = (std::vector<std::pair<Resource*, ResourceManager::MobileAtomicBool>>*)data;
 
@@ -589,15 +594,19 @@ void *resourceLoaderThread(void *data)
 		g_resourceManagerLoadingMutex.lock(); // thread will wait here
 		g_resourceManagerLoadingMutex.unlock();
 
+		int size = 0;
+		std::pair<Resource*, ResourceManager::MobileAtomicBool> work;
+
 		// quickly check if there is work to do (this can potentially cause engine lag!)
 		g_resourceManagerLoadingWorkMutex.lock();
-		int size = todo->size();
-		std::pair<Resource*, ResourceManager::MobileAtomicBool> work;
-		if (size > 0)
-			work = (*todo)[0];
+		{
+			size = todo->size();
+			if (size > 0)
+				work = (*todo)[0];
+		}
 		g_resourceManagerLoadingWorkMutex.unlock();
 
-		// if we have work, do it after unlocking the work mutex
+		// if we have work
 		if (size > 0)
 		{
 			if (!(work.second.atomic)) // if we need to get loaded
@@ -618,7 +627,9 @@ void *resourceLoaderThread(void *data)
 
 				// very quickly signal that we are done
 				g_resourceManagerLoadingWorkMutex.lock();
-				(*todo)[0].second = ResourceManager::MobileAtomic<bool>(true);
+				{
+					(*todo)[0].second = ResourceManager::MobileAtomic<bool>(true);
+				}
 				g_resourceManagerLoadingWorkMutex.unlock();
 			}
 		}
