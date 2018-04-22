@@ -61,11 +61,13 @@ LinuxEnvironment::LinuxEnvironment(Display *display, Window window) : Environmen
 	m_bIsRestartScheduled = false;
 	m_bResizeDelayHack = false;
 	m_bPrevCursorHack = false;
+	m_bFullscreenWasResizable = true;
 
 	// TODO: init monitors
 	if (m_vMonitors.size() < 1)
 	{
-		debugLog("WARNING: No monitors found! Adding default monitor ...\n");
+		///debugLog("WARNING: No monitors found! Adding default monitor ...\n");
+
 		const Vector2 windowSize = getWindowSize();
 		m_vMonitors.push_back(McRect(0, 0, windowSize.x, windowSize.y));
 	}
@@ -382,8 +384,15 @@ void LinuxEnvironment::enableFullscreen()
 	if (m_bFullScreen) return;
 
 	// backup
-	m_vLastWindowPos = getWindowPos();
-	m_vLastWindowSize = getWindowSize();
+	if (m_vPrevDisableFullscreenWindowSize != getWindowSize())
+	{
+		m_vLastWindowPos = getWindowPos();
+		m_vLastWindowSize = getWindowSize();
+	}
+
+	// handle resizability (force enable while fullscreen)
+	m_bFullscreenWasResizable = m_bResizable;
+	setWindowResizable(true);
 
 	// disable window decorations
     Hints hints;
@@ -483,7 +492,7 @@ void LinuxEnvironment::disableFullscreen()
     XChangeProperty(m_display, m_window, property, property, 32, PropModeReplace, (unsigned char *)&hints, 5);
 
 	// restore previous size and position
-    // TODO: the y-position is not consistent in Ubuntu, the window keeps going down when toggling fullscreen, force center() workaround
+    // NOTE: the y-position is not consistent, the window keeps going down when toggling fullscreen (probably due to decorations), force center() workaround
 	XMoveResizeWindow(m_display,
 			m_window,
 			(int)m_vLastWindowPos.x,
@@ -492,8 +501,13 @@ void LinuxEnvironment::disableFullscreen()
 			(unsigned int)m_vLastWindowSize.y);
 	m_vResizeHackSize = m_vLastWindowSize;
 	m_bResizeDelayHack = true;
+
+	// update resizability with new resolution
+	setWindowResizableInt(m_bFullscreenWasResizable, m_vLastWindowSize);
+
 	center();
 
+	m_vPrevDisableFullscreenWindowSize = getWindowSize();
 	m_bFullScreen = false;
 }
 
@@ -510,26 +524,55 @@ void LinuxEnvironment::setWindowPos(int x, int y)
 
 void LinuxEnvironment::setWindowSize(int width, int height)
 {
+	// due to the way resizability works, we have to temporarily disable it to be able to resize the window (because min/max is fixed)
+	const Vector2 windowPos = getWindowPos();
+	const bool wasWindowResizable = m_bResizable;
+	if (!wasWindowResizable)
+		setWindowResizableInt(true, Vector2(width, height));
+
 	m_vResizeHackSize = Vector2(width, height);
 	m_bResizeDelayHack = true;
 
-	XResizeWindow(m_display, m_window, width, height);
+	// hack to force update the XSizeHints state
+	XResizeWindow(m_display, m_window, (unsigned int)width, (unsigned int)height);
+	XMoveWindow(m_display, m_window, (int)windowPos.x, (int)windowPos.y);
+	XRaiseWindow(m_display, m_window);
+
+	if (!wasWindowResizable)
+		setWindowResizableInt(false, Vector2(width, height));
+
 	XFlush(m_display);
 }
 
 void LinuxEnvironment::setWindowResizable(bool resizable)
 {
+	setWindowResizableInt(resizable, getWindowSize());
+}
+
+void LinuxEnvironment::setWindowResizableInt(bool resizable, Vector2 windowSize)
+{
 	m_bResizable = resizable;
-	// TODO: XSetWMNormalHints(), can't force though
-	// _NET_WM_ACTION_RESIZE
-	/*
-	Atom atom = XInternAtom(m_display, "_NET_WM_ACTION_RESIZE", True);
-	XChangeProperty(
-		m_display, m_window,
-		XInternAtom(m_display, "_NET_WM_ALLOWED_ACTIONS", True),
-		XA_ATOM, 32, PropModeReplace,
-		(unsigned char*)&atom, 1);
-	*/
+
+	const Vector2 windowPos = getWindowPos();
+
+	// window managers may ignore this completely, there is no way to force it
+	XSizeHints wmsize;
+	memset(&wmsize, 0, sizeof(XSizeHints));
+
+	wmsize.flags = PMinSize | PMaxSize;
+	wmsize.min_width = m_bResizable ? 100 : (int)windowSize.x;
+	wmsize.min_height = m_bResizable ? 100 : (int)windowSize.y;
+	wmsize.max_width = m_bResizable ? (std::numeric_limits<int>::max() - 1) : (int)windowSize.x;
+	wmsize.max_height = m_bResizable ? (std::numeric_limits<int>::max() - 1) : (int)windowSize.y;
+
+	XSetWMNormalHints(m_display, m_window, &wmsize);
+
+	// hack to force update the XSizeHints state
+	XResizeWindow(m_display, m_window, (unsigned int)windowSize.x, (unsigned int)windowSize.y);
+	XMoveWindow(m_display, m_window, (int)windowPos.x, (int)windowPos.y);
+	XRaiseWindow(m_display, m_window);
+
+	XFlush(m_display);
 }
 
 void LinuxEnvironment::setWindowGhostCorporeal(bool corporeal)
@@ -540,6 +583,7 @@ void LinuxEnvironment::setWindowGhostCorporeal(bool corporeal)
 void LinuxEnvironment::setMonitor(int monitor)
 {
 	// TODO:
+	center();
 }
 
 Vector2 LinuxEnvironment::getWindowPos()
@@ -572,7 +616,7 @@ Vector2 LinuxEnvironment::getWindowPos()
 
 Vector2 LinuxEnvironment::getWindowSize()
 {
-	// client size
+	// client size (engine coordinates)
 	Window rootRet;
 	int x = 0;
 	int y = 0;
@@ -584,6 +628,15 @@ Vector2 LinuxEnvironment::getWindowSize()
 	XGetGeometry(m_display, m_window, &rootRet, &x, &y, &width, &height, &borderWidth, &depth);
 
 	return Vector2(width, height);
+}
+
+Vector2 LinuxEnvironment::getWindowSizeServer()
+{
+	// server size
+	XWindowAttributes xwa;
+	XGetWindowAttributes(m_display, m_window, &xwa);
+
+	return Vector2(xwa.width, xwa.height);
 }
 
 int LinuxEnvironment::getMonitor()
