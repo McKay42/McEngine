@@ -32,13 +32,17 @@ void OpenGLImage::init()
 {
 	if (m_GLTexture != 0 || !m_bAsyncReady) return; // only load if we are not already loaded
 
-	// DEPRECATED LEGACY
+	// DEPRECATED LEGACY (1)
 	glEnable(GL_TEXTURE_2D);
 	glGetError(); // clear gl error state
 
 	// create texture and bind
 	glGenTextures(1, &m_GLTexture);
 	glBindTexture(GL_TEXTURE_2D, m_GLTexture);
+
+	// DEPRECATED LEGACY (2)
+	glEnable(GL_TEXTURE_2D);
+	glGetError(); // clear gl error state
 
 	// set texture filtering mode (mipmapping is disabled by default)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_bMipmapped ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
@@ -56,17 +60,12 @@ void OpenGLImage::init()
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	// upload to gpu
+	glTexImage2D(GL_TEXTURE_2D, 0, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), m_iWidth, m_iHeight, 0, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), GL_UNSIGNED_BYTE, &m_rawImage[0]);
 	if (m_bMipmapped)
-	{
-		// TODO: gluBuild2DMipmaps() is more or less deprecated, refactor this
-		// TODO: doesn't work with gl 3.0
-		//gluBuild2DMipmaps(GL_TEXTURE_2D, 4, m_iWidth, m_iHeight, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), GL_UNSIGNED_BYTE, &m_rawImage[0]);
-	}
-	else
-		glTexImage2D(GL_TEXTURE_2D, 0, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), m_iWidth, m_iHeight, 0, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), GL_UNSIGNED_BYTE, &m_rawImage[0]);
+		glGenerateMipmap(GL_TEXTURE_2D);
 
 	// free memory
-	m_rawImage = std::vector<unsigned char>();
+	m_rawImage = std::vector<unsigned char>(); // TODO: HACKHACK: temp commented!!!!!!!!!!!
 
 	// check for errors
 	int GLerror = glGetError();
@@ -137,6 +136,7 @@ void OpenGLImage::setFilterMode(Graphics::FILTER_MODE filterMode)
 {
 	if (!m_bReady) return;
 
+	// TODO: calling setFilterMode or setWrapMode before initialization will not persist
 	bind();
 	{
 		switch (filterMode)
@@ -162,6 +162,7 @@ void OpenGLImage::setWrapMode(Graphics::WRAP_MODE wrapMode)
 {
 	if (!m_bReady) return;
 
+	// TODO: calling setFilterMode or setWrapMode before initialization will not persist
 	bind();
 	{
 		switch (wrapMode)

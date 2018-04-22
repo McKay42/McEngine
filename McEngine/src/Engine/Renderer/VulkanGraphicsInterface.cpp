@@ -8,6 +8,8 @@
 #include "VulkanGraphicsInterface.h"
 #include "Engine.h"
 
+#ifdef MCENGINE_FEATURE_VULKAN
+
 #include "WinEnvironment.h"
 #include "LinuxEnvironment.h"
 
@@ -17,26 +19,58 @@
 
 #include "VertexArrayObject.h"
 
-VulkanGraphicsInterface::VulkanGraphicsInterface()
+
+class VulkanSwapChain
+{
+public:
+	VulkanSwapChain(VulkanGraphicsInterface *graphics)
+	{
+		m_graphics = graphics;
+	}
+
+	~VulkanSwapChain()
+	{
+
+	}
+
+private:
+	VulkanGraphicsInterface *m_graphics;
+};
+
+
+
+VulkanGraphicsInterface::VulkanGraphicsInterface() : NullGraphicsInterface()
 {
 	if (!vulkan->isReady())
 	{
 		engine->showMessageErrorFatal("Fatal Vulkan Error", "Couldn't initialize VulkanGraphicsInterface because VulkanInterface is not ready!");
 		exit(0);
+		return;
 	}
 
-#ifdef MCENGINE_FEATURE_VULKAN
-
-	// Vulkan has started up successfully, now try to get a surface
 	VkResult res = VK_RESULT_MAX_ENUM;
 
+	// graphics queue
+	vkGetDeviceQueue(vulkan->getDevice(), vulkan->getQueueFamilyIndex(), 0, &m_queue);
+
+
+
+	// TODO: create swap chain etc.
+	m_swapchain = new VulkanSwapChain(this);
+
+	// get a surface to draw on
+	m_surface = 0;
+
+	// TODO: put all OS-specific code in WinVulkanInterface/LinuxVulkanInterface etc.
 	// OS specific surface selection
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
 	VkWin32SurfaceCreateInfoKHR surfaceCreateInfo;
 	surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-	surfaceCreateInfo.hinstance = ((WinEnvironment*)(env))->getHInstance(); // provided by the platform code
-	surfaceCreateInfo.hwnd = ((WinEnvironment*)(env))->getHwnd(); // provided by the platform code
+	surfaceCreateInfo.pNext = NULL;
+	surfaceCreateInfo.flags = 0;
+	surfaceCreateInfo.hinstance = ((WinEnvironment*)(env))->getHInstance();
+	surfaceCreateInfo.hwnd = ((WinEnvironment*)(env))->getHwnd();
 	res = vkCreateWin32SurfaceKHR(vulkan->getInstance(), &surfaceCreateInfo, NULL, &m_surface);
 
 #else
@@ -46,10 +80,9 @@ VulkanGraphicsInterface::VulkanGraphicsInterface()
 	if (res != VK_SUCCESS)
 	{
 		engine->showMessageErrorFatal("Fatal Vulkan Error", UString::format("Couldn't vkCreate*SurfaceKHR(), returned %d", res));
+		exit(0);
 		return;
 	}
-
-#endif
 }
 
 void VulkanGraphicsInterface::init()
@@ -59,11 +92,10 @@ void VulkanGraphicsInterface::init()
 
 VulkanGraphicsInterface::~VulkanGraphicsInterface()
 {
-#ifdef MCENGINE_FEATURE_VULKAN
+	if (m_surface != 0)
+		vkDestroySurfaceKHR(vulkan->getInstance(), m_surface, NULL);
 
-	vkDestroySurfaceKHR(vulkan->getInstance(), m_surface, NULL);
-
-#endif
+	SAFE_DELETE(m_swapchain);
 }
 
 void VulkanGraphicsInterface::beginScene()
@@ -72,6 +104,9 @@ void VulkanGraphicsInterface::beginScene()
 
 void VulkanGraphicsInterface::endScene()
 {
+	// TODO: swapchain present
+
+	vkQueueWaitIdle(m_queue);
 }
 
 void VulkanGraphicsInterface::clearDepthBuffer()
@@ -268,9 +303,5 @@ void VulkanGraphicsInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matri
 {
 
 }
-
-#ifdef MCENGINE_FEATURE_VULKAN
-
-
 
 #endif

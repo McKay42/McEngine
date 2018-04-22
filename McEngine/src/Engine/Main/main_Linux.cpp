@@ -66,6 +66,7 @@ XIC ic;
 int xi2opcode;
 
 
+
 //****************//
 //	Message loop  //
 //****************//
@@ -227,8 +228,11 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 						rawY = rawev->valuators.values[1];
 
 					// TODO: apparently this is in 0-65536 units, convert properly
+					// how to know whether the value is for an absolute input device, or a relative input device?
+					// if even relative input devices generate 0-65536 values, then we have to "wait" 1 event to calculate a delta?
 					//printf("x = %i, y = %i\n", rawX, rawY);
-					//g_engine->onMouseRawMove(rawX, rawY);
+					//if (g_engine != NULL)
+					//	g_engine->onMouseRawMove(rawX, rawY);
 				}
 				break;
 			}
@@ -237,6 +241,7 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 		}
 	}
 }
+
 
 
 //********************//
@@ -330,9 +335,14 @@ int main(int argc, char *argv[])
 
 	XISetMask(mask, XI_RawMotion);
 
+	// use client pointer for raw input, instead of XIAllMasterDevices.
+	// otherwise, the implicit grab on clicks will not give any more events as long as the button is being pressed
+	int pointerDevId;
+	XIGetClientPointer(dpy, None, &pointerDevId);
+
 	masks[0].mask_len = sizeof(mask);
 	masks[0].mask = mask;
-	masks[0].deviceid = XIAllMasterDevices;
+	masks[0].deviceid = /*XIAllMasterDevices*/ pointerDevId;
 
 	// and select it on the window
 	XISelectEvents(dpy, DefaultRootWindow(dpy), masks, 1);

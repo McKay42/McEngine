@@ -20,7 +20,7 @@ class DirectX11Shader;
 class DirectX11Interface : public NullGraphicsInterface /*Graphics*/
 {
 public:
-	DirectX11Interface(HWND hwnd, bool deviceOnlyMinimalistContext = false);
+	DirectX11Interface(HWND hwnd);
 	virtual ~DirectX11Interface();
 
 	// scene
@@ -79,7 +79,6 @@ private:
 	static int primitiveToDirectX(Graphics::PRIMITIVE primitive);
 
 	// device context
-	bool m_bDeviceOnlyMinimalistContext;
 	HWND m_hwnd;
 
 	// d3d

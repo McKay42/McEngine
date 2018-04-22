@@ -93,6 +93,9 @@ bool Image::loadRawImage()
 			return false;
 		}
 
+		if (m_bInterrupted) // cancellation point
+			return false;
+
 		// load entire file
 		File file(m_sFilePath);
 		if (!file.canRead())
@@ -105,6 +108,10 @@ bool Image::loadRawImage()
 			printf("Image Error: FileSize is < 4 in %s !\n", m_sFilePath.toUtf8());
 			return false;
 		}
+
+		if (m_bInterrupted) // cancellation point
+			return false;
+
 		const char *data = file.readFile();
 		if (data == NULL)
 		{
@@ -112,18 +119,23 @@ bool Image::loadRawImage()
 			return false;
 		}
 
+		if (m_bInterrupted) // cancellation point
+			return false;
+
 		// determine file type by magic number (png/jpg)
 		bool isJPEG = false;
 		bool isPNG = false;
-		unsigned char buf[4];
-		buf[0] = (unsigned char)data[0];
-		buf[1] = (unsigned char)data[1];
-		buf[2] = (unsigned char)data[2];
-		buf[3] = (unsigned char)data[3];
-		if (buf[0] == 0xff && buf[1] == 0xD8 && buf[2] == 0xff) // 0xFFD8FF
-			isJPEG = true;
-		else if (buf[0] == 0x89 && buf[1] == 0x50 && buf[2] == 0x4E && buf[3] == 0x47) // 0x89504E47 (%PNG)
-			isPNG = true;
+		{
+			unsigned char buf[4];
+			buf[0] = (unsigned char)data[0];
+			buf[1] = (unsigned char)data[1];
+			buf[2] = (unsigned char)data[2];
+			buf[3] = (unsigned char)data[3];
+			if (buf[0] == 0xff && buf[1] == 0xD8 && buf[2] == 0xff) // 0xFFD8FF
+				isJPEG = true;
+			else if (buf[0] == 0x89 && buf[1] == 0x50 && buf[2] == 0x4E && buf[3] == 0x47) // 0x89504E47 (%PNG)
+				isPNG = true;
+		}
 
 		// depending on the type, load either jpeg or png
 		if (isJPEG)
@@ -181,6 +193,12 @@ bool Image::loadRawImage()
 			JSAMPROW j;
 			for (int i=0; i<m_iHeight; ++i)
 			{
+				if (m_bInterrupted) // cancellation point
+				{
+					jpeg_destroy_decompress(&cinfo);
+					return false;
+				}
+
 				j = (&m_rawImage[0] + (i * m_iWidth * m_iNumChannels));
 				jpeg_read_scanlines(&cinfo, &j, 1);
 			}
@@ -210,6 +228,9 @@ bool Image::loadRawImage()
 		}
 	}
 
+	if (m_bInterrupted) // cancellation point
+		return false;
+
 	// error checking
 	if (m_rawImage.size() < m_iWidth*m_iHeight*m_iNumChannels) // sanity check
 	{
@@ -227,6 +248,9 @@ bool Image::loadRawImage()
 	bool foundNonTransparentPixel = false;
 	for (int x=0; x<m_iWidth; x++)
 	{
+		if (m_bInterrupted) // cancellation point
+			return false;
+
 		for (int y=0; y<m_iHeight; y++)
 		{
 			if (COLOR_GET_Ai(getPixel(x, y)) > 0)

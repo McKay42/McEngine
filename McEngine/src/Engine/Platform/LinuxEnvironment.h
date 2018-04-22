@@ -111,6 +111,9 @@ private:
 	static int getFilesInFolderFilter(const struct dirent *entry);
 	static int getFoldersInFolderFilter(const struct dirent *entry);
 
+	void setWindowResizableInt(bool resizable, Vector2 windowSize);
+	Vector2 getWindowSizeServer();
+
 	Cursor makeBlankCursor();
 	void setCursorInt(Cursor cursor);
 
@@ -153,6 +156,8 @@ private:
 	bool m_bResizeDelayHack;
 	Vector2 m_vResizeHackSize;
 	bool m_bPrevCursorHack;
+	bool m_bFullscreenWasResizable;
+	Vector2 m_vPrevDisableFullscreenWindowSize;
 };
 
 #endif
