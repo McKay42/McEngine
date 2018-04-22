@@ -116,7 +116,7 @@ public:
 	inline int getScreenHeight() const {return (int)m_vScreenSize.y;}
 
 	// vars
-	void setFrameTime(double delta) {m_dFrameTime = delta;}
+	void setFrameTime(double delta);
 	inline double getTime() const {return m_dTime;}
 	double const getTimeReal();
 	inline double getTimeRunning() const {return m_dRunTime;}
