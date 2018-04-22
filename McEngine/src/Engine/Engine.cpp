@@ -2,12 +2,13 @@
 //
 // Purpose:		core
 //
-// $NoKeywords: $engine $os
+// $NoKeywords: $engine
 //===============================================================================//
 
 #include "NetworkHandler.h" // must be up here
 #include "Engine.h"
 
+#include <stdio.h>
 #include <mutex>
 #include "WinMinGW.Mutex.h"
 
@@ -69,6 +70,8 @@ Engine::Engine(Environment *environment, const char *args)
 	m_environment = environment;
 	env = environment;
 	m_sArgs = UString(args);
+
+	m_graphics = NULL;
 	m_guiContainer = NULL;
 	m_app = NULL;
 
@@ -481,7 +484,17 @@ void Engine::onKeyboardKeyDown(KEYCODE keyCode)
 {
 	// handle ALT+F4 quit
 	if (m_keyboard->isAltDown() && keyCode == KEY_F4)
+	{
 		shutdown();
+		return;
+	}
+
+	// handle ALT+ENTER fullscreen toggle
+	if (engine->getKeyboard()->isAltDown() && keyCode == KEY_ENTER)
+	{
+		engine->toggleFullscreen();
+		return;
+	}
 
 	m_keyboard->onKeyDown(keyCode);
 }
@@ -581,6 +594,12 @@ void Engine::removeGamepad(Gamepad *gamepad)
 			break;
 		}
 	}
+}
+
+void Engine::setFrameTime(double delta)
+{
+	// NOTE: clamp to between 10000 fps and 1 fps, very small/big timesteps could cause problems
+	m_dFrameTime = clamp<double>(delta, 0.0001, 1.0);
 }
 
 double const Engine::getTimeReal()

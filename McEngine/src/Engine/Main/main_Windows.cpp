@@ -658,6 +658,8 @@ HWND createWinWindow(HINSTANCE hInstance)
 	exStyle = WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TRANSPARENT;
 #endif
 
+	style &= ~WS_VISIBLE; // always start out invisible, we have a ShowWindow() call later anyway
+
 	int xPos = (GetSystemMetrics(SM_CXSCREEN)/2) - (WINDOW_WIDTH/2);
 	int yPos = (GetSystemMetrics(SM_CYSCREEN)/2) - (WINDOW_HEIGHT/2);
 	int width = WINDOW_WIDTH;
@@ -709,6 +711,24 @@ HWND createWinWindow(HINSTANCE hInstance)
     return hwnd;
 }
 
+typedef BOOL (WINAPI *pfnImmDisableIME)(DWORD);
+void DisableIME()
+{
+    HMODULE hImm32 = LoadLibrary("imm32.dll");
+    if (hImm32 == NULL)
+    	return;
+
+    pfnImmDisableIME pImmDisableIME = (pfnImmDisableIME)GetProcAddress(hImm32, "ImmDisableIME");
+    if (pImmDisableIME == NULL)
+    {
+        FreeLibrary(hImm32);
+        return;
+    }
+
+    pImmDisableIME(-1);
+    FreeLibrary(hImm32);
+}
+
 
 
 //********************//
@@ -718,6 +738,9 @@ HWND createWinWindow(HINSTANCE hInstance)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	// NOTE: add -mwindows to linker options to disable console window if compiling with Eclipse
+
+	// disable IME text input
+	DisableIME();
 
 	// enable fancy themed windows controls (v6+), requires McEngine.exe.manifest AND linking to comctl32, for fucks sake
 	// only noticeable in MessageBox()-es and a few other dialogs
@@ -766,13 +789,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return -1;
 	}
 
-	// try to enable MSAA
+#ifdef MCENGINE_FEATURE_OPENGL
+
+	// try to enable OpenGL MSAA
 	// lots of windows api bullshit behaviour here
-	if (!g_bARBMultisampleSupported && false)
+	/*
+	if (!g_bARBMultisampleSupported && true)
 	{
 		FAKE_CONTEXT context = WinGLLegacyInterface::createAndMakeCurrentWGLContext(hwnd, getPixelFormatDescriptor());
 
-		if (initWinGLMultisample(context.hdc, hInstance, hwnd))
+		if (initWinGLMultisample(context.hdc, hInstance, hwnd, 4))
 		{
 			printf("OpenGL: MSAA is supported!\n");
 
@@ -801,9 +827,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			wglDeleteContext(context.hglrc);
 			ReleaseDC(hwnd, context.hdc);
 		}
-
 		printf("\n");
 	}
+	*/
+
+#endif
 
 #ifdef WINDOW_FRAMELESS
 

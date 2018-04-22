@@ -21,10 +21,9 @@
 
 #include "d3dx9math.h" // is there no modern version of this?
 
-DirectX11Interface::DirectX11Interface(HWND hwnd, bool deviceOnlyMinimalistContext) : NullGraphicsInterface()
+DirectX11Interface::DirectX11Interface(HWND hwnd) : NullGraphicsInterface()
 {
 	m_hwnd = hwnd;
-	m_bDeviceOnlyMinimalistContext = deviceOnlyMinimalistContext;
 
 	m_device = NULL;
 	m_deviceContext = NULL;
@@ -45,22 +44,19 @@ DirectX11Interface::DirectX11Interface(HWND hwnd, bool deviceOnlyMinimalistConte
 
 DirectX11Interface::~DirectX11Interface()
 {
-	if (!m_bDeviceOnlyMinimalistContext)
-	{
-		SAFE_DELETE(m_shaderTexturedGeneric);
+	SAFE_DELETE(m_shaderTexturedGeneric);
 
-		if (m_vertexBuffer != NULL)
-			m_vertexBuffer->Release();
+	if (m_vertexBuffer != NULL)
+		m_vertexBuffer->Release();
 
-		if (m_rasterizerState != NULL)
-			m_rasterizerState->Release();
+	if (m_rasterizerState != NULL)
+		m_rasterizerState->Release();
 
-		if (m_swapChain != NULL)
-			m_swapChain->Release();
+	if (m_swapChain != NULL)
+		m_swapChain->Release();
 
-		if (m_frameBuffer != NULL)
-			m_frameBuffer->Release();
-	}
+	if (m_frameBuffer != NULL)
+		m_frameBuffer->Release();
 
 	if (m_device != NULL)
 		m_device->Release();
@@ -73,7 +69,7 @@ void DirectX11Interface::init()
 {
     // flags
     UINT createDeviceFlags = 0;
-    createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED/*D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG*/;
+    createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED /*D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG*/;
 
 	// feature levels
     D3D_FEATURE_LEVEL featureLevels[] =
@@ -85,54 +81,39 @@ void DirectX11Interface::init()
     UINT numFeatureLevels = _countof(featureLevels);
     D3D_FEATURE_LEVEL featureLevelOut;
 
-    if (!m_bDeviceOnlyMinimalistContext)
-    {
-		// backbuffer descriptor
-		DXGI_MODE_DESC swapChainBufferDesc;
-		ZeroMemory(&swapChainBufferDesc, sizeof(DXGI_MODE_DESC));
-		swapChainBufferDesc.Width = (UINT)m_vResolution.x; // TODO:!!!
-		swapChainBufferDesc.Height = (UINT)m_vResolution.y; // TODO:!!!
-		swapChainBufferDesc.RefreshRate.Numerator = 144; // TODO:!!!
-		swapChainBufferDesc.RefreshRate.Denominator = 1;
-		swapChainBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		swapChainBufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-		swapChainBufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	// backbuffer descriptor
+	DXGI_MODE_DESC swapChainBufferDesc;
+	ZeroMemory(&swapChainBufferDesc, sizeof(DXGI_MODE_DESC));
+	swapChainBufferDesc.Width = (UINT)m_vResolution.x; // TODO:!!!
+	swapChainBufferDesc.Height = (UINT)m_vResolution.y; // TODO:!!!
+	swapChainBufferDesc.RefreshRate.Numerator = 144; // TODO:!!!
+	swapChainBufferDesc.RefreshRate.Denominator = 1;
+	swapChainBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainBufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	swapChainBufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 
-		// swapchain descriptor
-		DXGI_SWAP_CHAIN_DESC swapChainDesc;
-		ZeroMemory(&swapChainDesc, sizeof(DXGI_SWAP_CHAIN_DESC));
-		swapChainDesc.BufferDesc = swapChainBufferDesc;
-		swapChainDesc.SampleDesc.Count = 1;
-		swapChainDesc.SampleDesc.Quality = 0;
-		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		swapChainDesc.BufferCount = 1;
-		swapChainDesc.OutputWindow = m_hwnd;
-		swapChainDesc.Windowed = TRUE; // TODO:!!!
-		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+	// swapchain descriptor
+	DXGI_SWAP_CHAIN_DESC swapChainDesc;
+	ZeroMemory(&swapChainDesc, sizeof(DXGI_SWAP_CHAIN_DESC));
+	swapChainDesc.BufferDesc = swapChainBufferDesc;
+	swapChainDesc.SampleDesc.Count = 1;
+	swapChainDesc.SampleDesc.Quality = 0;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.BufferCount = 1;
+	swapChainDesc.OutputWindow = m_hwnd;
+	swapChainDesc.Windowed = TRUE; // TODO:!!!
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-		// create device + context + swapchain
-		HRESULT hr = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevels, numFeatureLevels, D3D11_SDK_VERSION, &swapChainDesc, &m_swapChain, &m_device, &featureLevelOut, &m_deviceContext);
-		if (FAILED(hr))
-		{
-			engine->showMessageErrorFatal("DirectX Error", UString::format("Couldn't D3D11CreateDeviceAndSwapChain(%ld)!\nThe engine will quit now.", hr));
-			engine->shutdown();
-			return;
-		}
-    }
-    else
-    {
-		// create device + context
-		HRESULT hr = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevels, numFeatureLevels, D3D11_SDK_VERSION, &m_device, &featureLevelOut, &m_deviceContext);
-		if (FAILED(hr))
-		{
-			engine->showMessageErrorFatal("DirectX Error", UString::format("Couldn't D3D11CreateDevice(%ld)!\nThe engine will quit now.", hr));
-			engine->shutdown();
-			return;
-		}
-    }
+	// create device + context + swapchain
+	HRESULT hr = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevels, numFeatureLevels, D3D11_SDK_VERSION, &swapChainDesc, &m_swapChain, &m_device, &featureLevelOut, &m_deviceContext);
+	if (FAILED(hr))
+	{
+		engine->showMessageErrorFatal("DirectX Error", UString::format("Couldn't D3D11CreateDeviceAndSwapChain(%ld)!\nThe engine will quit now.", hr));
+		engine->shutdown();
+		return;
+	}
 
 	// default rasterizer settings
-    /*
 	m_rasterizerDesc.FillMode = D3D11_FILL_MODE::D3D11_FILL_SOLID;
 	m_rasterizerDesc.CullMode = D3D11_CULL_MODE::D3D11_CULL_NONE;
 	m_rasterizerDesc.FrontCounterClockwise = FALSE;
@@ -161,97 +142,91 @@ void DirectX11Interface::init()
 	m_blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	m_device->CreateBlendState(&m_blendDesc, &m_blendState);
 	m_deviceContext->OMSetBlendState(m_blendState, NULL, 0xffffffff);
-	*/
 
-    if (!m_bDeviceOnlyMinimalistContext)
-    {
-		// create default shader
-		UString vertexShader =
-			"cbuffer ModelViewProjectionConstantBuffer : register(b0)\n"
-			"{\n"
-			"	float4x4 mvp;		// world matrix for object\n"
-			//"	matrix world;		// world matrix for object\n"
-			//"	matrix view;		// view matrix\n"
-			//"	matrix projection;	// projection matrix\n"
-			"	float4 col;			// global color\n"
-			"};\n"
-			"\n"
-			"struct VS_INPUT\n"
-			"{\n"
-			"	float4 pos	: POSITION;\n"
-			"	float4 col	: COLOR0;\n"
-			"	float2 tex	: TEXCOORD0;\n"
-			"};\n"
-			"\n"
-			"struct VS_OUTPUT\n"
-			"{\n"
-			"	float4 pos	: SV_Position;\n"
-			"	float4 col	: COLOR0;\n"
-			"	float2 tex	: TEXCOORD0;\n"
-			"};\n"
-			"\n"
-			"VS_OUTPUT vsmain(in VS_INPUT In)\n"
-			"{\n"
-			"	VS_OUTPUT Out;"
-			"	Out.pos = mul(In.pos, mvp);\n"
-			"	Out.col = In.col;\n"
-			"	Out.tex = In.tex;\n"
-			"	return Out;\n"
-			"}\n";
+	// create default shader
+	UString vertexShader =
+		"cbuffer ModelViewProjectionConstantBuffer : register(b0)\n"
+		"{\n"
+		"	float4x4 mvp;		// world matrix for object\n"
+		//"	matrix world;		// world matrix for object\n"
+		//"	matrix view;		// view matrix\n"
+		//"	matrix projection;	// projection matrix\n"
+		"	float4 col;			// global color\n"
+		"};\n"
+		"\n"
+		"struct VS_INPUT\n"
+		"{\n"
+		"	float4 pos	: POSITION;\n"
+		"	float4 col	: COLOR0;\n"
+		"	float2 tex	: TEXCOORD0;\n"
+		"};\n"
+		"\n"
+		"struct VS_OUTPUT\n"
+		"{\n"
+		"	float4 pos	: SV_Position;\n"
+		"	float4 col	: COLOR0;\n"
+		"	float2 tex	: TEXCOORD0;\n"
+		"};\n"
+		"\n"
+		"VS_OUTPUT vsmain(in VS_INPUT In)\n"
+		"{\n"
+		"	VS_OUTPUT Out;"
+		"	Out.pos = mul(In.pos, mvp);\n"
+		"	Out.col = In.col;\n"
+		"	Out.tex = In.tex;\n"
+		"	return Out;\n"
+		"}\n";
 
 
-		UString pixelShader =
-			"Texture2D tex2D;\n"
-			"SamplerState samplerState\n"
-			"{\n"
-			"	Filter = MIN_MAG_MIP_LINEAR;"
-			"	AddressU = Clamp;"
-			"	AddressV = Clamp;"
-			"};\n"
-			"\n"
-			"struct PS_INPUT\n"
-			"{\n"
-			"	float4 pos	: SV_Position;\n"
-			"	float4 col	: COLOR0;\n"
-			"	float2 tex	: TEXCOORD0;\n"
-			"};\n"
-			"\n"
-			"struct PS_OUTPUT\n"
-			"{\n"
-			"	float4 col	: SV_Target;\n"
-			"};\n"
-			"\n"
-			"PS_OUTPUT psmain(in PS_INPUT In)\n"
-			"{\n"
-			"	PS_OUTPUT Out;"
-			//"	Out.col = float4(0.2f, 1.0f, 1.0f, 0.2f);"
-			//"	Out.col = In.col;"
-			"	Out.col = tex2D.Sample(samplerState, In.tex) * In.col;"
-			"	return Out;\n"
-			"}\n";
+	UString pixelShader =
+		"Texture2D tex2D;\n"
+		"SamplerState samplerState\n"
+		"{\n"
+		"	Filter = MIN_MAG_MIP_LINEAR;"
+		"	AddressU = Clamp;"
+		"	AddressV = Clamp;"
+		"};\n"
+		"\n"
+		"struct PS_INPUT\n"
+		"{\n"
+		"	float4 pos	: SV_Position;\n"
+		"	float4 col	: COLOR0;\n"
+		"	float2 tex	: TEXCOORD0;\n"
+		"};\n"
+		"\n"
+		"struct PS_OUTPUT\n"
+		"{\n"
+		"	float4 col	: SV_Target;\n"
+		"};\n"
+		"\n"
+		"PS_OUTPUT psmain(in PS_INPUT In)\n"
+		"{\n"
+		"	PS_OUTPUT Out;"
+		//"	Out.col = float4(0.2f, 1.0f, 1.0f, 0.2f);"
+		//"	Out.col = In.col;"
+		"	Out.col = tex2D.Sample(samplerState, In.tex) * In.col;"
+		"	return Out;\n"
+		"}\n";
 
-		m_shaderTexturedGeneric = (DirectX11Shader*)createShaderFromSource(vertexShader, pixelShader);
-		m_shaderTexturedGeneric->load();
+	m_shaderTexturedGeneric = (DirectX11Shader*)createShaderFromSource(vertexShader, pixelShader);
+	m_shaderTexturedGeneric->load();
 
-		// dynamic vertexbuffer
-		D3D11_BUFFER_DESC bufferDesc;
-		bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-		bufferDesc.ByteWidth = sizeof(SimpleVertex) * 512;
-		bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		bufferDesc.MiscFlags = 0;
-		bufferDesc.StructureByteStride = 0;
-		if (FAILED(m_device->CreateBuffer(&bufferDesc, NULL, &m_vertexBuffer)))
-			engine->showMessageError("DirectX Error", "Couldn't CreateBuffer()!");
+	// dynamic vertexbuffer
+	D3D11_BUFFER_DESC bufferDesc;
+	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	bufferDesc.ByteWidth = sizeof(SimpleVertex) * 512;
+	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	bufferDesc.MiscFlags = 0;
+	bufferDesc.StructureByteStride = 0;
+	if (FAILED(m_device->CreateBuffer(&bufferDesc, NULL, &m_vertexBuffer)))
+		engine->showMessageError("DirectX Error", "Couldn't CreateBuffer()!");
 
-		onResolutionChange(m_vResolution); // force build swapchain rendertarget view
-    }
+	onResolutionChange(m_vResolution); // force build swapchain rendertarget view
 }
 
 void DirectX11Interface::beginScene()
 {
-	if (m_bDeviceOnlyMinimalistContext) return;
-
 	Matrix4 defaultProjectionMatrix = Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0);
 
 	// push main transforms
@@ -272,8 +247,6 @@ void DirectX11Interface::beginScene()
 
 void DirectX11Interface::endScene()
 {
-	if (m_bDeviceOnlyMinimalistContext) return;
-
 	popTransform();
 
 	checkStackLeaks();
@@ -284,8 +257,6 @@ void DirectX11Interface::endScene()
 void DirectX11Interface::setColor(Color color)
 {
 	m_color = color;
-
-	if (m_bDeviceOnlyMinimalistContext) return;
 
 	// TODO: wtf is happening there
 	///m_shaderTexturedGeneric->setUniform4f("col", COLOR_GET_Af(m_color), COLOR_GET_Rf(m_color), COLOR_GET_Gf(m_color), COLOR_GET_Bf(m_color));
@@ -396,7 +367,6 @@ void DirectX11Interface::drawString(McFont *font, UString text)
 
 void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 {
-	if (m_bDeviceOnlyMinimalistContext) return;
 	if (vao == NULL) return;
 
 	updateTransform();
@@ -580,43 +550,40 @@ void DirectX11Interface::onResolutionChange(Vector2 newResolution)
 	m_vResolution = newResolution;
 
 	// rebuild swapchain rendertarget + view
-	if (!m_bDeviceOnlyMinimalistContext)
+	HRESULT hr;
+
+	// unset + release
+	m_deviceContext->OMSetRenderTargets(0, NULL, NULL);
+	if (m_frameBuffer != NULL)
+		m_frameBuffer->Release();
+
+	// resize
+	hr = m_swapChain->ResizeBuffers(0, (UINT)newResolution.x, (UINT)newResolution.y, DXGI_FORMAT_UNKNOWN, 0); // this preserves the existing format
+	if (FAILED(hr))
 	{
-		HRESULT hr;
-
-		// unset + release
-		m_deviceContext->OMSetRenderTargets(0, NULL, NULL);
-		if (m_frameBuffer != NULL)
-			m_frameBuffer->Release();
-
-		// resize
-		hr = m_swapChain->ResizeBuffers(0, (UINT)newResolution.x, (UINT)newResolution.y, DXGI_FORMAT_UNKNOWN, 0); // this preserves the existing format
-		if (FAILED(hr))
-		{
-			debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't ResizeBuffers(%ld)!!!\n", hr);
-			return;
-		}
-
-		// rebuild
-		ID3D11Texture2D *backBuffer;
-		hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-		if (FAILED(hr))
-		{
-			debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't GetBuffer(%ld)!!!\n", hr);
-			return;
-		}
-
-		hr = m_device->CreateRenderTargetView(backBuffer, NULL, &m_frameBuffer);
-		if (FAILED(hr))
-		{
-			debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateRenderTargetView(%ld)!!!\n", hr);
-			backBuffer->Release();
-			return;
-		}
-		backBuffer->Release();
-
-		m_deviceContext->OMSetRenderTargets(1, &m_frameBuffer, NULL);
+		debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't ResizeBuffers(%ld)!!!\n", hr);
+		return;
 	}
+
+	// rebuild
+	ID3D11Texture2D *backBuffer;
+	hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+	if (FAILED(hr))
+	{
+		debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't GetBuffer(%ld)!!!\n", hr);
+		return;
+	}
+
+	hr = m_device->CreateRenderTargetView(backBuffer, NULL, &m_frameBuffer);
+	if (FAILED(hr))
+	{
+		debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateRenderTargetView(%ld)!!!\n", hr);
+		backBuffer->Release();
+		return;
+	}
+	backBuffer->Release();
+
+	m_deviceContext->OMSetRenderTargets(1, &m_frameBuffer, NULL);
 
 	// rebuild viewport
 	D3D11_VIEWPORT viewport;
@@ -657,8 +624,6 @@ Shader *DirectX11Interface::createShaderFromSource(UString vertexShader, UString
 
 void DirectX11Interface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)
 {
-	if (m_bDeviceOnlyMinimalistContext) return;
-
 	m_projectionMatrix = projectionMatrix;
 	m_worldMatrix = worldMatrix;
 

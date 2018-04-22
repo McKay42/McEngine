@@ -9,10 +9,17 @@
 #define VULKANGRAPHICSINTERFACE_H
 
 #include "VulkanInterface.h"
-#include "Graphics.h"
+#include "NullGraphicsInterface.h"
 
-class VulkanGraphicsInterface : public Graphics
+#ifdef MCENGINE_FEATURE_VULKAN
+
+class VulkanSwapChain;
+
+class VulkanGraphicsInterface : public NullGraphicsInterface /*Graphics*/
 {
+public:
+	virtual std::vector<const char *> getRequiredInstanceExtensions() = 0;
+
 public:
 	VulkanGraphicsInterface();
 	virtual ~VulkanGraphicsInterface();
@@ -92,6 +99,9 @@ public:
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
 	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage);
 
+	// ILLEGAL:
+	inline VulkanSwapChain *getSwapChain() const {return m_swapchain;}
+
 protected:
 	void init();
 
@@ -101,11 +111,11 @@ private:
 	// renderer
 	Vector2 m_vResolution;
 
-#ifdef MCENGINE_FEATURE_VULKAN
-
+	VkQueue m_queue;
 	VkSurfaceKHR m_surface;
+	VulkanSwapChain *m_swapchain;
+};
 
 #endif
-};
 
 #endif
