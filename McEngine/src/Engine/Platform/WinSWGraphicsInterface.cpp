@@ -18,15 +18,6 @@ WinSWGraphicsInterface::WinSWGraphicsInterface(HWND hwnd) : SWGraphicsInterface(
 
 	// get device context
 	m_hdc = GetDC(m_hwnd);
-
-	// get pixel format
-	PIXELFORMATDESCRIPTOR pfd = getPixelFormatDescriptor();
-	int pixelFormat = ChoosePixelFormat(m_hdc, &pfd);
-	debugLog("SWRasterizer: PixelFormat = %i\n", pixelFormat);
-
-	// set pixel format
-	BOOL result = SetPixelFormat(m_hdc, pixelFormat, &pfd);
-	debugLog("SWRasterizer: SetPixelFormat() = %i\n", result);
 }
 
 WinSWGraphicsInterface::~WinSWGraphicsInterface()
@@ -60,13 +51,10 @@ void WinSWGraphicsInterface::endScene()
 
 		StretchDIBits(m_hdc, 0, 0, (int)rendererResolution.x, (int)rendererResolution.y, 0, 0, (int)rendererResolution.x, (int)rendererResolution.y, backBuffer, &bminfo, DIB_RGB_COLORS, SRCCOPY);
 	}
-
-	///SwapBuffers(m_hdc);
 }
 
 void WinSWGraphicsInterface::setVSync(bool vsync)
 {
-
 }
 
 #endif

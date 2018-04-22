@@ -50,98 +50,94 @@ PIXELFORMATDESCRIPTOR getPixelFormatDescriptor()
 
 bool wglIsExtensionSupported(const char *extension)
 {
-    const size_t extlen = strlen(extension);
-    const char *supported = NULL;
+	const size_t extlen = strlen(extension);
+	const char *supported = NULL;
 
-    // try to use wglGetExtensionStringARB on current DC, if possible
-    PROC wglGetExtString = wglGetProcAddress("wglGetExtensionsStringARB");
+	// try to use wglGetExtensionStringARB on current DC, if possible
+	PROC wglGetExtString = wglGetProcAddress("wglGetExtensionsStringARB");
 
-    if (wglGetExtString)
-        supported = ((char*(__stdcall*)(HDC))wglGetExtString)(wglGetCurrentDC());
+	if (wglGetExtString)
+		supported = ((char*(__stdcall*)(HDC))wglGetExtString)(wglGetCurrentDC());
 
-    // if that failed, try standard opengl extensions string
-    if (supported == NULL)
-        supported = (char*)glGetString(GL_EXTENSIONS);
+	// if that failed, try standard opengl extensions string
+	if (supported == NULL)
+		supported = (char*)glGetString(GL_EXTENSIONS);
 
-    // if that failed too, must be no extensions supported
-    if (supported == NULL)
-        return false;
+	// if that failed too, must be no extensions supported
+	if (supported == NULL)
+		return false;
 
-    // begin examination at start of string, increment by 1 on false match
-    for (const char* p = supported; ; p++)
-    {
-        // advance p up to the next possible match
-        p = strstr(p, extension);
+	// begin examination at start of string, increment by 1 on false match
+	for (const char* p = supported; ; p++)
+	{
+		// advance p up to the next possible match
+		p = strstr(p, extension);
 
-        if (p == NULL)
-            return false; // no Match
+		if (p == NULL)
+			return false; // no Match
 
-        // make sure that match is at the start of the string, or that the previous char is a space, or else we could accidentally match "wglFunkywglExtension" with "wglExtension"
-        // also, make sure that the following character is space or NULL, or else "wglExtensionTwo" might match "wglExtension"
-        if ((p==supported || p[-1]==' ') && (p[extlen]=='\0' || p[extlen]==' '))
-            return true; // match
-    }
+		// make sure that match is at the start of the string, or that the previous char is a space, or else we could accidentally match "wglFunkywglExtension" with "wglExtension"
+		// also, make sure that the following character is space or NULL, or else "wglExtensionTwo" might match "wglExtension"
+		if ((p==supported || p[-1]==' ') && (p[extlen]=='\0' || p[extlen]==' '))
+			return true; // match
+	}
 
-    return false;
+	return false;
 }
 
 //************************************//
 //	handle enabling of multisampling  //
 //************************************//
 
-bool initWinGLMultisample(HDC hDC, HINSTANCE hInstance, HWND hWnd)
+bool initWinGLMultisample(HDC hDC, HINSTANCE hInstance, HWND hWnd, int factor)
 {
-    // check if the multisampling extension is available
-    if (!wglIsExtensionSupported("WGL_ARB_multisample"))
-        return false;
+	// check if the multisampling extension is available
+	if (!wglIsExtensionSupported("WGL_ARB_multisample"))
+		return false;
 
-    // get our pixel format
-    PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
+	// get our pixel format
+	PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
 
-    if (!wglChoosePixelFormatARB)
-        return false; // not supported extension
+	if (!wglChoosePixelFormatARB)
+		return false; // not supported extension
 
-    int pixelFormat;
-    bool valid;
-    UINT numFormats;
-    float fAttributes[] = {0,0};
+	int pixelFormat;
+	bool valid;
+	UINT numFormats;
+	float fAttributes[] = {0,0};
 
-    // attributes we want to test
-    int iAttributes[] = { WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-    					  WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-    					  WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
-    					  WGL_COLOR_BITS_ARB, 24,
-    					  WGL_ALPHA_BITS_ARB, 8,
-    					  WGL_DEPTH_BITS_ARB, 24,
-    					  WGL_STENCIL_BITS_ARB, 1,
-    					  WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
-    					  WGL_SAMPLE_BUFFERS_ARB, GL_TRUE,
-    					  WGL_SAMPLES_ARB, 4,				// check For 4x MSAA
-    					  0,0
-      };
+	// attributes we want to test
+	int iAttributes[] = { WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
+						  WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
+						  WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
+						  WGL_COLOR_BITS_ARB, 24,
+						  WGL_ALPHA_BITS_ARB, 8,
+						  WGL_DEPTH_BITS_ARB, 24,
+						  WGL_STENCIL_BITS_ARB, 1,
+						  WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
+						  WGL_SAMPLE_BUFFERS_ARB, GL_TRUE,
+						  WGL_SAMPLES_ARB, factor,
+						  0,0
+	};
 
-    // check if we can get a pixel format for 4x MSAA
-    valid = wglChoosePixelFormatARB(hDC, iAttributes, fAttributes, 1, &pixelFormat, &numFormats);
+	while (iAttributes[19] > 1)
+	{
+		// check if we can get a pixel format for the msaa value (iAttributes[19])
+		valid = wglChoosePixelFormatARB(hDC, iAttributes, fAttributes, 1, &pixelFormat, &numFormats);
 
-    // if it succeeded, and numFormats is >= 1, then we're done
-    if (valid && numFormats >= 1)
-    {
-    	g_bARBMultisampleSupported = true;
-    	g_iARBMultisampleFormat = pixelFormat;
-        return g_bARBMultisampleSupported;
-    }
+		// if it succeeded, and numFormats is >= 1, then we're done
+		if (valid && numFormats >= 1)
+		{
+			g_bARBMultisampleSupported = true;
+			g_iARBMultisampleFormat = pixelFormat;
+			return true;
+		}
 
-    // else 4x MSAA failed, try 2x MSAA
-    iAttributes[19] = 2;
-    valid = wglChoosePixelFormatARB(hDC, iAttributes, fAttributes, 1, &pixelFormat, &numFormats);
-    if (valid && numFormats >= 1)
-    {
-    	g_bARBMultisampleSupported = true;
-    	g_iARBMultisampleFormat = pixelFormat;
-        return g_bARBMultisampleSupported;
-    }
+		// otherwise, divide by two to get the next possible msaa value, and try again (until < 2)
+		iAttributes[19] = iAttributes[19] / 2;
+	}
 
-    return g_bARBMultisampleSupported;
+	return false;
 }
 
 FAKE_CONTEXT WinGLLegacyInterface::createAndMakeCurrentWGLContext(HWND hwnd, PIXELFORMATDESCRIPTOR pfdIn)

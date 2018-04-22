@@ -33,14 +33,14 @@ void DirectX11RenderTarget::init()
 	// create texture
 	D3D11_TEXTURE2D_DESC bufferDesc;
 	bufferDesc.ArraySize = 1;
-	bufferDesc.BindFlags = /*D3D11_BIND_RENDER_TARGET*//* | D3D11_BIND_SHADER_RESOURCE*/D3D11_BIND_FLAG::D3D11_BIND_SHADER_RESOURCE; // HACKHACK: temp for hypereal
-	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_WRITE; // HACKHACK: temp for hypereal
+	bufferDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
 	bufferDesc.MipLevels = 1;
 	bufferDesc.MiscFlags = 0;
 	bufferDesc.SampleDesc.Count = 1;
 	bufferDesc.SampleDesc.Quality = 0;
-	bufferDesc.Usage = D3D11_USAGE::D3D11_USAGE_DYNAMIC; // HACKHACK: temp for hypereal
+	bufferDesc.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT;
 	bufferDesc.Width = (UINT)m_vSize.x;
 	bufferDesc.Height = (UINT)m_vSize.y;
 
@@ -64,8 +64,6 @@ void DirectX11RenderTarget::init()
 	}
 
 	// create rendertarget view
-	// HACKHACK: temp disabled for hypereal
-	/*
 	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
 	renderTargetViewDesc.Format = bufferDesc.Format;
 	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
@@ -76,10 +74,8 @@ void DirectX11RenderTarget::init()
 		engine->showMessageErrorFatal("RenderTarget Error", UString::format("Couldn't CreateRenderTargetView(%ld)!", hr));
 		return;
 	}
-	*/
 
 	// create shader resource view
-	/*
 	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
 	shaderResourceViewDesc.Format = bufferDesc.Format;
 	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
@@ -91,7 +87,6 @@ void DirectX11RenderTarget::init()
 		engine->showMessageErrorFatal("RenderTarget Error", UString::format("Couldn't CreateShaderResourceView(%ld)!", hr));
 		return;
 	}
-	*/
 
 	m_bReady = true;
 }

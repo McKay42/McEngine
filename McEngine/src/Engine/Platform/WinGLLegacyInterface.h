@@ -17,7 +17,7 @@
 #include <Windows.h>
 
 PIXELFORMATDESCRIPTOR getPixelFormatDescriptor();
-bool initWinGLMultisample(HDC hDC, HINSTANCE hInstance, HWND hWnd);
+bool initWinGLMultisample(HDC hDC, HINSTANCE hInstance, HWND hWnd, int factor);
 
 struct FAKE_CONTEXT
 {

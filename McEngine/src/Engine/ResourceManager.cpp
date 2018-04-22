@@ -15,6 +15,7 @@
 
 ConVar rm_warnings("rm_warnings", false);
 ConVar rm_async_rand_delay("rm_async_rand_delay", 0.0f);
+ConVar rm_interrupt_on_destroy("rm_interrupt_on_destroy", true);
 ConVar debug_rm("debug_rm", false);
 
 extern bool g_bRunning;
@@ -177,6 +178,9 @@ void ResourceManager::destroyResource(Resource *rs)
 			{
 				if (debug_rm.getBool())
 					debugLog("Resource Manager: Scheduled async destroy of %s\n", rs->getName().toUtf8());
+
+				if (rm_interrupt_on_destroy.getBool())
+					rs->interruptLoad();
 
 				m_loadingWorkAsyncDestroy.push_back(rs);
 				if (isManagedResource)

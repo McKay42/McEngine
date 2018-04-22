@@ -24,6 +24,8 @@ public:
 	virtual void release();
 	virtual void reload();
 
+	void interruptLoad();
+
 	void setName(UString name){m_sName = name;}
 
 	inline UString getName() const {return m_sName;}
@@ -42,6 +44,7 @@ protected:
 
 	bool m_bReady;
 	bool m_bAsyncReady;
+	bool m_bInterrupted;
 };
 
 #endif
