@@ -44,12 +44,14 @@ Resource::Resource(UString filepath)
 
 	m_bReady = false;
 	m_bAsyncReady = false;
+	m_bInterrupted = false;
 }
 
 Resource::Resource()
 {
 	m_bReady = false;
 	m_bAsyncReady = false;
+	m_bInterrupted = false;
 }
 
 void Resource::load()
@@ -76,3 +78,7 @@ void Resource::release()
 	m_bAsyncReady = false;
 }
 
+void Resource::interruptLoad()
+{
+	m_bInterrupted = true;
+}

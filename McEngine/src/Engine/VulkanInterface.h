@@ -34,6 +34,7 @@ public:
 
 	void finish();
 
+	inline uint32_t getQueueFamilyIndex() const {return m_iQueueFamilyIndex;}
 	inline bool isReady() const {return m_bReady;}
 
 #ifdef MCENGINE_FEATURE_VULKAN
@@ -47,15 +48,17 @@ public:
 
 private:
 
+	bool m_bReady;
+	uint32_t m_iQueueFamilyIndex;
+
 #ifdef MCENGINE_FEATURE_VULKAN
 
 	VkInstance m_instance;
 	VkPhysicalDevice m_physicalDevice;
 	VkDevice m_device;
+	VkCommandPool m_commandPool;
 
 #endif
-
-	bool m_bReady;
 };
 
 extern VulkanInterface *vulkan;
