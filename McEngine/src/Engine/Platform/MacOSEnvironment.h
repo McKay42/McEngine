@@ -30,6 +30,7 @@ public:
 	OS getOS();
 	void shutdown();
 	void restart();
+	void sleep(unsigned int us);
 	UString getExecutablePath();
 	void openURLInDefaultBrowser(UString url);
 
