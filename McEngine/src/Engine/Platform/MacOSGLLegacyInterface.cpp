@@ -19,6 +19,8 @@
 
 MacOSGLLegacyInterface::MacOSGLLegacyInterface() : OpenGLLegacyInterface()
 {
+	// NOTE: context creation is not handled in here, to allow both native implementations as well as SDL2
+	// everything related is handed through to the wrapper (like setVSync())
 }
 
 MacOSGLLegacyInterface::~MacOSGLLegacyInterface()
@@ -28,6 +30,7 @@ MacOSGLLegacyInterface::~MacOSGLLegacyInterface()
 void MacOSGLLegacyInterface::endScene()
 {
 	glFlush();
+	((MacOSEnvironment *)(env))->getWrapper()->endScene();
 }
 
 void MacOSGLLegacyInterface::setVSync(bool vsync)

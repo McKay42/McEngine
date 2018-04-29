@@ -130,6 +130,11 @@ void LinuxEnvironment::restart()
 	shutdown();
 }
 
+void LinuxEnvironment::sleep(unsigned int us)
+{
+	usleep(us);
+}
+
 UString LinuxEnvironment::getExecutablePath()
 {
 	char buf[4096];
@@ -292,7 +297,7 @@ UString LinuxEnvironment::getFolderFromFilePath(UString filepath)
 
 UString LinuxEnvironment::getFileExtensionFromFilePath(UString filepath, bool includeDot)
 {
-	int idx = filepath.findLast(".");
+	const int idx = filepath.findLast(".");
 	if (idx != -1)
 		return filepath.substr(idx+1);
 	else

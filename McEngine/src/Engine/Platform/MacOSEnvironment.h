@@ -30,6 +30,7 @@ public:
 	OS getOS();
 	void shutdown();
 	void restart();
+	void sleep(unsigned int us);
 	UString getExecutablePath();
 	void openURLInDefaultBrowser(UString url);
 
@@ -73,8 +74,11 @@ public:
 	void setWindowSize(int width, int height);
 	void setWindowResizable(bool resizable);
 	void setWindowGhostCorporeal(bool corporeal);
+	void setMonitor(int monitor);
 	Vector2 getWindowPos();
 	Vector2 getWindowSize();
+	int getMonitor();
+	std::vector<McRect> getMonitors();
 	Vector2 getNativeScreenSize();
 	McRect getVirtualScreenRect();
 	McRect getDesktopRect();
@@ -87,6 +91,7 @@ public:
 	bool isCursorClipped() {return false;}
 	Vector2 getMousePos();
 	McRect getCursorClip();
+	CURSORTYPE getCursor();
 	void setCursor(CURSORTYPE cur);
 	void setCursorVisible(bool visible);
 	void setMousePos(int x, int y);
@@ -106,11 +111,16 @@ private:
 
 	MacOSWrapper *m_wrapper;
 
+	// monitors
+	static std::vector<McRect> m_vMonitors;
+
 	// window
 	bool m_bFullScreen;
 	bool m_bResizable;
 
 	// mouse
+	bool m_bCursorClipped;
+	McRect m_cursorClip;
 	bool m_bCursorRequest;
 	bool m_bCursorReset;
 	int m_iCursorInvisibleCounter;
@@ -118,6 +128,7 @@ private:
 	bool m_bCursorVisible;
 	bool m_bCursorVisibleInternalOverride;
 	bool m_bIsCursorInsideWindow;
+	CURSORTYPE m_cursorType;
 };
 
 #endif

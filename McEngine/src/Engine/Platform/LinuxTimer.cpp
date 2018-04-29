@@ -9,6 +9,8 @@
 
 #include "LinuxTimer.h"
 
+#include <unistd.h> // for usleep()
+
 timespec diff(timespec start, timespec end)
 {
 	timespec temp;
@@ -49,6 +51,11 @@ void LinuxTimer::update()
 	m_elapsedTime = elapsed.tv_sec + (double)elapsed.tv_nsec / 1000000000.0;
 
 	m_currentTime = t;
+}
+
+void LinuxTimer::sleep(unsigned int us)
+{
+	usleep(us);
 }
 
 #endif

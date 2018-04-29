@@ -75,6 +75,7 @@ public:
 	// convenience functions (passthroughs)
 	void shutdown();
 	void restart();
+	void sleep(unsigned int us);
 	void focus();
 	void center();
 	void toggleFullscreen();
