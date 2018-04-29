@@ -1,7 +1,18 @@
+//================ Copyright (c) 2017, PG, All rights reserved. =================//
+//
+// Purpose:		main entry point
+//
+// $NoKeywords: $main
+//===============================================================================//
+
+#include "EngineFeatures.h"
+
 #import <Cocoa/Cocoa.h>
 
 #include <OpenGL/gl.h>
 #include "main_OSX_cpp.h"
+
+#ifndef MCENGINE_FEATURE_SDL
 
 static MacOSWrapper *g_wrapper = NULL;
 
@@ -19,7 +30,10 @@ NSWindow *window = NULL;
 NSOpenGLContext *context = NULL;
 NSOpenGLView *view = NULL;
 
+#endif
+
 // reverse wrapper
+
 void MacOSWrapper::microSleep(int microSeconds)
 {
     usleep(microSeconds);
@@ -35,6 +49,8 @@ void MacOSWrapper::openURLInDefaultBrowser(const char *url)
 {
     [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[NSString stringWithUTF8String:url]]];
 }
+
+#ifndef MCENGINE_FEATURE_SDL
 
 void MacOSWrapper::showMessageInfo(const char *title, const char *message)
 {
@@ -131,8 +147,6 @@ void MacOSWrapper::setVSync(bool vsync)
 
 
 
-
-
 static NSOpenGLContext *createOpenGLContext()
 {
     NSOpenGLPixelFormatAttribute pixelAttrs[] = {
@@ -157,9 +171,9 @@ static NSOpenGLContext *createOpenGLContext()
 
 
 
-//*************//
+/////////////////
 // OpenGL View //
-//*************//
+/////////////////
 
 @interface OpenGLView : NSOpenGLView {
 @private
@@ -245,9 +259,9 @@ static NSOpenGLContext *createOpenGLContext()
     if (g_wrapper != NULL)
     {
         if ([event deltaY] != 0)
-            g_wrapper->onMouseWheelVertical([event deltaY]/* > 0 ? 120 : -120*/);
+            g_wrapper->onMouseWheelVertical([event deltaY]); // [event deltaY] > 0 ? 120 : -120
         else if ([event deltaX] != 0)
-            g_wrapper->onMouseWheelHorizontal([event deltaX]/* > 0 ? 120 : -120*/);
+            g_wrapper->onMouseWheelHorizontal([event deltaX]); // [event deltaX] > 0 ? 120 : -120
     }
 }
 
@@ -389,9 +403,9 @@ static NSOpenGLContext *createOpenGLContext()
 
 
 
-//**********************//
+//////////////////////////
 // Application Delegate //
-//**********************//
+//////////////////////////
 
 @interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate>
 @end
@@ -483,9 +497,9 @@ static NSOpenGLContext *createOpenGLContext()
 
 
 
-//********************// 
+////////////////////////
 //	Main entry point  //
-//********************//
+////////////////////////
 
 int main(int argc, const char * argv[])
 {
@@ -534,3 +548,5 @@ int main(int argc, const char * argv[])
     
     return EXIT_SUCCESS;
 }
+
+#endif

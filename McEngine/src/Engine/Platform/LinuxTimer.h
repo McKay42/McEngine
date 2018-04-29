@@ -22,6 +22,8 @@ public:
     void start();
     void update();
 
+    void sleep(unsigned int us);
+
     inline double getDelta() const {return m_delta;}
     inline double getElapsedTime() const {return m_elapsedTime;}
 

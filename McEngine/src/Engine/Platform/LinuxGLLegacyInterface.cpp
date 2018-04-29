@@ -21,7 +21,7 @@ XVisualInfo *getVisualInfo(Display *display)
 	return glXChooseVisual(display, 0, att);
 }
 
-LinuxGLLegacyInterface::LinuxGLLegacyInterface(Display *display, Window window)
+LinuxGLLegacyInterface::LinuxGLLegacyInterface(Display *display, Window window) : OpenGLLegacyInterface()
 {
 	m_display = display;
 	m_window = window;

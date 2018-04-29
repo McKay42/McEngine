@@ -1,24 +1,26 @@
-//================ Copyright (c) 2017, PG, All rights reserved. =================//
+//================ Copyright (c) 2018, PG, All rights reserved. =================//
 //
-// Purpose:		macOS
+// Purpose:		SDL ("partial", SDL does not provide all functions!)
 //
-// $NoKeywords: $macenv
+// $NoKeywords: $sdlenv
 //===============================================================================//
 
-#ifdef __APPLE__
+#ifndef SDLENVIRONMENT_H
+#define SDLENVIRONMENT_H
 
-#ifndef MACOSENVIRONMENT_H
-#define MACOSENVIRONMENT_H
+#include "cbase.h"
+
+#ifdef MCENGINE_FEATURE_SDL
+
+#include "SDL.h"
 
 #include "Environment.h"
 
-class MacOSWrapper;
-
-class MacOSEnvironment : public Environment
+class SDLEnvironment : public Environment
 {
 public:
-	MacOSEnvironment(MacOSWrapper *wrapper);
-	virtual ~MacOSEnvironment();
+	SDLEnvironment(SDL_Window *window);
+	virtual ~SDLEnvironment() {;}
 
 	void update();
 
@@ -30,8 +32,9 @@ public:
 	OS getOS();
 	void shutdown();
 	void restart();
+	void sleep(unsigned int us);
 	UString getExecutablePath();
-	void openURLInDefaultBrowser(UString url);
+	void openURLInDefaultBrowser(UString url); // NOTE: non-SDL
 
 	// user
 	UString getUsername();
@@ -39,14 +42,14 @@ public:
 
 	// file IO
 	bool fileExists(UString filename);
-	bool directoryExists(UString directoryName);
-	bool createDirectory(UString directoryName);
+	bool directoryExists(UString directoryName); // NOTE: non-SDL
+	bool createDirectory(UString directoryName); // NOTE: non-SDL
 	bool renameFile(UString oldFileName, UString newFileName);
 	bool deleteFile(UString filePath);
-	std::vector<UString> getFilesInFolder(UString folder);
-	std::vector<UString> getFoldersInFolder(UString folder);
-	std::vector<UString> getLogicalDrives();
-	UString getFolderFromFilePath(UString filepath);
+	std::vector<UString> getFilesInFolder(UString folder);		// NOTE: non-SDL
+	std::vector<UString> getFoldersInFolder(UString folder);	// NOTE: non-SDL
+	std::vector<UString> getLogicalDrives();					// NOTE: non-SDL
+	UString getFolderFromFilePath(UString filepath);			// NOTE: non-SDL
 	UString getFileExtensionFromFilePath(UString filepath, bool includeDot = false);
 
 	// clipboard
@@ -58,8 +61,8 @@ public:
 	void showMessageWarning(UString title, UString message);
 	void showMessageError(UString title, UString message);
 	void showMessageErrorFatal(UString title, UString message);
-	UString openFileWindow(const char *filetypefilters, UString title, UString initialpath);
-	UString openFolderWindow(UString title, UString initialpath);
+	UString openFileWindow(const char *filetypefilters, UString title, UString initialpath);	// NOTE: non-SDL
+	UString openFolderWindow(UString title, UString initialpath);								// NOTE: non-SDL
 
 	// window
 	void focus();
@@ -77,20 +80,20 @@ public:
 	Vector2 getWindowPos();
 	Vector2 getWindowSize();
 	int getMonitor();
-	std::vector<McRect> getMonitors();
+	std::vector<McRect> getMonitors() {return m_vMonitors;}
 	Vector2 getNativeScreenSize();
 	McRect getVirtualScreenRect();
 	McRect getDesktopRect();
-	bool isFullscreen() {return m_bFullScreen;}
+	bool isFullscreen() {return m_bFullscreen;}
 	bool isWindowResizable() {return m_bResizable;}
 
 	// mouse
-	bool isCursorInWindow();
-	bool isCursorVisible();
-	bool isCursorClipped() {return false;}
+	bool isCursorInWindow() {return m_bIsCursorInsideWindow;}
+	bool isCursorVisible() {return m_bCursorVisible;}
+	bool isCursorClipped() {return m_bCursorClipped;}
 	Vector2 getMousePos();
-	McRect getCursorClip();
-	CURSORTYPE getCursor();
+	McRect getCursorClip() {return m_cursorClip;}
+	CURSORTYPE getCursor() {return m_cursorType;}
 	void setCursor(CURSORTYPE cur);
 	void setCursorVisible(bool visible);
 	void setMousePos(int x, int y);
@@ -100,33 +103,25 @@ public:
 	UString keyCodeToString(KEYCODE keyCode);
 
 	// ILLEGAL:
-	inline MacOSWrapper *getWrapper() {return m_wrapper;}
+	inline SDL_Window *getWindow() {return m_window;}
 
 private:
-	static int getFilesInFolderFilter(const struct dirent *entry);
-	static int getFoldersInFolderFilter(const struct dirent *entry);
+	SDL_Window *m_window;
 
-	void setCursorVisible(bool visible, bool internalOverride);
-
-	MacOSWrapper *m_wrapper;
+	ConVar *m_mouse_sensitivity_ref;
 
 	// monitors
-	static std::vector<McRect> m_vMonitors;
+	std::vector<McRect> m_vMonitors;
 
 	// window
-	bool m_bFullScreen;
 	bool m_bResizable;
+	bool m_bFullscreen;
 
 	// mouse
+	bool m_bIsCursorInsideWindow;
+	bool m_bCursorVisible;
 	bool m_bCursorClipped;
 	McRect m_cursorClip;
-	bool m_bCursorRequest;
-	bool m_bCursorReset;
-	int m_iCursorInvisibleCounter;
-	int m_iCursorVisibleCounter;
-	bool m_bCursorVisible;
-	bool m_bCursorVisibleInternalOverride;
-	bool m_bIsCursorInsideWindow;
 	CURSORTYPE m_cursorType;
 };
 

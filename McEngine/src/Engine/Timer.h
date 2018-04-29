@@ -16,6 +16,8 @@ public:
 	virtual void start() = 0;
 	virtual void update() = 0;
 
+	virtual void sleep(unsigned int us) = 0;
+
 	virtual double getDelta() const = 0;
 	virtual double getElapsedTime()  const = 0;
 };
@@ -28,6 +30,8 @@ public:
 
     void start();
     void update();
+
+    void sleep(unsigned int us);
 
     inline double getDelta() const {return m_timer->getDelta();}
     inline double getElapsedTime() const {return m_timer->getElapsedTime();}

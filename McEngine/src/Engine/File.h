@@ -27,7 +27,7 @@ public:
 	bool canRead() const;
 
 	UString readLine();
-	const char *readFile();
+	const char *readFile(); // WARNING: this is NOT a null-terminated string! DO NOT USE THIS with UString/std::string!
 
 	size_t getFileSize() const;
 
