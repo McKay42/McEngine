@@ -465,7 +465,6 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release.224118307" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release.1823048921" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release">
 								<option id="gnu.cpp.link.option.libs.384906307" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" value="SDL2"/>
 									<listOptionValue builtIn="false" value="bass"/>
 									<listOptionValue builtIn="false" value="bass_fx"/>
 									<listOptionValue builtIn="false" value="jpeg"/>
