@@ -59,3 +59,8 @@ void Timer::update()
 	m_timer->update();
 }
 
+void Timer::sleep(unsigned int us)
+{
+	m_timer->sleep(us);
+}
+

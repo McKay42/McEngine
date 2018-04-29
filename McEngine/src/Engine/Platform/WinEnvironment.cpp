@@ -91,6 +91,11 @@ void WinEnvironment::restart()
 	shutdown();
 }
 
+void WinEnvironment::sleep(unsigned int us)
+{
+	Sleep(us/1000);
+}
+
 UString WinEnvironment::getUsername()
 {
 	DWORD username_len = UNLEN+1;
