@@ -126,8 +126,9 @@ UString MacOSEnvironment::getUsername()
 
 UString MacOSEnvironment::getUserDataPath()
 {
-	// TODO
-	return "/home";
+	UString path = "/Users/";
+	path.append(getUsername());
+	return path;
 }
 
 bool MacOSEnvironment::fileExists(UString filename)

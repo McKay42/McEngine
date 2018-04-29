@@ -23,6 +23,11 @@ MacOSSDLEnvironment::~MacOSSDLEnvironment()
 	SAFE_DELETE(m_environment);
 }
 
+Environment::OS MacOSSDLEnvironment::getOS()
+{
+	return Environment::OS::OS_MACOS;
+}
+
 void MacOSSDLEnvironment::sleep(unsigned int us)
 {
 	m_environment->sleep(us);
@@ -36,6 +41,11 @@ void MacOSSDLEnvironment::openURLInDefaultBrowser(UString url)
 UString MacOSSDLEnvironment::getUsername()
 {
 	return m_environment->getUsername();
+}
+
+UString MacOSSDLEnvironment::getUserDataPath()
+{
+	return m_environment->getUserDataPath();
 }
 
 bool MacOSSDLEnvironment::directoryExists(UString directoryName)
