@@ -32,24 +32,24 @@ public:
 	OS getOS();
 	void shutdown();
 	void restart();
-	void sleep(unsigned int us);
+	virtual void sleep(unsigned int us); // NOTE: inaccurate
 	UString getExecutablePath();
-	void openURLInDefaultBrowser(UString url); // NOTE: non-SDL
+	virtual void openURLInDefaultBrowser(UString url); // NOTE: non-SDL
 
 	// user
-	UString getUsername();
+	virtual UString getUsername(); // NOTE: non-SDL
 	UString getUserDataPath();
 
 	// file IO
 	bool fileExists(UString filename);
-	bool directoryExists(UString directoryName); // NOTE: non-SDL
-	bool createDirectory(UString directoryName); // NOTE: non-SDL
+	virtual bool directoryExists(UString directoryName); // NOTE: non-SDL
+	virtual bool createDirectory(UString directoryName); // NOTE: non-SDL
 	bool renameFile(UString oldFileName, UString newFileName);
 	bool deleteFile(UString filePath);
-	std::vector<UString> getFilesInFolder(UString folder);		// NOTE: non-SDL
-	std::vector<UString> getFoldersInFolder(UString folder);	// NOTE: non-SDL
-	std::vector<UString> getLogicalDrives();					// NOTE: non-SDL
-	UString getFolderFromFilePath(UString filepath);			// NOTE: non-SDL
+	virtual std::vector<UString> getFilesInFolder(UString folder);		// NOTE: non-SDL
+	virtual std::vector<UString> getFoldersInFolder(UString folder);	// NOTE: non-SDL
+	virtual std::vector<UString> getLogicalDrives();					// NOTE: non-SDL
+	virtual UString getFolderFromFilePath(UString filepath);			// NOTE: non-SDL
 	UString getFileExtensionFromFilePath(UString filepath, bool includeDot = false);
 
 	// clipboard
@@ -61,8 +61,8 @@ public:
 	void showMessageWarning(UString title, UString message);
 	void showMessageError(UString title, UString message);
 	void showMessageErrorFatal(UString title, UString message);
-	UString openFileWindow(const char *filetypefilters, UString title, UString initialpath);	// NOTE: non-SDL
-	UString openFolderWindow(UString title, UString initialpath);								// NOTE: non-SDL
+	virtual UString openFileWindow(const char *filetypefilters, UString title, UString initialpath);	// NOTE: non-SDL
+	virtual UString openFolderWindow(UString title, UString initialpath);								// NOTE: non-SDL
 
 	// window
 	void focus();
@@ -103,6 +103,7 @@ public:
 	UString keyCodeToString(KEYCODE keyCode);
 
 	// ILLEGAL:
+	void setWindow(SDL_Window *window) {m_window = window;}
 	inline SDL_Window *getWindow() {return m_window;}
 
 private:

@@ -103,6 +103,11 @@ void MacOSEnvironment::restart()
 	shutdown();
 }
 
+void MacOSEnvironment::sleep(unsigned int us)
+{
+	MacOSWrapper::microSleep(us);
+}
+
 UString MacOSEnvironment::getExecutablePath()
 {
 	// TODO
@@ -111,12 +116,12 @@ UString MacOSEnvironment::getExecutablePath()
 
 void MacOSEnvironment::openURLInDefaultBrowser(UString url)
 {
-	m_wrapper->openURLInDefaultBrowser(url.toUtf8());
+	MacOSWrapper::openURLInDefaultBrowser(url.toUtf8());
 }
 
 UString MacOSEnvironment::getUsername()
 {
-	return UString(m_wrapper->getUsername());
+	return UString(MacOSWrapper::getUsername());
 }
 
 UString MacOSEnvironment::getUserDataPath()
@@ -263,33 +268,33 @@ UString MacOSEnvironment::getFileExtensionFromFilePath(UString filepath, bool in
 
 UString MacOSEnvironment::getClipBoardText()
 {
-	const char *text = m_wrapper->getClipboardText();
+	const char *text = MacOSWrapper::getClipboardText();
 	return (text != NULL ? UString(text) : "");
 }
 
 void MacOSEnvironment::setClipBoardText(UString text)
 {
-	m_wrapper->setClipboardText(text.toUtf8());
+	MacOSWrapper::setClipboardText(text.toUtf8());
 }
 
 void MacOSEnvironment::showMessageInfo(UString title, UString message)
 {
-	m_wrapper->showMessageInfo(title.toUtf8(), message.toUtf8());
+	MacOSWrapper::showMessageInfo(title.toUtf8(), message.toUtf8());
 }
 
 void MacOSEnvironment::showMessageWarning(UString title, UString message)
 {
-	m_wrapper->showMessageWarning(title.toUtf8(), message.toUtf8());
+	MacOSWrapper::showMessageWarning(title.toUtf8(), message.toUtf8());
 }
 
 void MacOSEnvironment::showMessageError(UString title, UString message)
 {
-	m_wrapper->showMessageError(title.toUtf8(), message.toUtf8());
+	MacOSWrapper::showMessageError(title.toUtf8(), message.toUtf8());
 }
 
 void MacOSEnvironment::showMessageErrorFatal(UString title, UString message)
 {
-	m_wrapper->showMessageErrorFatal(title.toUtf8(), message.toUtf8());
+	MacOSWrapper::showMessageErrorFatal(title.toUtf8(), message.toUtf8());
 }
 
 UString MacOSEnvironment::openFileWindow(const char *filetypefilters, UString title, UString initialpath)
@@ -306,29 +311,29 @@ UString MacOSEnvironment::openFolderWindow(UString title, UString initialpath)
 
 void MacOSEnvironment::focus()
 {
-	m_wrapper->focus();
+	MacOSWrapper::focus();
 }
 
 void MacOSEnvironment::center()
 {
-	m_wrapper->center();
+	MacOSWrapper::center();
 }
 
 void MacOSEnvironment::minimize()
 {
-	m_wrapper->minimize();
+	MacOSWrapper::minimize();
 }
 
 void MacOSEnvironment::maximize()
 {
-	m_wrapper->maximize();
+	MacOSWrapper::maximize();
 }
 
 void MacOSEnvironment::enableFullscreen()
 {
 	if (m_bFullScreen) return;
 
-	m_wrapper->enableFullscreen();
+	MacOSWrapper::enableFullscreen();
 	focus();
 
 	m_bFullScreen = true;
@@ -338,7 +343,7 @@ void MacOSEnvironment::disableFullscreen()
 {
 	if (!m_bFullScreen) return;
 
-	m_wrapper->disableFullscreen();
+	MacOSWrapper::disableFullscreen();
 	focus();
 
 	m_bFullScreen = false;
@@ -346,22 +351,22 @@ void MacOSEnvironment::disableFullscreen()
 
 void MacOSEnvironment::setWindowTitle(UString title)
 {
-	m_wrapper->setWindowTitle(title.toUtf8());
+	MacOSWrapper::setWindowTitle(title.toUtf8());
 }
 
 void MacOSEnvironment::setWindowPos(int x, int y)
 {
-	m_wrapper->setWindowPos(x, y);
+	MacOSWrapper::setWindowPos(x, y);
 }
 
 void MacOSEnvironment::setWindowSize(int width, int height)
 {
-	m_wrapper->setWindowSize(width, height);
+	MacOSWrapper::setWindowSize(width, height);
 }
 
 void MacOSEnvironment::setWindowResizable(bool resizable)
 {
-	m_wrapper->setWindowResizable(resizable);
+	MacOSWrapper::setWindowResizable(resizable);
 }
 
 void MacOSEnvironment::setWindowGhostCorporeal(bool corporeal)
@@ -377,19 +382,19 @@ void MacOSEnvironment::setMonitor(int monitor)
 
 Vector2 MacOSEnvironment::getWindowPos()
 {
-	const MacOSWrapper::VECTOR2 pos = m_wrapper->getWindowPos();
+	const MacOSWrapper::VECTOR2 pos = MacOSWrapper::getWindowPos();
 	return Vector2(pos.x, pos.y);
 }
 
 Vector2 MacOSEnvironment::getWindowSize()
 {
-	const MacOSWrapper::VECTOR2 windowSize = m_wrapper->getWindowSize();
+	const MacOSWrapper::VECTOR2 windowSize = MacOSWrapper::getWindowSize();
 	return Vector2(windowSize.x, windowSize.y);
 }
 
 int MacOSEnvironment::getMonitor()
 {
-	return m_wrapper->getMonitor();
+	return MacOSWrapper::getMonitor();
 }
 
 std::vector<McRect> MacOSEnvironment::getMonitors()
@@ -399,7 +404,7 @@ std::vector<McRect> MacOSEnvironment::getMonitors()
 
 Vector2 MacOSEnvironment::getNativeScreenSize()
 {
-	const MacOSWrapper::VECTOR2 size = m_wrapper->getNativeScreenSize();
+	const MacOSWrapper::VECTOR2 size = MacOSWrapper::getNativeScreenSize();
 	return Vector2(size.x, size.y);
 }
 
@@ -428,7 +433,7 @@ bool MacOSEnvironment::isCursorVisible()
 
 Vector2 MacOSEnvironment::getMousePos()
 {
-	MacOSWrapper::VECTOR2 mousePos = m_wrapper->getMousePos();
+	MacOSWrapper::VECTOR2 mousePos = MacOSWrapper::getMousePos();
 	return Vector2(mousePos.x, -mousePos.y + engine->getScreenHeight() - 1); // wtf apple: "The y coordinate in the returned point starts from a base of 1, not 0."
 }
 
@@ -450,10 +455,10 @@ void MacOSEnvironment::setCursor(CURSORTYPE cur)
 	switch (cur)
 	{
 	case CURSOR_TEXT:
-		m_wrapper->setCursor(1);
+		MacOSWrapper::setCursor(1);
 		break;
 	default:
-		m_wrapper->setCursor(0);
+		MacOSWrapper::setCursor(0);
 		break;
 	}
 
@@ -468,7 +473,7 @@ void MacOSEnvironment::setCursorVisible(bool visible)
 
 void MacOSEnvironment::setCursorVisible(bool visible, bool internalOverride)
 {
-	m_wrapper->setCursorVisible(visible);
+	MacOSWrapper::setCursorVisible(visible);
 
 	if (visible)
 		m_iCursorVisibleCounter++;
@@ -479,7 +484,7 @@ void MacOSEnvironment::setCursorVisible(bool visible, bool internalOverride)
 	{
 		for (int i=0; i<m_iCursorInvisibleCounter-1; i++)
 		{
-			m_wrapper->setCursorVisible(visible);
+			MacOSWrapper::setCursorVisible(visible);
 		}
 		m_iCursorInvisibleCounter = 0;
 	}
@@ -487,7 +492,7 @@ void MacOSEnvironment::setCursorVisible(bool visible, bool internalOverride)
 	{
 		for (int i=0; i<m_iCursorVisibleCounter-1; i++)
 		{
-			m_wrapper->setCursorVisible(visible);
+			MacOSWrapper::setCursorVisible(visible);
 		}
 		m_iCursorVisibleCounter = 0;
 	}
@@ -500,14 +505,14 @@ void MacOSEnvironment::setCursorVisible(bool visible, bool internalOverride)
 
 void MacOSEnvironment::setMousePos(int x, int y)
 {
-	m_wrapper->setMousePos(x, y);
+	MacOSWrapper::setMousePos(x, y);
 }
 
 void MacOSEnvironment::setCursorClip(bool clip, McRect rect)
 {
 	m_bCursorClipped = clip;
 	m_cursorClip = rect;
-	m_wrapper->setCursorClip(clip); // TODO
+	MacOSWrapper::setCursorClip(clip); // TODO
 }
 
 UString MacOSEnvironment::keyCodeToString(KEYCODE keyCode)
