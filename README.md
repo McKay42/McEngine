@@ -113,7 +113,7 @@ The next section is optional, and explains how to create a standalone build with
            - Open a Terminal, cd into the temporary location
            - ```install_name_tool -id "@loader_path/SDL2.dylib" SDL2.dylib```
            - Validate the change with ```otool -l SDL2.dylib```
-       - Copy SDL2.dylib into the ```/build/``` directory
+       - Copy ```SDL2.dylib``` into the ```/build/``` directory
        - Open a Terminal, cd into the ```/MacOS Release/``` directory (if this is a macOS release of course)
        - ```install_name_tool -change @rpath/SDL2.framework/Versions/A/SDL2 @loader_path/SDL2.dylib McEngine```
        - Validate the change with ```otool -l McEngine```     
