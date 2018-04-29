@@ -73,16 +73,16 @@ The macOS build needs the following tweaks:
 - In Eclipse > Right click on the imported project > Properties > C/C++ General > File Types
     1. Select "Use Project Settings"
     2. Click on "New..."
-        - Pattern: *.h
-        - Type: C++ Header File
+        - Pattern: ```*.h```
+        - Type: ```C++ Header File```
         - Click on "OK"
     3. Click on "New..."
-        - Pattern: *.cpp
-        - Type: C++ Source File
+        - Pattern: ```*.cpp```
+        - Type: ```C++ Source File```
         - Click on "OK"
     4. Click on "New..."
-        - Pattern: *.mm
-        - Type: C++ Source File
+        - Pattern: ```*.mm```
+        - Type: ```C++ Source File```
         - Click on "OK"
     5. Click on "OK"
 
@@ -105,7 +105,7 @@ The next section is optional, and explains how to create a standalone build with
 
 - Standalone (Optional):
    1. BASS + BASSFX standalone
-       - TODO (or use the included libbass.dylib + libbass_fx.dylib)
+       - TODO (or use the included ```libbass.dylib``` + ```libbass_fx.dylib```)
    2. SDL2
        - Make sure you have a compiled build
        - Copy ```SDL2.framework/Versions/A/SDL2``` to a temporary location (or use the included ```SDL2.dylib```)
