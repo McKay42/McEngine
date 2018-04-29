@@ -66,3 +66,54 @@ The Linux build needs the following packages:
 - sudo apt-get install libglu1-mesa-dev
 - sudo apt-get install libx11-dev
 - sudo apt-get install xorg-dev
+
+
+## macOS
+The macOS build needs the following tweaks:
+- In Eclipse > Right click on the imported project > Properties > C/C++ General > File Types
+    1. Select "Use Project Settings"
+    2. Click on "New..."
+        - Pattern: ```*.h```
+        - Type: ```C++ Header File```
+        - Click on "OK"
+    3. Click on "New..."
+        - Pattern: ```*.cpp```
+        - Type: ```C++ Source File```
+        - Click on "OK"
+    4. Click on "New..."
+        - Pattern: ```*.mm```
+        - Type: ```C++ Source File```
+        - Click on "OK"
+    5. Click on "OK"
+
+Depending on which libraries you want to use, a few extra steps are required:  
+(Note that both BASS + BASSFX and SDL2 are required by default, even if SDL2 is not enabled.)
+
+- Libraries:
+    1. BASS + BASSFX
+        - Make sure you have a compiled build
+        - Copy ```/build/libbass.dylib``` into ```/MacOS Release/``` (if this is a macOS release of course).
+        - Copy ```/build/libbass_fx.dylib``` into ```/MacOS Release/``` (if this is a macOS release of course).
+    2. SDL2
+        - Either use the included dmg or download the Development Libraries here: https://www.libsdl.org/download-2.0.php
+        - Mount the dmg
+        - Copy ```SDL2.framework``` into ```/Library/Frameworks/```
+
+Copying the libraries into the release directory is only necessary if you want to start the executable from within Eclipse, because on macOS the run configuration working directory does not work for libraries (i.e. the executable incorrectly looks for libraries inside the release directory, instead of inside the ```/build/``` directory, even if a custom working directory is specified).
+
+The next section is optional, and explains how to create a standalone build without any dependencies, similar to how dlls can be put next to the executable on Windows (without requiring the user to install libraries system-wide).
+
+- Standalone (Optional):
+   1. BASS + BASSFX standalone
+       - TODO (or use the included ```libbass.dylib``` + ```libbass_fx.dylib```)
+   2. SDL2
+       - Make sure you have a compiled build
+       - Copy ```SDL2.framework/Versions/A/SDL2``` to a temporary location (or use the included ```SDL2.dylib```)
+           - Rename ```SDL2``` to ```SDL2.dylib```
+           - Open a Terminal, cd into the temporary location
+           - ```install_name_tool -id "@loader_path/SDL2.dylib" SDL2.dylib```
+           - Validate the change with ```otool -l SDL2.dylib```
+       - Copy ```SDL2.dylib``` into the ```/build/``` directory
+       - Open a Terminal, cd into the ```/MacOS Release/``` directory (if this is a macOS release of course)
+       - ```install_name_tool -change @rpath/SDL2.framework/Versions/A/SDL2 @loader_path/SDL2.dylib McEngine```
+       - Validate the change with ```otool -l McEngine```     

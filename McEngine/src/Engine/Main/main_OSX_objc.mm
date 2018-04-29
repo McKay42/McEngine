@@ -1,7 +1,20 @@
+//================ Copyright (c) 2017, PG, All rights reserved. =================//
+//
+// Purpose:		main entry point
+//
+// $NoKeywords: $main
+//===============================================================================//
+
+#include "EngineFeatures.h"
+
 #import <Cocoa/Cocoa.h>
 
 #include <OpenGL/gl.h>
 #include "main_OSX_cpp.h"
+
+
+
+#ifndef MCENGINE_FEATURE_SDL
 
 static MacOSWrapper *g_wrapper = NULL;
 
@@ -15,11 +28,16 @@ static NSString *WINDOW_TITLE = @"McEngine";
 
 extern BOOL g_bRunning;
 
+#endif
+
 NSWindow *window = NULL;
 NSOpenGLContext *context = NULL;
 NSOpenGLView *view = NULL;
 
+
+
 // reverse wrapper
+
 void MacOSWrapper::microSleep(int microSeconds)
 {
     usleep(microSeconds);
@@ -34,6 +52,17 @@ const char *MacOSWrapper::getUsername()
 void MacOSWrapper::openURLInDefaultBrowser(const char *url)
 {
     [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[NSString stringWithUTF8String:url]]];
+}
+
+const char *MacOSWrapper::getClipboardText()
+{
+	// TODO
+	return "";
+}
+
+void MacOSWrapper::setClipboardText(const char *text)
+{
+	// TODO
 }
 
 void MacOSWrapper::showMessageInfo(const char *title, const char *message)
@@ -72,9 +101,34 @@ void MacOSWrapper::showMessageErrorFatal(const char *title, const char *message)
     [alert runModal];
 }
 
+void MacOSWrapper::center()
+{
+	// TODO
+}
+
+void MacOSWrapper::focus()
+{
+
+}
+
 void MacOSWrapper::minimize()
 {
     [window performMiniaturize:nil];
+}
+
+void MacOSWrapper::maximize()
+{
+	[window deminiaturize:nil];
+}
+
+void MacOSWrapper::enableFullscreen()
+{
+	// TODO
+}
+
+void MacOSWrapper::disableFullscreen()
+{
+	// TODO
 }
 
 void MacOSWrapper::setWindowTitle(const char *title)
@@ -82,10 +136,43 @@ void MacOSWrapper::setWindowTitle(const char *title)
     window.title = [NSString stringWithUTF8String:title];
 }
 
+void MacOSWrapper::setWindowPos(int x, int y)
+{
+	// TODO
+}
+
+void MacOSWrapper::setWindowSize(int width, int height)
+{
+	// TODO
+}
+
+void MacOSWrapper::setWindowResizable(bool resizable)
+{
+	// TODO
+}
+
+MacOSWrapper::VECTOR2 MacOSWrapper::getWindowPos()
+{
+	// TODO
+	return {0.0f, 0.0f};
+}
+
 MacOSWrapper::VECTOR2 MacOSWrapper::getWindowSize()
 {
     NSRect frame = view.frame;
     return {(float)frame.size.width, (float)frame.size.height};
+}
+
+int MacOSWrapper::getMonitor()
+{
+	// TODO
+	return 0;
+}
+
+MacOSWrapper::VECTOR2 MacOSWrapper::getNativeScreenSize()
+{
+	// TODO
+	return {1280.0f, 720.0f};
 }
 
 MacOSWrapper::VECTOR2 MacOSWrapper::getMousePos()
@@ -122,6 +209,16 @@ void MacOSWrapper::setMousePos(int x, int y)
     CGAssociateMouseAndMouseCursorPosition(true);
 }
 
+void MacOSWrapper::setCursorClip(bool clip)
+{
+	// TODO
+}
+
+void MacOSWrapper::endScene()
+{
+	// TODO
+}
+
 void MacOSWrapper::setVSync(bool vsync)
 {
     GLint value = vsync ? 1 : 0;
@@ -131,7 +228,7 @@ void MacOSWrapper::setVSync(bool vsync)
 
 
 
-
+#ifndef MCENGINE_FEATURE_SDL
 
 static NSOpenGLContext *createOpenGLContext()
 {
@@ -157,9 +254,9 @@ static NSOpenGLContext *createOpenGLContext()
 
 
 
-//*************//
+/////////////////
 // OpenGL View //
-//*************//
+/////////////////
 
 @interface OpenGLView : NSOpenGLView {
 @private
@@ -245,9 +342,9 @@ static NSOpenGLContext *createOpenGLContext()
     if (g_wrapper != NULL)
     {
         if ([event deltaY] != 0)
-            g_wrapper->onMouseWheelVertical([event deltaY]/* > 0 ? 120 : -120*/);
+            g_wrapper->onMouseWheelVertical([event deltaY]); // [event deltaY] > 0 ? 120 : -120
         else if ([event deltaX] != 0)
-            g_wrapper->onMouseWheelHorizontal([event deltaX]/* > 0 ? 120 : -120*/);
+            g_wrapper->onMouseWheelHorizontal([event deltaX]); // [event deltaX] > 0 ? 120 : -120
     }
 }
 
@@ -389,9 +486,9 @@ static NSOpenGLContext *createOpenGLContext()
 
 
 
-//**********************//
+//////////////////////////
 // Application Delegate //
-//**********************//
+//////////////////////////
 
 @interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate>
 @end
@@ -483,9 +580,9 @@ static NSOpenGLContext *createOpenGLContext()
 
 
 
-//********************// 
+////////////////////////
 //	Main entry point  //
-//********************//
+////////////////////////
 
 int main(int argc, const char * argv[])
 {
@@ -534,3 +631,5 @@ int main(int argc, const char * argv[])
     
     return EXIT_SUCCESS;
 }
+
+#endif

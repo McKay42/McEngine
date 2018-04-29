@@ -417,6 +417,7 @@
 								<option id="gnu.cpp.compiler.option.dialect.std.318089225" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.other.other.376747910" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -Wno-sign-compare -Wno-unused-local-typedefs -Wno-reorder -Wno-switch -fpermissive" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1578928659" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bullet/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/xinput/include}&quot;"/>
@@ -472,6 +473,7 @@
 									<listOptionValue builtIn="false" value="freetype"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.1661771986" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl/lib/macos}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/lib/macos}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/xinput/lib/macos}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/enet/lib/macos}&quot;"/>
@@ -484,7 +486,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bassfx/lib/macos}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libjpeg/lib/macos}&quot;"/>
 								</option>
-								<option id="gnu.cpp.link.option.flags.836300205" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-framework OpenGL -framework Cocoa" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.836300205" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-framework SDL2 -framework OpenGL -framework Cocoa" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.568104780" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
