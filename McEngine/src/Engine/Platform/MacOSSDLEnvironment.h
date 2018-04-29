@@ -23,11 +23,13 @@ public:
 	virtual ~MacOSSDLEnvironment();
 
 	// system
+	OS getOS();
 	void sleep(unsigned int us);
 	void openURLInDefaultBrowser(UString url);
 
 	// user
 	UString getUsername();
+	UString getUserDataPath();
 
 	// file IO
 	bool directoryExists(UString directoryName);
