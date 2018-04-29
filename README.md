@@ -87,7 +87,7 @@ The macOS build needs the following tweaks:
     5. Click on "OK"
 
 Depending on which libraries you want to use, a few extra steps are required:  
-(Note that BASS + BASSFX is required/enabled by default, but SDL2 is not.)
+(Note that both BASS + BASSFX and SDL2 are required by default, even if SDL2 is not enabled.)
 
 - Libraries:
     1. BASS + BASSFX
