@@ -44,7 +44,7 @@ bool g_bDrawing = false;
 bool g_bMinimized = false; // for fps_max_background
 bool g_bHasFocus = true; // for fps_max_background
 
-SDL_Window *window = NULL;
+SDL_Window *g_window = NULL;
 
 ConVar fps_max("fps_max", 60.0f);
 ConVar fps_max_background("fps_max_background", 30.0f);
@@ -52,12 +52,10 @@ ConVar fps_unlimited("fps_unlimited", false);
 
 
 
-int mainSDL(int argc, char *argv[]) // extern
+int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 {
-	return main(argc, argv);
-}
-int main(int argc, char *argv[])
-{
+	SDLEnvironment *environment = customSDLEnvironment;
+
 	// initialize sdl
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
@@ -70,25 +68,25 @@ int main(int argc, char *argv[])
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	// create window
-	window = SDL_CreateWindow(
+	g_window = SDL_CreateWindow(
 			WINDOW_TITLE,
 			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 			WINDOW_WIDTH, WINDOW_HEIGHT,
 			SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_FOREIGN | SDL_WINDOW_OPENGL
 	);
-	if (window == NULL)
+	if (g_window == NULL)
 	{
 		fprintf(stderr, "Couldn't create window: %s\n", SDL_GetError());
 		return 1;
 	}
 
 	// post window-creation settings
-	SDL_SetWindowMinimumSize(window, WINDOW_WIDTH_MIN, WINDOW_HEIGHT_MIN);
+	SDL_SetWindowMinimumSize(g_window, WINDOW_WIDTH_MIN, WINDOW_HEIGHT_MIN);
 
 #ifdef MCENGINE_FEATURE_OPENGL
 
 	// create OpenGL context
-	SDL_GLContext context = SDL_GL_CreateContext(window);
+	SDL_GLContext context = SDL_GL_CreateContext(g_window);
 
 #endif
 
@@ -102,11 +100,15 @@ int main(int argc, char *argv[])
     deltaTimer->update();
 
     // make the window visible
-    SDL_ShowWindow(window);
-	SDL_RaiseWindow(window);
+    SDL_ShowWindow(g_window);
+	SDL_RaiseWindow(g_window);
 
 	// initialize engine
-	SDLEnvironment *environment = new SDLEnvironment(window);
+	if (environment == NULL)
+		environment = new SDLEnvironment(g_window);
+	else
+		environment->setWindow(g_window);
+
 	g_engine = new Engine(environment, ""); // TODO: args
 	g_engine->loadApp();
 
@@ -286,12 +288,17 @@ int main(int argc, char *argv[])
 
     // finally, destroy the window
 	SDL_GL_DeleteContext(context);
-	SDL_DestroyWindow(window);
+	SDL_DestroyWindow(g_window);
 	SDL_Quit();
 
 	// TODO: handle potential restart
 
 	return 0;
+}
+
+int mainSDL(int argc, char *argv[])
+{
+	return mainSDL(argc, argv, NULL);
 }
 
 #endif

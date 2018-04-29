@@ -17,6 +17,9 @@
 
 #include "OpenGLHeaders.h"
 
+#ifndef MCENGINE_FEATURE_SDL
+
+
 
 Engine *g_engine = NULL;
 
@@ -184,5 +187,7 @@ void MacOSWrapper::requestResolutionChange(float newWidth, float newHeight)
 {
 	g_engine->requestResolutionChange(Vector2(newWidth, newHeight));
 }
+
+#endif
 
 #endif
