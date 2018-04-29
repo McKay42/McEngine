@@ -49,7 +49,7 @@ void OpenGLLegacyInterface::init()
 {
 	// check GL version
 	const GLubyte *version = glGetString(GL_VERSION);
-	debugLog("OpenGL: OpenGL Version %s\n",version);
+	debugLog("OpenGL: OpenGL Version %s\n", version);
 
 	// check GLEW
 	GLenum err = glewInit();
@@ -61,8 +61,8 @@ void OpenGLLegacyInterface::init()
 	}
 
 	// check GL version again
-	if (!glewIsSupported("GL_VERSION_3_0"))
-		engine->showMessageWarning("OpenGL Warning", "Your GPU does not support OpenGL version 3.0!\nThe engine will try to continue, but probably crash.");
+	if (!glewIsSupported("GL_VERSION_3_0") && !glewIsSupported("GLEW_VERSION_3_0"))
+		engine->showMessageWarning("OpenGL Warning", UString::format("Your GPU does not support OpenGL version 3.0!\nThe engine will try to continue, but probably crash.\nOpenGL version = %s", version));
 
 	// enable
 	glEnable(GL_TEXTURE_2D);

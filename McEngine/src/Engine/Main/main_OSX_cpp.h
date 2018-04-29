@@ -30,27 +30,48 @@ public:
 	static const char *getUsername();
 	static void openURLInDefaultBrowser(const char *url);
 
+	// clipboard
+	static const char *getClipboardText();
+	static void setClipboardText(const char *text);
+
+	// dialogs & message boxes
 	static void showMessageInfo(const char *title, const char *message);
 	static void showMessageWarning(const char *title, const char *message);
 	static void showMessageError(const char *title, const char *message);
 	static void showMessageErrorFatal(const char *title, const char *message);
 
+	// window
+	static void center();
+	static void focus();
 	static void minimize();
+	static void maximize();
+	static void enableFullscreen();
+	static void disableFullscreen();
 	static void setWindowTitle(const char *title);
+	static void setWindowPos(int x, int y);
+	static void setWindowSize(int width, int height);
+	static void setWindowResizable(bool resizable);
+	static VECTOR2 getWindowPos();
 	static VECTOR2 getWindowSize();
+	static int getMonitor();
+	static VECTOR2 getNativeScreenSize();
 
+	// mouse
 	static VECTOR2 getMousePos();
 	static void setCursor(int cursor);
 	static void setCursorVisible(bool visible);
 	static void setMousePos(int x, int y);
+	static void setCursorClip(bool clip);
 
 	// Graphics
+	static void endScene();
 	static void setVSync(bool vsync);
 
 public:
-	// native callbacks (objective-c -> c++)
 	MacOSWrapper();
 	~MacOSWrapper();
+
+	// native callbacks (objective-c -> c++)
 
 	void loadApp();
 	void main_objc_before_winproc();

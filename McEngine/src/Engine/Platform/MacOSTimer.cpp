@@ -9,6 +9,8 @@
 
 #include "MacOSTimer.h"
 
+#include <unistd.h>
+
 MacOSTimer::MacOSTimer()
 {
 	m_delta = 0;
@@ -39,6 +41,11 @@ void MacOSTimer::update()
 	m_elapsedTime = (((nowTime - m_startTime) * m_timebaseInfo.numer) / m_timebaseInfo.denom) / 1000000000.0;
 	m_delta = (((nowTime - m_currentTime) * m_timebaseInfo.numer) / m_timebaseInfo.denom) / 1000000000.0;
 	m_currentTime = nowTime;
+}
+
+void MacOSTimer::sleep(unsigned int us)
+{
+	usleep(us);
 }
 
 #endif

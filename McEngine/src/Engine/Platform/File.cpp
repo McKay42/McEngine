@@ -110,6 +110,7 @@ StdFile::StdFile(UString filePath)
 		debugLog("File Error: File %s is a directory.\n", filePath.toUtf8());
 		return;
 	}
+	m_ifstream.clear(); // clear potential error state due to the check above
 	m_ifstream.seekg(0, std::ios::beg);
 
 	if (File::debug->getBool())

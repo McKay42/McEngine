@@ -40,6 +40,7 @@ public:
 	virtual OS getOS() = 0;
 	virtual void shutdown() = 0;
 	virtual void restart() = 0;
+	virtual void sleep(unsigned int us) = 0;
 	virtual UString getExecutablePath() = 0;
 	virtual void openURLInDefaultBrowser(UString url) = 0;
 
