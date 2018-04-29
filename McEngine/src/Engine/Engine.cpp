@@ -122,8 +122,8 @@ Engine::Engine(Environment *environment, const char *args)
 
 	// init platform specific interfaces
 	m_vulkan = new VulkanInterface(); // needs to be created before Graphics
-	m_graphics = env->createRenderer(); m_graphics->init(); // needs init() separation due to potential engine->getGraphics() access
-	m_contextMenu = env->createContextMenu();
+	m_graphics = m_environment->createRenderer(); m_graphics->init(); // needs init() separation due to potential engine->getGraphics() access
+	m_contextMenu = m_environment->createContextMenu();
 
 	// and the rest
 	m_resourceManager = new ResourceManager();
@@ -518,6 +518,11 @@ void Engine::restart()
 {
 	onShutdown();
 	m_environment->restart();
+}
+
+void Engine::sleep(unsigned int us)
+{
+	m_environment->sleep(us);
 }
 
 void Engine::focus()

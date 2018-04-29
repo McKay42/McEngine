@@ -24,6 +24,21 @@
 #include <windows.h>
 #include <dwmapi.h>
 
+
+
+#ifdef MCENGINE_FEATURE_SDL
+
+extern int mainSDL(int argc, char *argv[]);
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+	return mainSDL(0, NULL);
+}
+
+#else
+
+
+
 #ifdef MCENGINE_WINDOWS_TOUCH_SUPPORT
 #include <winuser.h>
 typedef WINBOOL (WINAPI *PGPI)(UINT32 pointerId, POINTER_INFO *pointerInfo);
@@ -1015,5 +1030,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     return 0;
 }
+
+#endif
 
 #endif

@@ -36,4 +36,9 @@ void WinTimer::update()
 	m_currentTime = nowTime;
 }
 
+void WinTimer::sleep(unsigned int us)
+{
+	Sleep(us/1000);
+}
+
 #endif

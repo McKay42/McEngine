@@ -17,8 +17,11 @@
 #include <dirent.h>
 #include <libgen.h> // for dirname
 #include <sys/stat.h>
+#include <unistd.h> // for access()
 
 extern bool g_bRunning;
+
+std::vector<McRect> MacOSEnvironment::m_vMonitors;
 
 MacOSEnvironment::MacOSEnvironment(MacOSWrapper *wrapper) : Environment()
 {
@@ -27,6 +30,7 @@ MacOSEnvironment::MacOSEnvironment(MacOSWrapper *wrapper) : Environment()
 	m_bFullScreen = false;
 	m_bResizable = true;
 
+	m_bCursorClipped = false;
 	m_bCursorRequest = false;
 	m_bCursorReset = false;
 	m_iCursorVisibleCounter = 0;
@@ -34,6 +38,16 @@ MacOSEnvironment::MacOSEnvironment(MacOSWrapper *wrapper) : Environment()
 	m_bCursorVisible = true;
 	m_bCursorVisibleInternalOverride = m_bCursorVisible;
 	m_bIsCursorInsideWindow = false;
+	m_cursorType = CURSORTYPE::CURSOR_NORMAL;
+
+	// TODO: init monitors
+	if (m_vMonitors.size() < 1)
+	{
+		///debugLog("WARNING: No monitors found! Adding default monitor ...\n");
+
+		const Vector2 windowSize = getWindowSize();
+		m_vMonitors.push_back(McRect(0, 0, windowSize.x, windowSize.y));
+	}
 }
 
 MacOSEnvironment::~MacOSEnvironment()
@@ -85,8 +99,8 @@ void MacOSEnvironment::shutdown()
 
 void MacOSEnvironment::restart()
 {
-	shutdown();
 	// TODO
+	shutdown();
 }
 
 UString MacOSEnvironment::getExecutablePath()
@@ -108,12 +122,13 @@ UString MacOSEnvironment::getUsername()
 UString MacOSEnvironment::getUserDataPath()
 {
 	// TODO
-	return "<NULL>";
+	return "/home";
 }
 
 bool MacOSEnvironment::fileExists(UString filename)
 {
-	return std::ifstream(filename.toUtf8()).good();
+	///return std::ifstream(filename.toUtf8()).good();
+	return (access(filename.toUtf8(), R_OK) >= 0);
 }
 
 bool MacOSEnvironment::directoryExists(UString directoryName)
@@ -248,12 +263,13 @@ UString MacOSEnvironment::getFileExtensionFromFilePath(UString filepath, bool in
 
 UString MacOSEnvironment::getClipBoardText()
 {
-	return UString("");
+	const char *text = m_wrapper->getClipboardText();
+	return (text != NULL ? UString(text) : "");
 }
 
 void MacOSEnvironment::setClipBoardText(UString text)
 {
-	// TODO
+	m_wrapper->setClipboardText(text.toUtf8());
 }
 
 void MacOSEnvironment::showMessageInfo(UString title, UString message)
@@ -290,12 +306,12 @@ UString MacOSEnvironment::openFolderWindow(UString title, UString initialpath)
 
 void MacOSEnvironment::focus()
 {
-	// TODO
+	m_wrapper->focus();
 }
 
 void MacOSEnvironment::center()
 {
-	// TODO
+	m_wrapper->center();
 }
 
 void MacOSEnvironment::minimize()
@@ -305,17 +321,27 @@ void MacOSEnvironment::minimize()
 
 void MacOSEnvironment::maximize()
 {
-	// TODO
+	m_wrapper->maximize();
 }
 
 void MacOSEnvironment::enableFullscreen()
 {
-	// TODO
+	if (m_bFullScreen) return;
+
+	m_wrapper->enableFullscreen();
+	focus();
+
+	m_bFullScreen = true;
 }
 
 void MacOSEnvironment::disableFullscreen()
 {
-	// TODO
+	if (!m_bFullScreen) return;
+
+	m_wrapper->disableFullscreen();
+	focus();
+
+	m_bFullScreen = false;
 }
 
 void MacOSEnvironment::setWindowTitle(UString title)
@@ -325,17 +351,17 @@ void MacOSEnvironment::setWindowTitle(UString title)
 
 void MacOSEnvironment::setWindowPos(int x, int y)
 {
-	// TODO
+	m_wrapper->setWindowPos(x, y);
 }
 
 void MacOSEnvironment::setWindowSize(int width, int height)
 {
-	// TODO
+	m_wrapper->setWindowSize(width, height);
 }
 
 void MacOSEnvironment::setWindowResizable(bool resizable)
 {
-	// TODO
+	m_wrapper->setWindowResizable(resizable);
 }
 
 void MacOSEnvironment::setWindowGhostCorporeal(bool corporeal)
@@ -343,34 +369,50 @@ void MacOSEnvironment::setWindowGhostCorporeal(bool corporeal)
 	// TODO
 }
 
+void MacOSEnvironment::setMonitor(int monitor)
+{
+	// TODO:
+	center();
+}
+
 Vector2 MacOSEnvironment::getWindowPos()
 {
-	// TODO
-	return Vector2(0, 0);
+	const MacOSWrapper::VECTOR2 pos = m_wrapper->getWindowPos();
+	return Vector2(pos.x, pos.y);
 }
 
 Vector2 MacOSEnvironment::getWindowSize()
 {
-	MacOSWrapper::VECTOR2 windowSize = m_wrapper->getWindowSize();
+	const MacOSWrapper::VECTOR2 windowSize = m_wrapper->getWindowSize();
 	return Vector2(windowSize.x, windowSize.y);
+}
+
+int MacOSEnvironment::getMonitor()
+{
+	return m_wrapper->getMonitor();
+}
+
+std::vector<McRect> MacOSEnvironment::getMonitors()
+{
+	return m_vMonitors;
 }
 
 Vector2 MacOSEnvironment::getNativeScreenSize()
 {
-	// TODO
-	return Vector2(1920, 1080);
+	const MacOSWrapper::VECTOR2 size = m_wrapper->getNativeScreenSize();
+	return Vector2(size.x, size.y);
 }
 
 McRect MacOSEnvironment::getVirtualScreenRect()
 {
 	// TODO
-	return McRect(0,0,1,1);
+	return McRect(0, 0, 1, 1);
 }
 
 McRect MacOSEnvironment::getDesktopRect()
 {
 	// TODO
-	Vector2 screen = getNativeScreenSize();
+	const Vector2 screen = getNativeScreenSize();
 	return McRect(0, 0, screen.x, screen.y);
 }
 
@@ -392,12 +434,18 @@ Vector2 MacOSEnvironment::getMousePos()
 
 McRect MacOSEnvironment::getCursorClip()
 {
-	// TODO
-	return McRect(0, 0, 0, 0);
+	return m_cursorClip;
+}
+
+CURSORTYPE MacOSEnvironment::getCursor()
+{
+	return m_cursorType;
 }
 
 void MacOSEnvironment::setCursor(CURSORTYPE cur)
 {
+	m_cursorType = cur;
+
 	// TODO: finish other cursor types
 	switch (cur)
 	{
@@ -457,7 +505,9 @@ void MacOSEnvironment::setMousePos(int x, int y)
 
 void MacOSEnvironment::setCursorClip(bool clip, McRect rect)
 {
-	// TODO:
+	m_bCursorClipped = clip;
+	m_cursorClip = rect;
+	m_wrapper->setCursorClip(clip); // TODO
 }
 
 UString MacOSEnvironment::keyCodeToString(KEYCODE keyCode)

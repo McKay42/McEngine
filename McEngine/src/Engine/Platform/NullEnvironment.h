@@ -24,6 +24,7 @@ public:
 	OS getOS() {return Environment::OS::OS_NULL;}
 	void shutdown();
 	void restart();
+	void sleep(unsigned int us) {;}
 	UString getExecutablePath() {return "";}
 	void openURLInDefaultBrowser(UString url) {;}
 
@@ -65,13 +66,18 @@ public:
 	void setWindowTitle(UString title) {;}
 	void setWindowPos(int x, int y) {;}
 	void setWindowSize(int width, int height) {;}
+	void setWindowResizable(bool resizable) {;}
 	void setWindowGhostCorporeal(bool corporeal) {;}
+	void setMonitor(int monitor) {;}
 	Vector2 getWindowPos() {return Vector2(0, 0);}
 	Vector2 getWindowSize() {return Vector2(1280, 720);}
+	int getMonitor() {return 0;}
+	std::vector<McRect> getMonitors() {return std::vector<McRect>();}
 	Vector2 getNativeScreenSize() {return Vector2(1920, 1080);}
 	McRect getVirtualScreenRect() {return McRect(0, 0, 1920, 1080);}
 	McRect getDesktopRect() {return McRect(0, 0, 1920, 1080);}
 	bool isFullscreen() {return false;}
+	bool isWindowResizable() {return true;}
 
 	// mouse
 	bool isCursorInWindow() {return true;}
@@ -79,6 +85,7 @@ public:
 	bool isCursorClipped() {return false;}
 	Vector2 getMousePos() {return Vector2(0, 0);}
 	McRect getCursorClip() {return McRect(0, 0, 0, 0);}
+	CURSORTYPE getCursor() {return CURSORTYPE::CURSOR_NORMAL;}
 	void setCursor(CURSORTYPE cur) {;}
 	void setCursorVisible(bool visible) {;}
 	void setMousePos(int x, int y) {;}
