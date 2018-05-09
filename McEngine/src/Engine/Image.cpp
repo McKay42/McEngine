@@ -271,7 +271,7 @@ bool Image::loadRawImage()
 
 Color Image::getPixel(int x, int y)
 {
-	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
+	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (int)(m_rawImage.size()-1))
 		return 0xffffff00;
 
 	uint32_t r = 255;
@@ -302,7 +302,7 @@ Color Image::getPixel(int x, int y)
 
 void Image::setPixel(int x, int y, Color color)
 {
-	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size()-1))
+	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (int)(m_rawImage.size()-1))
 		return;
 
 	m_rawImage[4 * y * m_iWidth + 4 * x + 0] = COLOR_GET_Ri(color);
