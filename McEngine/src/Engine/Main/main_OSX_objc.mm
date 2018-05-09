@@ -5,6 +5,8 @@
 // $NoKeywords: $main
 //===============================================================================//
 
+#ifdef __APPLE__
+
 #include "EngineFeatures.h"
 
 #import <Cocoa/Cocoa.h>
@@ -631,5 +633,7 @@ int main(int argc, const char * argv[])
     
     return EXIT_SUCCESS;
 }
+
+#endif
 
 #endif

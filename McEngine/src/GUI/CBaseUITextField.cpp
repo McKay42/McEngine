@@ -143,7 +143,7 @@ void CBaseUITextField::TextObject::onResized()
 			oldSizeX = curWordWidth;
 
 		bool newLine = words[i].find("\n") != -1;
-		if (((width + curWordWidth+spaceWidth) > m_vParentSize.x-border && i != 0) || (newLine && i != words.size()-1))
+		if (((width + curWordWidth+spaceWidth) > m_vParentSize.x-border && i != 0) || (newLine && i != (int)(words.size()-1)))
 		{
 			width = 0.0f;
 			height += m_fStringHeight+border+lineSpacing;

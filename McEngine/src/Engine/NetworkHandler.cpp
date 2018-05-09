@@ -227,6 +227,9 @@ void NetworkHandler::connect(UString address)
 
 	if (!m_bReady) return;
 
+	if (address.length() < 1)
+		address = "localhost";
+
 	// destroy previous client
 	if (m_clientPeer != NULL)
 	{
@@ -235,8 +238,11 @@ void NetworkHandler::connect(UString address)
 		disconnect();
 		return;
 	}
+
+	// reset
 	if (m_client != NULL)
 		enet_host_destroy(m_client);
+
 	m_client = NULL;
 	m_clientPeer = NULL;
 
@@ -318,11 +324,11 @@ void NetworkHandler::host()
 	address.host = ENET_HOST_ANY;
 	address.port = host_port.getInt();
 
-	m_server = enet_host_create (&address /* the address to bind the server host to */,
-								 host_max_clients.getInt() /* allow up to 32 clients and/or outgoing connections */,
+	m_server = enet_host_create (&address,
+								 host_max_clients.getInt(),
 								 2 /* allow up to 2 channels to be used, 0 and 1 */,
-								 0 /* assume any amount of incoming bandwidth */,
-								 0 /* assume any amount of outgoing bandwidth */);
+								 0 /* unlimited downstream bandwidth */,
+								 0 /* unlimited upstream bandwidth */);
 
 	if (m_server == NULL)
 	{
@@ -357,7 +363,9 @@ void NetworkHandler::hostStop()
 		m_localServerStoppedListener();
 
 	debugLog("SERVER: Stopped local server.\n");
+
 	enet_host_destroy(m_server);
+
 	m_server = NULL;
 
 #endif
@@ -439,36 +447,49 @@ void NetworkHandler::update()
 		{
 			for (int c=0; c<m_vConnectedClients.size(); c++)
 			{
-				if (m_server->serviceTime-m_vConnectedClients[c].peer->lastReceiveTime > MC_PROTOCOL_TIMEOUT)
+				// standard timeout (force remove)
+				if ((m_server->serviceTime - m_vConnectedClients[c].peer->lastReceiveTime) > MC_PROTOCOL_TIMEOUT)
 				{
-					debugLog("SERVER: %ls timed out.\n", m_vConnectedClients[c].name.wc_str());
+					debugLog("SERVER: %s timed out.\n", m_vConnectedClients[c].name.toUtf8());
 
 					// notify local connection listener
 					if (m_serverClientChangeListener != NULL)
 						m_serverClientChangeListener(m_vConnectedClients[c].id, m_vConnectedClients[c].name, false);
 
 					enet_peer_reset(m_vConnectedClients[c].peer);
+
 					m_vConnectedClients.erase(m_vConnectedClients.begin()+c);
 					c--;
+
+					continue;
 				}
 
-				// allow a 1 second grace period for the client to disconnect
+				// kicked players (allow a 1 second grace period for the client to disconnect)
 				if (m_vConnectedClients[c].kickTime != 0.0f && engine->getTime() > m_vConnectedClients[c].kickTime + 1.0f)
 				{
-					debugLog("SERVER: %ls kicked.\n", m_vConnectedClients[c].name.wc_str());
+					debugLog("SERVER: %s kicked.\n", m_vConnectedClients[c].name.toUtf8());
 					enet_peer_disconnect(m_vConnectedClients[c].peer, 0);
 
 					m_vConnectedClients[c].kickTime = 0.0f;
 					m_vConnectedClients[c].kickKillTime = engine->getTime();
 				}
 
-				// if the client did not disconnect after the grace period, kill him
+				// kicked players (if the client did not disconnect after the grace period, kill him)
 				if (m_vConnectedClients[c].kickKillTime != 0.0f && engine->getTime() > m_vConnectedClients[c].kickKillTime + 1.0f)
 				{
-					debugLog("SERVER: %ls forcefully disconnected.\n", m_vConnectedClients[c].name.wc_str());
+					debugLog("SERVER: %s forcefully disconnected.\n", m_vConnectedClients[c].name.toUtf8());
+
+					// TODO: this call was not here originally, check if it causes redundant/odd behaviour
+					// notify local connection listener
+					if (m_serverClientChangeListener != NULL)
+						m_serverClientChangeListener(m_vConnectedClients[c].id, m_vConnectedClients[c].name, false);
+
 					enet_peer_reset(m_vConnectedClients[c].peer);
 
-					m_vConnectedClients[c].kickKillTime = 0.0f;
+					m_vConnectedClients.erase(m_vConnectedClients.begin()+c);
+					c--;
+
+					continue;
 				}
 			}
 		}
@@ -514,60 +535,64 @@ void NetworkHandler::onClientEvent(ENetEvent e)
 		if (debug_network.getBool())
 			debugLog("CLIENT: A packet of length %u was received from %s on channel %u.\n", e.packet->dataLength, e.peer->data, e.channelID);
 
-		switch (*(PACKET_TYPE*)e.packet->data)
+		if (e.packet->data != NULL)
 		{
-		case SERVER_INFO_PACKET_TYPE:
+			switch (*((PACKET_TYPE*)e.packet->data))
 			{
-				SERVER_INFO_PACKET *sp = (SERVER_INFO_PACKET*)e.packet->data;
-				m_iLocalClientID = sp->id;
-				debugLog("CLIENT: Received server info (%i)\n", sp->id);
-
-				// notify extension packet listener
-				bool valid = true;
-				if (m_clientReceiveServerInfoListener != NULL && sp->extension)
-					valid = m_clientReceiveServerInfoListener((void*)(e.packet->data +  sizeof(SERVER_INFO_PACKET)));
-
-				// this is the last packet we needed before starting the game
-				if (valid)
+			case SERVER_INFO_PACKET_TYPE:
 				{
-					if (m_clientConnectedToServerListener != NULL)
-						m_clientConnectedToServerListener();
-				}
-				else
-					disconnect(); // if the extension packet listener returned false, disconnect
-			}
-			break;
+					SERVER_INFO_PACKET *sp = (SERVER_INFO_PACKET*)e.packet->data;
+					m_iLocalClientID = sp->id;
 
-		case CHAT_PACKET_TYPE:
-			{
+					debugLog("CLIENT: Received server info (%i)\n", sp->id);
+
+					// notify extension packet listener
+					bool valid = true;
+					if (m_clientReceiveServerInfoListener != NULL && sp->extension)
+						valid = m_clientReceiveServerInfoListener((void*)(e.packet->data +  sizeof(SERVER_INFO_PACKET)));
+
+					// this is the last packet we needed before starting the game
+					if (valid)
+					{
+						if (m_clientConnectedToServerListener != NULL)
+							m_clientConnectedToServerListener();
+					}
+					else
+						disconnect(); // if the extension packet listener returned false, disconnect
+				}
+				break;
+
+			case CHAT_PACKET_TYPE:
 				if (!isServer()) // to avoid double logs on local hosts, since the client has already received the message through onServerEvent (and can't send it to itself in the broadcast)
 				{
-				chatLog(UString(((struct CHAT_PACKET*)e.packet->data)->username).substr(0, ((struct CHAT_PACKET*)e.packet->data)->usize),
-						UString(((struct CHAT_PACKET*)e.packet->data)->message).substr(0, ((struct CHAT_PACKET*)e.packet->data)->msize));
+					chatLog(UString(((struct CHAT_PACKET*)e.packet->data)->username).substr(0, ((struct CHAT_PACKET*)e.packet->data)->usize),
+							UString(((struct CHAT_PACKET*)e.packet->data)->message).substr(0, ((struct CHAT_PACKET*)e.packet->data)->msize));
 				}
+				break;
+
+			case CLIENT_BROADCAST_PACKET_TYPE:
+				if (m_clientReceiveServerPacketListener != NULL)
+				{
+					CLIENT_BROADCAST_WRAPPER *wrapper = (CLIENT_BROADCAST_WRAPPER*)e.packet->data;
+
+					// unwrap the packet
+					char *unwrappedPacket = (char*)e.packet->data;
+					const int wrapperSize = sizeof(CLIENT_BROADCAST_WRAPPER);
+					unwrappedPacket += wrapperSize;
+
+					// process
+					if (!m_clientReceiveServerPacketListener(wrapper->id, unwrappedPacket, e.packet->dataLength - wrapperSize))
+						debugLog("CLIENT: Received unknown CLIENT_PACKET_TYPE, WTF!\n");
+				}
+				break;
+
+			default:
+				debugLog("CLIENT: Received unknown packet of type %i, WTF!\n", *((PACKET_TYPE*)e.packet->data));
+				break;
 			}
-			break;
-
-		case CLIENT_BROADCAST_PACKET_TYPE:
-			if (m_clientReceiveServerPacketListener != NULL)
-			{
-				CLIENT_BROADCAST_WRAPPER *wrapper = (CLIENT_BROADCAST_WRAPPER*)e.packet->data;
-
-				// unwrap the packet
-				char *unwrappedPacket = (char*)e.packet->data;
-				const int wrapperSize = sizeof(CLIENT_BROADCAST_WRAPPER) * sizeof(char);
-				unwrappedPacket += wrapperSize;
-				if (!m_clientReceiveServerPacketListener(wrapper->id, unwrappedPacket, e.packet->dataLength - wrapperSize))
-					debugLog("CLIENT: Received unknown CLIENT_PACKET_TYPE, WTF!\n");
-			}
-			break;
-
-		default:
-			debugLog("CLIENT: Received unknown packet of type %i, WTF!\n", *(PACKET_TYPE*)e.packet->data);
-			break;
 		}
 
-		// cleanup the packet
+		// cleanup
 		enet_packet_destroy(e.packet);
 		break;
 
@@ -576,6 +601,7 @@ void NetworkHandler::onClientEvent(ENetEvent e)
 			debugLog(0xff00ff00, "CLIENT: Connected.\n");
 		else
 			debugLog(0xff00ff00, "CLIENT: Connected, but without a pending connection attempt, WTF!\n");
+
 		m_bClientConnectPending = false;
 
 		// we are connected, publish client info
@@ -590,6 +616,7 @@ void NetworkHandler::onClientEvent(ENetEvent e)
 			debugLog("CLIENT: Disconnected from Server. (Reason: Client disconnected)\n");
 		else
 			debugLog("CLIENT: Disconnected from Server. (Reason: Server disconnected)\n");
+
 		clientDisconnect();
 		break;
 	}
@@ -604,7 +631,8 @@ void NetworkHandler::onServerEvent(ENetEvent e)
 			debugLog("SERVER: A new client connected from %x:%u.\n", e.peer->address.host, e.peer->address.port);
 
 			// store peer info
-			e.peer->data = 0; // TODO!
+			e.peer->data = NULL; // TODO!
+
 			CLIENT_PEER cp;
 			cp.id = m_iIDCounter++; // HACKHACK: possible overflow if the server is running for centuries
 			cp.kickTime = 0.0f;
@@ -624,148 +652,187 @@ void NetworkHandler::onServerEvent(ENetEvent e)
 			debugLog("SERVER: A packet of length %u was received from %s on channel %u.\n", e.packet->dataLength, e.peer->data, e.channelID);
 
 		// switch on the different packet types
-		switch (*(PACKET_TYPE*)e.packet->data)
+		if (e.packet->data != NULL)
 		{
-		case CLIENT_INFO_PACKET_TYPE:
+			switch (*((PACKET_TYPE*)e.packet->data))
 			{
-				CLIENT_INFO_PACKET *cp = new CLIENT_INFO_PACKET(); // 'new' here because this is stored in e.peer->data
-				*cp = *(struct CLIENT_INFO_PACKET*)e.packet->data;
-				e.peer->data = cp;
-
-				// fill CLIENT_PEER with all the info from the client info packet
-				CLIENT_PEER *pp = getClientPeerByPeer(e.peer);
-				pp->name = UString(((struct CLIENT_INFO_PACKET*)e.peer->data)->username).substr(0, ((struct CLIENT_INFO_PACKET*)e.peer->data)->size);
-
-				// if the client is not running the same version
-				if (cp->version != MC_PROTOCOL_VERSION)
+			case CLIENT_INFO_PACKET_TYPE:
 				{
-					debugLog("SERVER: User is trying to connect using version %i, but the server is running version %i.\n", cp->version, MC_PROTOCOL_VERSION);
-					singlecastChatMessage("CONSOLE", UString::format("Version mismatch: Server is running version %i, but you are running version %i!", MC_PROTOCOL_VERSION, cp->version), m_server, e.peer);
-					pp->kickTime = engine->getTime(); // initiate a graceful kick
-				}
-				else
-				{
-					// notify extension packet listener
-					bool valid = true;
-					if (m_serverReceiveClientInfoListener != NULL && cp->extension)
-						valid = m_serverReceiveClientInfoListener((void*)(e.packet->data + sizeof(CLIENT_INFO_PACKET)));
+					CLIENT_INFO_PACKET *cp = new CLIENT_INFO_PACKET(); // 'new' here because this is stored in e.peer->data
+					*cp = *(struct CLIENT_INFO_PACKET*)e.packet->data; // TODO: wtf is even happening here
+					e.peer->data = cp;
 
-					// notify the listener, now that we have everything
-					if (valid)
+					// fill CLIENT_PEER with all the info from the client info packet
+					CLIENT_PEER *pp = getClientPeerByPeer(e.peer);
+					if (pp != NULL)
 					{
-						if (m_serverClientChangeListener != NULL)
-							m_serverClientChangeListener(pp->id, pp->name, true);
+						pp->name = UString(((struct CLIENT_INFO_PACKET*)e.peer->data)->username).substr(0, ((struct CLIENT_INFO_PACKET*)e.peer->data)->size);
+
+						// if the client is not running the same version
+						if (cp->version != MC_PROTOCOL_VERSION)
+						{
+							debugLog("SERVER: User is trying to connect using version %i, but the server is running version %i.\n", cp->version, MC_PROTOCOL_VERSION);
+							singlecastChatMessage("CONSOLE", UString::format("Version mismatch: Server is running version %i, but you are running version %i!", MC_PROTOCOL_VERSION, cp->version), m_server, e.peer);
+							pp->kickTime = engine->getTime(); // initiate a graceful kick
+						}
+						else
+						{
+							// notify extension packet listener
+							bool valid = true;
+							if (m_serverReceiveClientInfoListener != NULL && cp->extension)
+								valid = m_serverReceiveClientInfoListener((void*)(e.packet->data + sizeof(CLIENT_INFO_PACKET)));
+
+							// notify the listener, now that we have everything
+							if (valid)
+							{
+								if (m_serverClientChangeListener != NULL)
+									m_serverClientChangeListener(pp->id, pp->name, true);
+							}
+							else
+								pp->kickTime = engine->getTime(); // if the extension packet listener returned false, kick this client
+						}
 					}
 					else
-						pp->kickTime = engine->getTime(); // if the extension packet listener returned false, kick this client
+						debugLog("SERVER: NULL CLIENT_PEER!\n");
 				}
-			}
-			break;
+				break;
 
-		case CHAT_PACKET_TYPE:
-			{
-				CLIENT_PEER *pp = getClientPeerByPeer(e.peer);
-				UString username = pp->name;
-				UString message = UString(((struct CHAT_PACKET*)e.packet->data)->message).substr(0, ((struct CHAT_PACKET*)e.packet->data)->msize);
-
-				// log it
-				chatLog(username, message);
-
-				// broadcast the message
-				broadcastChatMessage((struct CHAT_PACKET*)e.packet->data, m_server, e.peer);
-
-				if (message.find("!roll") != -1)
+			case CHAT_PACKET_TYPE:
 				{
-					UString rollMessage = username;
-					rollMessage.append(" rolls ");
-					rollMessage.append(UString::format("%i point(s)", (rand() % 101)));
-					broadcastChatMessage("CONSOLE", rollMessage, m_server, NULL);
+					CLIENT_PEER *pp = getClientPeerByPeer(e.peer);
+					if (pp != NULL)
+					{
+						UString username = pp->name;
+						UString message = UString(((struct CHAT_PACKET*)e.packet->data)->message).substr(0, ((struct CHAT_PACKET*)e.packet->data)->msize);
 
-					chatLog("CONSOLE", rollMessage);
+						// log it
+						chatLog(username, message);
+
+						// broadcast the message
+						broadcastChatMessage((struct CHAT_PACKET*)e.packet->data, m_server, e.peer);
+
+						if (message.find("!roll") != -1)
+						{
+							UString rollMessage = username;
+							rollMessage.append(" rolls ");
+							rollMessage.append(UString::format("%i point(s)", (rand() % 101)));
+
+							broadcastChatMessage("CONSOLE", rollMessage, m_server, NULL);
+
+							chatLog("CONSOLE", rollMessage);
+						}
+					}
+					else
+						debugLog("SERVER: NULL CLIENT_PEER!\n");
 				}
-			}
-			break;
+				break;
 
-		case CLIENT_BROADCAST_PACKET_TYPE:
-			if (m_serverReceiveClientPacketListener != NULL)
-			{
-				CLIENT_PEER *pp = getClientPeerByPeer(e.peer);
-
-				// unwrap the packet
-				char *unwrappedPacket = (char*)e.packet->data;
-				const int wrapperSize = sizeof(PACKET_TYPE) * sizeof(char);
-				unwrappedPacket += wrapperSize;
-				if (!m_serverReceiveClientPacketListener(pp->id, unwrappedPacket, e.packet->dataLength - wrapperSize))
-					debugLog("CLIENT: Received unknown CLIENT_BROADCAST_PACKET_TYPE, WTF!\n");
-			}
-
-			// broadcast the packet to all other clients
-			if (m_vConnectedClients.size() > 1)
-			{
-				// unwrap the packet
-				char *unwrappedPacket = (char*)e.packet->data;
-				const int unWrapperSize = sizeof(PACKET_TYPE) * sizeof(char);
-				unwrappedPacket += unWrapperSize;
-
-				// create wrapped packet (with id!)
-				CLIENT_BROADCAST_WRAPPER wrap;
-				const int wrapperSize = sizeof(CLIENT_BROADCAST_WRAPPER) * sizeof(char);
-				char wrappedPacket[(sizeof(CLIENT_BROADCAST_WRAPPER) + e.packet->dataLength - unWrapperSize) * sizeof(char)];
-				///memcpy(&wrappedPacket, &wrap, wrapperSize);
-				memcpy(((char*)&wrappedPacket) + wrapperSize, unwrappedPacket, (e.packet->dataLength - unWrapperSize) * sizeof(char));
-				int size = sizeof(CLIENT_BROADCAST_WRAPPER) + e.packet->dataLength - unWrapperSize;
-
-				for (int c=0; c<m_vConnectedClients.size(); c++)
+			case CLIENT_BROADCAST_PACKET_TYPE:
 				{
-					// update id
-					wrap.id = m_vConnectedClients[c].id;
-					memcpy(&wrappedPacket, &wrap, wrapperSize);
+					// HACKHACK: TODO: this is dangerous, broadcasting all client broadcast requests by default if no server listener is set
+					bool accepted = true;
 
-					// create it
-					ENetPacket *packet = enet_packet_create((const void*)wrappedPacket, size, 0);
+					if (m_serverReceiveClientPacketListener != NULL)
+					{
+						CLIENT_PEER *pp = getClientPeerByPeer(e.peer);
+						if (pp != NULL)
+						{
+							// unwrap the packet
+							char *unwrappedPacket = (char*)e.packet->data;
+							const int wrapperSize = sizeof(PACKET_TYPE);
+							unwrappedPacket += wrapperSize;
 
-					// send it
-					if (m_vConnectedClients[c].peer != e.peer)
-						enet_peer_send(m_vConnectedClients[c].peer, 0, packet);
+							// process
+							accepted = m_serverReceiveClientPacketListener(pp->id, unwrappedPacket, e.packet->dataLength - wrapperSize);
+						}
+						else
+							debugLog("SERVER: NULL CLIENT_PEER!\n");
+					}
+
+					// broadcast the packet to all other clients
+					if (accepted && m_vConnectedClients.size() > 0)
+					{
+						// unwrap the packet
+						char *unwrappedPacket = (char*)e.packet->data;
+						const int unWrapperSize = sizeof(PACKET_TYPE);
+						unwrappedPacket += unWrapperSize;
+
+						// create wrapped packet (with id!)
+						CLIENT_BROADCAST_WRAPPER wrap;
+						const int wrapperSize = sizeof(CLIENT_BROADCAST_WRAPPER);
+						char wrappedPacket[(sizeof(CLIENT_BROADCAST_WRAPPER) + e.packet->dataLength - unWrapperSize)];
+						// the id is not set here, but for every client in the loop below
+						memcpy(((char*)&wrappedPacket) + wrapperSize, unwrappedPacket, (e.packet->dataLength - unWrapperSize));
+						int size = sizeof(CLIENT_BROADCAST_WRAPPER) + e.packet->dataLength - unWrapperSize;
+
+						for (int c=0; c<m_vConnectedClients.size(); c++)
+						{
+							// update id
+							wrap.id = m_vConnectedClients[c].id;
+							memcpy(&wrappedPacket, &wrap, wrapperSize);
+
+							// create it
+							ENetPacket *packet = enet_packet_create((const void*)wrappedPacket, size, 0);
+
+							// send it
+							if (m_vConnectedClients[c].peer != e.peer)
+								enet_peer_send(m_vConnectedClients[c].peer, 0, packet);
+						}
+
+						enet_host_flush(m_server);
+					}
 				}
-				enet_host_flush(m_server);
+				break;
+
+			case CLIENT_PACKET_TYPE:
+				if (m_serverReceiveClientPacketListener != NULL)
+				{
+					CLIENT_PEER *pp = getClientPeerByPeer(e.peer);
+					if (pp != NULL)
+					{
+						// unwrap the packet
+						char *unwrappedPacket = (char*)e.packet->data;
+						const int wrapperSize = sizeof(PACKET_TYPE);
+						unwrappedPacket += wrapperSize;
+
+						// process
+						if (!m_serverReceiveClientPacketListener(pp->id, unwrappedPacket, e.packet->dataLength - wrapperSize))
+							debugLog("SERVER: Received unknown CLIENT_PACKET_TYPE, WTF!\n");
+					}
+					else
+						debugLog("SERVER: NULL CLIENT_PEER!\n");
+				}
+				break;
+
+			default:
+				debugLog("SERVER: Received unknown packet of type %i, WTF!\n", *((PACKET_TYPE*)e.packet->data));
+				break;
 			}
-			break;
-
-		case CLIENT_PACKET_TYPE:
-			if (m_serverReceiveClientPacketListener != NULL)
-			{
-				CLIENT_PEER *pp = getClientPeerByPeer(e.peer);
-
-				// unwrap the packet
-				char *unwrappedPacket = (char*)e.packet->data;
-				const int wrapperSize = sizeof(PACKET_TYPE) * sizeof(char);
-				unwrappedPacket += wrapperSize;
-				if (!m_serverReceiveClientPacketListener(pp->id, unwrappedPacket, e.packet->dataLength - wrapperSize))
-					debugLog("CLIENT: Received unknown CLIENT_PACKET_TYPE, WTF!\n");
-			}
-			break;
-
-		default:
-			debugLog("SERVER: Received unknown packet of type %i, WTF!\n", *(PACKET_TYPE*)e.packet->data);
-			break;
 		}
 
-		// cleanup the packet
+		// cleanup
 		enet_packet_destroy(e.packet);
 		break;
 
 	case ENET_EVENT_TYPE_DISCONNECT:
 		CLIENT_PEER *pp = getClientPeerByPeer(e.peer);
-		debugLog("SERVER: %ls disconnected.\n", pp->name.wc_str());
+		if (pp != NULL)
+		{
+			debugLog("SERVER: %s disconnected.\n", pp->name.toUtf8());
 
-		// notify local connection listener
-		if (m_serverClientChangeListener != NULL)
-			m_serverClientChangeListener(pp->id, "", false);
+			// notify local connection listener
+			if (m_serverClientChangeListener != NULL)
+				m_serverClientChangeListener(pp->id, UString(""), false);
+		}
+		else
+			debugLog("SERVER: NULL CLIENT_PEER!\n");
 
-		// reset peer info
-		delete (CLIENT_INFO_PACKET*)e.peer->data;
-		e.peer->data = NULL;
+		// cleanup client info
+		if (e.peer->data != NULL)
+		{
+			delete ((CLIENT_INFO_PACKET*)e.peer->data);
+			e.peer->data = NULL;
+		}
 
 		// remove the peer from the list
 		for (int i=0; i<m_vConnectedClients.size(); i++)
@@ -796,11 +863,11 @@ void NetworkHandler::sendClientInfo()
 	// base packet
 	CLIENT_INFO_PACKET cp;
 	cp.version = MC_PROTOCOL_VERSION;
-	int i;
-	for (i=0; i<clamp<int>(localname.length(), 0, 254); i++)
+	for (int i=0; i<clamp<int>(localname.length(), 0, 254); i++)
 	{
 		cp.username[i] = localname[i];
 	}
+	cp.username[254] = '\0';
 	cp.size = clamp<int>(localname.length(), 0, 255);
 	cp.extension = false;
 	size += sizeof(CLIENT_INFO_PACKET);
@@ -819,8 +886,8 @@ void NetworkHandler::sendClientInfo()
 	}
 
 	// create combined packet
-	char combinedPacket[(size + extensionSize) * sizeof(char)];
-	memcpy(&combinedPacket, &cp, size * sizeof(char)); // copy previous data
+	char combinedPacket[(size + extensionSize)];
+	memcpy(&combinedPacket, &cp, size); // copy previous data
 	if (extensionSize > 0 && extensionData != NULL)
 	{
 		memcpy(((char*)&combinedPacket) + size, extensionData.get(), extensionSize); // add extension data
@@ -852,6 +919,7 @@ void NetworkHandler::clientDisconnect()
 
 	if (m_clientPeer != NULL)
 		enet_peer_reset(m_clientPeer);
+
 	m_clientPeer = NULL;
 
 	m_bClientDisconnectPending = false;
@@ -870,9 +938,9 @@ void NetworkHandler::sendServerInfo(unsigned int assignedID, ENetHost *host, ENe
 	size_t size = 0;
 
 	// base packet
-	SERVER_INFO_PACKET sp;
-	sp.id = assignedID;
-	sp.extension = false;
+	SERVER_INFO_PACKET serverInfoPacket;
+	serverInfoPacket.id = assignedID;
+	serverInfoPacket.extension = false;
 	size += sizeof(SERVER_INFO_PACKET);
 
 	// extension packet
@@ -885,19 +953,19 @@ void NetworkHandler::sendServerInfo(unsigned int assignedID, ENetHost *host, ENe
 		extensionData = extp.data;
 		extensionSize = extp.size;
 
-		sp.extension = true;
+		serverInfoPacket.extension = true;
 	}
 
 	// create combined packet
-	char combinedPacket[(size + extensionSize) * sizeof(char)];
-	memcpy(&combinedPacket, &sp, size * sizeof(char)); // copy previous data
+	char combinedPacket[(size + extensionSize)];
+	memcpy(&combinedPacket, &serverInfoPacket, size); // copy previous data
 	if (extensionSize > 0 && extensionData != NULL)
 	{
 		memcpy(((char*)&combinedPacket) + size, extensionData.get(), extensionSize); // add extension data
 		size += extensionSize;
 	}
 
-	ENetPacket *packet = enet_packet_create((const void*) combinedPacket, size, ENET_PACKET_FLAG_RELIABLE);
+	ENetPacket *packet = enet_packet_create((const void*)combinedPacket, size, ENET_PACKET_FLAG_RELIABLE);
 
 	// send it
 	if (packet != NULL)
@@ -921,17 +989,20 @@ void NetworkHandler::singlecastChatMessage(CHAT_PACKET *cp, ENetHost *host, ENet
 
 void NetworkHandler::singlecastChatMessage(UString username, UString message, ENetHost *host, ENetPeer *destination)
 {
-	// build packet
 	CHAT_PACKET cp;
-	int i;
-	for (i=0; i<clamp<int>(username.length(), 0, 254); i++)
+
+	for (int i=0; i<clamp<int>(username.length(), 0, 254); i++)
 	{
 		cp.username[i] = username[i];
 	}
-	for (i=0; i<clamp<int>(message.length(), 0, 254); i++)
+	cp.username[254] = '\0';
+
+	for (int i=0; i<clamp<int>(message.length(), 0, 254); i++)
 	{
 		cp.message[i] = message[i];
 	}
+	cp.message[254] = '\0';
+
 	cp.usize = clamp<int>(username.length(), 0, 255);
 	cp.msize = clamp<int>(message.length(), 0, 255);
 
@@ -974,10 +1045,10 @@ void NetworkHandler::broadcast(void *data, size_t size, bool reliable)
 	{
 		// create wrapped packet (with id!)
 		CLIENT_BROADCAST_WRAPPER wrap;
-		const int wrapperSize = sizeof(CLIENT_BROADCAST_WRAPPER) * sizeof(char);
-		char wrappedPacket[(sizeof(CLIENT_BROADCAST_WRAPPER) + size) * sizeof(char)];
-		///memcpy(&wrappedPacket, &wrap, wrapperSize);
-		memcpy(((char*)&wrappedPacket) + wrapperSize, data, size * sizeof(char));
+		const int wrapperSize = sizeof(CLIENT_BROADCAST_WRAPPER);
+		char wrappedPacket[(sizeof(CLIENT_BROADCAST_WRAPPER) + size)];
+		// the id is not set here, but for every client in the loop below
+		memcpy(((char*)&wrappedPacket) + wrapperSize, data, size);
 		size += wrapperSize;
 
 		for (int c=0; c<m_vConnectedClients.size(); c++)
@@ -993,21 +1064,20 @@ void NetworkHandler::broadcast(void *data, size_t size, bool reliable)
 			if (packet != NULL)
 				enet_peer_send(m_vConnectedClients[c].peer, 0, packet);
 		}
+
 		enet_host_flush(m_server);
 		return;
 	}
 
 	// if we are the client
-
-	if (!isClient())
-		return;
+	if (!isClient()) return;
 
 	// create wrapped packet (without id)
 	PACKET_TYPE wrap = CLIENT_BROADCAST_PACKET_TYPE;
-	const int wrapperSize = sizeof(PACKET_TYPE) * sizeof(char);
-	char wrappedPacket[(sizeof(PACKET_TYPE) + size) * sizeof(char)];
+	const int wrapperSize = sizeof(PACKET_TYPE);
+	char wrappedPacket[(sizeof(PACKET_TYPE) + size)];
 	memcpy(&wrappedPacket, &wrap, wrapperSize);
-	memcpy(((char*)&wrappedPacket) + wrapperSize, data, size * sizeof(char));
+	memcpy(((char*)&wrappedPacket) + wrapperSize, data, size);
 	size += wrapperSize;
 
 	ENetPacket *packet = enet_packet_create((const void*)wrappedPacket, size, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);
@@ -1033,10 +1103,10 @@ void NetworkHandler::servercast(void *data, size_t size, bool reliable)
 
 	// create wrapped packet
 	PACKET_TYPE wrap = CLIENT_PACKET_TYPE;
-	const int wrapperSize = sizeof(PACKET_TYPE) * sizeof(char);
-	char wrappedPacket[(sizeof(PACKET_TYPE) + size) * sizeof(char)];
+	const int wrapperSize = sizeof(PACKET_TYPE);
+	char wrappedPacket[(sizeof(PACKET_TYPE) + size)];
 	memcpy(&wrappedPacket, &wrap, wrapperSize);
-	memcpy(((char*)&wrappedPacket) + wrapperSize, data, size * sizeof(char));
+	memcpy(((char*)&wrappedPacket) + wrapperSize, data, size);
 	size += wrapperSize;
 
 	ENetPacket *packet = enet_packet_create((const void*)wrappedPacket, size, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);
@@ -1056,9 +1126,7 @@ void NetworkHandler::clientcast(void *data, size_t size, unsigned int id, bool r
 #ifdef MCENGINE_FEATURE_NETWORKING
 
 	// only valid if we are the server
-
-	if (!isServer())
-		return;
+	if (!isServer()) return;
 
 	CLIENT_PEER *pp = getClientPeerById(id);
 	if (pp == NULL)
@@ -1069,10 +1137,10 @@ void NetworkHandler::clientcast(void *data, size_t size, unsigned int id, bool r
 
 	// create wrapped packet (with id!)
 	CLIENT_BROADCAST_WRAPPER wrap;
-	const int wrapperSize = sizeof(CLIENT_BROADCAST_WRAPPER) * sizeof(char);
-	char wrappedPacket[(sizeof(CLIENT_BROADCAST_WRAPPER) + size) * sizeof(char)];
+	const int wrapperSize = sizeof(CLIENT_BROADCAST_WRAPPER);
+	char wrappedPacket[(sizeof(CLIENT_BROADCAST_WRAPPER) + size)];
 	memcpy(&wrappedPacket, &wrap, wrapperSize);
-	memcpy(((char*)&wrappedPacket) + wrapperSize, data, size * sizeof(char));
+	memcpy(((char*)&wrappedPacket) + wrapperSize, data, size);
 	size += wrapperSize;
 
 	ENetPacket *packet = enet_packet_create((const void*)wrappedPacket, size, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);
@@ -1114,6 +1182,7 @@ void NetworkHandler::say(UString message)
 		debugLog("CLIENT: Not connected to any server.\n");
 		return;
 	}
+
 	if (m_bClientConnectPending) // don't allow chat while we are still connecting
 	{
 		debugLog("CLIENT: Please wait until you are connected to the server!\n");
@@ -1190,7 +1259,7 @@ NetworkHandler::CLIENT_PEER *NetworkHandler::getClientPeerByPeer(ENetPeer *peer)
 	for (int c=0; c<m_vConnectedClients.size(); c++)
 	{
 		if (m_vConnectedClients[c].peer == peer)
-			return &m_vConnectedClients[c];
+			return (&m_vConnectedClients[c]);
 	}
 	return NULL;
 }
@@ -1200,7 +1269,7 @@ NetworkHandler::CLIENT_PEER *NetworkHandler::getClientPeerById(unsigned int id)
 	for (int c=0; c<m_vConnectedClients.size(); c++)
 	{
 		if (m_vConnectedClients[c].id == id)
-			return &m_vConnectedClients[c];
+			return (&m_vConnectedClients[c]);
 	}
 	return NULL;
 }

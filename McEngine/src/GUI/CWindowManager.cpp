@@ -144,7 +144,7 @@ void CWindowManager::addWindow(CBaseUIWindow *window)
 	m_windows.insert(m_windows.begin(), window);
 
 	// disable all other windows
-	for (int i=1; i<m_windows.size()-1; i++)
+	for (int i=1; i<(int)(m_windows.size()-1); i++)
 	{
 		m_windows[i]->setEnabled(false);
 	}
