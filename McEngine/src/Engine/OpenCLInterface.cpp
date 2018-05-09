@@ -316,7 +316,7 @@ void OpenCLInterface::releaseKernel(int kernel)
 {
 #ifdef MCENGINE_FEATURE_OPENCL
 
-	if (kernel < 0 || kernel > m_vKernels.size()-1 || kernel > m_vPrograms.size()-1)
+	if (kernel < 0 || kernel > (int)(m_vKernels.size()-1) || kernel > (int)(m_vPrograms.size()-1))
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Invalid releaseKernel(%i)", kernel));
 		return;
@@ -512,7 +512,7 @@ void OpenCLInterface::setKernelArg(int kernel, unsigned int argumentNumber, int 
 {
 #ifdef MCENGINE_FEATURE_OPENCL
 
-	if (kernel < 0 || kernel > m_vKernels.size()-1 || argumentNumber < 0 || buffer < 0 || buffer > m_vBuffers.size()-1)
+	if (kernel < 0 || kernel > (int)(m_vKernels.size()-1) || argumentNumber < 0 || buffer < 0 || buffer > (int)(m_vBuffers.size()-1))
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to setKernelArg(%i, %i, %i)!", kernel, argumentNumber, buffer));
 		return;
@@ -530,7 +530,7 @@ void OpenCLInterface::executeKernel(int kernel, unsigned int numLoops, const siz
 {
 #ifdef MCENGINE_FEATURE_OPENCL
 
-	if (kernel < 0 || kernel > m_vKernels.size()-1 || globalItemSize == NULL || localItemSize == NULL)
+	if (kernel < 0 || kernel > (int)(m_vKernels.size()-1) || globalItemSize == NULL || localItemSize == NULL)
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to executeKernel(%i, %i, %i)!", kernel, globalItemSize, localItemSize));
 		return;
@@ -554,13 +554,13 @@ void OpenCLInterface::aquireGLObject(int object)
 {
 #ifdef MCENGINE_FEATURE_OPENCL
 
-	if (object < 0 || object > m_vBufferIndex.size()-1)
+	if (object < 0 || object > (int)(m_vBufferIndex.size()-1))
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to aquireGLObjects(%i)!", object));
 		return;
 	}
 
-	if (m_vBufferIndex[object] > m_vBuffers.size()-1 || m_vBufferIndex[object] < 0)
+	if (m_vBufferIndex[object] > (int)(m_vBuffers.size()-1) || m_vBufferIndex[object] < 0)
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to aquireGLObject(%i)!", m_vBufferIndex[object]));
 		return;
@@ -579,13 +579,13 @@ void OpenCLInterface::releaseGLObject(int object)
 {
 #ifdef MCENGINE_FEATURE_OPENCL
 
-	if (object < 0 || object > m_vBufferIndex.size()-1)
+	if (object < 0 || object > (int)(m_vBufferIndex.size()-1))
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to releaseGLObject(%i)!", object));
 		return;
 	}
 
-	if (m_vBufferIndex[object] > m_vBuffers.size()-1 || m_vBufferIndex[object] < 0)
+	if (m_vBufferIndex[object] > (int)(m_vBuffers.size()-1) || m_vBufferIndex[object] < 0)
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to releaseGLObject(%i)!", m_vBufferIndex[object]));
 		return;
@@ -665,7 +665,7 @@ int OpenCLInterface::getWorkGroupSize(int kernel)
 {
 #ifdef MCENGINE_FEATURE_OPENCL
 
-	if (kernel < 0 || kernel > m_vKernels.size()-1)
+	if (kernel < 0 || kernel > (int)(m_vKernels.size()-1))
 		return -1;
 
 	size_t size;
