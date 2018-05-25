@@ -149,13 +149,13 @@ void OpenCLInterface::writeBuffer(int buffer, unsigned int numberOfObjects, cons
 {
 #ifdef MCENGINE_FEATURE_OPENCL
 
-	if (buffer < 0 || buffer > m_vBufferIndex.size()-1 || numberOfObjects < 1 || ptr == NULL)
+	if (buffer < 0 || buffer > (int)(m_vBufferIndex.size()-1) || numberOfObjects < 1 || ptr == NULL)
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to writeBuffer(%i, %i, [ptr])!", buffer, numberOfObjects));
 		return;
 	}
 
-	if (m_vBufferIndex[buffer] > m_vBuffers.size()-1 || m_vBufferIndex[buffer] < 0)
+	if (m_vBufferIndex[buffer] > (int)(m_vBuffers.size()-1) || m_vBufferIndex[buffer] < 0)
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to writeBuffer(%i, %i,[ptr])!", m_vBufferIndex[buffer], numberOfObjects));
 		return;
@@ -175,13 +175,13 @@ void OpenCLInterface::writeBuffer(int buffer, unsigned int numberOfObjects, unsi
 {
 #ifdef MCENGINE_FEATURE_OPENCL
 
-	if (buffer < 0 || buffer > m_vBufferIndex.size()-1 || numberOfObjects < 1 || ptr == NULL || startObjectIndex < 0)
+	if (buffer < 0 || buffer > (int)(m_vBufferIndex.size()-1) || numberOfObjects < 1 || ptr == NULL || startObjectIndex < 0)
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to writeBuffer(%i, %i, %i, [ptr])!", buffer, numberOfObjects, startObjectIndex));
 		return;
 	}
 
-	if (m_vBufferIndex[buffer] > m_vBuffers.size()-1 || m_vBufferIndex[buffer] < 0)
+	if (m_vBufferIndex[buffer] > (int)(m_vBuffers.size()-1) || m_vBufferIndex[buffer] < 0)
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to writeBuffer(%i, %i, %i, [ptr])!", m_vBufferIndex[buffer], numberOfObjects, startObjectIndex));
 		return;
@@ -201,13 +201,13 @@ void OpenCLInterface::readBuffer(int buffer, unsigned int numberOfObjects, void 
 {
 #ifdef MCENGINE_FEATURE_OPENCL
 
-	if (buffer < 0 || buffer > m_vBufferIndex.size()-1 || numberOfObjects < 1 || ptr == NULL)
+	if (buffer < 0 || buffer > (int)(m_vBufferIndex.size()-1) || numberOfObjects < 1 || ptr == NULL)
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to readBuffer(%i, [ptr])!", buffer, numberOfObjects));
 		return;
 	}
 
-	if (m_vBufferIndex[buffer] > m_vBuffers.size()-1 || m_vBufferIndex[buffer] < 0)
+	if (m_vBufferIndex[buffer] > (int)(m_vBuffers.size()-1) || m_vBufferIndex[buffer] < 0)
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to readBuffer(%i, [ptr])!", m_vBufferIndex[buffer], numberOfObjects));
 		return;
@@ -227,13 +227,13 @@ void OpenCLInterface::updateBuffer(int buffer, unsigned int numberOfObjects, boo
 {
 #ifdef MCENGINE_FEATURE_OPENCL
 
-	if (buffer < 0 || buffer > m_vBufferIndex.size()-1 || numberOfObjects < 1)
+	if (buffer < 0 || buffer > (int)(m_vBufferIndex.size()-1) || numberOfObjects < 1)
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to updateBuffer(%i, %i)!", buffer, numberOfObjects));
 		return;
 	}
 
-	if (m_vBufferIndex[buffer] < 0 || m_vBufferIndex[buffer] > m_vBuffers.size()-1)
+	if (m_vBufferIndex[buffer] < 0 || m_vBufferIndex[buffer] > (int)(m_vBuffers.size()-1))
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to updateBuffer(%i, %i)!", buffer, numberOfObjects));
 		return;
@@ -265,7 +265,7 @@ void OpenCLInterface::setKernelArg(int kernel, unsigned int argumentNumber, T ar
 {
 #ifdef MCENGINE_FEATURE_OPENCL
 
-	if (kernel < 0 || kernel > m_vKernels.size()-1 || argumentNumber < 0)
+	if (kernel < 0 || kernel > (int)(m_vKernels.size()-1) || argumentNumber < 0)
 	{
 		engine->showMessageError("OpenCL Error", UString::format("Illegal arguments to setKernelArg(%i, %i, T [template])!", kernel, argumentNumber));
 		return;
