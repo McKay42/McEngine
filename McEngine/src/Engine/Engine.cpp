@@ -285,7 +285,7 @@ void Engine::onPaint()
 
 void Engine::onUpdate()
 {
-	if (m_bBlackout || m_bIsMinimized)
+	if (m_bBlackout || (m_bIsMinimized && !(m_networkHandler->isClient() || m_networkHandler->isServer())))
 		return;
 
 	// update time

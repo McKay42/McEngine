@@ -136,7 +136,7 @@ void Console::processCommand(UString command)
 		else
 		{
 			commandValue.append(tokens[i]);
-			if (i < tokens.size()-1)
+			if (i < (int)(tokens.size()-1))
 				commandValue.append(" ");
 		}
 	}
