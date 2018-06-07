@@ -1238,7 +1238,7 @@ void NetworkHandler::kick(UString username)
 	UString msg = "SERVER: Couldn't find user \"";
 	msg.append(username);
 	msg.append("\"\n");
-	debugLog(msg.toUtf8());
+	debugLog("%s", msg.toUtf8());
 
 #endif
 }
@@ -1249,7 +1249,7 @@ void NetworkHandler::chatLog(UString username, UString message)
 	chatlog.append(": ");
 	chatlog.append(message);
 	chatlog.append("\n");
-	debugLog(chatlog.toUtf8());
+	debugLog("%s", chatlog.toUtf8());
 }
 
 #ifdef MCENGINE_FEATURE_NETWORKING
