@@ -57,7 +57,7 @@ void Sound::init()
 		msg.append(", file = ");
 		msg.append(m_sFilePath);
 		msg.append("\n");
-		debugLog(0xffdd3333, msg.toUtf8());
+		debugLog(0xffdd3333, "%s", msg.toUtf8());
 	}
 	else
 		m_bReady = true;
@@ -150,7 +150,7 @@ SOUNDHANDLE Sound::getHandle()
 			msg.append(", file = ");
 			msg.append(m_sFilePath);
 			msg.append("\n");
-			debugLog(0xffdd3333, msg.toUtf8());
+			debugLog(0xffdd3333, "%s", msg.toUtf8());
 		}
 		else
 			BASS_ChannelSetAttribute(m_HCHANNEL, BASS_ATTRIB_VOL, m_fVolume);
