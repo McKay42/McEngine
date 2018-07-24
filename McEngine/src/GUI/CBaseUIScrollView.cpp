@@ -27,6 +27,7 @@ CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float 
 	m_bDrawFrame = true;
 	m_bDrawBackground = true;
 	m_bDrawScrollbars = true;
+	m_bClipping = true;
 
 	m_backgroundColor = 0xff000000;
 	m_frameColor = 0xffffffff;
@@ -83,7 +84,10 @@ void CBaseUIScrollView::draw(Graphics *g)
 	}
 
 	// draw elements & scrollbars
-	g->pushClipRect(McRect(m_vPos.x+1, m_vPos.y+2, m_vSize.x-1, m_vSize.y-1));
+	if (m_bClipping)
+	{
+		g->pushClipRect(McRect(m_vPos.x+1, m_vPos.y+2, m_vSize.x-1, m_vSize.y-1));
+	}
 
 		m_container->draw(g);
 
@@ -112,7 +116,8 @@ void CBaseUIScrollView::draw(Graphics *g)
 			}
 		}
 
-	g->popClipRect();
+	if (m_bClipping)
+		g->popClipRect();
 }
 
 void CBaseUIScrollView::update()
@@ -121,6 +126,16 @@ void CBaseUIScrollView::update()
 	if (!m_bVisible) return;
 
 	m_container->update();
+
+	if (m_bBusy)
+	{
+		const Vector2 deltaToAdd = (engine->getMouse()->getPos() - m_vMouseBackup2);
+		//debugLog("+ (%f, %f)\n", deltaToAdd.x, deltaToAdd.y);
+
+		m_vKineticAverage += deltaToAdd;
+		m_vKineticAverage /= 2.0f;
+		m_vMouseBackup2 = engine->getMouse()->getPos();
+	}
 
 	// scrolling logic
 	if (m_bActive && !m_bBlockScrolling && (m_bVerticalScrolling || m_bHorizontalScrolling) && m_bEnabled)
@@ -139,8 +154,8 @@ void CBaseUIScrollView::update()
 		// if we are above our resistance, try to steal the focus and enable scrolling for us
 		if (m_container->isActive() && diff > m_iScrollResistance && !m_container->isBusy())
 			m_container->stealFocus();
-		else
-			m_vKineticAverage /= 1.1f; // HACKHACK: quickfix
+		//else
+		//	m_vKineticAverage /= 1.1f; // HACKHACK: quickfix
 
 		// handle scrollbar scrolling start
 		if (!m_container->isBusy())
@@ -186,13 +201,14 @@ void CBaseUIScrollView::update()
 		m_bActive = false;
 
 		Vector2 delta = m_vKineticAverage;
-		///debugLog("kinetic (%f, %f)\n", delta.x, delta.y);
 
 		// calculate remaining kinetic energy
 		if (!m_bScrollbarScrolling)
-			m_vVelocity = ui_scrollview_kinetic_energy_multiplier.getFloat()*((delta))*(engine->getFrameTime() != 0.0f ? 1.0f/engine->getFrameTime() : 60.0f)/60.0f + m_vScrollPos;
+			m_vVelocity = ui_scrollview_kinetic_energy_multiplier.getFloat() * delta * (engine->getFrameTime() != 0.0f ? 1.0f/engine->getFrameTime() : 60.0f)/60.0f + m_vScrollPos;
 		else
 			m_vVelocity.x = m_vVelocity.y = 0;
+
+		//debugLog("kinetic = (%f, %f), velocity = (%f, %f), frametime = %f\n", delta.x, delta.y, m_vVelocity.x, m_vVelocity.y, engine->getFrameTime());
 
 		m_bScrollbarScrolling = false;
 	}
@@ -215,15 +231,19 @@ void CBaseUIScrollView::update()
 			m_vScrollPos.y = m_vScrollPosBackup.y + (engine->getMouse()->getPos().y-m_vMouseBackup.y);
 		if (m_bHorizontalScrolling)
 			m_vScrollPos.x = m_vScrollPosBackup.x + (engine->getMouse()->getPos().x-m_vMouseBackup.x);
+
 		m_container->setPos(m_vPos + m_vScrollPos);
 
+		// NOTE: moved up
+		/*
 		m_vKineticAverage += (engine->getMouse()->getPos() - m_vMouseBackup2);
 		m_vKineticAverage /= 2.0f;
 		m_vMouseBackup2 = engine->getMouse()->getPos();
+		*/
 	}
 	else // no longer scrolling, smooth the remaining velocity
 	{
-		//m_vKineticAverage.zero();
+		m_vKineticAverage.zero();
 
 		// rubber banding + kinetic scrolling
 		if (!m_bAutoScrollingY && m_bVerticalScrolling)

@@ -506,14 +506,14 @@ void SWGraphicsInterface::onResolutionChange(Vector2 newResolution)
 	m_backBuffer = new PIXEL[(int)(m_vResolution.x*m_vResolution.y)];
 }
 
-Image *SWGraphicsInterface::createImage(UString filePath, bool mipmapped)
+Image *SWGraphicsInterface::createImage(UString filePath, bool mipmapped, bool keepInSystemMemory)
 {
-	return new SWImage(filePath, mipmapped);
+	return new SWImage(filePath, mipmapped, keepInSystemMemory);
 }
 
-Image *SWGraphicsInterface::createImage(int width, int height, bool mipmapped)
+Image *SWGraphicsInterface::createImage(int width, int height, bool mipmapped, bool keepInSystemMemory)
 {
-	return new SWImage(width, height, mipmapped);
+	return new SWImage(width, height, mipmapped, keepInSystemMemory);
 }
 
 RenderTarget *SWGraphicsInterface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)

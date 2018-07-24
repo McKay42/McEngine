@@ -628,14 +628,14 @@ void OpenGLLegacyInterface::onResolutionChange(Vector2 newResolution)
 	glViewport(0, 0, m_vResolution.x, m_vResolution.y);
 }
 
-Image *OpenGLLegacyInterface::createImage(UString filePath, bool mipmapped)
+Image *OpenGLLegacyInterface::createImage(UString filePath, bool mipmapped, bool keepInSystemMemory)
 {
-	return new OpenGLImage(filePath, mipmapped);
+	return new OpenGLImage(filePath, mipmapped, keepInSystemMemory);
 }
 
-Image *OpenGLLegacyInterface::createImage(int width, int height, bool mipmapped)
+Image *OpenGLLegacyInterface::createImage(int width, int height, bool mipmapped, bool keepInSystemMemory)
 {
-	return new OpenGLImage(width, height, mipmapped);
+	return new OpenGLImage(width, height, mipmapped, keepInSystemMemory);
 }
 
 RenderTarget *OpenGLLegacyInterface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)

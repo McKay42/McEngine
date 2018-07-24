@@ -46,6 +46,7 @@ public:
 	CBaseUIScrollView *setDrawBackground(bool drawBackground) {m_bDrawBackground = drawBackground; return this;}
 	CBaseUIScrollView *setDrawFrame(bool drawFrame) {m_bDrawFrame = drawFrame; return this;}
 	CBaseUIScrollView *setDrawScrollbars(bool drawScrollbars) {m_bDrawScrollbars = drawScrollbars; return this;}
+	CBaseUIScrollView *setClipping(bool clipping) {m_bClipping = clipping; return this;}
 
 	CBaseUIScrollView *setBackgroundColor(Color backgroundColor) {m_backgroundColor = backgroundColor; return this;}
 	CBaseUIScrollView *setFrameColor(Color frameColor) {m_frameColor = frameColor; return this;}
@@ -96,6 +97,7 @@ private:
 	bool m_bDrawFrame;
 	bool m_bDrawBackground;
 	bool m_bDrawScrollbars;
+	bool m_bClipping;
 
 	Color m_backgroundColor;
 	Color m_frameColor;

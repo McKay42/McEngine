@@ -57,9 +57,9 @@ public:
 	virtual void onResized() { updateStringMetrics(); }
 
 protected:
-	void updateStringMetrics();
+	virtual void drawText(Graphics *g);
 
-	void drawText(Graphics *g);
+	void updateStringMetrics();
 
 	McFont *m_font;
 	UString m_sText;

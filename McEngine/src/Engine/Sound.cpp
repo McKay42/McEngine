@@ -429,6 +429,20 @@ float Sound::getPitch()
 #endif
 }
 
+float Sound::getFrequency()
+{
+	if (!m_bReady) return 44100.0f;
+
+#ifdef MCENGINE_FEATURE_SOUND
+
+	float frequency = 44100.0f;
+	BASS_ChannelGetAttribute(getHandle(), BASS_ATTRIB_FREQ, &frequency);
+
+	return frequency;
+
+#endif
+}
+
 bool Sound::isPlaying()
 {
 	if (!m_bReady) return false;

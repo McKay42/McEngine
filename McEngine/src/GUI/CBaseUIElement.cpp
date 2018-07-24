@@ -107,49 +107,4 @@ void CBaseUIElement::update()
 		m_bMouseInsideCheck = false;
 		m_bMouseUpCheck = false;
 	}
-
-	// old
-	/*
-	// onMouseDownOutside
-	if (engine->getMouse()->isLeftDown() && !m_bMouseInside && !m_bMouseInsideCheck)
-	{
-		m_bMouseInsideCheck = true;
-		onMouseDownOutside();
-	}
-	*/
-
-	/*
-	// onMouseDownInside
-	if (engine->getMouse()->isLeftDown() && m_bMouseInside && !m_bMouseInsideCheck)
-	{
-		m_bActive = true;
-		m_bMouseInsideCheck = true;
-		onMouseDownInside();
-	}
-	*/
-
-	/*
-	// onMouseUpInside & onMouseUpOutside
-	if (!engine->getMouse()->isLeftDown() && m_bMouseUpCheck)
-	{
-		if (m_bActive)
-		{
-			if (m_bMouseInside)
-				onMouseUpInside();
-			else
-				onMouseUpOutside();
-
-			if (!m_bKeepActive)
-				m_bActive = false;
-		}
-
-		if (!m_bKeepActive)
-			m_bActive = false;
-
-		m_bMouseInsideCheck = false;
-		m_bMouseUpCheck = false;
-	}
-	else if (!engine->getMouse()->isLeftDown() && !m_bKeepActive)
-		m_bActive = false;
-	*/
 }

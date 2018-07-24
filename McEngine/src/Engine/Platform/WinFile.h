@@ -17,10 +17,13 @@
 class WinFile : public BaseFile
 {
 public:
-	WinFile(UString filePath);
+	WinFile(UString filePath, File::TYPE type);
 	virtual ~WinFile();
 
 	bool canRead() const;
+	bool canWrite() const;
+
+	void write(const char *buffer, size_t size);
 
 	UString readLine();
 	const char *readFile();
@@ -33,14 +36,15 @@ private:
 	bool checkReadForLineBuffer();
 	bool checkReadForFullBuffer();
 
+	UString m_sFilePath;
+
 	bool m_bReady;
 	bool m_bCanRead;
+	bool m_bCanWrite;
 	bool m_bEOF;
-	HANDLE m_handle;
-	HANDLE m_handleMapping;
-	size_t m_iFileSize;
 
-	UString m_sFilePath;
+	HANDLE m_handle;
+	size_t m_iFileSize;
 
 	// line reader
 	char *m_buffer;
@@ -50,7 +54,6 @@ private:
 
 	// full reader
 	char *m_fullBuffer;
-	char *m_memoryMappedView;
 	DWORD m_iLineBufferReadIndexOffset;
 };
 
