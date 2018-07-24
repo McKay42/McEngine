@@ -22,11 +22,16 @@
 
 ConVar snd_output_device("snd_output_device", "Default");
 ConVar snd_restrict_play_frame("snd_restrict_play_frame", true, "only allow one new channel per frame for overlayable sounds (prevents lag and earrape)");
+ConVar snd_change_check_interval("snd_change_check_interval", 0.0f, "check for output device changes every this many seconds. 0 = disabled (default)");
 
 SoundEngine::SoundEngine()
 {
 	m_bReady = false;
 	m_iLatency = -1;
+
+	m_fPrevOutputDeviceChangeCheckTime = 0.0f;
+
+	m_outputDeviceChangeCallback = nullptr;
 
 #ifdef MCENGINE_FEATURE_SOUND
 
@@ -46,51 +51,19 @@ SoundEngine::SoundEngine()
 
 	// add default output device
 	m_iCurrentOutputDevice = -1;
-	m_sCurrentOutputDevice = "nil";
+	m_sCurrentOutputDevice = "NULL";
+
 	OUTPUT_DEVICE defaultOutputDevice;
 	defaultOutputDevice.id = -1;
 	defaultOutputDevice.name = "Default";
+	defaultOutputDevice.enabled = true;
+	defaultOutputDevice.isDefault = false; // custom -1 can never have default
+
 	snd_output_device.setValue(defaultOutputDevice.name);
 	m_outputDevices.push_back(defaultOutputDevice);
-	m_outputDeviceNames.push_back(defaultOutputDevice.name);
 
 	// add all other output devices
-	BASS_DEVICEINFO deviceInfo;
-	int numDevices = 0;
-	for (int d=0; BASS_GetDeviceInfo(d, &deviceInfo); d++)
-	{
-		if (deviceInfo.flags & BASS_DEVICE_ENABLED) // if the device can be used
-		{
-			numDevices++; // count it
-			debugLog("SoundEngine: Device #%i = \"%s\"\n", numDevices, deviceInfo.name);
-
-			if (d > 0) // the first device doesn't count ("No sound")
-			{
-				OUTPUT_DEVICE soundDevice;
-				soundDevice.id = d;
-				soundDevice.name = deviceInfo.name;
-
-				bool nameCollision = false;
-				do
-				{
-					nameCollision = false;
-					for (int dd=0; dd<m_outputDevices.size(); dd++)
-					{
-						if (m_outputDevices[dd].name == soundDevice.name)
-						{
-							nameCollision = true;
-							soundDevice.name.append(UString::format(" (%i)", dd));
-							break;
-						}
-					}
-				}
-				while (nameCollision);
-
-				m_outputDevices.push_back(soundDevice);
-				m_outputDeviceNames.push_back(deviceInfo.name);
-			}
-		}
-	}
+	updateOutputDevices(false, true);
 
 	// load plugins
 	/*
@@ -103,6 +76,91 @@ SoundEngine::SoundEngine()
 
 	// convar callbacks
 	snd_output_device.setCallback( fastdelegate::MakeDelegate(this, &SoundEngine::setOutputDevice) );
+
+#endif
+}
+
+void SoundEngine::updateOutputDevices(bool handleOutputDeviceChanges, bool printInfo)
+{
+#ifdef MCENGINE_FEATURE_SOUND
+
+	// NOTE: trust BASS to not reassign indices
+
+	int currentOutputDeviceBASSIndex = BASS_GetDevice();
+
+	bool outputDeviceChange = false;
+
+	BASS_DEVICEINFO deviceInfo;
+	int numDevices = 0;
+	for (int d=0; (BASS_GetDeviceInfo(d, &deviceInfo) == true); d++)
+	{
+		const bool isEnabled = (deviceInfo.flags & BASS_DEVICE_ENABLED);
+		const bool isDefault = (deviceInfo.flags & BASS_DEVICE_DEFAULT);
+
+		if (printInfo)
+		{
+			debugLog("SoundEngine: Device %i = \"%s\", enabled = %i, default = %i\n", numDevices, deviceInfo.name, (int)isEnabled, (int)isDefault);
+			numDevices++;
+		}
+
+		if (d > 0) // the first device doesn't count ("No sound") ~ Default in array
+		{
+			OUTPUT_DEVICE soundDevice;
+			soundDevice.id = d;
+			soundDevice.name = deviceInfo.name;
+			soundDevice.enabled = isEnabled;
+			soundDevice.isDefault = isDefault;
+
+			// detect output device changes
+			if (handleOutputDeviceChanges)
+			{
+				if (d == currentOutputDeviceBASSIndex && m_outputDevices.size() > d)
+				{
+					const bool hasEnabledChanged = (soundDevice.enabled != m_outputDevices[d].enabled);
+					const bool hasDeviceChanged = (soundDevice.name != m_outputDevices[d].name);
+					const bool hasDefaultChanged = (soundDevice.isDefault != m_outputDevices[d].isDefault);
+
+					const bool hasChanged = (hasEnabledChanged || hasDeviceChanged || hasDefaultChanged);
+
+					if (hasChanged)
+					{
+						debugLog("SoundEngine: Output device [\"%s\", enabled = %i, default = %i] changed to [\"%s\", enabled = %i, default = %i]\n", m_outputDevices[d].name.toUtf8(), (int)m_outputDevices[d].enabled, (int)m_outputDevices[d].isDefault, soundDevice.name.toUtf8(), (int)soundDevice.enabled, (int)soundDevice.isDefault);
+
+						// update values
+						m_outputDevices[d].name = soundDevice.name;
+						m_outputDevices[d].enabled = soundDevice.enabled;
+						m_outputDevices[d].isDefault = soundDevice.isDefault;
+
+						// special case: if the user is using "Default" (index -1) and the actual system default changed, then we automatically re-initialize the device
+						if (m_iCurrentOutputDevice == -1 && !outputDeviceChange)
+						{
+							initializeOutputDevice();
+
+							// callback
+							if (m_outputDeviceChangeCallback != nullptr)
+								m_outputDeviceChangeCallback();
+
+							// update state, redo loop
+							outputDeviceChange = true; // only 1 change per tick
+							currentOutputDeviceBASSIndex = BASS_GetDevice();
+							d = 0;
+							continue;
+						}
+					}
+				}
+			}
+
+			if ((d+1) > m_outputDevices.size()) // only add new devices
+				m_outputDevices.push_back(soundDevice);
+		}
+
+		// sanity
+		if (d > 42)
+		{
+			debugLog("WARNING: SoundEngine::updateOutputDevices() found too many devices ...");
+			break;
+		}
+	}
 
 #endif
 }
@@ -158,7 +216,7 @@ bool SoundEngine::initializeOutputDevice(int id)
 	BASS_INFO info;
 	BASS_GetInfo(&info);
 	m_iLatency = info.minbuf;
-	debugLog("SoundEngine: Minimum Latency = %i ms\n", info.latency); // NOTE: needs BASS_DEVICE_LATENCY in init
+	debugLog("SoundEngine: Minimum Latency = %i ms\n", info.latency); // NOTE: needs BASS_DEVICE_LATENCY in init above, but that adds seconds to the startup time
 	*/
 
 	return true;
@@ -177,6 +235,18 @@ SoundEngine::~SoundEngine()
 		BASS_Free();
 
 #endif
+}
+
+void SoundEngine::update()
+{
+	if (snd_change_check_interval.getFloat() > 0.0f)
+	{
+		if (engine->getTime() > m_fPrevOutputDeviceChangeCheckTime)
+		{
+			m_fPrevOutputDeviceChangeCheckTime = engine->getTime() + snd_change_check_interval.getFloat();
+			updateOutputDevices(true, false);
+		}
+	}
 }
 
 bool SoundEngine::play(Sound *snd)
@@ -262,6 +332,11 @@ void SoundEngine::stop(Sound *snd)
 #endif
 }
 
+void SoundEngine::setOnOutputDeviceChange(std::function<void()> callback)
+{
+	m_outputDeviceChangeCallback = callback;
+}
+
 void SoundEngine::setOutputDevice(UString outputDeviceName)
 {
 #ifdef MCENGINE_FEATURE_SOUND
@@ -314,12 +389,26 @@ void SoundEngine::set3dPosition(Vector3 headPos, Vector3 viewDir, Vector3 viewUp
 	BASS_3DVECTOR bassHeadPos = BASS_3DVECTOR(headPos.x, headPos.y, headPos.z);
 	BASS_3DVECTOR bassViewDir = BASS_3DVECTOR(viewDir.x, viewDir.y, viewDir.z);
 	BASS_3DVECTOR bassViewUp = BASS_3DVECTOR(viewUp.x, viewUp.y, viewUp.z);
+
 	if (!BASS_Set3DPosition(&bassHeadPos, NULL, &bassViewDir, &bassViewUp))
 		debugLog("SoundEngine::set3dPosition() couldn't BASS_Set3DPosition(), errorcode %i\n", BASS_ErrorGetCode());
 	else
 		BASS_Apply3D(); // apply the changes
 
 #endif
+}
+
+std::vector<UString> SoundEngine::getOutputDevices()
+{
+	std::vector<UString> outputDevices;
+
+	for (int i=0; i<m_outputDevices.size(); i++)
+	{
+		if (m_outputDevices[i].enabled)
+			outputDevices.push_back(m_outputDevices[i].name);
+	}
+
+	return outputDevices;
 }
 
 float SoundEngine::getAmplitude(Sound *snd)

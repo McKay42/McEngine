@@ -11,12 +11,12 @@
 #include "Environment.h"
 #include "Engine.h"
 
-SWImage::SWImage(UString filepath, bool mipmapped) : Image(filepath, mipmapped)
+SWImage::SWImage(UString filepath, bool mipmapped, bool keepInSystemMemory) : Image(filepath, mipmapped, keepInSystemMemory)
 {
 	// TODO:
 }
 
-SWImage::SWImage(int width, int height, bool mipmapped) : Image(width, height, mipmapped)
+SWImage::SWImage(int width, int height, bool mipmapped, bool keepInSystemMemory) : Image(width, height, mipmapped, keepInSystemMemory)
 {
 	// TODO:
 }

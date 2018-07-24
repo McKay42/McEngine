@@ -64,7 +64,7 @@ public:
 protected:
 	virtual void onClicked();
 
-	void drawText(Graphics *g);
+	virtual void drawText(Graphics *g);
 	void drawHoverRect(Graphics *g, int distance);
 
 	void updateStringMetrics();

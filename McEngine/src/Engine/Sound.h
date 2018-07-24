@@ -34,6 +34,7 @@ public:
 	unsigned long getLengthMS();
 	float getSpeed();
 	float getPitch();
+	float getFrequency();
 
 	inline double getLastPlayTime() const {return m_fLastPlayTime;}
 

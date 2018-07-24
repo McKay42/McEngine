@@ -218,7 +218,7 @@ void ResourceManager::requestNextLoadUnmanaged()
 	m_nextLoadUnmanagedStack.push(true);
 }
 
-Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool mipmapped)
+Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool mipmapped, bool keepInSystemMemory)
 {
 	// check if it already exists
 	{
@@ -229,7 +229,7 @@ Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool m
 
 	// create instance and load it
 	filepath.insert(0, PATH_DEFAULT_IMAGES);
-	Image *img = engine->getGraphics()->createImage(filepath, mipmapped);
+	Image *img = engine->getGraphics()->createImage(filepath, mipmapped, keepInSystemMemory);
 	img->setName(resourceName);
 
 	loadResource(img, true);
@@ -237,18 +237,18 @@ Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool m
 	return img;
 }
 
-Image *ResourceManager::loadImageUnnamed(UString filepath, bool mipmapped)
+Image *ResourceManager::loadImageUnnamed(UString filepath, bool mipmapped, bool keepInSystemMemory)
 {
 	// create instance and load it
 	filepath.insert(0, PATH_DEFAULT_IMAGES);
-	Image *img = engine->getGraphics()->createImage(filepath, mipmapped);
+	Image *img = engine->getGraphics()->createImage(filepath, mipmapped, keepInSystemMemory);
 
 	loadResource(img, true);
 
 	return img;
 }
 
-Image *ResourceManager::loadImageAbs(UString absoluteFilepath, UString resourceName, bool mipmapped)
+Image *ResourceManager::loadImageAbs(UString absoluteFilepath, UString resourceName, bool mipmapped, bool keepInSystemMemory)
 {
 	// check if it already exists
 	{
@@ -258,7 +258,7 @@ Image *ResourceManager::loadImageAbs(UString absoluteFilepath, UString resourceN
 	}
 
 	// create instance and load it
-	Image *img = engine->getGraphics()->createImage(absoluteFilepath, mipmapped);
+	Image *img = engine->getGraphics()->createImage(absoluteFilepath, mipmapped, keepInSystemMemory);
 	img->setName(resourceName);
 
 	loadResource(img, true);
@@ -266,17 +266,17 @@ Image *ResourceManager::loadImageAbs(UString absoluteFilepath, UString resourceN
 	return img;
 }
 
-Image *ResourceManager::loadImageAbsUnnamed(UString absoluteFilepath, bool mipmapped)
+Image *ResourceManager::loadImageAbsUnnamed(UString absoluteFilepath, bool mipmapped, bool keepInSystemMemory)
 {
 	// create instance and load it
-	Image *img = engine->getGraphics()->createImage(absoluteFilepath, mipmapped);
+	Image *img = engine->getGraphics()->createImage(absoluteFilepath, mipmapped, keepInSystemMemory);
 
 	loadResource(img, true);
 
 	return img;
 }
 
-Image *ResourceManager::createImage(unsigned int width, unsigned int height, bool mipmapped)
+Image *ResourceManager::createImage(unsigned int width, unsigned int height, bool mipmapped, bool keepInSystemMemory)
 {
 	if (width < 1 || height < 1 || width > 4096 || height > 4096)
 	{
@@ -285,7 +285,7 @@ Image *ResourceManager::createImage(unsigned int width, unsigned int height, boo
 	}
 
 	// create instance and load it
-	Image *img = engine->getGraphics()->createImage(width, height, mipmapped);
+	Image *img = engine->getGraphics()->createImage(width, height, mipmapped, keepInSystemMemory);
 	img->setName("<CREATED_IMAGE>");
 
 	loadResource(img, false);
@@ -305,6 +305,25 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, unsign
 	// create instance and load it
 	filepath.insert(0, PATH_DEFAULT_FONTS);
 	McFont *fnt = new McFont(filepath, fontSize, antialiasing);
+	fnt->setName(resourceName);
+
+	loadResource(fnt, true);
+
+	return fnt;
+}
+
+McFont *ResourceManager::loadFont(UString filepath, UString resourceName, std::vector<wchar_t> characters, unsigned int fontSize, bool antialiasing)
+{
+	// check if it already exists
+	{
+		Resource *temp = exists(resourceName);
+		if (temp != NULL)
+			return dynamic_cast<McFont*>(temp);
+	}
+
+	// create instance and load it
+	filepath.insert(0, PATH_DEFAULT_FONTS);
+	McFont *fnt = new McFont(filepath, characters, fontSize, antialiasing);
 	fnt->setName(resourceName);
 
 	loadResource(fnt, true);
