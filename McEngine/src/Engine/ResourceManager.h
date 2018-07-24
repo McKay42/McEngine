@@ -43,14 +43,15 @@ public:
 	void requestNextLoadUnmanaged();
 
 	// images
-	Image *loadImage(UString filepath, UString resourceName, bool mipmapped = false);
-	Image *loadImageUnnamed(UString filepath, bool mipmapped = false);
-	Image *loadImageAbs(UString absoluteFilepath, UString resourceName, bool mipmapped = false);
-	Image *loadImageAbsUnnamed(UString absoluteFilepath, bool mipmapped = false);
-	Image *createImage(unsigned int width, unsigned int height, bool mipmapped = false);
+	Image *loadImage(UString filepath, UString resourceName, bool mipmapped = false, bool keepInSystemMemory = false);
+	Image *loadImageUnnamed(UString filepath, bool mipmapped = false, bool keepInSystemMemory = false);
+	Image *loadImageAbs(UString absoluteFilepath, UString resourceName, bool mipmapped = false, bool keepInSystemMemory = false);
+	Image *loadImageAbsUnnamed(UString absoluteFilepath, bool mipmapped = false, bool keepInSystemMemory = false);
+	Image *createImage(unsigned int width, unsigned int height, bool mipmapped = false, bool keepInSystemMemory = false);
 
 	// fonts
 	McFont *loadFont(UString filepath, UString resourceName, unsigned int fontSize = 16, bool antialiasing = true);
+	McFont *loadFont(UString filepath, UString resourceName, std::vector<wchar_t> characters, unsigned int fontSize = 16, bool antialiasing = true);
 
 	// sounds
 	Sound *loadSound(UString filepath, UString resourceName, bool stream = false, bool threeD = false, bool loop = false, bool prescan = false);

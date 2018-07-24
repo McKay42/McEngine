@@ -13,7 +13,7 @@
 
 #include "DirectX11Interface.h"
 
-DirectX11Image::DirectX11Image(UString filepath, bool mipmapped) : Image(filepath, mipmapped)
+DirectX11Image::DirectX11Image(UString filepath, bool mipmapped, bool keepInSystemMemory) : Image(filepath, mipmapped, keepInSystemMemory)
 {
 	m_texture = NULL;
 	m_shaderResourceView = NULL;
@@ -22,7 +22,7 @@ DirectX11Image::DirectX11Image(UString filepath, bool mipmapped) : Image(filepat
 	m_prevShaderResourceView = NULL;
 }
 
-DirectX11Image::DirectX11Image(int width, int height, bool mipmapped) : Image(width, height, mipmapped)
+DirectX11Image::DirectX11Image(int width, int height, bool mipmapped, bool keepInSystemMemory) : Image(width, height, mipmapped, keepInSystemMemory)
 {
 	m_texture = NULL;
 	m_shaderResourceView = NULL;
@@ -67,6 +67,13 @@ void DirectX11Image::init()
 		engine->showMessageError("Image Error", UString::format("DirectX Image error, couldn't CreateTexture2D(%ld) on file %s", hr, m_sFilePath.toUtf8()));
 		return;
 	}
+
+	// TODO: can we already free the memory here?
+	/*
+	// free memory
+	if (!m_bKeepInSystemMemory)
+		m_rawImage = std::vector<unsigned char>();
+	*/
 
 	// create shader resource view
 	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;

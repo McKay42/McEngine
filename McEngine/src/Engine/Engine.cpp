@@ -307,13 +307,9 @@ void Engine::onUpdate()
 		m_inputDevices[i]->update();
 	}
 
-	// update openvr (this also includes input devices)
-	m_openVR->update();
-
-	// update animations
-	anim->update();
-
-	// update resource manager
+	m_openVR->update(); // (this also handles its input devices)
+	m_animationHandler->update();
+	m_sound->update();
 	m_resourceManager->update();
 
 	// update gui

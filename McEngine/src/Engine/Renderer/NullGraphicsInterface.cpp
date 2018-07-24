@@ -13,14 +13,14 @@
 #include "NullRenderTarget.h"
 #include "NullShader.h"
 
-Image *NullGraphicsInterface::createImage(UString filePath, bool mipmapped)
+Image *NullGraphicsInterface::createImage(UString filePath, bool mipmapped, bool keepInSystemMemory)
 {
-	return new NullImage(filePath, mipmapped);
+	return new NullImage(filePath, mipmapped, keepInSystemMemory);
 }
 
-Image *NullGraphicsInterface::createImage(int width, int height, bool mipmapped)
+Image *NullGraphicsInterface::createImage(int width, int height, bool mipmapped, bool keepInSystemMemory)
 {
-	return new NullImage(width, height, mipmapped);
+	return new NullImage(width, height, mipmapped, keepInSystemMemory);
 }
 
 RenderTarget *NullGraphicsInterface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)

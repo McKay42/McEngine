@@ -17,8 +17,8 @@
 class DirectX11Image : public Image
 {
 public:
-	DirectX11Image(UString filepath, bool mipmapped = false);
-	DirectX11Image(int width, int height, bool mipmapped = false);
+	DirectX11Image(UString filepath, bool mipmapped = false, bool keepInSystemMemory = false);
+	DirectX11Image(int width, int height, bool mipmapped = false, bool keepInSystemMemory = false);
 	virtual ~DirectX11Image() {destroy();}
 
 	virtual void bind(unsigned int textureUnit = 0);
