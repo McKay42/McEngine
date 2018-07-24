@@ -23,8 +23,8 @@ public:
 	};
 
 public:
-	Image(UString filepath, bool mipmapped = false);
-	Image(int width, int height, bool mipmapped = false);
+	Image(UString filepath, bool mipmapped = false, bool keepInSystemMemory = false);
+	Image(int width, int height, bool mipmapped = false, bool keepInSystemMemory = false);
 	virtual ~Image() {;}
 
 	virtual void bind(unsigned int textureUnit = 0) = 0;
@@ -66,6 +66,7 @@ protected:
 	bool m_bHasAlphaChannel;
 	bool m_bMipmapped;
 	bool m_bCreatedImage;
+	bool m_bKeepInSystemMemory;
 
 	std::vector<unsigned char> m_rawImage;
 };

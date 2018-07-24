@@ -10,8 +10,6 @@
 
 #include "cbase.h"
 
-// TODO: reading/writing bool in constructor
-
 class BaseFile;
 class ConVar;
 
@@ -20,11 +18,20 @@ class File
 public:
 	static ConVar *debug;
 
+	enum class TYPE
+	{
+		READ,
+		WRITE
+	};
+
 public:
-	File(UString filePath);
+	File(UString filePath, TYPE type = TYPE::READ);
 	virtual ~File();
 
 	bool canRead() const;
+	bool canWrite() const;
+
+	void write(const char *buffer, size_t size);
 
 	UString readLine();
 	const char *readFile(); // WARNING: this is NOT a null-terminated string! DO NOT USE THIS with UString/std::string!
@@ -41,6 +48,9 @@ public:
 	virtual ~BaseFile() {;}
 
 	virtual bool canRead() const = 0;
+	virtual bool canWrite() const = 0;
+
+	virtual void write(const char *buffer, size_t size) = 0;
 
 	virtual UString readLine() = 0;
 	virtual const char *readFile() = 0;
@@ -54,10 +64,13 @@ public:
 class StdFile : public BaseFile
 {
 public:
-	StdFile(UString filePath);
+	StdFile(UString filePath, File::TYPE type);
 	virtual ~StdFile();
 
 	bool canRead() const;
+	bool canWrite() const;
+
+	void write(const char *buffer, size_t size);
 
 	UString readLine();
 	const char *readFile();
@@ -65,14 +78,15 @@ public:
 	size_t getFileSize() const;
 
 private:
+	UString m_sFilePath;
+
 	bool m_bReady;
 	bool m_bRead;
 
 	std::ifstream m_ifstream;
+	std::ofstream m_ofstream;
 	std::string m_sBuffer;
 	size_t m_iFileSize;
-
-	UString m_sFilePath;
 };
 
 #endif

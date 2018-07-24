@@ -597,14 +597,14 @@ void DirectX11Interface::onResolutionChange(Vector2 newResolution)
 	m_deviceContext->RSSetViewports(1, &viewport);
 }
 
-Image *DirectX11Interface::createImage(UString filePath, bool mipmapped)
+Image *DirectX11Interface::createImage(UString filePath, bool mipmapped, bool keepInSystemMemory)
 {
-	return new DirectX11Image(filePath, mipmapped);
+	return new DirectX11Image(filePath, mipmapped, keepInSystemMemory);
 }
 
-Image *DirectX11Interface::createImage(int width, int height, bool mipmapped)
+Image *DirectX11Interface::createImage(int width, int height, bool mipmapped, bool keepInSystemMemory)
 {
-	return new DirectX11Image(width, height, mipmapped);
+	return new DirectX11Image(width, height, mipmapped, keepInSystemMemory);
 }
 
 RenderTarget *DirectX11Interface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)

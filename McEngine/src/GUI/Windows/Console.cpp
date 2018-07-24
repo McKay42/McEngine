@@ -148,7 +148,7 @@ void Console::processCommand(UString command)
 		UString temp = "Unknown command \"";
 		temp.append(commandName);
 		temp.append("\"!\n");
-		debugLog(temp.toUtf8());
+		debugLog("%s", temp.toUtf8());
 		return;
 	}
 
@@ -194,7 +194,7 @@ void Console::processCommand(UString command)
 		}
 
 		if (logMessage.length() > 0 && doLog)
-			debugLog(logMessage.toUtf8());
+			debugLog("%s", logMessage.toUtf8());
 	}
 }
 
@@ -321,7 +321,7 @@ void _echo(UString args)
 	if (args.length() > 0)
 	{
 		args.append("\n");
-		debugLog(args.toUtf8());
+		debugLog("%s", args.toUtf8());
 	}
 }
 
