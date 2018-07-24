@@ -147,8 +147,8 @@ public:
 	virtual void onResolutionChange(Vector2 newResolution) = 0;
 
 	// factory
-	virtual Image *createImage(UString filePath, bool mipmapped) = 0;
-	virtual Image *createImage(int width, int height, bool mipmapped) = 0;
+	virtual Image *createImage(UString filePath, bool mipmapped, bool keepInSystemMemory) = 0;
+	virtual Image *createImage(int width, int height, bool mipmapped, bool keepInSystemMemory) = 0;
 	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType) = 0;
 	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath) = 0;
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader) = 0;

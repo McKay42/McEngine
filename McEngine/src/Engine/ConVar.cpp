@@ -375,7 +375,7 @@ void _find(UString args)
 		UString thelog = "No commands found containing \"";
 		thelog.append(args);
 		thelog.append("\".\n");
-		debugLog(thelog.toUtf8());
+		debugLog("%s", thelog.toUtf8());
 		return;
 	}
 
@@ -383,13 +383,13 @@ void _find(UString args)
 	UString thelog = "[ find : ";
 	thelog.append(args);
 	thelog.append(" ]\n");
-	debugLog(thelog.toUtf8());
+	debugLog("%s", thelog.toUtf8());
 
 	for (int i=0; i<temp.size(); i++)
 	{
 		UString tstring = temp[i]->getName();
 		tstring.append("\n");
-		debugLog(tstring.toUtf8());
+		debugLog("%s", tstring.toUtf8());
 	}
 
 	debugLog("----------------------------------------------\n");
@@ -410,7 +410,7 @@ void _help(UString args)
 		UString thelog = "ConVar \"";
 		thelog.append(args);
 		thelog.append("\" does not exist.\n");
-		debugLog(thelog.toUtf8());
+		debugLog("%s", thelog.toUtf8());
 		return;
 	}
 
@@ -419,7 +419,7 @@ void _help(UString args)
 		UString thelog = "ConVar \"";
 		thelog.append(args);
 		thelog.append("\" does not have a helpstring.\n");
-		debugLog(thelog.toUtf8());
+		debugLog("%s", thelog.toUtf8());
 		return;
 	}
 
@@ -427,7 +427,7 @@ void _help(UString args)
 	thelog.append(" : ");
 	thelog.append(temp[0]->getHelpstring());
 
-	debugLog(thelog.toUtf8());
+	debugLog("%s", thelog.toUtf8());
 }
 
 void _listcommands(void)
@@ -446,7 +446,7 @@ void _listcommands(void)
 			tstring.append(convars[i]->getHelpstring());
 		}
 		tstring.append("\n");
-		debugLog(tstring.toUtf8());
+		debugLog("%s", tstring.toUtf8());
 	}
 
 	debugLog("----------------------------------------------\n");

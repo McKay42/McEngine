@@ -16,13 +16,13 @@
 
 #include "OpenGLHeaders.h"
 
-OpenGLImage::OpenGLImage(UString filepath, bool mipmapped) : Image(filepath, mipmapped)
+OpenGLImage::OpenGLImage(UString filepath, bool mipmapped, bool keepInSystemMemory) : Image(filepath, mipmapped, keepInSystemMemory)
 {
 	m_GLTexture = 0;
 	m_iTextureUnitBackup = 0;
 }
 
-OpenGLImage::OpenGLImage(int width, int height, bool mipmapped) : Image(width, height, mipmapped)
+OpenGLImage::OpenGLImage(int width, int height, bool mipmapped, bool keepInSystemMemory) : Image(width, height, mipmapped, keepInSystemMemory)
 {
 	m_GLTexture = 0;
 	m_iTextureUnitBackup = 0;
@@ -30,45 +30,71 @@ OpenGLImage::OpenGLImage(int width, int height, bool mipmapped) : Image(width, h
 
 void OpenGLImage::init()
 {
-	if (m_GLTexture != 0 || !m_bAsyncReady) return; // only load if we are not already loaded
+	if ((m_GLTexture != 0 && !m_bKeepInSystemMemory) || !m_bAsyncReady) return; // only load if we are not already loaded
 
-	// DEPRECATED LEGACY (1)
-	glEnable(GL_TEXTURE_2D);
-	glGetError(); // clear gl error state
+	// create texture object
+	if (m_GLTexture == 0)
+	{
+		// DEPRECATED LEGACY (1)
+		glEnable(GL_TEXTURE_2D);
+		glGetError(); // clear gl error state
 
-	// create texture and bind
-	glGenTextures(1, &m_GLTexture);
-	glBindTexture(GL_TEXTURE_2D, m_GLTexture);
+		// create texture and bind
+		glGenTextures(1, &m_GLTexture);
+		glBindTexture(GL_TEXTURE_2D, m_GLTexture);
 
-	// DEPRECATED LEGACY (2)
-	glEnable(GL_TEXTURE_2D);
-	glGetError(); // clear gl error state
+		// DEPRECATED LEGACY (2)
+		glEnable(GL_TEXTURE_2D);
+		glGetError(); // clear gl error state
 
-	// set texture filtering mode (mipmapping is disabled by default)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_bMipmapped ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		// set texture filtering mode (mipmapping is disabled by default)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_bMipmapped ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	GLfloat maxAnisotropy;
-	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
+		GLfloat maxAnisotropy;
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
 
-	// texture wrapping, defaults to clamp
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	if (m_type == Image::TYPE::TYPE_JPG) // HACKHACK: wat
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		// texture wrapping, defaults to clamp
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
 
 	// upload to gpu
-	glTexImage2D(GL_TEXTURE_2D, 0, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), m_iWidth, m_iHeight, 0, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), GL_UNSIGNED_BYTE, &m_rawImage[0]);
-	if (m_bMipmapped)
-		glGenerateMipmap(GL_TEXTURE_2D);
+	int GLerror = 0;
+	{
+		glBindTexture(GL_TEXTURE_2D, m_GLTexture);
+
+		const int jpgUnpackAlignment = 1;
+		int prevUnpackAlignment = 4;
+		if (m_type == Image::TYPE::TYPE_JPG) // HACKHACK: wat
+		{
+			glGetIntegerv(GL_UNPACK_ALIGNMENT, &prevUnpackAlignment);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		}
+
+		glTexImage2D(GL_TEXTURE_2D, 0, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), m_iWidth, m_iHeight, 0, m_iNumChannels == 4 ? GL_RGBA : (m_iNumChannels == 3 ? GL_RGB : (m_iNumChannels == 1 ? GL_LUMINANCE : GL_RGBA)), GL_UNSIGNED_BYTE, &m_rawImage[0]);
+		if (m_bMipmapped)
+		{
+			// DEPRECATED LEGACY (1) (ignore mipmap generation errors)
+			GLerror = (GLerror == 0 ? glGetError() : GLerror);
+
+			glGenerateMipmap(GL_TEXTURE_2D);
+
+			// DEPRECATED LEGACY (2)
+			glGetError(); // clear gl error state
+		}
+
+		if (m_type == Image::TYPE::TYPE_JPG && prevUnpackAlignment != jpgUnpackAlignment)
+			glPixelStorei(GL_UNPACK_ALIGNMENT, prevUnpackAlignment);
+	}
 
 	// free memory
-	m_rawImage = std::vector<unsigned char>(); // TODO: HACKHACK: temp commented!!!!!!!!!!!
+	if (!m_bKeepInSystemMemory)
+		m_rawImage = std::vector<unsigned char>();
 
 	// check for errors
-	int GLerror = glGetError();
+	GLerror = (GLerror == 0 ? glGetError() : GLerror);
 	if (GLerror != 0)
 	{
 		m_GLTexture = 0;

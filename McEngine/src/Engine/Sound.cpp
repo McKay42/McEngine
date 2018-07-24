@@ -57,7 +57,7 @@ void Sound::init()
 		msg.append(", file = ");
 		msg.append(m_sFilePath);
 		msg.append("\n");
-		debugLog(0xffdd3333, msg.toUtf8());
+		debugLog(0xffdd3333, "%s", msg.toUtf8());
 	}
 	else
 		m_bReady = true;
@@ -150,7 +150,7 @@ SOUNDHANDLE Sound::getHandle()
 			msg.append(", file = ");
 			msg.append(m_sFilePath);
 			msg.append("\n");
-			debugLog(0xffdd3333, msg.toUtf8());
+			debugLog(0xffdd3333, "%s", msg.toUtf8());
 		}
 		else
 			BASS_ChannelSetAttribute(m_HCHANNEL, BASS_ATTRIB_VOL, m_fVolume);
@@ -425,6 +425,20 @@ float Sound::getPitch()
 	BASS_ChannelGetAttribute(getHandle(), BASS_ATTRIB_TEMPO_PITCH, &pitch);
 
 	return (pitch/60.0f)+1.0f;
+
+#endif
+}
+
+float Sound::getFrequency()
+{
+	if (!m_bReady) return 44100.0f;
+
+#ifdef MCENGINE_FEATURE_SOUND
+
+	float frequency = 44100.0f;
+	BASS_ChannelGetAttribute(getHandle(), BASS_ATTRIB_FREQ, &frequency);
+
+	return frequency;
 
 #endif
 }
