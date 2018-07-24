@@ -53,6 +53,9 @@ public:
 	void execArgs(UString args);
 
 	// set
+	void setDefaultFloat(float defaultValue) {m_fDefaultValue = defaultValue;}
+	void setDefaultString(UString defaultValue) {m_sDefaultValue = defaultValue;}
+
 	void setValue(float value);
 	void setValue(UString sValue);
 

@@ -21,22 +21,41 @@
 void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, TextureAtlas *textureAtlas, bool antialiasing, std::unordered_map<wchar_t, McFont::GLYPH_METRICS> *glyphMetrics);
 unsigned char *unpackMonoBitmap(FT_Bitmap bitmap);
 
+const wchar_t McFont::UNKNOWN_CHAR;
+
 McFont::McFont(UString filepath, unsigned int fontSize, bool antialiasing) : Resource(filepath)
 {
+	// the default set of wchar_t glyphs (ASCII table of non-whitespace glyphs, including cyrillics)
+	std::vector<wchar_t> characters;
+	for (int i=32; i<255; i++)
+	{
+		characters.push_back((wchar_t)i);
+	}
+
+	constructor(characters, fontSize, antialiasing);
+}
+
+McFont::McFont(UString filepath, std::vector<wchar_t> characters, unsigned int fontSize, bool antialiasing) : Resource(filepath)
+{
+	constructor(characters, fontSize, antialiasing);
+}
+
+void McFont::constructor(std::vector<wchar_t> characters, unsigned int fontSize, bool antialiasing)
+{
+	for (int i=0; i<characters.size(); i++)
+	{
+		addGlyph(characters[i]);
+	}
+
 	m_iFontSize = fontSize;
 	m_bAntialiasing = antialiasing;
-
-	// the default set of wchar_t glyphs which are loaded for every font
-	for (int i=32; i<256; i++) // ASCII table of non-whitespace glyphs, including German Umlaute
-	{
-		addGlyph((wchar_t)i);
-	}
 
 	m_textureAtlas = NULL;
 
 	m_fHeight = 1.0f;
-	m_errorGlyph.advance_x = 10;
+
 	m_errorGlyph.character = '?';
+	m_errorGlyph.advance_x = 10;
 	m_errorGlyph.sizePixelsX = 1;
 	m_errorGlyph.sizePixelsY = 1;
 	m_errorGlyph.uvPixelsX = 0;
@@ -100,7 +119,7 @@ void McFont::init()
 	else
 		m_textureAtlas->getAtlasImage()->setFilterMode(Graphics::FILTER_MODE::FILTER_MODE_NONE);
 
-	// calculate average font height
+	// calculate average ASCII font height
 	m_fHeight = 0.0f;
 	for (int i=0; i<128; i++)
 	{
@@ -127,7 +146,7 @@ void McFont::destroy()
 
 bool McFont::addGlyph(wchar_t ch)
 {
-	// HACKHACK: G++/MinGW: at() causes a crash if the element is not found? doesn't throw the expected exception
+	// HACKHACK: g++/MinGW: at() causes a crash if the element is not found? doesn't throw the expected exception
 	if (m_vGlyphExistence.find(ch) != m_vGlyphExistence.end()) return false;
 	if (ch < 32) return false;
 

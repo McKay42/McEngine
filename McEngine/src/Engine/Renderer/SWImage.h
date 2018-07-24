@@ -13,8 +13,8 @@
 class SWImage : public Image
 {
 public:
-	SWImage(UString filepath, bool mipmapped = false);
-	SWImage(int width, int height, bool mipmapped = false);
+	SWImage(UString filepath, bool mipmapped = false, bool keepInSystemMemory = false);
+	SWImage(int width, int height, bool mipmapped = false, bool keepInSystemMemory = false);
 	virtual ~SWImage() {destroy();}
 
 	void bind(unsigned int textureUnit = 0);

@@ -48,24 +48,30 @@ void Image::saveToImage(unsigned char *data, unsigned int width, unsigned int he
 	}
 }
 
-Image::Image(UString filepath, bool mipmapped) : Resource(filepath)
+Image::Image(UString filepath, bool mipmapped, bool keepInSystemMemory) : Resource(filepath)
 {
 	m_bMipmapped = mipmapped;
+	m_bKeepInSystemMemory = keepInSystemMemory;
+
 	m_type = Image::TYPE::TYPE_PNG;
 	m_iNumChannels = 4;
 	m_iWidth = 0;
 	m_iHeight = 0;
+
 	m_bHasAlphaChannel = true;
 	m_bCreatedImage = false;
 }
 
-Image::Image(int width, int height, bool mipmapped) : Resource()
+Image::Image(int width, int height, bool mipmapped, bool keepInSystemMemory) : Resource()
 {
 	m_bMipmapped = mipmapped;
+	m_bKeepInSystemMemory = keepInSystemMemory;
+
 	m_type = Image::TYPE::TYPE_RGB;
 	m_iNumChannels = 4;
 	m_iWidth = width;
 	m_iHeight = height;
+
 	m_bHasAlphaChannel = true;
 	m_bCreatedImage = true;
 
@@ -87,6 +93,9 @@ bool Image::loadRawImage()
 	// if it isn't a created image (created within the engine), load it from the corresponding file
 	if (!m_bCreatedImage)
 	{
+		if (m_rawImage.size() > 0) // has already been loaded (or loading it again after setPixel(s))
+			return true;
+
 		if (!env->fileExists(m_sFilePath))
 		{
 			printf("Image Error: Couldn't find file %s !\n", m_sFilePath.toUtf8());
@@ -302,8 +311,7 @@ Color Image::getPixel(int x, int y)
 
 void Image::setPixel(int x, int y, Color color)
 {
-	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (int)(m_rawImage.size()-1))
-		return;
+	if (x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (int)(m_rawImage.size()-1)) return;
 
 	m_rawImage[4 * y * m_iWidth + 4 * x + 0] = COLOR_GET_Ri(color);
 	m_rawImage[4 * y * m_iWidth + 4 * x + 1] = COLOR_GET_Gi(color);
@@ -313,16 +321,19 @@ void Image::setPixel(int x, int y, Color color)
 
 void Image::setPixels(std::vector<unsigned char> pixels)
 {
+	if (pixels.size() < m_iWidth*m_iHeight*m_iNumChannels)
+	{
+		debugLog("Image::setPixels() error, supplied array is too small!\n");
+		return;
+	}
+
 	m_rawImage = pixels;
 }
 
 void Image::writeToFile(UString folder)
 {
-	if (!m_bReady || !m_bCreatedImage)
-		return;
-
-	if (m_iWidth <= 0 || m_iHeight <= 0 || m_rawImage.size() == 0 || m_rawImage.size() < 4 || m_rawImage.size() % 4 != 0)
-		return;
+	if (!m_bReady || !m_bCreatedImage) return;
+	if (m_iWidth <= 0 || m_iHeight <= 0 || m_rawImage.size() == 0 || m_rawImage.size() < 4 || m_rawImage.size() % 4 != 0) return;
 
 	folder.append(m_sName);
 	folder.append(".png");

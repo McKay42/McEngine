@@ -269,14 +269,14 @@ void VulkanGraphicsInterface::onResolutionChange(Vector2 newResolution)
 	m_vResolution = newResolution;
 }
 
-Image *VulkanGraphicsInterface::createImage(UString filePath, bool mipmapped)
+Image *VulkanGraphicsInterface::createImage(UString filePath, bool mipmapped, bool keepInSystemMemory)
 {
-	return new NullImage(filePath, mipmapped);
+	return new NullImage(filePath, mipmapped, keepInSystemMemory);
 }
 
-Image *VulkanGraphicsInterface::createImage(int width, int height, bool mipmapped)
+Image *VulkanGraphicsInterface::createImage(int width, int height, bool mipmapped, bool keepInSystemMemory)
 {
-	return new NullImage(width, height, mipmapped);
+	return new NullImage(width, height, mipmapped, keepInSystemMemory);
 }
 
 RenderTarget *VulkanGraphicsInterface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
