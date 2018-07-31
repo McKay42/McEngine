@@ -124,6 +124,12 @@ UString UString::format(const char *utf8format, ...)
 	int written = -1;
 	while (true)
 	{
+		if (bufSize >= 1024*1024)
+		{
+			printf("WARNING: Potential vswprintf(%s, ...) infinite loop, stopping ...\n", utf8format);
+			return formatted;
+		}
+
 		buf = new wchar_t[bufSize];
 
 		va_list ap;
