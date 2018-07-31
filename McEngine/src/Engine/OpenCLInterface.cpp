@@ -724,4 +724,4 @@ void _opencl_listdevices( void )
 	}
 }
 
-ConVar __opencl_listdevices("opencl_listdevices", _opencl_listdevices);
+ConVar _opencl_listdevices_("opencl_listdevices", _opencl_listdevices);

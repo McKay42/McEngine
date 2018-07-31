@@ -41,9 +41,9 @@
 
 
 void _version(void);
-void __host_timescale( UString oldValue, UString newValue );
-ConVar host_timescale("host_timescale", 1.0f, "Scale by which the engine measures elapsed time, affects engine->getTime()", __host_timescale);
-void __host_timescale( UString oldValue, UString newValue )
+void _host_timescale_( UString oldValue, UString newValue );
+ConVar host_timescale("host_timescale", 1.0f, "Scale by which the engine measures elapsed time, affects engine->getTime()", _host_timescale_);
+void _host_timescale_( UString oldValue, UString newValue )
 {
 	if (newValue.toFloat() < 0.01f)
 	{
@@ -799,18 +799,18 @@ void _crash(void)
 	nullPointer->setValue(false);
 }
 
-ConVar __exit("exit", _exit);
-ConVar __shutdown("shutdown", _exit);
-ConVar __restart("restart", _restart);
-ConVar __printsize("printsize", _printsize);
-ConVar __fullscreen("fullscreen", _fullscreen);
-ConVar __windowed("windowed", _windowed);
-ConVar __minimize("minimize", _minimize);
-ConVar __maximize("maximize", _maximize);
-ConVar __resizable_toggle("resizable_toggle", _toggleresizable);
-ConVar __focus("focus", _focus);
-ConVar __center("center", _center);
-ConVar __version("version", _version);
-ConVar __corporeal("debug_ghost", false, _debugCorporeal);
-ConVar __errortest("errortest", _errortest);
-ConVar __crash("crash", _crash);
+ConVar _exit_("exit", _exit);
+ConVar _shutdown_("shutdown", _exit);
+ConVar _restart_("restart", _restart);
+ConVar _printsize_("printsize", _printsize);
+ConVar _fullscreen_("fullscreen", _fullscreen);
+ConVar _windowed_("windowed", _windowed);
+ConVar _minimize_("minimize", _minimize);
+ConVar _maximize_("maximize", _maximize);
+ConVar _resizable_toggle_("resizable_toggle", _toggleresizable);
+ConVar _focus_("focus", _focus);
+ConVar _center_("center", _center);
+ConVar _version_("version", _version);
+ConVar _corporeal_("debug_ghost", false, _debugCorporeal);
+ConVar _errortest_("errortest", _errortest);
+ConVar _crash_("crash", _crash);

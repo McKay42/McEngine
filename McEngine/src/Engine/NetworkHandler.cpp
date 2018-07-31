@@ -24,27 +24,27 @@
 void DUMMY_ARGS_CONNECT(UString args) {;}
 void DUMMY_DISCONNECT() {;}
 
-ConVar __name("name", "McKay");
+ConVar _name_("name", "McKay");
 
 #ifdef MCENGINE_FEATURE_NETWORKING
 
-ConVar __connect("connect", DUMMY_ARGS_CONNECT);
+ConVar _connect_("connect", DUMMY_ARGS_CONNECT);
 ConVar connect_duration("connect_duration", 5.0f, "Time in seconds to wait for a response from the server when trying to connect");
-ConVar __disconnect("disconnect", DUMMY_DISCONNECT);
+ConVar _disconnect_("disconnect", DUMMY_DISCONNECT);
 ConVar disconnect_duration("disconnect_duration", 3.0f, "Time in seconds to wait for a gentle disconnect before dropping the connection");
 
-ConVar __host("host", DUMMY_DISCONNECT);
-ConVar __stop("stop", DUMMY_DISCONNECT);
+ConVar _host_("host", DUMMY_DISCONNECT);
+ConVar _stop_("stop", DUMMY_DISCONNECT);
 ConVar host_port("host_port", 7777.0f);
 ConVar host_max_clients("host_max_clients", 16.0f);
-ConVar __status("status", DUMMY_DISCONNECT);
+ConVar _status_("status", DUMMY_DISCONNECT);
 
 ConVar debug_network("debug_network", false);
 ConVar debug_network_time("debug_network_time", false);
 
-ConVar __name_admin("name_admin", "ADMIN");
-ConVar __say("say", DUMMY_ARGS_CONNECT);
-ConVar __kick("kick", DUMMY_ARGS_CONNECT);
+ConVar _name_admin_("name_admin", "ADMIN");
+ConVar _say_("say", DUMMY_ARGS_CONNECT);
+ConVar _kick_("kick", DUMMY_ARGS_CONNECT);
 
 #endif
 
@@ -69,14 +69,14 @@ NetworkHandler::NetworkHandler()
 	}
 
 	// convar callbacks
-	__host.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::host) );
-	__stop.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::hostStop) );
-	__status.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::status) );
-	__connect.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::connect) );
-	__disconnect.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::disconnect) );
+	_host_.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::host) );
+	_stop_.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::hostStop) );
+	_status_.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::status) );
+	_connect_.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::connect) );
+	_disconnect_.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::disconnect) );
 
-	__say.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::say) );
-	__kick.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::kick) );
+	_say_.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::say) );
+	_kick_.setCallback( fastdelegate::MakeDelegate(this, &NetworkHandler::kick) );
 
 	m_client = NULL;
 	m_server = NULL;
@@ -855,7 +855,7 @@ void NetworkHandler::sendClientInfo()
 #ifdef MCENGINE_FEATURE_NETWORKING
 
 	debugLog("CLIENT: Sending client info...\n");
-	UString localname = __name.getString();
+	UString localname = _name_.getString();
 
 	// build packet
 	size_t size = 0;
@@ -1165,7 +1165,7 @@ void NetworkHandler::say(UString message)
 	// if we are the server owner, say will generate name_admin chat message broadcasts:
 	if (!isClient() && isServer())
 	{
-		UString localname = __name_admin.getString();
+		UString localname = _name_admin_.getString();
 
 		// send it
 		broadcastChatMessage(localname, message, m_server, NULL);
@@ -1189,7 +1189,7 @@ void NetworkHandler::say(UString message)
 		return;
 	}
 
-	UString localname = __name.getString();
+	UString localname = _name_.getString();
 
 	// send it
 	singlecastChatMessage(localname, message, m_client, m_clientPeer);

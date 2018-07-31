@@ -438,4 +438,4 @@ void _volume(UString oldValue, UString newValue)
 	engine->getSound()->setVolume(newValue.toFloat());
 }
 
-ConVar __volume("volume", 1.0f, _volume);
+ConVar _volume_("volume", 1.0f, _volume);
