@@ -444,7 +444,7 @@ OpenVRInterface::OpenVRInterface()
 	// engine setting overrides
 	convar->getConVarByName("fps_unlimited")->setValue(1.0f); // VR applications shouldn't depend on being in the foreground (e.g. SteamVR status window is in foreground)
 	convar->getConVarByName("fps_max_background")->setValue(9999.0f);
-	convar->getConVarByName("ui_scrollview_resistance", 30.0f); // makes clicking things in scrollviews a bit more consistent/usable
+	convar->getConVarByName("ui_scrollview_resistance")->setValue(30.0f); // makes clicking things in scrollviews a bit more consistent/usable
 
 	m_bReady = true;
 }
