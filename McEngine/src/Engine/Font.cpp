@@ -18,10 +18,10 @@
 #include <ftoutln.h>
 #include <fttrigon.h>
 
+const wchar_t McFont::UNKNOWN_CHAR;
+
 void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, TextureAtlas *textureAtlas, bool antialiasing, std::unordered_map<wchar_t, McFont::GLYPH_METRICS> *glyphMetrics);
 unsigned char *unpackMonoBitmap(FT_Bitmap bitmap);
-
-const wchar_t McFont::UNKNOWN_CHAR;
 
 McFont::McFont(UString filepath, unsigned int fontSize, bool antialiasing) : Resource(filepath)
 {
