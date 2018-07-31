@@ -340,6 +340,6 @@ void _fizzbuzz(void)
 	}
 }
 
-ConVar __exec("exec", _exec);
-ConVar __echo("echo", _echo);
-ConVar __fizzbuzz("fizzbuzz", _fizzbuzz);
+ConVar _exec_("exec", _exec);
+ConVar _echo_("echo", _echo);
+ConVar _fizzbuzz_("fizzbuzz", _fizzbuzz);

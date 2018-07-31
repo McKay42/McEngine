@@ -44,5 +44,5 @@ void _monitor(UString oldValue, UString newValue)
 	env->setMonitor(newValue.toInt());
 }
 
-ConVar __fullscreen_windowed_borderless("fullscreen_windowed_borderless", false, _fullscreen_windowed_borderless);
-ConVar __monitor("monitor", 0, "monitor/display device to switch to, 0 = primary monitor", _monitor);
+ConVar _fullscreen_windowed_borderless_("fullscreen_windowed_borderless", false, _fullscreen_windowed_borderless);
+ConVar _monitor_("monitor", 0, "monitor/display device to switch to, 0 = primary monitor", _monitor);
