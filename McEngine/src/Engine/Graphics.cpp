@@ -275,5 +275,5 @@ void _mat_wireframe(UString oldValue, UString newValue)
 	engine->getGraphics()->setWireframe(newValue.toFloat() > 0.0f);
 }
 
-ConVar __mat_wireframe("mat_wireframe", false, _mat_wireframe);
-ConVar __vsync("vsync", false, _vsync);
+ConVar _mat_wireframe_("mat_wireframe", false, _mat_wireframe);
+ConVar _vsync_("vsync", false, _vsync);
