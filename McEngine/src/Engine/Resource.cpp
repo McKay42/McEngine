@@ -20,26 +20,68 @@ Resource::Resource(UString filepath)
 		debugLog("Resource Warning: File %s does not exist!\n", filepath.toUtf8());
 		///engine->showMessageError("Resource Error", errorMessage);
 
-#if defined __linux__
-
-		// if we are on linux, try loading a toLower() version of the filename (+ extension) of the string
-		// HACKHACK: better than not doing/trying anything though
-		char *utf8String = (char*)filepath.toUtf8();
-		for (int i=filepath.length()-1; i>=0; i--)
+		if (env->getOS() == Environment::OS::OS_LINUX) // TODO: probably better to have something like isFileSystemCaseSensitive()
 		{
-			if (utf8String[i] == '/')
+			// NOTE: this assumes that filepaths in code are always fully lowercase
+			// better than not doing/trying anything though
+
+			// try loading a toUpper() version of the file extension
+
+			// search backwards from end to first dot, then toUpper() forwards till end of string
+			char *utf8String = (char*)filepath.toUtf8();
+			for (int s=filepath.length(); s>=0; s--)
 			{
-				for (int c=i; c<filepath.length(); c++)
+				if (utf8String[s] == '.')
 				{
-					utf8String[c] = std::tolower(utf8String[c]);
+					for (int i=s+1; i<filepath.length(); i++)
+					{
+						utf8String[i] = std::toupper(utf8String[i]);
+					}
+
+					break;
 				}
-				break;
+			}
+			m_sFilePath = UString(utf8String);
+
+			if (!env->fileExists(m_sFilePath))
+			{
+				// if still not found, try with toLower() filename (keeping uppercase extension)
+
+				// search backwards from end to first dot, then toLower() everything until first slash
+				bool foundFilenameStart = false;
+				for (int s=filepath.length(); s>=0; s--)
+				{
+					if (foundFilenameStart)
+					{
+						if (utf8String[s] == '/')
+							break;
+
+						utf8String[s] = std::tolower(utf8String[s]);
+					}
+
+					if (utf8String[s] == '.')
+						foundFilenameStart = true;
+				}
+
+				m_sFilePath = UString(utf8String);
+
+				if (!env->fileExists(m_sFilePath))
+				{
+					// last chance, try with toLower() filename + extension
+
+					// toLower() backwards until first slash
+					for (int s=filepath.length(); s>=0; s--)
+					{
+						if (utf8String[s] == '/')
+							break;
+
+						utf8String[s] = std::tolower(utf8String[s]);
+					}
+
+					m_sFilePath = UString(utf8String);
+				}
 			}
 		}
-		if (utf8String != NULL)
-			m_sFilePath = UString(utf8String);
-#endif
-
 	}
 
 	m_bReady = false;
@@ -67,7 +109,7 @@ void Resource::loadAsync()
 void Resource::reload()
 {
 	release();
-	loadAsync(); // HACKHACK: this should also be reloaded asynchronously if it was initially loaded so, maybe
+	loadAsync(); // TODO: this should also be reloaded asynchronously if it was initially loaded so, maybe
 	load();
 }
 

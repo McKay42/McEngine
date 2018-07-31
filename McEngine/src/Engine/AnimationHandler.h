@@ -59,13 +59,10 @@ private:
 		MOVE_QUART_OUT
 	};
 
-	void addAnimation(float *base, float target, float duration, float delay, bool overrideExisting, ANIMATION_TYPE type, float smoothFactor = 0.0f);
-	void overrideExistingAnimation(float *base);
-
 	struct Animation
 	{
 		float *m_fBase;
-		float *m_fTarget;
+		float m_fTarget;
 		float m_fDuration;
 
 		float m_fStartValue;
@@ -76,7 +73,10 @@ private:
 		bool m_bStarted;
 	};
 
-	std::vector<Animation*> m_vAnimations;
+	void addAnimation(float *base, float target, float duration, float delay, bool overrideExisting, ANIMATION_TYPE type, float smoothFactor = 0.0f);
+	void overrideExistingAnimation(float *base);
+
+	std::vector<Animation> m_vAnimations;
 };
 
 extern AnimationHandler *anim;

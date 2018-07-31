@@ -452,6 +452,6 @@ void _listcommands(void)
 	debugLog("----------------------------------------------\n");
 }
 
-ConVar __find("find", _find);
-ConVar __help("help", _help);
-ConVar __listcommands("listcommands", _listcommands);
+ConVar _find_("find", _find);
+ConVar _help_("help", _help);
+ConVar _listcommands_("listcommands", _listcommands);
