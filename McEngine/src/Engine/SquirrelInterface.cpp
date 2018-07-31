@@ -683,5 +683,5 @@ void _squirrel_do(UString args)
 	squirrel->exec(args);
 }
 
-ConVar __squirrel_exec("squirrel_exec", _squirrel_exec);
-ConVar __squirrel_do("squirrel_do", _squirrel_do);
+ConVar _squirrel_exec_("squirrel_exec", _squirrel_exec);
+ConVar _squirrel_do_("squirrel_do", _squirrel_do);
