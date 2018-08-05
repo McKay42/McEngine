@@ -27,7 +27,7 @@ VertexArrayObject::~VertexArrayObject()
 
 void VertexArrayObject::init()
 {
-	m_bReady = true;
+	// m_bReady may only be set in inheriting classes, if baking was successful
 }
 
 void VertexArrayObject::initAsync()

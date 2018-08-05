@@ -20,7 +20,7 @@ class DirectX11Shader;
 class DirectX11Interface : public NullGraphicsInterface /*Graphics*/
 {
 public:
-	DirectX11Interface(HWND hwnd);
+	DirectX11Interface(HWND hwnd, bool minimalistContext = false);
 	virtual ~DirectX11Interface();
 
 	// scene
@@ -32,11 +32,17 @@ public:
 	virtual void setAlpha(float alpha);
 
 	// 2d primitive drawing
+	virtual void drawPixel(int x, int y);
 	virtual void drawLine(int x1, int y1, int x2, int y2);
 	virtual void drawLine(Vector2 pos1, Vector2 pos2);
 	virtual void drawRect(int x, int y, int width, int height);
 	virtual void drawRect(int x, int y, int width, int height, Color top, Color right, Color bottom, Color left);
+
 	virtual void fillRect(int x, int y, int width, int height);
+	virtual void fillGradient(int x, int y, int width, int height, Color topLeftColor, Color topRightColor, Color bottomLeftColor, Color bottomRightColor);
+
+	virtual void drawQuad(int x, int y, int width, int height);
+	virtual void drawQuad(Vector2 topLeft, Vector2 topRight, Vector2 bottomRight, Vector2 bottomLeft, Color topLeftColor, Color topRightColor, Color bottomRightColor, Color bottomLeftColor);
 
 	// 2d resource drawing
 	virtual void drawImage(Image *image);
@@ -45,6 +51,11 @@ public:
 	// 3d type drawing
 	virtual void drawVAO(VertexArrayObject *vao);
 
+	// DEPRECATED: 2d clipping
+	virtual void setClipRect(McRect clipRect);
+	virtual void pushClipRect(McRect clipRect);
+	virtual void popClipRect();
+
 	// renderer settings
 	virtual void setClipping(bool enabled);
 	virtual void setBlending(bool enabled);
@@ -52,6 +63,10 @@ public:
 	virtual void setCulling(bool culling);
 	virtual void setAntialiasing(bool aa);
 	virtual void setWireframe(bool enabled);
+
+	// renderer actions
+	virtual void flush();
+	virtual std::vector<unsigned char> getScreenshot();
 
 	// device settings
 	virtual void setVSync(bool vsync);
@@ -70,6 +85,7 @@ public:
 	ID3D11Device *getDevice() const {return m_device;}
 	ID3D11DeviceContext *getDeviceContext() const {return m_deviceContext;}
 	IDXGISwapChain *getSwapChain() const {return m_swapChain;}
+	DirectX11Shader *getShaderGeneric() const {return m_shaderTexturedGeneric;}
 
 protected:
 	virtual void init();
@@ -80,6 +96,7 @@ private:
 
 	// device context
 	HWND m_hwnd;
+	bool m_bMinimalistContext;
 
 	// d3d
 	ID3D11Device *m_device;
@@ -92,6 +109,9 @@ private:
 
 	ID3D11RasterizerState *m_rasterizerState;
 	D3D11_RASTERIZER_DESC m_rasterizerDesc;
+
+	ID3D11DepthStencilState *m_depthStencilState;
+	D3D11_DEPTH_STENCIL_DESC m_depthStencilDesc;
 
 	ID3D11BlendState *m_blendState;
 	D3D11_BLEND_DESC m_blendDesc;
@@ -114,6 +134,9 @@ private:
 	// persistent vars
 	bool m_bVSync;
 	Color m_color;
+
+	// clipping
+	std::stack<McRect> m_clipRectStack;
 };
 
 #endif
