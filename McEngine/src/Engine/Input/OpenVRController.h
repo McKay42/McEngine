@@ -16,12 +16,6 @@
 
 #endif
 
-#ifdef MCENGINE_FEATURE_HYPEREALVR
-
-#include "Hypereal_VR.h"
-
-#endif
-
 class OpenVRController : public InputDevice
 {
 public:
@@ -58,7 +52,7 @@ public:
 
 public:
 
-#if !defined(MCENGINE_FEATURE_OPENVR) && !defined(MCENGINE_FEATURE_HYPEREALVR)
+#if !defined(MCENGINE_FEATURE_OPENVR)
 
 	OpenVRController();
 
@@ -72,17 +66,6 @@ public:
 	void updateMatrixPose(Matrix4 &deviceToAbsoluteTracking);
 
 	void setHmd(vr::IVRSystem *hmd) {m_hmd = hmd;}
-
-#endif
-
-#ifdef MCENGINE_FEATURE_HYPEREALVR
-
-	OpenVRController(HyDevice *device, OpenVRController::ROLE role);
-
-	void update(uint32_t buttons, float trigger, float grip, Vector2 touchpad);
-	void updateMatrixPose(Matrix4 deviceToAbsoluteTracking);
-
-	void setDevice(HyDevice *device) {m_device = device;}
 
 #endif
 
@@ -111,13 +94,6 @@ public:
 
 #endif
 
-#ifdef MCENGINE_FEATURE_HYPEREALVR
-
-	static HyButton buttonIdToHyperealVR(OpenVRController::BUTTON buttonId);
-	static HySubDevice roleIdToHyperealVR(OpenVRController::ROLE roleId);
-
-#endif
-
 private:
 	ROLE m_role;
 	Matrix4 m_matrix;
@@ -143,17 +119,6 @@ private:
 		OpenVRController::BUTTON  button;
 	};
 	std::vector<TRIGGER_HAPTIC_PULSE_EVENT> m_triggerHapticPulseBuffer;
-
-#endif
-
-#ifdef MCENGINE_FEATURE_HYPEREALVR
-
-	HyDevice *m_device;
-
-	uint32_t m_buttonPressed;
-	float m_fTrigger;
-	float m_fGrip;
-	Vector2 m_vTouchpad;
 
 #endif
 };

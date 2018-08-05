@@ -22,6 +22,10 @@ public:
 	DirectX11RenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
 	virtual ~DirectX11RenderTarget() {destroy();}
 
+	virtual void draw(Graphics *g, int x, int y);
+	virtual void draw(Graphics *g, int x, int y, int width, int height);
+	virtual void drawRect(Graphics *g, int x, int y, int width, int height);
+
 	virtual void enable();
 	virtual void disable();
 
@@ -29,8 +33,8 @@ public:
 	virtual void unbind();
 
 	// ILLEGAL:
-	inline ID3D11Texture2D *getRenderTexture() const {return m_renderTexture;}
 	void setDirectX11InterfaceHack(DirectX11Interface *dxi) {m_interfaceOverrideHack = dxi;}
+	inline ID3D11Texture2D *getRenderTexture() const {return m_renderTexture;}
 
 private:
 	virtual void init();
@@ -38,8 +42,16 @@ private:
 	virtual void destroy();
 
 	ID3D11Texture2D *m_renderTexture;
+	ID3D11Texture2D *m_depthStencilTexture;
 	ID3D11RenderTargetView *m_renderTargetView;
+	ID3D11DepthStencilView *m_depthStencilView;
 	ID3D11ShaderResourceView *m_shaderResourceView;
+
+	ID3D11RenderTargetView *m_prevRenderTargetView;
+	ID3D11DepthStencilView *m_prevDepthStencilView;
+
+	unsigned int m_iTextureUnitBackup;
+	ID3D11ShaderResourceView *m_prevShaderResourceView;
 
 	DirectX11Interface *m_interfaceOverrideHack;
 };

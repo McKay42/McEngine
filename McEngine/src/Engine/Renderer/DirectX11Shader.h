@@ -24,7 +24,7 @@ public:
 	virtual void disable();
 
 	// TODO:
-	virtual void setUniform1f(UString name, float value) {;}
+	virtual void setUniform1f(UString name, float value);
 	virtual void setUniform1fv(UString name, int count, float *values) {;}
 	virtual void setUniform1i(UString name, int value) {;}
 	virtual void setUniform2f(UString name, float x, float y) {;}
@@ -41,6 +41,15 @@ public:
 	ID3D11InputLayout *getInputLayout() const {return m_inputLayout;}
 
 private:
+	// TODO: extract this into public functions
+	// NOTE: "If the bind flag is D3D11_BIND_CONSTANT_BUFFER, you must set the ByteWidth value in multiples of 16, and less than or equal to D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT."
+	struct MatrixBufferType
+	{
+		float mvp[4*4];
+		float col[4];
+		float misc[4]; // [0] = textured
+	};
+
 	virtual void init();
 	virtual void initAsync();
 	virtual void destroy();
@@ -59,6 +68,8 @@ private:
 	ID3D11VertexShader *m_prevVS;
 	ID3D11PixelShader *m_prevPS;
 	ID3D11InputLayout *m_prevInputLayout;
+
+	MatrixBufferType m_constants;
 };
 
 #endif
