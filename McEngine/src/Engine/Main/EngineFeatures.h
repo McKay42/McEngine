@@ -46,14 +46,9 @@
 //#define MCENGINE_FEATURE_VULKAN
 
 /*
- * OpenVR (XOR HyperealVR!)
+ * OpenVR
  */
 //#define MCENGINE_FEATURE_OPENVR
-
-/*
- * HyperealVR (XOR OpenVR!)
- */
-//#define MCENGINE_FEATURE_HYPEREALVR
 
 /*
  * Squirrel Scripting
