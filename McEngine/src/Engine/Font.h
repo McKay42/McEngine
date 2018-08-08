@@ -18,23 +18,7 @@ class McFont : public Resource
 public:
 	static const wchar_t UNKNOWN_CHAR = 63; // ascii '?'
 
-public:
-	McFont(UString filepath, unsigned int fontSize = 16, bool antialiasing = true);
-	McFont(UString filepath, std::vector<wchar_t> characters, unsigned int fontSize = 16, bool antialiasing = true);
-	virtual ~McFont() {destroy();}
-
-	void drawString(Graphics *g, UString text);
-	void drawTextureAtlas(Graphics *g);
-
-	void setSize(int fontSize);
-	void setHeight(float height) {m_fHeight = height;}
-
-	inline TextureAtlas *getTextureAtlas() const {return m_textureAtlas;}
-	inline float getHeight() const {return m_fHeight;} // precomputed average height (fast)
-	float getStringWidth(UString text);
-	float getStringHeight(UString text);
-
-	struct GLYPH_METRICS // this needs to be public because of the global renderFTGlyphToTextureAtlas() function
+	struct GLYPH_METRICS
 	{
 		wchar_t character;
 
@@ -50,6 +34,22 @@ public:
 
 		float advance_x;
 	};
+
+public:
+	McFont(UString filepath, unsigned int fontSize = 16, bool antialiasing = true);
+	McFont(UString filepath, std::vector<wchar_t> characters, unsigned int fontSize = 16, bool antialiasing = true);
+	virtual ~McFont() {destroy();}
+
+	void drawString(Graphics *g, UString text);
+	void drawTextureAtlas(Graphics *g);
+
+	void setSize(int fontSize);
+	void setHeight(float height) {m_fHeight = height;}
+
+	inline TextureAtlas *getTextureAtlas() const {return m_textureAtlas;}
+	inline float getHeight() const {return m_fHeight;} // precomputed average height (fast)
+	float getStringWidth(UString text);
+	float getStringHeight(UString text);
 
 	const GLYPH_METRICS &getGlyphMetrics(wchar_t ch);
 	const bool hasGlyph(wchar_t ch);
