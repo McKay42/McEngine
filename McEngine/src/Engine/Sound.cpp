@@ -326,6 +326,19 @@ void Sound::setFrequency(float frequency)
 #endif
 }
 
+void Sound::setPan(float pan)
+{
+#ifdef MCENGINE_FEATURE_SOUND
+
+	if (!m_bReady) return;
+
+	pan = clamp<float>(pan, -1.0f, 1.0f);
+
+	BASS_ChannelSetAttribute(getHandle(), BASS_ATTRIB_PAN, pan);
+
+#endif
+}
+
 float Sound::getPosition()
 {
 	if (!m_bReady) return 0.0f;
