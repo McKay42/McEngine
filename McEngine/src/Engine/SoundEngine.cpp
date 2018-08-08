@@ -112,6 +112,8 @@ void SoundEngine::updateOutputDevices(bool handleOutputDeviceChanges, bool print
 			soundDevice.isDefault = isDefault;
 
 			// detect output device changes
+			// TODO: this causes endless loops on audio devices with chinese/russian etc. characters in their name, may be caused by BASS reordering indices
+			/*
 			if (handleOutputDeviceChanges)
 			{
 				if (d == currentOutputDeviceBASSIndex && m_outputDevices.size() > d)
@@ -149,6 +151,7 @@ void SoundEngine::updateOutputDevices(bool handleOutputDeviceChanges, bool print
 					}
 				}
 			}
+			*/
 
 			if ((d+1) > m_outputDevices.size()) // only add new devices
 				m_outputDevices.push_back(soundDevice);
@@ -249,7 +252,7 @@ void SoundEngine::update()
 	}
 }
 
-bool SoundEngine::play(Sound *snd)
+bool SoundEngine::play(Sound *snd, float pan)
 {
 	if (!m_bReady || snd == NULL || !snd->isReady()) return false;
 
@@ -260,6 +263,9 @@ bool SoundEngine::play(Sound *snd)
 		DWORD handle = snd->getHandle();
 		if (BASS_ChannelIsActive(handle) != BASS_ACTIVE_PLAYING)
 		{
+			pan = clamp<float>(pan, -1.0f, 1.0f);
+			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
+
 			bool ret = BASS_ChannelPlay(handle, FALSE);
 			if (!ret)
 				debugLog("SoundEngine::play() couldn't BASS_ChannelPlay(), errorcode %i\n", BASS_ErrorGetCode());

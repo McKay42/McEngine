@@ -24,6 +24,7 @@ public:
 	void setSpeed(float speed);
 	void setPitch(float pitch);
 	void setFrequency(float frequency);
+	void setPan(float pan);
 	void setOverlayable(bool overlayable) {m_bIsOverlayable = overlayable;}
 
 	void setLastPlayTime(double lastPlayTime) {m_fLastPlayTime = lastPlayTime;}
