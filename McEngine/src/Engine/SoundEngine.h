@@ -20,7 +20,7 @@ public:
 
 	void update();
 
-	bool play(Sound *snd);
+	bool play(Sound *snd, float pan = 0.0f);
 	bool play3d(Sound *snd, Vector3 pos);
 	void pause(Sound *snd);
 	void stop(Sound *snd);

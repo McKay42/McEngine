@@ -10,6 +10,7 @@
 #include "ResourceManager.h"
 #include "VertexArrayObject.h"
 #include "Engine.h"
+#include "ConVar.h"
 
 #include <ft2build.h>
 #include <freetype.h>
@@ -17,6 +18,8 @@
 #include <ftbitmap.h>
 #include <ftoutln.h>
 #include <fttrigon.h>
+
+ConVar r_debug_drawstring_unbind("r_debug_drawstring_unbind", false);
 
 const wchar_t McFont::UNKNOWN_CHAR;
 
@@ -119,7 +122,7 @@ void McFont::init()
 	else
 		m_textureAtlas->getAtlasImage()->setFilterMode(Graphics::FILTER_MODE::FILTER_MODE_NONE);
 
-	// calculate average ASCII font height
+	// calculate average ASCII glyph height
 	m_fHeight = 0.0f;
 	for (int i=0; i<128; i++)
 	{
@@ -146,7 +149,6 @@ void McFont::destroy()
 
 bool McFont::addGlyph(wchar_t ch)
 {
-	// HACKHACK: g++/MinGW: at() causes a crash if the element is not found? doesn't throw the expected exception
 	if (m_vGlyphExistence.find(ch) != m_vGlyphExistence.end()) return false;
 	if (ch < 32) return false;
 
@@ -171,13 +173,16 @@ void McFont::drawString(Graphics *g, UString text)
 		}
 	}
 	g->popTransform();
+
+	// NOTE: there is no unbind() of the atlas texture on purpose, for performance reasons
+	if (r_debug_drawstring_unbind.getBool())
+		m_textureAtlas->getAtlasImage()->unbind();
 }
 
 void McFont::drawAtlasGlyph(Graphics *g, wchar_t ch)
 {
 	// TODO: dynamic glyph loading, finish this
 	/*
-	// HACKHACK: G++/MinGW: at() causes a crash if the element is not found? doesn't throw the expected exception
 	if (m_vGlyphExistence.find(ch) == m_vGlyphExistence.end())
 	{
 		if (addGlyph(ch))
@@ -233,8 +238,10 @@ void McFont::drawAtlasGlyph(Graphics *g, wchar_t ch)
 void McFont::drawTextureAtlas(Graphics *g)
 {
 	g->pushTransform();
+	{
 		g->translate(m_textureAtlas->getWidth()/2 + 50, m_textureAtlas->getHeight()/2 + 50);
 		g->drawImage(m_textureAtlas->getAtlasImage());
+	}
 	g->popTransform();
 }
 
@@ -253,6 +260,7 @@ float McFont::getStringWidth(UString text)
 	{
 		width += getGlyphMetrics(text[i]).advance_x;
 	}
+
 	return width;
 }
 
@@ -265,12 +273,12 @@ float McFont::getStringHeight(UString text)
 	{
 		height += getGlyphMetrics(text[i]).top;
 	}
+
 	return height;
 }
 
 const McFont::GLYPH_METRICS &McFont::getGlyphMetrics(wchar_t ch)
 {
-	// HACKHACK: G++/MinGW: at() causes a crash if the element is not found? doesn't throw the expected exception
 	if (m_vGlyphMetrics.find(ch) != m_vGlyphMetrics.end())
 		return m_vGlyphMetrics.at(ch);
 	else if (m_vGlyphMetrics.find(UNKNOWN_CHAR) != m_vGlyphMetrics.end())
@@ -284,9 +292,7 @@ const McFont::GLYPH_METRICS &McFont::getGlyphMetrics(wchar_t ch)
 
 const bool McFont::hasGlyph(wchar_t ch)
 {
-	if (m_vGlyphMetrics.find(ch) != m_vGlyphMetrics.end())
-		return true;
-	return false;
+	return (m_vGlyphMetrics.find(ch) != m_vGlyphMetrics.end());
 }
 
 
@@ -326,6 +332,7 @@ void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, T
 		// temp texture data memory
 		unsigned char *expandedData = new unsigned char[4 * width * height];
 		unsigned char *monoBitmapUnpacked = NULL;
+
 		if (!antialiasing)
 			monoBitmapUnpacked = unpackMonoBitmap(bitmap);
 
