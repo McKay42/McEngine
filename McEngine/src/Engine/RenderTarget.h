@@ -18,20 +18,20 @@ public:
 	RenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
 	virtual ~RenderTarget() {;}
 
-	void draw(Graphics *g, int x, int y);
-	void draw(Graphics *g, int x, int y, int width, int height);
-	void drawRect(Graphics *g, int x, int y, int width, int height);
-
-	void rebuild(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
-	void rebuild(int x, int y, int width, int height);
-	void rebuild(int width, int height);
-	void rebuild(int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
+	virtual void draw(Graphics *g, int x, int y);
+	virtual void draw(Graphics *g, int x, int y, int width, int height);
+	virtual void drawRect(Graphics *g, int x, int y, int width, int height);
 
 	virtual void enable() = 0;
 	virtual void disable() = 0;
 
 	virtual void bind(unsigned int textureUnit = 0) = 0;
 	virtual void unbind() = 0;
+
+	void rebuild(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
+	void rebuild(int x, int y, int width, int height);
+	void rebuild(int width, int height);
+	void rebuild(int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
 
 	// set
 	void setPos(int x, int y) {m_vPos.x = x; m_vPos.y = y;}
