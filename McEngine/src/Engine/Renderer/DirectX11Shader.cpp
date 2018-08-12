@@ -15,17 +15,6 @@
 #include "DirectX11Interface.h"
 #include "d3dcompiler.h"
 
-
-
-// TODO: extract this into public functions
-struct MatrixBufferType
-{
-	float mvp[4*4];
-	float col[4];
-};
-
-
-
 DirectX11Shader::DirectX11Shader(UString vertexShader, UString fragmentShader, bool source)
 {
 	m_sVsh = vertexShader;
@@ -89,6 +78,32 @@ void DirectX11Shader::disable()
 	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShader(m_prevPS, NULL, 0); // restore
 }
 
+void DirectX11Shader::setUniform1f(UString name, float value)
+{
+	if (!m_bReady || m_constantBuffer == NULL) return;
+
+	// lock
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	if (FAILED(((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	{
+		if (debug_shaders->getBool())
+			debugLog("DirectX11Shader::setUniformMatrix4fv() couldn't Map()!\n");
+
+		return;
+	}
+
+	// write data
+	// TODO: hardcoded pData->mvp!!!
+	for (int i=0; i<4; i++)
+	{
+		m_constants.misc[i] = value;
+	}
+	memcpy(mappedResource.pData, &m_constants, sizeof(MatrixBufferType));
+
+	// unlock
+	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->Unmap(m_constantBuffer, 0);
+}
+
 void DirectX11Shader::setUniform4f(UString name, float x, float y, float z, float w)
 {
 	if (!m_bReady || m_constantBuffer == NULL) return;
@@ -105,10 +120,11 @@ void DirectX11Shader::setUniform4f(UString name, float x, float y, float z, floa
 
 	// write data
 	// TODO: hardcoded pData->mvp!!!
-	((MatrixBufferType*)mappedResource.pData)->col[0] = x;
-	((MatrixBufferType*)mappedResource.pData)->col[1] = y;
-	((MatrixBufferType*)mappedResource.pData)->col[2] = z;
-	((MatrixBufferType*)mappedResource.pData)->col[3] = w;
+	m_constants.col[0] = x;
+	m_constants.col[1] = y;
+	m_constants.col[2] = z;
+	m_constants.col[3] = w;
+	memcpy(mappedResource.pData, &m_constants, sizeof(MatrixBufferType));
 
 	// unlock
 	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->Unmap(m_constantBuffer, 0);
@@ -135,7 +151,11 @@ void DirectX11Shader::setUniformMatrix4fv(UString name, float *v)
 
 	// write data
 	// TODO: hardcoded pData->mvp!!!
-	memcpy(mappedResource.pData, v, sizeof(float)*16);
+	for (int i=0; i<4*4; i++)
+	{
+		m_constants.mvp[i] = v[i];
+	}
+	memcpy(mappedResource.pData, &m_constants, sizeof(MatrixBufferType));
 
 	// unlock
 	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->Unmap(m_constantBuffer, 0);
@@ -238,7 +258,7 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 	hr1 = ((DirectX11Interface*)engine->getGraphics())->getDevice()->CreateBuffer(&matrixBufferDesc, NULL, &m_constantBuffer);
 	if (FAILED(hr1))
 	{
-		engine->showMessageError("Shader Error", "Couldn't CreateBuffer()!");
+		engine->showMessageError("Shader Error", UString::format("Couldn't CreateBuffer(%ld, %x, %x)!", hr1, hr1, MAKE_DXGI_HRESULT(hr1)));
 		return false;
 	}
 
