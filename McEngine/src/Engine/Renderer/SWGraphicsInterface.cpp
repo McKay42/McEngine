@@ -531,9 +531,9 @@ Shader *SWGraphicsInterface::createShaderFromSource(UString vertexShader, UStrin
 	return new SWShader(vertexShader, fragmentShader, true);
 }
 
-VertexArrayObject *SWGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
+VertexArrayObject *SWGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
-	return new VertexArrayObject(primitive, usage);
+	return new VertexArrayObject(primitive, usage, keepInSystemMemory);
 }
 
 void SWGraphicsInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)

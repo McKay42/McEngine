@@ -15,7 +15,7 @@
 class OpenGL3VertexArrayObject : public VertexArrayObject
 {
 public:
-	OpenGL3VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC);
+	OpenGL3VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC, bool keepInSystemMemory = false);
 	virtual ~OpenGL3VertexArrayObject() {destroy();}
 
 	void draw();

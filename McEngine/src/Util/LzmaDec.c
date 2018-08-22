@@ -1108,6 +1108,7 @@ SRes LzmaDec_DecodeToBuf(CLzmaDec *p, Byte *dest, SizeT *destLen, const Byte *sr
     if (outSizeCur == 0 || outSize == 0)
       return SZ_OK;
   }
+  return SZ_ERROR_FAIL;
 }
 
 void LzmaDec_FreeProbs(CLzmaDec *p, ISzAlloc *alloc)

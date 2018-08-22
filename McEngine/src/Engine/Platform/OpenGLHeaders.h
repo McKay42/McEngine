@@ -15,8 +15,10 @@
 
 #define GLEW_STATIC
 #include <glew.h>
-//#define WGL_WGLEXT_PROTOTYPES
-//#include <wglew.h>
+
+#define WGL_WGLEXT_PROTOTYPES // only used for wglDX*() interop stuff atm
+#include <wglew.h>
+
 #include <gl/glu.h>
 #include <gl/gl.h>
 

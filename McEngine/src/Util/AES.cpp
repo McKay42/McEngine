@@ -948,6 +948,7 @@ void AES::Decrypt(const unsigned char * datain, unsigned char * dataout, unsigne
 // the constructor - makes sure local things are initialized
 AES::AES(void)
 	{
+	Nk = Nr = Nb = 0; // default values
 	if (false == tablesInitialized)
 		tablesInitialized = CreateAESTables(true,false);
 	if (false == tablesInitialized)

@@ -294,9 +294,9 @@ Shader *VulkanGraphicsInterface::createShaderFromSource(UString vertexShader, US
 	return new NullShader(vertexShader, fragmentShader, true);
 }
 
-VertexArrayObject *VulkanGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
+VertexArrayObject *VulkanGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
-	return new VertexArrayObject(primitive, usage);
+	return new VertexArrayObject(primitive, usage, keepInSystemMemory);
 }
 
 void VulkanGraphicsInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)
