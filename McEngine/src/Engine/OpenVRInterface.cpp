@@ -9,6 +9,7 @@
 
 #include "Engine.h"
 #include "ConVar.h"
+#include "File.h"
 #include "Console.h"
 #include "Environment.h"
 #include "ResourceManager.h"
@@ -25,16 +26,7 @@
 
 #include "OpenGLRenderTarget.h"
 #include "DirectX11Interface.h"
-#include "DirectX11RenderTarget.h"
-
-
-
-#ifdef MCENGINE_FEATURE_HYPEREALVR
-
-// microsoft pls y u do dis
-#include "WinMinGW.secchk.h"
-
-#endif
+#include "DirectX11Image.h"
 
 
 
@@ -43,6 +35,7 @@
 // therefore, vr_ss_compositor can only be set ONCE upon application startup (in the app constructor, before the first frame is submitted!)
 // however, vr_ss can be set dynamically because the rendered frame is blit into ANOTHER framebuffer (m_compositorEye)
 
+ConVar vr_liv("vr_liv", true, "native liv sdk support");
 ConVar vr_bug_workaround_triggerhapticpulse("vr_bug_workaround_triggerhapticpulse", true);
 
 ConVar vr_ss("vr_ss", 1.6f, "internal engine supersampling factor. the recommended rendertarget size, as reported by OpenVR, is multiplied by this value");
@@ -55,6 +48,9 @@ ConVar vr_farz("vr_farz", 300.0f);
 
 ConVar vr_draw_lighthouse_models("vr_draw_lighthouse_models", true);
 ConVar vr_draw_controller_models("vr_draw_controller_models", true);
+ConVar vr_draw_head_model("vr_draw_head_model", true);
+ConVar vr_liv_draw_head_model("vr_liv_draw_head_model", false);
+ConVar vr_liv_draw_controller_models("vr_liv_draw_controller_models", true);
 ConVar vr_draw_hmd_to_window("vr_draw_hmd_to_window", true);
 ConVar vr_draw_hmd_to_window_draw_both_eyes("vr_draw_hmd_to_window_draw_both_eyes", true);
 ConVar vr_controller_model_brightness_multiplier("vr_controller_model_brightness_multiplier", 8.0f);
@@ -67,6 +63,7 @@ ConVar vr_auto_switch_primary_controller("vr_auto_switch_primary_controller", tr
 ConVar vr_fake_camera_movement("vr_fake_camera_movement", false);
 ConVar vr_fake_controller_movement("vr_fake_controller_movement", false);
 ConVar vr_reset_fake_camera_movement("vr_reset_fake_camera_movement");
+ConVar vr_liv_reload_calibration("vr_liv_reload_calibration");
 ConVar vr_noclip_walk_speed("vr_noclip_walk_speed", 4.0f);
 ConVar vr_noclip_sprint_speed("vr_noclip_sprint_speed", 20.0f);
 ConVar vr_noclip_crouch_speed("vr_noclip_crouch_speed", 1.0f);
@@ -95,6 +92,171 @@ ConVar vr_head_translation("vr_head_translation", -0.12f);
 */
 
 OpenVRInterface *openvr = NULL;
+
+
+
+#ifdef MCENGINE_FEATURE_DIRECTX
+
+class LIVInterface
+{
+public:
+	const uint32_t VERSION = 1;
+	const wchar_t *SHM_NAME = L"liv-client-shared-texture-info";
+
+#pragma pack(1)
+
+	struct shared_texture_info_v1
+	{
+		uint32_t version;
+		uint32_t width;
+		uint32_t height;
+		uint32_t vflip;
+
+		uint64_t texture_handle;
+
+		bool active;
+	};
+
+#pragma pack()
+
+public:
+	LIVInterface()
+	{
+		m_bIsTextureSet = false;
+
+		shm_handle = NULL;
+		shm_data = NULL;
+
+		auto pid = GetCurrentProcessId();
+		shm_handle = CreateFileMappingW(
+			INVALID_HANDLE_VALUE,
+			nullptr,
+			PAGE_READWRITE,
+			0,
+			sizeof(shared_texture_info_v1),
+			(SHM_NAME + std::to_wstring(pid)).c_str()
+		);
+
+		if (shm_handle == NULL)
+		{
+			debugLog("LIVInterface: Couldn't CreateFileMappingW( %ls ), GetLastError() = %i\n", SHM_NAME, (int)GetLastError());
+			return;
+		}
+
+		shm_data = (shared_texture_info_v1*)MapViewOfFile(
+			shm_handle,
+			FILE_MAP_ALL_ACCESS,
+			0,
+			0,
+			sizeof(shared_texture_info_v1)
+		);
+
+		if (shm_data == NULL)
+		{
+			debugLog("LIVInterface: Couldn't MapViewOfFile(), GetLastError() = %i\n", (int)GetLastError());
+			return;
+		}
+
+		shm_data->version = VERSION;
+		shm_data->vflip = 1;
+	}
+
+	~LIVInterface()
+	{
+		if (shm_data)
+		{
+			UnmapViewOfFile(shm_data);
+			shm_data = NULL;
+		}
+
+		if (shm_handle)
+		{
+			CloseHandle(shm_handle);
+			shm_handle = NULL;
+		}
+	}
+
+	void setTexture(DirectX11Image *texture)
+	{
+		if (!isValid()) return;
+		if (m_bIsTextureSet) return;
+
+		ID3D11Texture2D *tex = texture->getTexture();
+		if (tex == NULL)
+		{
+			debugLog("LIVInterface::setTexture() : NULL texture!\n");
+			return;
+		}
+
+		IDXGIResource *dxgi_resource = NULL;
+		HRESULT hr = tex->QueryInterface(
+			__uuidof(IDXGIResource),
+			(void**)&dxgi_resource
+		);
+
+		if (FAILED(hr))
+		{
+			debugLog("LIVInterface::setTexture() : Couldn't QueryInterface( %ld, %x, %x )!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+			return;
+		}
+
+		HANDLE tex_handle;
+		hr = dxgi_resource->GetSharedHandle(&tex_handle);
+		dxgi_resource->Release();
+		if (FAILED(hr))
+		{
+			debugLog("LIVInterface::setTexture() : Couldn't GetSharedHandle( %ld, %x, %x )!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+			return;
+		}
+
+		shm_data->texture_handle = reinterpret_cast<uint64_t>(tex_handle);
+
+		m_bIsTextureSet = true;
+
+		debugLog("LIVInterface::setTexture() succeeded.\n");
+	}
+
+	inline bool isValid()
+	{
+		return shm_data != NULL;
+	}
+
+	inline bool isActive()
+	{
+		return isValid() && shm_data->active;
+	}
+
+	inline bool isTextureSet()
+	{
+		return m_bIsTextureSet;
+	}
+
+	inline int getWidth()
+	{
+		if (isValid())
+			return shm_data->width;
+		else
+			return 0;
+	}
+
+	inline int getHeight()
+	{
+		if (isValid())
+			return shm_data->height;
+		else
+			return 0;
+	}
+
+private:
+	bool m_bIsTextureSet;
+
+	HANDLE shm_handle;
+	shared_texture_info_v1 *shm_data;
+};
+
+static LIVInterface liv;
+
+#endif
 
 
 
@@ -132,29 +294,6 @@ vr::Hmd_Eye OpenVRInterface::eyeToOpenVR(OpenVRInterface::EYE eye)
 		return vr::Hmd_Eye::Eye_Right;
 }
 
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
-
-Matrix4 OpenVRInterface::convertHyperealVRPoseToMatrix4(const HyPose &pose, bool isHMDPose)
-{
-	Matrix4 matrix;
-
-	if (isHMDPose)
-		matrix.translate(pose.m_position.x, pose.m_position.y, pose.m_position.z);
-	else
-		matrix.translate(-pose.m_position.x, -pose.m_position.y, -pose.m_position.z);
-
-	matrix.invert();
-
-	Quaternion rot(pose.m_rotation.x, pose.m_rotation.y, pose.m_rotation.z, pose.m_rotation.w);
-
-	if (isHMDPose)
-		matrix = rot.getMatrix() * matrix;
-	else
-		matrix = matrix * rot.getMatrix().invert();
-
-	return matrix;
-}
-
 #endif
 
 
@@ -181,6 +320,7 @@ OpenVRInterface::OpenVRInterface()
 	m_compositorEye1 = NULL;
 	m_compositorEye2 = NULL;
 	m_debugOverlay = NULL;
+	m_livEye = NULL;
 
 	// shaders
 	m_renderModelShader = NULL;
@@ -204,8 +344,9 @@ OpenVRInterface::OpenVRInterface()
 	m_bShiftDown = false;
 	m_bCtrlDown = false;
 	m_bIsSpectatorDraw = false;
+	m_bIsLIVDraw = false;
 
-#if !defined(MCENGINE_FEATURE_OPENVR) && !defined(MCENGINE_FEATURE_HYPEREALVR)
+#if !defined(MCENGINE_FEATURE_OPENVR)
 
 	// initialize required stuff for non-VR builds
 
@@ -232,6 +373,7 @@ OpenVRInterface::OpenVRInterface()
 	vr_showkeyboard.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::showKeyboard));
 	vr_hidekeyboard.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::hideKeyboard));
 	vr_reset_fake_camera_movement.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::resetFakeCameraMovement));
+	vr_liv_reload_calibration.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::loadLIVCalibration));
 	vr_spectator_camera_position.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onSpectatorCameraPositionChange));
 	vr_spectator_camera_rotation.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onSpectatorCameraRotationChange));
 
@@ -251,11 +393,28 @@ OpenVRInterface::OpenVRInterface()
 	m_controllerRight = new OpenVRController(NULL, OpenVRController::ROLE::ROLE_RIGHTHAND);
 	m_controller = m_controllerRight;
 
+	// LIV support
+#if defined(MCENGINE_FEATURE_DIRECTX) && defined(MCENGINE_FEATURE_OPENGL)
+
+	m_directx = NULL;
+	m_dxtex = NULL;
+	m_dxgldev = NULL;
+	m_dxtex = NULL;
+	m_dxgltex = NULL;
+	m_gldxtex = 0;
+	m_gldxfbo = 0;
+
+	m_vLIVCamPos = Vector3(0, 0, 0);
+	m_vLIVCamRotDeg = Vector3(0, 0, 0);
+	m_fLIVCamFovDeg = 90.0f;
+	m_fLIVCamNearZ = vr_nearz.getFloat();
+	m_fLIVCamFarZ = vr_farz.getFloat();
+
+#endif
+
 	m_pHMD = NULL;
 	m_iTrackedControllerCount = 0;
-	m_iTrackedControllerCount_Last = -1;
 	m_iValidPoseCount = 0;
-	m_iValidPoseCount_Last = -1;
 	m_strPoseClasses = "";
 
 	m_pRenderModels = NULL;
@@ -353,86 +512,37 @@ OpenVRInterface::OpenVRInterface()
 
 	if (m_sTrackingSystemName == "null") // autodetect SteamVR null driver when debugging
 	{
-		convar->getConVarByName("debug_shaders")->setValue(1.0f);
+		///convar->getConVarByName("debug_shaders")->setValue(1.0f);
 		vr_fake_camera_movement.setValue(1.0f);
 		vr_console_overlay.setValue(1.0f);
 	}
 
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
+	// LIV support
+#if defined(MCENGINE_FEATURE_DIRECTX) && defined(MCENGINE_FEATURE_OPENGL)
 
-	m_dxrt1 = NULL;
-
-	// initialize controllers
-	m_controllerLeft = new OpenVRController(NULL, OpenVRController::ROLE::ROLE_LEFTHAND);
-	m_controllerRight = new OpenVRController(NULL, OpenVRController::ROLE::ROLE_RIGHTHAND);
-	m_controller = m_controllerRight;
-
-	///return;
-	if (engine->getArgs().find("novr") != -1)
-		return;
-
-	// check if runtime is installed and can be started, start it
-	HyResult hr = HyStartup();
-	if (!hySucceeded(hr))
-	{
-		// TODO: give error messages e.g. hyError_NoHmd, hyError_DeviceNotConnected, hyError_ServiceError
-		engine->showMessageError("HyperealVR Error", UString::format("HyperealVR runtime couldn't be started or is not installed!\n(HyResult = %i)", (int)hr));
-		return;
-	}
-
-	// get hmd/device
-	m_device = NULL;
-	hr = HyCreateInterface(HyDevice_InterfaceName, 0, (void**)&m_device);
-	if (!hySucceeded(hr) || m_device == NULL)
-	{
-		engine->showMessageError("HyperealVR Error", UString::format("Couldn't HyCreateInterface(%s)!\n(HyResult = %i)", HyDevice_InterfaceName, (int)hr));
-		return;
-	}
-
-	// set controller device
-	m_controllerLeft->setDevice(m_device);
-	m_controllerRight->setDevice(m_device);
-
-	// create DirectX interface
+	// create minimalist DirectX interface
 	m_directx = new DirectX11Interface(NULL, true); ((Graphics*)m_directx)->init();
-
-	// create graphics context
-	HyGraphicsContextDesc cxtDesc;
-	cxtDesc.m_graphicsDevice = m_directx->getDevice();
-	cxtDesc.m_graphicsAPI = HY_GRAPHICS_D3D11;
-	cxtDesc.m_pixelFormat = HY_TEXTURE_R8G8B8A8_UNORM;
-	cxtDesc.m_pixelDensity = 1.0f;
-	cxtDesc.m_mirrorWidth = 1920;
-	cxtDesc.m_mirrorHeight = 1080;
-	///cxtDesc.m_generateMips = false; // doesn't exist???
-	cxtDesc.m_flags = 0;
-	hr = m_device->CreateGraphicsContext(cxtDesc, &m_graphicsContext);
-	if (!hySucceeded(hr) || m_graphicsContext == NULL)
+	if (m_directx->isReady())
 	{
-		m_device->Release();
-		m_device = NULL;
-		engine->showMessageError("HyperealVR Error", UString::format("Couldn't CreateGraphicsContext()!\n(HyResult = %i)", (int)hr));
-		return;
+		// create OpenGL DirectX interop device
+		m_dxgldev = wglDXOpenDeviceNV(m_directx->getDevice());
+		if (m_dxgldev != NULL)
+		{
+			// create OpenGL DirectX interop rendertarget
+			glGenTextures(1, &m_gldxtex);
+			glGenFramebuffers(1, &m_gldxfbo);
+			glBindFramebuffer(GL_FRAMEBUFFER, m_gldxfbo);
+			glBindTexture(GL_TEXTURE_2D, m_gldxtex);
+			{
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_gldxtex, 0);
+			}
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+		else
+			debugLog("ERROR: Couldn't wglDXOpenDeviceNV(), GetLastError() = %i\n", (int)GetLastError());
 	}
 
- 	// initialize renderer
- 	debugLog("OpenVR: Initializing renderer ...\n");
-	if (!initRenderer())
-	{
-		engine->showMessageError("HyperealVR Error", "Couldn't initRenderer()!");
-		return;
-	}
-
-	// initialize compositor
-	debugLog("OpenVR: Initializing compositor ...\n");
-	if (!initCompositor())
-	{
-		engine->showMessageError("HyperealVR Error", "Couldn't initCompositor()!");
-		return;
-	}
-
-	// initialize play area metrics
-	updatePlayAreaMetrics();
+#endif
 
 #endif
 
@@ -473,19 +583,24 @@ OpenVRInterface::~OpenVRInterface()
 	if (m_unControllerVAO != 0)
 		glDeleteVertexArrays(1, &m_unControllerVAO);
 
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
+#if defined(MCENGINE_FEATURE_DIRECTX) && defined(MCENGINE_FEATURE_OPENGL)
 
-	if (m_graphicsContext != NULL)
-		m_graphicsContext->Release();
+	if (m_gldxfbo != 0)
+		glDeleteFramebuffers(1, &m_gldxfbo);
 
-	if (m_device != NULL)
-		m_device->Release();
+	if (m_gldxtex != 0)
+		glDeleteTextures(1, &m_gldxtex);
 
-	SAFE_DELETE(m_dxrt1);
+	if (m_dxgltex != 0)
+		wglDXUnregisterObjectNV(m_dxgldev, m_dxgltex);
+
+	if (m_dxgldev != NULL)
+		wglDXCloseDeviceNV(m_dxgldev);
+
+	SAFE_DELETE(m_dxtex);
 	SAFE_DELETE(m_directx);
 
-	// unload runtime
-	HyShutdown();
+#endif
 
 #endif
 
@@ -500,8 +615,7 @@ OpenVRInterface::~OpenVRInterface()
 bool OpenVRInterface::initRenderer()
 {
 	debugLog("OpenVRInterface::initRenderer()\n");
-	if (!initShaders())
-		return false;
+	if (!initShaders()) return false;
 
 	initRenderTargets();
 	initRenderModels();
@@ -516,10 +630,6 @@ bool OpenVRInterface::initCompositor()
 #if defined(MCENGINE_FEATURE_OPENVR)
 
 	return vr::VRCompositor();
-
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
-
-	return true; // no API for this, not necessary
 
 #else
 
@@ -560,21 +670,6 @@ bool OpenVRInterface::initRenderTargets()
 	if (!m_pHMD) return false;
 
 	m_pHMD->GetRecommendedRenderTargetSize(&recommendedRenderTargetWidth, &recommendedRenderTargetHeight);
-
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
-
-	if (!m_graphicsContext) return false;
-
-	uint32_t recommendedRenderTargetWidthLeft = 1;
-	uint32_t recommendedRenderTargetHeightLeft = 1;
-	uint32_t recommendedRenderTargetWidthRight = 1;
-	uint32_t recommendedRenderTargetHeightRight = 1;
-
-	m_graphicsContext->GetRenderTargetSize(HY_EYE_LEFT, recommendedRenderTargetWidthLeft, recommendedRenderTargetHeightLeft);
-	m_graphicsContext->GetRenderTargetSize(HY_EYE_RIGHT, recommendedRenderTargetWidthRight, recommendedRenderTargetHeightRight);
-
-	recommendedRenderTargetWidth = recommendedRenderTargetWidthLeft > recommendedRenderTargetWidthRight ? recommendedRenderTargetWidthLeft : recommendedRenderTargetWidthRight;
-	recommendedRenderTargetHeight = recommendedRenderTargetHeightLeft > recommendedRenderTargetHeightRight ? recommendedRenderTargetHeightLeft : recommendedRenderTargetHeightRight;
 
 #endif
 
@@ -667,20 +762,6 @@ bool OpenVRInterface::initRenderTargets()
 		m_debugOverlay = engine->getResourceManager()->createRenderTarget(engine->getScreenWidth(), engine->getScreenHeight());
 		m_debugOverlay->setClearColorOnDraw(true);
 	}
-
-#ifdef MCENGINE_FEATURE_HYPEREALVR
-
-	// create DirectX render target
-	if (m_dxrt1 == NULL)
-	{
-		m_dxrt1 = (DirectX11RenderTarget*)m_directx->createRenderTarget(0, 0, m_compositorEye1->getWidth(), m_compositorEye1->getHeight(), Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
-		m_dxrt1->setDirectX11InterfaceHack(m_directx);
-		engine->getResourceManager()->loadResource(m_dxrt1);
-	}
-	else
-		m_dxrt1->rebuild(m_compositorEye1->getWidth(), m_compositorEye1->getHeight());
-
-#endif
 
 	return true;
 }
@@ -798,8 +879,7 @@ void OpenVRInterface::draw(Graphics *g)
 
 #endif
 
-	if (!updateMatrixPoses())
-		return;
+	if (!updateMatrixPoses()) return;
 
 	// debug
 #ifdef MCENGINE_FEATURE_OPENVR
@@ -813,17 +893,21 @@ void OpenVRInterface::draw(Graphics *g)
 	if (vr_console_overlay.getBool())
 	{
 		m_debugOverlay->enable();
+		{
 			engine->getGUI()->draw(g);
+		}
 		m_debugOverlay->disable();
 	}
 
 	// draw everything
 	g->setDepthBuffer(true);
+	{
 		renderStereoTargets(g);
+	}
 	g->setDepthBuffer(false);
 
 	// viewer window (without spectator mode)
-	if (!vr_spectator_mode.getBool() && vr_draw_hmd_to_window.getBool())
+	if (!vr_spectator_mode.getBool() && vr_draw_hmd_to_window.getBool() && !isLIVReady())
 		renderStereoToWindow(g);
 
 #ifdef MCENGINE_FEATURE_OPENGL
@@ -865,48 +949,6 @@ void OpenVRInterface::draw(Graphics *g)
 		if (res != vr::EVRCompositorError::VRCompositorError_None)
 			debugLog("OpenVR Error: Compositor::Submit(Eye_Left) error %i!!!\n", (int)res);
 
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
-
-		// sanity flushing for glReadPixels
-		g->flush();
-
-		// TODO: blit glCompositorEye1->getRenderTexture() into m_dxrt1
-		{
-			int width = glCompositorEye1->getWidth();
-			int height = glCompositorEye1->getHeight();
-
-			/*
-			size_t numBytes = width * height * 4;
-			std::vector<unsigned char> rawImage;
-			rawImage.reserve(numBytes);
-			memset(&rawImage[0], 255, width * height * 4);
-			*/
-
-			/*
-			glCompositorEye1->bind();
-			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &rawImage[0]);
-			glCompositorEye1->unbind();
-			*/
-
-			/*
-			D3D11_MAPPED_SUBRESOURCE mapped;
-			m_directx->getDeviceContext()->Map(m_dxrt1->getRenderTexture(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-			memcpy(mapped.pData, &rawImage[0], width * height * 4);
-			m_directx->getDeviceContext()->Unmap(m_dxrt1->getRenderTexture(), 0);
-			m_directx->getDeviceContext()->Flush();
-			*/
-		}
-
-		HyTextureDesc texture;
-		texture.m_texture = m_dxrt1->getRenderTexture();
-		texture.m_uvOffset = HyVec2{0.0f, 0.0f};
-		texture.m_uvSize = HyVec2{1.0f, 1.0f};
-		texture.m_flags = 0;
-		HyResult res = m_graphicsContext->Submit((int64_t)engine->getFrameCount(), &texture, 1);
-
-		if (!hySucceeded(res))
-			debugLog("OpenVR Error: Compositor::Submit(Eye_Left) error %i!!!\n", (int)res);
-
 #endif
 
 		// blit right
@@ -931,20 +973,6 @@ void OpenVRInterface::draw(Graphics *g)
 		// "If [Submit] called from an OpenGL app, consider adding a glFlush after submitting both frames to signal the driver to start processing, otherwise it may wait until the command buffer fills up, causing the app to miss frames"
 		g->flush();
 
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
-
-		// TODO: blit (submitDouble ? glCompositorEye2->getRenderTexture() : glCompositorEye1->getRenderTexture()) into m_dxrt1
-		/*
-		texture.m_texture = (void*)m_dxrt1->getRenderTexture();
-		texture.m_uvOffset = HyVec2{0.0f, 0.0f};
-		texture.m_uvSize = HyVec2{1.0f, 1.0f};
-		texture.m_flags = 0;
-		res = m_graphicsContext->Submit((int64_t)engine->getFrameCount(), &texture, 1);
-
-		if (!hySucceeded(res))
-			debugLog("OpenVR Error: Compositor::Submit(Eye_Right) error %i!!!\n", (int)res);
-		*/
-
 #endif
 
 		m_bSteamVRBugWorkaroundCompositorSSChangeAllowed = false; // we can no longer change the texture size, after the first submit
@@ -952,16 +980,18 @@ void OpenVRInterface::draw(Graphics *g)
 
 #endif
 
-	// spectator mode
-	if (vr_spectator_mode.getBool())
+	// spectator mode + liv
+	if (vr_spectator_mode.getBool() || isLIVReady())
 	{
 		g->setDepthBuffer(true);
-			renderSpectatorTarget(g);
+		{
+			renderSpectatorTarget(g, (isLIVReady() && m_livEye != NULL && m_livEye->isReady()) ? m_livEye : m_leftEye);
+		}
 		g->setDepthBuffer(false);
 	}
 
-	// viewer window (with spectator mode)
-	if (vr_spectator_mode.getBool() && vr_draw_hmd_to_window.getBool())
+	// viewer window (with spectator mode), or liv
+	if ((vr_spectator_mode.getBool() && vr_draw_hmd_to_window.getBool()) || isLIVReady())
 		renderStereoToWindow(g);
 }
 
@@ -1016,7 +1046,7 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 	*/
 
 	// debug controllers
-	bool bIsInputCapturedByAnotherProcess = m_pHMD->IsInputFocusCapturedByAnotherProcess();
+	const bool bIsInputCapturedByAnotherProcess = m_pHMD->IsInputFocusCapturedByAnotherProcess();
 	if (vr_debug_controllers.getBool())
 	{
 		if (!bIsInputCapturedByAnotherProcess)
@@ -1048,7 +1078,7 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 
 			vr::ETrackedDeviceClass trackedDeviceClass = m_pHMD->GetTrackedDeviceClass(unTrackedDevice);
 
-			if ((bIsInputCapturedByAnotherProcess || !vr_draw_controller_models.getBool()) && trackedDeviceClass == vr::TrackedDeviceClass_Controller)
+			if ((bIsInputCapturedByAnotherProcess || !vr_draw_controller_models.getBool() || (m_bIsLIVDraw && !vr_liv_draw_controller_models.getBool())) && trackedDeviceClass == vr::TrackedDeviceClass_Controller)
 				continue;
 
 			if (!vr_draw_lighthouse_models.getBool() && trackedDeviceClass != vr::TrackedDeviceClass_Controller)
@@ -1076,7 +1106,7 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 	m_renderModelShader->disable();
 
 	// draw head rendermodel if in spectator mode/draw
-	if (m_bIsSpectatorDraw)
+	if ((m_bIsSpectatorDraw && !m_bIsLIVDraw && vr_draw_head_model.getBool()) || (m_bIsLIVDraw && vr_liv_draw_head_model.getBool()))
 	{
 		// lazy loading
 		if (m_headRenderModel == NULL)
@@ -1272,7 +1302,7 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 void OpenVRInterface::renderStereoTargets(Graphics *g)
 {
 	// backup engine resolution
-	Vector2 resolutionBackup = g->getResolution();
+	const Vector2 resolutionBackup = g->getResolution();
 
 	g->setAntialiasing(true);
 	{
@@ -1280,7 +1310,9 @@ void OpenVRInterface::renderStereoTargets(Graphics *g)
 		{
 			g->onResolutionChange(m_leftEye->getSize()); // force renderer resolution
 			m_leftEye->enable();
+			{
 				renderScene(g, OpenVRInterface::EYE::EYE_LEFT);
+			}
 			m_leftEye->disable();
 		}
 
@@ -1289,7 +1321,9 @@ void OpenVRInterface::renderStereoTargets(Graphics *g)
 		{
 			g->onResolutionChange(m_rightEye->getSize()); // force renderer resolution
 			m_rightEye->enable();
+			{
 				renderScene(g, OpenVRInterface::EYE::EYE_RIGHT);
+			}
 			m_rightEye->disable();
 		}
 	}
@@ -1299,35 +1333,59 @@ void OpenVRInterface::renderStereoTargets(Graphics *g)
     g->onResolutionChange(resolutionBackup);
 }
 
-void OpenVRInterface::renderSpectatorTarget(Graphics *g)
+void OpenVRInterface::renderSpectatorTarget(Graphics *g, RenderTarget *rt)
 {
+	const bool isLIVDraw = (rt == m_livEye);
+
 	// backup engine resolution
 	Vector2 resolutionBackup = g->getResolution();
 
 	g->setAntialiasing(true);
 	{
-		// left Eye
+		g->onResolutionChange(rt->getSize()); // force renderer resolution
+		rt->enable();
 		{
-			g->onResolutionChange(m_leftEye->getSize()); // force renderer resolution
-			m_leftEye->enable();
-			{
-				Matrix4 matCurrentEye;
-				Matrix4 matCurrentM;
-				Matrix4 matCurrentP = getCurrentProjectionMatrix(OpenVRInterface::EYE::EYE_LEFT);
-				Matrix4 matCurrentVP = getCurrentViewProjectionMatrix(OpenVRInterface::EYE::EYE_LEFT);
-				Matrix4 matCurrentMVP;
+			Matrix4 matCurrentEye;
+			Matrix4 matCurrentM;
+			Matrix4 matCurrentP = getCurrentProjectionMatrix(OpenVRInterface::EYE::EYE_LEFT);
+			Matrix4 matCurrentVP = getCurrentViewProjectionMatrix(OpenVRInterface::EYE::EYE_LEFT);
+			Matrix4 matCurrentMVP;
 
+			if (isLIVDraw)
+			{
+				// NOTE: all liv calculations are inverted (even the rotation)
+
+				Matrix4 translation;
+				translation.translate(-m_vLIVCamPos);
+
+				Quaternion rotation;
+				rotation.fromEuler(m_vLIVCamRotDeg.z, m_vLIVCamRotDeg.y, m_vLIVCamRotDeg.x);
+
+				Matrix4 trackingReferenceM = m_LIVTrackingReferenceM;
+				trackingReferenceM.invert();
+
+				matCurrentM = rotation.getMatrix() * translation * trackingReferenceM;
+				matCurrentP = Camera::buildMatrixPerspectiveFov(deg2rad(m_fLIVCamFovDeg), rt->getWidth() / rt->getHeight(), m_fLIVCamNearZ, m_fLIVCamFarZ);
+				matCurrentVP = matCurrentP;
+				matCurrentMVP = matCurrentVP * matCurrentM;
+			}
+			else
+			{
 				Matrix4 translation;
 				translation.translate(m_fakeCamera->getPos());
 				matCurrentM = m_fakeCamera->getRotation().getMatrix() * translation;
 				matCurrentMVP = matCurrentVP * matCurrentM;
-
-				m_bIsSpectatorDraw = true;
-				renderScene(g, matCurrentEye, matCurrentM, matCurrentP, matCurrentVP, matCurrentMVP);
-				m_bIsSpectatorDraw = false;
 			}
-			m_leftEye->disable();
+
+			m_bIsSpectatorDraw = true;
+			m_bIsLIVDraw = isLIVDraw;
+			{
+				renderScene(g, matCurrentEye, matCurrentM, matCurrentP, matCurrentVP, matCurrentMVP);
+			}
+			m_bIsSpectatorDraw = false;
+			m_bIsLIVDraw = false;
 		}
+		rt->disable();
 	}
 	g->setAntialiasing(false);
 
@@ -1339,13 +1397,100 @@ void OpenVRInterface::renderStereoToWindow(Graphics *g)
 {
 	g->setBlending(false);
 	{
-		if (vr_draw_hmd_to_window_draw_both_eyes.getBool())
+		if (vr_draw_hmd_to_window.getBool()) // extra check to allow liv draw without hmd to window draw
 		{
-			m_leftEye->draw(engine->getGraphics(), 0, 0, engine->getScreenWidth()/2, engine->getScreenHeight());
-			m_rightEye->draw(engine->getGraphics(), engine->getScreenWidth()/2, 0, engine->getScreenWidth()/2, engine->getScreenHeight());
+			if (vr_draw_hmd_to_window_draw_both_eyes.getBool())
+			{
+				if (isLIVReady() && m_livEye != NULL && m_livEye->isReady())
+					m_livEye->draw(g, 0, 0, engine->getScreenWidth()/2, engine->getScreenHeight());
+				else
+					m_leftEye->draw(g, 0, 0, engine->getScreenWidth()/2, engine->getScreenHeight());
+
+				m_rightEye->draw(g, engine->getScreenWidth()/2, 0, engine->getScreenWidth()/2, engine->getScreenHeight());
+			}
+			else
+				m_leftEye->draw(g, 0, 0, engine->getScreenWidth(), engine->getScreenHeight());
 		}
-		else
-			m_leftEye->draw(engine->getGraphics(), 0, 0, engine->getScreenWidth(), engine->getScreenHeight());
+
+		// LIV support
+		if (isLIVReady())
+		{
+
+#if defined(MCENGINE_FEATURE_DIRECTX) && defined(MCENGINE_FEATURE_OPENGL)
+
+			if (liv.isActive() && liv.getWidth() > 0 && liv.getHeight() > 0)
+			{
+				// lazy create shared dx texture and livEye rendertarget
+				if (m_dxtex == NULL)
+				{
+					debugLog("Creating LIV texture (%i, %i) ...\n", liv.getWidth(), liv.getHeight());
+
+					m_dxtex = (DirectX11Image*)m_directx->createImage(liv.getWidth(), liv.getHeight(), false, false);
+					m_dxtex->setDirectX11InterfaceHack(m_directx);
+					m_dxtex->setShared(true);
+
+					Graphics::MULTISAMPLE_TYPE multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X;
+					if (vr_aa.getInt() > 0)
+						multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_2X;
+					else if (vr_aa.getInt() > 2)
+						multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_4X;
+					else if (vr_aa.getInt() > 4)
+						multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_8X;
+					else if (vr_aa.getInt() > 8)
+						multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_16X;
+
+					engine->getResourceManager()->loadResource(m_dxtex);
+					m_dxgltex = wglDXRegisterObjectNV(m_dxgldev, (void*)m_dxtex->getTexture(), m_gldxtex, GL_TEXTURE_2D, WGL_ACCESS_WRITE_DISCARD_NV);
+					m_livEye = engine->getResourceManager()->createRenderTarget(m_dxtex->getSize().x, m_dxtex->getSize().y/2, multisampleType);
+				}
+
+				// sanity flushing
+				g->flush();
+
+				// render liv texture
+				const BOOL locked = wglDXLockObjectsNV(m_dxgldev, 1, &m_dxgltex);
+				if (locked)
+				{
+					int frameBufferBackup = 0;
+					const Vector2 resolutionBackup = g->getResolution(); // backup
+					glGetIntegerv(GL_FRAMEBUFFER_BINDING, &frameBufferBackup); // backup
+
+					glBindFramebuffer(GL_FRAMEBUFFER, m_gldxfbo);
+					g->onResolutionChange(m_dxtex->getSize()); // force renderer resolution
+					{
+						// in here, rendering natively into shared liv texture
+
+						// base alpha fill, full alpha
+						g->setColor(0xff000000);
+						g->fillRect(0, 0, m_dxtex->getWidth(), m_dxtex->getHeight());
+
+						// draw bottom half, i.e. background layer, (RGB only!)
+						glColorMask(TRUE, TRUE, TRUE, FALSE);
+						{
+							if (m_livEye != NULL && m_livEye->isReady())
+								m_livEye->draw(g, 0, m_dxtex->getHeight()/2);
+						}
+						glColorMask(TRUE, TRUE, TRUE, TRUE);
+
+						// mask off top half, i.e. foreground layer, 0 alpha = nothing in foreground
+						g->setColor(0x00000000);
+						g->fillRect(0, 0, m_dxtex->getWidth(), m_dxtex->getHeight()/2);
+					}
+					g->onResolutionChange(resolutionBackup); // restore
+					glBindFramebuffer(GL_FRAMEBUFFER, frameBufferBackup); // restore
+
+					// sanity flushing
+					g->flush();
+
+					wglDXUnlockObjectsNV(m_dxgldev, 1, &m_dxgltex);
+				}
+
+				// update liv texture
+				liv.setTexture(m_dxtex);
+			}
+#endif
+
+		}
 	}
 	g->setBlending(true);
 }
@@ -1416,38 +1561,6 @@ void OpenVRInterface::update()
 		}
 	}
 	OpenVRController::STEAMVR_BUG_WORKAROUND_FLIPFLOP = !OpenVRController::STEAMVR_BUG_WORKAROUND_FLIPFLOP;
-
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
-
-	// process hypereal events
-	const HyMsgHeader* msg;
-	while (hySucceeded(m_device->RetrieveMsg(&msg)) && msg->m_type != HY_MSG_NONE)
-	{
-		switch (msg->m_type)
-		{
-		case HY_MSG_PENDING_QUIT:
-			engine->shutdown();
-			break;
-		case HY_MSG_INPUT_FOCUS_CHANGED:
-			// TODO: remove keyboard?
-			break;
-		case HY_MSG_VIEW_FOCUS_CHANGED:
-			// TODO: don't draw controllers if we don't have focus
-			break;
-		/*
-		case HY_MSG_IPD_CHANGED:
-			break;
-		*/
-		}
-	}
-
-	// update controllers
-	HyInputState inputState;
-	if (hySucceeded(m_device->GetControllerInputState(HY_SUBDEV_CONTROLLER_LEFT, inputState)))
-		m_controllerLeft->update(inputState.m_buttons, inputState.m_indexTrigger, inputState.m_sideTrigger, Vector2(inputState.m_touchpad.x, inputState.m_touchpad.y));
-
-	if (hySucceeded(m_device->GetControllerInputState(HY_SUBDEV_CONTROLLER_RIGHT, inputState)))
-		m_controllerRight->update(inputState.m_buttons, inputState.m_indexTrigger, inputState.m_sideTrigger, Vector2(inputState.m_touchpad.x, inputState.m_touchpad.y));
 
 #endif
 
@@ -1574,7 +1687,7 @@ void OpenVRInterface::onResolutionChange(Vector2 newResolution)
 {
 	if (!m_bReady) return;
 
-#if defined(MCENGINE_FEATURE_OPENVR) || defined(MCENGINE_FEATURE_HYPEREALVR)
+#if defined(MCENGINE_FEATURE_OPENVR)
 
 	m_debugOverlay->rebuild(newResolution.x, newResolution.y);
 
@@ -1593,30 +1706,6 @@ void OpenVRInterface::showKeyboardEx(UString description, UString text)
 		debugLog("OpenVR Error: VROverlay::ShowKeyboard() error %i!!!\n", (int)res);
 	else
 		m_bIsKeyboardVisible = true;
-
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
-
-	/*
-	// TODO: seems to completely switch between the game and the keyboard, does GetString even block? docs seem to suggest recreating this interface every time
-	if (hySucceeded(HyCreateInterface(HyInputHelper_InterfaceName, 0, (void**)&m_inputHelper)))
-	{
-		m_inputHelper->Init(m_device);
-		m_inputHelper->SetDefaultString(text.toUtf8());
-
-		wchar_t str[256];
-		memset(str, '\0', sizeof(wchar_t)*256);
-		int realSize = 0;
-		if (hySucceeded(m_inputHelper->GetString(str, size, &realSize, false)))
-		{
-			UString theString = UString(str);
-			// TODO:
-		}
-
-		// TODO: how to handle this
-		m_inputHelper->Release();
-		m_inputHelper = NULL;
-	}
-	*/
 
 #endif
 }
@@ -1697,9 +1786,18 @@ bool OpenVRInterface::hasInputFocus()
 
 	return m_bReady && m_pHMD != NULL && !m_pHMD->IsInputFocusCapturedByAnotherProcess();
 
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
+#else
 
-	return m_bReady; // no API available for getting the input focus state
+	return false;
+
+#endif
+}
+
+bool OpenVRInterface::isLIVReady()
+{
+#if defined(MCENGINE_FEATURE_OPENVR) && defined(MCENGINE_FEATURE_OPENGL) && defined(MCENGINE_FEATURE_DIRECTX)
+
+	return (vr_liv.getBool() && m_dxgldev != NULL && liv.isValid());
 
 #else
 
@@ -1916,22 +2014,6 @@ Matrix4 OpenVRInterface::getHMDMatrixProjectionEye(OpenVRInterface::EYE eye)
 		mat.m[0][3], mat.m[1][3], mat.m[2][3], mat.m[3][3]
 	);
 
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
-
-	HyFov fov[2];
-	m_device->GetFloatArray(HyDeviceProperty::HY_PROPERTY_HMD_LEFT_EYE_FOV_FLOAT4_ARRAY, fov[0].val, 4);
-	m_device->GetFloatArray(HyDeviceProperty::HY_PROPERTY_HMD_RIGHT_EYE_FOV_FLOAT4_ARRAY, fov[1].val, 4);
-
-	HyMat4 mat;
-	m_graphicsContext->GetProjectionMatrix(fov[(eye == OpenVRInterface::EYE::EYE_LEFT ? 0 : 1)], vr_nearz.getFloat(), vr_farz.getFloat(), true, mat);
-
-	return Matrix4(
-		mat.m[0][0], mat.m[1][0], mat.m[2][0], mat.m[3][0],
-		mat.m[0][1], mat.m[1][1], mat.m[2][1], mat.m[3][1],
-		mat.m[0][2], mat.m[1][2], mat.m[2][2], mat.m[3][2],
-		mat.m[0][3], mat.m[1][3], mat.m[2][3], mat.m[3][3]
-	);
-
 #else
 
 	return Matrix4();
@@ -1955,10 +2037,6 @@ Matrix4 OpenVRInterface::getHMDMatrixPoseEye(OpenVRInterface::EYE eye)
 		);
 
 	return matrixObj.invert();
-
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
-
-	return Matrix4(); // no API for this, not necessary
 
 #else
 
@@ -2022,13 +2100,19 @@ bool OpenVRInterface::updateMatrixPoses()
 		if (vr_bug_workaround_triggerhapticpulse.getBool())
 		{
 			if (res == vr::VRCompositorError_DoNotHaveFocus)
-			{
 				m_controller->triggerHapticPulse(255);
-			}
 		}
 
 		return false;
 	}
+
+	struct LIV_TRACKING_REFERENCE
+	{
+		int deviceIndex;
+		int weight;
+	};
+	std::vector<LIV_TRACKING_REFERENCE> livTrackingReferences;
+	livTrackingReferences.reserve(6);
 
 	m_iValidPoseCount = 0;
 	m_strPoseClasses = "";
@@ -2036,6 +2120,9 @@ bool OpenVRInterface::updateMatrixPoses()
 	{
 		if (m_rTrackedDevicePose[nDevice].bPoseIsValid)
 		{
+			const bool isConnected = m_pHMD->IsTrackedDeviceConnected(nDevice);
+			const bool isController = m_pHMD->GetTrackedDeviceClass(nDevice) == vr::TrackedDeviceClass::TrackedDeviceClass_Controller;
+
 			m_iValidPoseCount++;
 			m_rmat4DevicePose[nDevice] = convertSteamVRMatrixToMatrix4(m_rTrackedDevicePose[nDevice].mDeviceToAbsoluteTracking);
 			if (m_rDevClassChar[nDevice] == 0)
@@ -2065,7 +2152,7 @@ bool OpenVRInterface::updateMatrixPoses()
 			m_strPoseClasses += m_rDevClassChar[nDevice];
 
 			// update controller matrices
-			if (m_pHMD->IsTrackedDeviceConnected(nDevice) && m_pHMD->GetTrackedDeviceClass(nDevice) == vr::TrackedDeviceClass_Controller)
+			if (isConnected && isController)
 			{
 				if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
 				{
@@ -2075,6 +2162,52 @@ bool OpenVRInterface::updateMatrixPoses()
 						m_controllerRight->updateMatrixPose(m_rmat4DevicePose[nDevice]);
 				}
 			}
+
+			// update liv reference devices (1), see https://gitlab.com/liv/public/application-protocol/blob/v1/protocol.md#openvr-device-selection
+			if (isLIVReady() && isConnected)
+			{
+				const bool isGenericTracker = m_pHMD->GetTrackedDeviceClass(nDevice) == vr::TrackedDeviceClass::TrackedDeviceClass_GenericTracker;
+
+				if (isController || isGenericTracker)
+				{
+					LIV_TRACKING_REFERENCE trackingReference;
+					trackingReference.deviceIndex = nDevice;
+					trackingReference.weight = 1;
+
+					char stringBuffer[32];
+					memset(stringBuffer, '\0', sizeof(stringBuffer));
+					m_pHMD->GetStringTrackedDeviceProperty(nDevice, vr::ETrackedDeviceProperty::Prop_ModelNumber_String, stringBuffer, sizeof(stringBuffer), NULL);
+					stringBuffer[sizeof(stringBuffer) - 1] = '\0';
+					UString uModelNumber = UString(stringBuffer);
+
+					if (uModelNumber == "LIV Virtual Camera")
+						trackingReference.weight = 10;
+					else if (uModelNumber == "Virtual Controller Device")
+						trackingReference.weight = 9;
+					else if (isController)
+					{
+						memset(stringBuffer, '\0', sizeof(stringBuffer));
+						m_pHMD->GetStringTrackedDeviceProperty(nDevice, vr::ETrackedDeviceProperty::Prop_RenderModelName_String, stringBuffer, sizeof(stringBuffer), NULL);
+						stringBuffer[sizeof(stringBuffer) - 1] = '\0';
+						UString uRenderModelName = UString(stringBuffer);
+
+						if (uRenderModelName == "{htc}vr_tracker_vive_1_0" || uRenderModelName == "vr_tracker_vive_1_0")
+							trackingReference.weight = 8;
+						else
+						{
+							const int controllerRoleHint = m_pHMD->GetInt32TrackedDeviceProperty(nDevice, vr::ETrackedDeviceProperty::Prop_ControllerRoleHint_Int32, NULL);
+							if (controllerRoleHint == 3) // 3 = OptOut
+								trackingReference.weight = 7;
+							else if (controllerRoleHint == vr::ETrackedControllerRole::TrackedControllerRole_Invalid)
+								trackingReference.weight = 6;
+						}
+					}
+					else if (isGenericTracker)
+						trackingReference.deviceIndex = 5;
+
+					livTrackingReferences.push_back(trackingReference);
+				}
+			}
 		}
 	}
 
@@ -2082,29 +2215,27 @@ bool OpenVRInterface::updateMatrixPoses()
 	if (m_rTrackedDevicePose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid)
 		m_mat4HMDPose = m_rmat4DevicePose[vr::k_unTrackedDeviceIndex_Hmd].invert();
 
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
-
-	HyTrackingState hmdTrackingState;
-	HyResult hr = m_device->GetTrackingState(HySubDevice::HY_SUBDEV_HMD, (int64_t)engine->getFrameCount(), hmdTrackingState);
-	if (!hySucceeded(hr))
+	// update liv reference device matrix (2), see https://gitlab.com/liv/public/application-protocol/blob/v1/protocol.md#openvr-device-selection
+	if (isLIVReady())
 	{
-		debugLog("HyperealVR Error: Device::GetTrackingState() error %i!!!\n", (int)hr);
-		return false;
+		if (livTrackingReferences.size() > 0)
+		{
+			struct SortComparator
+			{
+				bool operator() (LIV_TRACKING_REFERENCE const &a, LIV_TRACKING_REFERENCE const &b) const
+				{
+					// strict weak ordering!
+					if (a.weight != b.weight)
+						return a.weight > b.weight;
+					else
+						return a.deviceIndex < b.deviceIndex;
+				}
+			};
+			std::sort(livTrackingReferences.begin(), livTrackingReferences.end(), SortComparator());
+
+			m_LIVTrackingReferenceM = m_rmat4DevicePose[livTrackingReferences[0].deviceIndex];
+		}
 	}
-
-	// update controller matrices
-	HyTrackingState leftControllerTrackingState;
-	hr = m_device->GetTrackingState(HySubDevice::HY_SUBDEV_CONTROLLER_LEFT, (int64_t)engine->getFrameCount(), leftControllerTrackingState);
-	if (hySucceeded(hr))
-		m_controllerLeft->updateMatrixPose(convertHyperealVRPoseToMatrix4(leftControllerTrackingState.m_pose, false));
-
-	HyTrackingState rightControllerTrackingState;
-	hr = m_device->GetTrackingState(HySubDevice::HY_SUBDEV_CONTROLLER_RIGHT, (int64_t)engine->getFrameCount(), rightControllerTrackingState);
-	if (hySucceeded(hr))
-		m_controllerRight->updateMatrixPose(convertHyperealVRPoseToMatrix4(rightControllerTrackingState.m_pose, false));
-
-	// update hmd matrix
-	m_mat4HMDPose = convertHyperealVRPoseToMatrix4(hmdTrackingState.m_pose, true);
 
 #endif
 
@@ -2239,6 +2370,66 @@ void OpenVRInterface::saveFakeCamera()
 void OpenVRInterface::loadFakeCamera()
 {
 	Console::execConfigFile("vrspectatorcamera");
+	loadLIVCalibration();
+}
+
+void OpenVRInterface::loadLIVCalibration()
+{
+#ifdef MCENGINE_FEATURE_DIRECTX
+
+	UString livConfigFile1 = "liv-camera.cfg";
+	UString livConfigFile2 = "externalcamera.cfg";
+
+	UString livConfigFile = livConfigFile1;
+	if (!env->fileExists(livConfigFile))
+		livConfigFile = livConfigFile2;
+
+	if (env->fileExists(livConfigFile))
+	{
+		File file(livConfigFile);
+		if (file.canRead())
+		{
+			while (file.canRead())
+			{
+				UString line = file.readLine();
+				std::vector<UString> tokens = line.split("=");
+				if (tokens.size() > 1)
+				{
+					for (int i=0; i<tokens.size(); i++)
+					{
+						tokens[i] = tokens[i].trim();
+					}
+
+					debugLog("Read %s = %s\n", tokens[0].toUtf8(), tokens[1].toUtf8());
+
+					if (tokens[0] == "x")
+						m_vLIVCamPos.x = tokens[1].toFloat();
+					else if (tokens[0] == "y")
+						m_vLIVCamPos.y = tokens[1].toFloat();
+					else if (tokens[0] == "z")
+						m_vLIVCamPos.z = tokens[1].toFloat();
+					else if (tokens[0] == "rx")
+						m_vLIVCamRotDeg.x = tokens[1].toFloat();
+					else if (tokens[0] == "ry")
+						m_vLIVCamRotDeg.y = tokens[1].toFloat();
+					else if (tokens[0] == "rz")
+						m_vLIVCamRotDeg.z = tokens[1].toFloat();
+					else if (tokens[0] == "fov")
+						m_fLIVCamFovDeg = tokens[1].toFloat();
+					else if (tokens[0] == "near")
+						m_fLIVCamNearZ = tokens[1].toFloat();
+					else if (tokens[0] == "far")
+						m_fLIVCamFarZ = tokens[1].toFloat();
+				}
+			}
+		}
+		else
+			debugLog("OpenVRInterface::loadLIVCalibration() : Can't read \"%s\"!\n", livConfigFile.toUtf8());
+	}
+	else
+		debugLog("OpenVRInterface::loadLIVCalibration() : \"%s\" does not exist!\n", livConfigFile.toUtf8());
+
+#endif
 }
 
 

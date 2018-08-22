@@ -24,6 +24,7 @@
 OpenGL3Interface::OpenGL3Interface() : Graphics()
 {
 	// renderer
+	m_bInScene = false;
 	m_vResolution = engine->getScreenSize(); // initial viewport size = window size
 
 	m_shaderTexturedGeneric = NULL;
@@ -163,6 +164,8 @@ void OpenGL3Interface::init()
 
 void OpenGL3Interface::beginScene()
 {
+	m_bInScene = true;
+
 	Matrix4 defaultProjectionMatrix = Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0);
 
 	// push main transforms
@@ -197,6 +200,8 @@ void OpenGL3Interface::endScene()
 		engine->showMessageErrorFatal("ClipRect Stack Leak", "Make sure all push*() have a pop*()!");
 		engine->shutdown();
 	}
+
+	m_bInScene = false;
 }
 
 void OpenGL3Interface::clearDepthBuffer()
@@ -744,6 +749,13 @@ void OpenGL3Interface::onResolutionChange(Vector2 newResolution)
 	// rebuild viewport
 	m_vResolution = newResolution;
 	glViewport(0, 0, m_vResolution.x, m_vResolution.y);
+
+	// special case: custom rendertarget resolution rendering, update active projection matrix immediately
+	if (m_bInScene)
+	{
+		m_projectionTransformStack.top() = Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0);
+		m_bTransformUpToDate = false;
+	}
 }
 
 Image *OpenGL3Interface::createImage(UString filePath, bool mipmapped, bool keepInSystemMemory)
@@ -771,9 +783,9 @@ Shader *OpenGL3Interface::createShaderFromSource(UString vertexShader, UString f
 	return new OpenGLShader(vertexShader, fragmentShader, true);
 }
 
-VertexArrayObject *OpenGL3Interface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
+VertexArrayObject *OpenGL3Interface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
-	return new OpenGL3VertexArrayObject(primitive, usage);
+	return new OpenGL3VertexArrayObject(primitive, usage, keepInSystemMemory);
 }
 
 void OpenGL3Interface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)

@@ -13,7 +13,7 @@
 
 #include "OpenGLHeaders.h"
 
-OpenGLVertexArrayObject::OpenGLVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage) : VertexArrayObject(primitive, usage)
+OpenGLVertexArrayObject::OpenGLVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory) : VertexArrayObject(primitive, usage, keepInSystemMemory)
 {
 	m_iVertexBuffer = 0;
 	m_iTexcoordBuffer = 0;
@@ -40,8 +40,9 @@ void OpenGLVertexArrayObject::init()
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Vector2) * m_texcoords[0].size(), &(m_texcoords[0][0]), usageToOpenGL(m_usage));
 	}
 
-	// we don't need the data in RAM anymore
-	clear();
+	// free memory
+	if (!m_bKeepInSystemMemory)
+		clear();
 
 	m_bReady = true;
 }

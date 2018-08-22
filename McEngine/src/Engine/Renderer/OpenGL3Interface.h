@@ -92,7 +92,7 @@ public:
 	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
 	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
-	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage);
+	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory);
 
 	// ILLEGAL:
 	inline const int getShaderGenericAttribPosition() const {return m_iShaderTexturedGenericAttribPosition;}
@@ -108,6 +108,7 @@ private:
 	static int primitiveToOpenGL(Graphics::PRIMITIVE primitive);
 
 	// renderer
+	bool m_bInScene;
 	Vector2 m_vResolution;
 	Matrix4 m_projectionMatrix;
 	Matrix4 m_worldMatrix;
