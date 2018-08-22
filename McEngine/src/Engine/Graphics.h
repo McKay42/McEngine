@@ -152,7 +152,7 @@ public:
 	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType) = 0;
 	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath) = 0;
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader) = 0;
-	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage) = 0;
+	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory) = 0;
 
 public:
 	// provided core functions (api independent)
@@ -161,10 +161,20 @@ public:
 	void pushTransform();
 	void popTransform();
 
+	// 2D
+	// TODO: rename these to translate2D() etc.
 	void translate(float x, float y, float z = 0);
+	void translate(Vector2 translation) {translate(translation.x, translation.y);}
+	void translate(Vector3 translation) {translate(translation.x, translation.y, translation.z);}
 	void rotate(float deg, float x = 0, float y = 0, float z = 1);
+	void rotate(float deg, Vector3 axis) {rotate(deg, axis.x, axis.y, axis.z);}
 	void scale(float x, float y, float z = 1);
+	void scale(Vector2 scaling) {scale(scaling.x, scaling.y, 1);}
+	void scale(Vector3 scaling) {scale(scaling.x, scaling.y, scaling.z);}
 
+	// 3D
+	void translate3D(float x, float y, float z);
+	void translate3D(Vector3 translation) {translate3D(translation.x, translation.y, translation.z);}
 	void setWorldMatrix(Matrix4 &worldMatrix);
 	void setWorldMatrixMul(Matrix4 &worldMatrix);
 	void setProjectionMatrix(Matrix4 &projectionMatrix);

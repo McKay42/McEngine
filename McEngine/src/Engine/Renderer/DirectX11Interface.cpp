@@ -23,6 +23,8 @@
 
 DirectX11Interface::DirectX11Interface(HWND hwnd, bool minimalistContext) : NullGraphicsInterface()
 {
+	m_bReady = false;
+
 	m_hwnd = hwnd;
 	m_bMinimalistContext = minimalistContext;
 
@@ -121,12 +123,26 @@ void DirectX11Interface::init()
 
 	if (FAILED(hr))
 	{
-		engine->showMessageErrorFatal("DirectX Error", UString::format("Couldn't D3D11CreateDevice[AndSwapChain](%ld, %x)!\nThe engine will quit now.", hr, MAKE_DXGI_HRESULT(hr)));
-		engine->shutdown();
+		UString errorTitle = "DirectX Error";
+		UString errorMessage = UString::format("Couldn't D3D11CreateDevice[AndSwapChain](%ld, %x, %x)!", hr, hr, MAKE_DXGI_HRESULT(hr));
+
+		if (!m_bMinimalistContext)
+		{
+			errorMessage.append("\nThe engine will quit now.");
+			engine->showMessageErrorFatal("DirectX Error", errorMessage);
+			engine->shutdown();
+		}
+		else
+			engine->showMessageWarning("DirectX Error", errorMessage);
+
 		return;
 	}
 
-	if (m_bMinimalistContext) return;
+	if (m_bMinimalistContext)
+	{
+		m_bReady = true;
+		return;
+	}
 
 	// default rasterizer settings
 	m_rasterizerDesc.FillMode = D3D11_FILL_MODE::D3D11_FILL_SOLID;
@@ -279,6 +295,8 @@ void DirectX11Interface::init()
 		engine->showMessageError("DirectX Error", "Couldn't CreateBuffer()!");
 
 	onResolutionChange(m_vResolution); // force build swapchain rendertarget view
+
+	m_bReady = true;
 }
 
 void DirectX11Interface::beginScene()
