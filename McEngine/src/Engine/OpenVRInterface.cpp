@@ -1354,6 +1354,7 @@ void OpenVRInterface::renderSpectatorTarget(Graphics *g, RenderTarget *rt)
 			if (isLIVDraw)
 			{
 				// NOTE: all liv calculations are inverted (even the rotation)
+#ifdef MCENGINE_FEATURE_DIRECTX
 
 				Matrix4 translation;
 				translation.translate(-m_vLIVCamPos);
@@ -1368,6 +1369,9 @@ void OpenVRInterface::renderSpectatorTarget(Graphics *g, RenderTarget *rt)
 				matCurrentP = Camera::buildMatrixPerspectiveFov(deg2rad(m_fLIVCamFovDeg), rt->getWidth() / rt->getHeight(), m_fLIVCamNearZ, m_fLIVCamFarZ);
 				matCurrentVP = matCurrentP;
 				matCurrentMVP = matCurrentVP * matCurrentM;
+
+#endif
+
 			}
 			else
 			{
