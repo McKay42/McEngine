@@ -9,10 +9,11 @@
 
 #include "Engine.h"
 
-VertexArrayObject::VertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage) : Resource()
+VertexArrayObject::VertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory) : Resource()
 {
 	m_primitive = primitive;
 	m_usage = usage;
+	m_bKeepInSystemMemory = keepInSystemMemory;
 
 	m_iNumVertices = 0;
 

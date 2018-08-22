@@ -455,10 +455,10 @@ TextureAtlas *ResourceManager::createTextureAtlas(int width, int height)
 	return ta;
 }
 
-VertexArrayObject *ResourceManager::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
+VertexArrayObject *ResourceManager::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
 	// create instance and load it
-	VertexArrayObject *vao = engine->getGraphics()->createVertexArrayObject(primitive, usage);
+	VertexArrayObject *vao = engine->getGraphics()->createVertexArrayObject(primitive, usage, keepInSystemMemory);
 
 	loadResource(vao, false); // doesn't need to be loaded, since vaos will be filled by the user and then engine->getResourceManager()->loadResource()'d later
 

@@ -36,6 +36,7 @@ ConVar r_image_unbind_after_drawimage("r_image_unbind_after_drawimage", true);
 OpenGLLegacyInterface::OpenGLLegacyInterface() : Graphics()
 {
 	// renderer
+	m_bInScene = false;
 	m_vResolution = engine->getScreenSize(); // initial viewport size = window size
 
 	// persistent vars
@@ -97,6 +98,8 @@ OpenGLLegacyInterface::~OpenGLLegacyInterface()
 
 void OpenGLLegacyInterface::beginScene()
 {
+	m_bInScene = true;
+
 	Matrix4 defaultProjectionMatrix = Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0);
 
 	// push main transforms
@@ -128,6 +131,8 @@ void OpenGLLegacyInterface::endScene()
 		engine->showMessageErrorFatal("ClipRect Stack Leak", "Make sure all push*() have a pop*()!");
 		engine->shutdown();
 	}
+
+	m_bInScene = false;
 }
 
 void OpenGLLegacyInterface::clearDepthBuffer()
@@ -150,7 +155,7 @@ void OpenGLLegacyInterface::setAlpha(float alpha)
 
 void OpenGLLegacyInterface::drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type, const void *pixels)
 {
-	glRasterPos2i(x, y+height); // '+height' because of opengl bottom left origin, but engine top left origin
+	glRasterPos2i(x, y + height); // '+height' because of opengl bottom left origin, but engine top left origin
 	glDrawPixels(width, height, GL_RGBA, (type == Graphics::DRAWPIXELS_TYPE::DRAWPIXELS_UBYTE ? GL_UNSIGNED_BYTE : GL_FLOAT), pixels);
 }
 
@@ -159,8 +164,11 @@ void OpenGLLegacyInterface::drawPixel(int x, int y)
 	updateTransform();
 
 	glDisable(GL_TEXTURE_2D);
+
 	glBegin(GL_POINTS);
-		glVertex2i( x, y );
+	{
+		glVertex2i(x, y);
+	}
 	glEnd();
 }
 
@@ -169,9 +177,12 @@ void OpenGLLegacyInterface::drawLine(int x1, int y1, int x2, int y2)
 	updateTransform();
 
 	glDisable(GL_TEXTURE_2D);
+
 	glBegin(GL_LINES);
-		glVertex2f( x1+0.5f, y1+0.5f);
-		glVertex2f( x2+0.5f, y2+0.5f);
+	{
+		glVertex2f(x1 + 0.5f, y1 + 0.5f);
+		glVertex2f(x2 + 0.5f, y2 + 0.5f);
+	}
 	glEnd();
 }
 
@@ -192,10 +203,13 @@ void OpenGLLegacyInterface::drawRect(int x, int y, int width, int height, Color 
 {
 	setColor(top);
 	drawLine(x, y, x+width, y);
+
 	setColor(left);
 	drawLine(x, y, x, y+height);
+
 	setColor(bottom);
 	drawLine(x, y+height, x+width+1, y+height);
+
 	setColor(right);
 	drawLine(x+width, y, x+width, y+height);
 }
@@ -205,11 +219,14 @@ void OpenGLLegacyInterface::fillRect(int x, int y, int width, int height)
 	updateTransform();
 
 	glDisable(GL_TEXTURE_2D);
+
 	glBegin(GL_QUADS);
+	{
 		glVertex2i(x, y);
 		glVertex2i(x, y+height);
 		glVertex2i(x+width, y+height);
 		glVertex2i(x+width, y);
+	}
 	glEnd();
 }
 
@@ -224,8 +241,9 @@ void OpenGLLegacyInterface::fillRoundedRect(int x, int y, int width, int height,
 	updateTransform();
 
 	glDisable(GL_TEXTURE_2D);
-	glBegin(GL_POLYGON);
 
+	glBegin(GL_POLYGON);
+	{
 		for(i=PI; i<=(1.5*PI); i+=factor)
 		{
 			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // top left
@@ -248,7 +266,7 @@ void OpenGLLegacyInterface::fillRoundedRect(int x, int y, int width, int height,
 		{
 			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // bottom left
 		}
-
+	}
 	glEnd();
 }
 
@@ -257,15 +275,21 @@ void OpenGLLegacyInterface::fillGradient(int x, int y, int width, int height, Co
 	updateTransform();
 
 	glDisable(GL_TEXTURE_2D);
+
 	glBegin(GL_QUADS);
-	setColor(topLeftColor);
+	{
+		setColor(topLeftColor);
 		glVertex2i(x, y);
-	setColor(topRightColor);
+
+		setColor(topRightColor);
 		glVertex2i(x+width, y);
-	setColor(bottomRightColor);
+
+		setColor(bottomRightColor);
 		glVertex2i(x+width, y+height);
-	setColor(bottomLeftColor);
+
+		setColor(bottomLeftColor);
 		glVertex2i(x, y+height);
+	}
 	glEnd();
 }
 
@@ -274,7 +298,7 @@ void OpenGLLegacyInterface::drawQuad(int x, int y, int width, int height)
 	updateTransform();
 
 	glBegin(GL_QUADS);
-
+	{
 		setColor(m_color);
 		glTexCoord2f(0, 0);
 		glVertex2f(x, y);
@@ -290,7 +314,7 @@ void OpenGLLegacyInterface::drawQuad(int x, int y, int width, int height)
 		setColor(m_color);
 		glTexCoord2f(1, 0);
 		glVertex2f(x+width, y);
-
+	}
 	glEnd();
 }
 
@@ -299,7 +323,7 @@ void OpenGLLegacyInterface::drawQuad(Vector2 topLeft, Vector2 topRight, Vector2 
 	updateTransform();
 
 	glBegin(GL_QUADS);
-
+	{
 		setColor(topLeftColor);
 		glTexCoord2f(0, 0);
 		glVertex2f(topLeft.x, topLeft.y);
@@ -315,7 +339,7 @@ void OpenGLLegacyInterface::drawQuad(Vector2 topLeft, Vector2 topRight, Vector2 
 		setColor(topRightColor);
 		glTexCoord2f(1, 0);
 		glVertex2f(topRight.x, topRight.y);
-
+	}
 	glEnd();
 }
 
@@ -326,35 +350,34 @@ void OpenGLLegacyInterface::drawImage(Image *image)
 		debugLog("WARNING: Tried to draw image with NULL texture!\n");
 		return;
 	}
-	if (!image->isReady())
-		return;
+	if (!image->isReady()) return;
 
 	updateTransform();
 
+	const float width = image->getWidth();
+	const float height = image->getHeight();
+
+	const float x = -width/2;
+	const float y = -height/2;
+
 	image->bind();
+	{
+		glBegin(GL_QUADS);
+		{
+			glTexCoord2f(0, 0);
+			glVertex2f(x, y);
 
-	float width = image->getWidth();
-	float height = image->getHeight();
+			glTexCoord2f(0, 1);
+			glVertex2f(x, y+height);
 
-	float x = -width/2;
-	float y = -height/2;
+			glTexCoord2f(1, 1);
+			glVertex2f(x+width, y+height);
 
-	glBegin(GL_QUADS);
-
-		glTexCoord2f(0, 0);
-		glVertex2f(x, y);
-
-		glTexCoord2f(0, 1);
-		glVertex2f(x, y+height);
-
-		glTexCoord2f(1, 1);
-		glVertex2f(x+width, y+height);
-
-		glTexCoord2f(1, 0);
-		glVertex2f(x+width, y);
-
-	glEnd();
-
+			glTexCoord2f(1, 0);
+			glVertex2f(x+width, y);
+		}
+		glEnd();
+	}
 	if (r_image_unbind_after_drawimage.getBool())
 		image->unbind();
 
@@ -367,8 +390,7 @@ void OpenGLLegacyInterface::drawImage(Image *image)
 
 void OpenGLLegacyInterface::drawString(McFont *font, UString text)
 {
-	if (font == NULL || text.length() < 1 || !font->isReady())
-		return;
+	if (font == NULL || text.length() < 1 || !font->isReady()) return;
 
 	updateTransform();
 
@@ -626,6 +648,13 @@ void OpenGLLegacyInterface::onResolutionChange(Vector2 newResolution)
 	// rebuild viewport
 	m_vResolution = newResolution;
 	glViewport(0, 0, m_vResolution.x, m_vResolution.y);
+
+	// special case: custom rendertarget resolution rendering, update active projection matrix immediately
+	if (m_bInScene)
+	{
+		m_projectionTransformStack.top() = Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0);
+		m_bTransformUpToDate = false;
+	}
 }
 
 Image *OpenGLLegacyInterface::createImage(UString filePath, bool mipmapped, bool keepInSystemMemory)
@@ -653,9 +682,9 @@ Shader *OpenGLLegacyInterface::createShaderFromSource(UString vertexShader, UStr
 	return new OpenGLShader(vertexShader, fragmentShader, true);
 }
 
-VertexArrayObject *OpenGLLegacyInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
+VertexArrayObject *OpenGLLegacyInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
-	return new OpenGLVertexArrayObject(primitive, usage);
+	return new OpenGLVertexArrayObject(primitive, usage, keepInSystemMemory);
 }
 
 void OpenGLLegacyInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)

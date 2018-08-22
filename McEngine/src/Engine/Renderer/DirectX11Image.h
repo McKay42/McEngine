@@ -31,6 +31,7 @@ public:
 
 	// ILLEGAL:
 	void setDirectX11InterfaceHack(DirectX11Interface *dxi) {m_interfaceOverrideHack = dxi;}
+	void setShared(bool shared) {m_bShared = shared;}
 	ID3D11Texture2D *getTexture() const {return m_texture;}
 	ID3D11ShaderResourceView *getShaderResourceView() const {return m_shaderResourceView;}
 
@@ -46,6 +47,7 @@ private:
 	ID3D11ShaderResourceView *m_prevShaderResourceView;
 
 	DirectX11Interface *m_interfaceOverrideHack;
+	bool m_bShared;
 };
 
 #endif

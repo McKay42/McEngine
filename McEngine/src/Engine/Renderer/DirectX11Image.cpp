@@ -23,6 +23,7 @@ DirectX11Image::DirectX11Image(UString filepath, bool mipmapped, bool keepInSyst
 	m_prevShaderResourceView = NULL;
 
 	m_interfaceOverrideHack = NULL;
+	m_bShared = false;
 }
 
 DirectX11Image::DirectX11Image(int width, int height, bool mipmapped, bool keepInSystemMemory) : Image(width, height, mipmapped, keepInSystemMemory)
@@ -34,6 +35,7 @@ DirectX11Image::DirectX11Image(int width, int height, bool mipmapped, bool keepI
 	m_prevShaderResourceView = NULL;
 
 	m_interfaceOverrideHack = NULL;
+	m_bShared = false;
 }
 
 void DirectX11Image::init()
@@ -54,10 +56,10 @@ void DirectX11Image::init()
 	textureDesc.Format = m_iNumChannels == 4 ? DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM : (m_iNumChannels == 3 ? DXGI_FORMAT_R8_UNORM : (m_iNumChannels == 1 ? DXGI_FORMAT_R8_UNORM : DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM));
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
-	textureDesc.Usage = (m_bKeepInSystemMemory ? D3D11_USAGE::D3D11_USAGE_DYNAMIC : D3D11_USAGE::D3D11_USAGE_DEFAULT); // TODO: usually would use D3D11_USAGE_IMMUTABLE?
+	textureDesc.Usage = (m_bKeepInSystemMemory ? D3D11_USAGE::D3D11_USAGE_DYNAMIC : D3D11_USAGE::D3D11_USAGE_DEFAULT);
 	textureDesc.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_SHADER_RESOURCE;
 	textureDesc.CPUAccessFlags = (m_bKeepInSystemMemory ? D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_WRITE : 0);
-	textureDesc.MiscFlags = 0;
+	textureDesc.MiscFlags = m_bShared ? D3D11_RESOURCE_MISC_FLAG::D3D11_RESOURCE_MISC_SHARED : 0;
 
 	if (m_texture == NULL)
 	{
