@@ -82,6 +82,7 @@ public:
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
 
 	// ILLEGAL:
+	inline bool isReady() const {return m_bReady;}
 	ID3D11Device *getDevice() const {return m_device;}
 	ID3D11DeviceContext *getDeviceContext() const {return m_deviceContext;}
 	IDXGISwapChain *getSwapChain() const {return m_swapChain;}
@@ -93,6 +94,8 @@ protected:
 
 private:
 	static int primitiveToDirectX(Graphics::PRIMITIVE primitive);
+
+	bool m_bReady;
 
 	// device context
 	HWND m_hwnd;

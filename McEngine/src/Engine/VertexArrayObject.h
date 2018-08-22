@@ -13,7 +13,7 @@
 class VertexArrayObject : public Resource
 {
 public:
-	VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC);
+	VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC, bool keepInSystemMemory = false);
 	virtual ~VertexArrayObject();
 
 	// TODO: fix the naming schema. clear = empty = just empty the containers, but not necessarily release memory
@@ -58,6 +58,7 @@ protected:
 
 	Graphics::PRIMITIVE m_primitive;
 	Graphics::USAGE_TYPE m_usage;
+	bool m_bKeepInSystemMemory;
 
 	std::vector<Vector3> m_vertices;
 	std::vector<std::vector<Vector2>> m_texcoords;

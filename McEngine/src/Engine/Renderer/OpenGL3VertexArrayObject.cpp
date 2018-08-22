@@ -14,7 +14,7 @@
 
 #include "OpenGLHeaders.h"
 
-OpenGL3VertexArrayObject::OpenGL3VertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage) : VertexArrayObject(primitive, usage)
+OpenGL3VertexArrayObject::OpenGL3VertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory) : VertexArrayObject(primitive, usage, keepInSystemMemory)
 {
 	m_iVAO = 0;
 	m_iVertexBuffer = 0;
@@ -62,8 +62,9 @@ void OpenGL3VertexArrayObject::init()
 	}
 	glBindVertexArray(vaoBackup); // restore vao
 
-	// we don't need the data in RAM anymore
-	clear();
+	// free memory
+	if (!m_bKeepInSystemMemory)
+		clear();
 
 	m_bReady = true;
 }

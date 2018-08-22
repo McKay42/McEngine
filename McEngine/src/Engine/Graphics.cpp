@@ -82,6 +82,13 @@ void Graphics::scale(float x, float y, float z)
 	m_bTransformUpToDate = false;
 }
 
+void Graphics::translate3D(float x, float y, float z)
+{
+	Matrix4 translation;
+	translation.translate(x, y, z);
+	setWorldMatrixMul(translation);
+}
+
 void Graphics::setWorldMatrix(Matrix4 &worldMatrix)
 {
 	m_worldTransformStack.pop();
@@ -91,9 +98,7 @@ void Graphics::setWorldMatrix(Matrix4 &worldMatrix)
 
 void Graphics::setWorldMatrixMul(Matrix4 &worldMatrix)
 {
-	Matrix4 newWorldMatrix = m_worldTransformStack.top() * worldMatrix;
-	m_worldTransformStack.pop();
-	m_worldTransformStack.push(newWorldMatrix);
+	m_worldTransformStack.top() *= worldMatrix;
 	m_bTransformUpToDate = false;
 }
 

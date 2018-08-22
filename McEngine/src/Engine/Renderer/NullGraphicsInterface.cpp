@@ -38,9 +38,9 @@ Shader *NullGraphicsInterface::createShaderFromSource(UString vertexShader, UStr
 	return new NullShader(vertexShader, fragmentShader, true);
 }
 
-VertexArrayObject *NullGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage)
+VertexArrayObject *NullGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
-	return new VertexArrayObject(primitive, usage);
+	return new VertexArrayObject(primitive, usage, keepInSystemMemory);
 }
 
 void NullGraphicsInterface::drawString(McFont *font, UString text) {;}

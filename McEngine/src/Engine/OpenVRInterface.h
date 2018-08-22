@@ -19,10 +19,6 @@
 
 #include <openvr_mingw.hpp>
 
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
-
-#include "Hypereal_VR.h"
-
 #endif
 
 class Shader;
@@ -31,7 +27,7 @@ class RenderTarget;
 class OpenVRController;
 
 class DirectX11Interface;
-class DirectX11RenderTarget;
+class DirectX11Image;
 class CGLRenderModel;
 
 class OpenVRInterface : public KeyboardListener
@@ -87,11 +83,9 @@ public:
 	inline bool isKeyboardVisible() const {return m_bIsKeyboardVisible;}
 	bool hasInputFocus();
 
+	bool isLIVReady();
+
 private:
-
-	// shared public
-	// TODO: ifdef openvr OR hyperealvr
-
 	enum class EYE
 	{
 		EYE_LEFT,
@@ -105,7 +99,7 @@ private:
 	bool initShaders();
 
 	void renderStereoTargets(Graphics *g);
-	void renderSpectatorTarget(Graphics *g);
+	void renderSpectatorTarget(Graphics *g, RenderTarget *rt);
 	void renderScene(Graphics *g, OpenVRInterface::EYE eye);
 	void renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 &matCurrentM, Matrix4 &matCurrentP, Matrix4 &matCurrentVP, Matrix4 &matCurrentMVP);
 	void renderStereoToWindow(Graphics *g);
@@ -144,15 +138,12 @@ private:
 	static Matrix4 convertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
 	static vr::Hmd_Eye eyeToOpenVR(OpenVRInterface::EYE eye);
 
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
-
-	static Matrix4 convertHyperealVRPoseToMatrix4(const HyPose &pose, bool isHMDPose);
-
 #endif
 
 	void toggleFakeCameraMouseCapture();
 	void saveFakeCamera();
 	void loadFakeCamera();
+	void loadLIVCalibration();
 
 	bool m_bReady;
 	UString m_sTrackingSystemName;
@@ -185,6 +176,7 @@ private:
 	RenderTarget *m_compositorEye1;
 	RenderTarget *m_compositorEye2;
 	RenderTarget *m_debugOverlay;
+	RenderTarget *m_livEye;
 
 	// shaders
 	Shader *m_renderModelShader;
@@ -209,6 +201,7 @@ private:
 	bool m_bShiftDown;
 	bool m_bCtrlDown;
 	bool m_bIsSpectatorDraw;
+	bool m_bIsLIVDraw;
 
 	// custom
 	float m_fPrevSSMultiplier;
@@ -231,9 +224,7 @@ private:
 
 	// tracking
 	int m_iTrackedControllerCount;
-	int m_iTrackedControllerCount_Last;
 	int m_iValidPoseCount;
-	int m_iValidPoseCount_Last;
 	std::string m_strPoseClasses; // what classes we saw poses for this frame
 	char m_rDevClassChar[vr::k_unMaxTrackedDeviceCount]; // for each device, a character representing its class
 
@@ -242,12 +233,25 @@ private:
 	GLuint m_unControllerVAO;
 	unsigned int m_uiControllerVertcount;
 
-#elif defined(MCENGINE_FEATURE_HYPEREALVR)
+	// LIV support
+#ifdef MCENGINE_FEATURE_DIRECTX
 
-	HyDevice *m_device;
-	HyGraphicsContext *m_graphicsContext;
 	DirectX11Interface *m_directx;
-	DirectX11RenderTarget *m_dxrt1;
+	DirectX11Image *m_dxtex;
+	HANDLE m_dxgldev;
+	HANDLE m_dxgltex;
+	unsigned int m_gldxtex;
+	unsigned int m_gldxfbo;
+
+#endif
+
+	Matrix4 m_LIVTrackingReferenceM;
+
+	Vector3 m_vLIVCamPos;
+	Vector3 m_vLIVCamRotDeg;
+	float m_fLIVCamFovDeg;
+	float m_fLIVCamNearZ;
+	float m_fLIVCamFarZ;
 
 #endif
 };

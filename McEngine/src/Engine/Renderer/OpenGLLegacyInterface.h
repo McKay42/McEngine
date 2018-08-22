@@ -12,6 +12,8 @@
 
 #ifdef MCENGINE_FEATURE_OPENGL
 
+class Image;
+
 class OpenGLLegacyInterface : public Graphics
 {
 public:
@@ -90,7 +92,7 @@ public:
 	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
 	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
-	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage);
+	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory);
 
 protected:
 	virtual void init();
@@ -102,6 +104,7 @@ private:
 	void handleGLErrors();
 
 	// renderer
+	bool m_bInScene;
 	Vector2 m_vResolution;
 
 	// persistent vars
