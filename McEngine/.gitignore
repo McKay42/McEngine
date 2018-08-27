@@ -1,5 +1,5 @@
-McEngine/*Release/
-McEngine/*Debug/
+*Release/
+*Debug/
 
-McEngine/src/App
-!McEngine/src/App/App.h
+src/App
+!src/App/App.h
