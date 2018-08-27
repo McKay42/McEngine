@@ -1,2 +1,5 @@
-/Windows Release/
-/Windows Debug/
+McEngine/*Release/
+McEngine/*Debug/
+
+McEngine/src/App
+!McEngine/src/App/App.h
