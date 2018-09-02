@@ -5,6 +5,8 @@
 // $NoKeywords: $engine
 //===============================================================================//
 
+//! The entry point for the engine is the App.cpp's class in the application's folder.
+
 #include "NetworkHandler.h" // must be up here
 #include "Engine.h"
 
@@ -29,15 +31,7 @@
 #include "Console.h"
 #include "ConsoleBox.h"
 
-
-
-//********************//
-//	Include App here  //
-//********************//
-
-//#include "Osu.h"
-#include "FrameworkTest.h"
-
+#include "App.h"
 
 
 void _version(void);
@@ -233,16 +227,7 @@ void Engine::loadApp()
 
 	debugLog("\nEngine: Loading app ...\n");
 
-	//*****************//
-	//	Load App here  //
-	//*****************//
-
-	//m_app = new Osu();
-
-	m_app = new FrameworkTest();
-
-
-
+	m_app = App::createApp();
 
 	// start listening to the default keyboard input (engine gui comes first)
 	m_keyboard->addListener(m_guiContainer, true);
