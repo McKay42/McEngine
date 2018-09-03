@@ -17,6 +17,8 @@
 
 #include "CBaseUIButton.h"
 
+App* App::createApp() { return new FrameworkTest(); };
+
 class FrameworkTestButton : public CBaseUIButton
 {
 public:
