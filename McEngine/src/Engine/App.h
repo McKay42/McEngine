@@ -16,9 +16,8 @@ class Engine;
 class App : public KeyboardListener
 {
 public:
-	App() {;}
-	virtual ~App() {;}
-
+	static App* createApp();
+	
 	virtual void draw(Graphics *g) {;}
 	virtual void update() {;}
 

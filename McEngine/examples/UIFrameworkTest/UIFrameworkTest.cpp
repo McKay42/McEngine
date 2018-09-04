@@ -15,6 +15,8 @@
 
 #include "CBaseUI.h"
 
+App* App::createApp() { return new UIFrameworkTest(); }
+
 UIFrameworkTest::UIFrameworkTest()
 {
 	m_menuScreen = std::shared_ptr<UIFrameworkTestMenu>(new UIFrameworkTestMenu(this));

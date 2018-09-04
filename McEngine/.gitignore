@@ -1,2 +1,4 @@
-/Windows Release/
-/Windows Debug/
+*Release/
+*Debug/
+
+src/App

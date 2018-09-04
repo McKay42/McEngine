@@ -10,7 +10,7 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 2. ```/libraries/``` contains all dependencies (includes, dlls, libs, sos)
 
 3. ```/src/``` contains the source code
-   1. ```/src/App/``` contains the code for applications using the engine
+   1. ```/src/App/``` contains the code for applications using the engine. You simply need to either link or copy your game folder under this path and build the project, as all of the files under this default directory will be included automatically.
    2. ```/src/Engine/``` contains the core
       1. ```/src/Engine/Input/``` contains input devices
       2. ```/src/Engine/Main/``` contains the main entry points (and icons for the executable)
@@ -48,6 +48,19 @@ For Windows, the build configuration to use would be either ```Windows Release``
 - Make sure you create a correct ```Run Configuration```. The working directory must be ```${workspace_loc:McEngine/build}```, and the C/C++ Application path must be ```Windows Release/McEngine.exe``` (if this is a Windows release of course).
 
 If you don't want to use eclipse you'll have to create your own makefile. Microsoft Visual Studio and their compilers are not supported.
+
+## Make
+
+First you'll need to link your app's folder under McEngine/src/App. See the [examples](repo/McEngine/examples/README.md) for instructions on how to compile the sample applications.
+Build by going into the Makefile's directory (currently the McEngine/src folder) and executing:     
+
+- `make build-linux` to build for Linux. The application's file will be called **App** and will be put in the **Linux Release** folder.
+- ~~[NOT IMPLEMENTED] `make build-windows` to build for Windows. The application's file will be called **App** and will be put in the **Windows Release** folder.~~
+- ~~[NOT IMPLEMENTED] `make build-macos` to build for MacOS. The application's file will be called **App** and will be put in the **MacOS Release** folder.~~
+
+Assuming the build works, you may take *only* this generated **App** file, put it into the McEngine/build folder and run it to see the results.
+
+PS: If you're on Linux, you'll need to run the App with `./App -L.` from the command-line.
 
 ## Windows
 The Windows build needs mingw-w64 (i686 with Win32 threads), you can get it here:

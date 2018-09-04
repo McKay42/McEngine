@@ -19,6 +19,8 @@
 #define HIDDEN_TOP 4 // tetrimino spawn area
 #define KEY_REPEAT_SPEED 0.07f // how fast left/right/down movements are
 
+App* App::createApp() { return new Tetris(); }
+
 Tetris::Tetris()
 {
 	srand(time(NULL));
