@@ -51,14 +51,14 @@ If you don't want to use eclipse you'll have to create your own makefile. Micros
 
 ## Make
 
-First you'll need to link your app's folder under McEngine/src/App.
-Then you can build your app by going into the Makefile's directory (currently the same as the Eclipse's project folder) and executing:
+First you'll need to link your app's folder under McEngine/src/App. See the [examples](repo/McEngine/examples/README.md) for instructions on how to compile the sample applications.
+Build by going into the Makefile's directory (currently the McEngine/src folder) and executing:     
 
 - `make build-linux` to build for Linux. The application's file will be called **App** and will be put in the **Linux Release** folder.
-- ~~[NOT CURRENTLY IMPLEMENTED] `make build-windows` to build for Windows. The application's file will be called **App** and will be put in the **Windows Release** folder.~~
-- ~~[NOT CURRENTLY IMPLEMENTED] `make build-macos` to build for MacOS. The application's file will be called **App** and will be put in the **MacOS Release** folder.~~
+- ~~[NOT IMPLEMENTED] `make build-windows` to build for Windows. The application's file will be called **App** and will be put in the **Windows Release** folder.~~
+- ~~[NOT IMPLEMENTED] `make build-macos` to build for MacOS. The application's file will be called **App** and will be put in the **MacOS Release** folder.~~
 
-Assuming the build works, you can take this generated **App** file, put it into the ./build folder and run it to see the results.
+Assuming the build works, you may take *only* this generated **App** file, put it into the McEngine/build folder and run it to see the results.
 
 PS: If you're on Linux, you'll need to run the App with `./App -L.` from the command-line.
 
