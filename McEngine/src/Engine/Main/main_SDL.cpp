@@ -187,7 +187,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 				}
 				break;
 
-			// mouse
+			// mouse, also inject mouse 4 + 5 as keyboard keys
 			case SDL_MOUSEBUTTONDOWN:
 				switch (e.button.button)
 				{
@@ -199,6 +199,13 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					break;
 				case SDL_BUTTON_RIGHT:
 					g_engine->onMouseRightChange(true);
+					break;
+
+				case SDL_BUTTON_X1:
+					g_engine->onKeyboardKeyDown(SDL_Scancode::SDL_NUM_SCANCODES + 1); // NOTE: abusing enum value
+					break;
+				case SDL_BUTTON_X2:
+					g_engine->onKeyboardKeyDown(SDL_Scancode::SDL_NUM_SCANCODES + 2); // NOTE: abusing enum value
 					break;
 				}
 				break;
@@ -214,6 +221,13 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					break;
 				case SDL_BUTTON_RIGHT:
 					g_engine->onMouseRightChange(false);
+					break;
+
+				case SDL_BUTTON_X1:
+					g_engine->onKeyboardKeyUp(SDL_Scancode::SDL_NUM_SCANCODES + 1); // NOTE: abusing enum value
+					break;
+				case SDL_BUTTON_X2:
+					g_engine->onKeyboardKeyUp(SDL_Scancode::SDL_NUM_SCANCODES + 2); // NOTE: abusing enum value
 					break;
 				}
 				break;
