@@ -31,6 +31,7 @@ PIXELFORMATDESCRIPTOR getPixelFormatDescriptor()
 {
 	PIXELFORMATDESCRIPTOR pfd;
 	memset(&pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
+
 	pfd.nSize  = sizeof(PIXELFORMATDESCRIPTOR);
 	pfd.nVersion   = 1;
 	pfd.dwFlags    = PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_DRAW_TO_WINDOW | PFD_SUPPORT_COMPOSITION;
@@ -152,11 +153,11 @@ FAKE_CONTEXT WinGLLegacyInterface::createAndMakeCurrentWGLContext(HWND hwnd, PIX
 
 	// get pixel format
 	int pixelFormat = ChoosePixelFormat(tempHDC, &pfdIn);
-	debugLog("OpenGL: PixelFormat = %i\n",pixelFormat);
+	debugLog("OpenGL: PixelFormat = %i\n", pixelFormat);
 
 	// set pixel format
 	BOOL result = SetPixelFormat(tempHDC, pixelFormat, &pfdIn);
-	debugLog("OpenGL: SetPixelFormat() = %i\n",result);
+	debugLog("OpenGL: SetPixelFormat() = %i\n", result);
 
 	// create temp context and make current
 	context.hglrc = wglCreateContext(tempHDC);
@@ -189,11 +190,24 @@ WinGLLegacyInterface::WinGLLegacyInterface(HWND hwnd) : OpenGLLegacyInterface()
 		pixelFormat = g_iARBMultisampleFormat;
 	else
 		pixelFormat = ChoosePixelFormat(m_hdc, &pfd);
-	debugLog("OpenGL: PixelFormat = %i\n",pixelFormat);
+
+	debugLog("OpenGL: PixelFormat = %i\n", pixelFormat);
+
+	if (pixelFormat == 0)
+	{
+		engine->showMessageErrorFatal("Fatal Engine Error", UString::format("ChoosePixelFormat() returned 0, GetLastError() = %i!\nThe engine will quit now.", GetLastError()));
+		exit(0);
+	}
 
 	// set pixel format
 	BOOL result = SetPixelFormat(m_hdc, pixelFormat, &pfd);
-	debugLog("OpenGL: SetPixelFormat() = %i\n",result);
+	debugLog("OpenGL: SetPixelFormat() = %i\n", result);
+
+	if (result == FALSE)
+	{
+		engine->showMessageErrorFatal("Fatal Engine Error", UString::format("SetPixelFormat() returned 0, GetLastError() = %i!\nThe engine will quit now.", GetLastError()));
+		exit(0);
+	}
 
 	// WINDOWS: HACKHACK: create temp context and make current
 	m_hglrc = wglCreateContext(m_hdc);

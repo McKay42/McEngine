@@ -34,6 +34,7 @@ public:
 	void write(const char *buffer, size_t size);
 
 	UString readLine();
+	UString readString();
 	const char *readFile(); // WARNING: this is NOT a null-terminated string! DO NOT USE THIS with UString/std::string!
 
 	size_t getFileSize() const;

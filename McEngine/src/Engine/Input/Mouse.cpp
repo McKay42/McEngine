@@ -25,6 +25,8 @@ Mouse::Mouse() : InputDevice()
 	m_bMouseLeftDown = false;
 	m_bMouseMiddleDown = false;
 	m_bMouseRightDown = false;
+	m_bMouse4Down = false;
+	m_bMouse5Down = false;
 
 	m_iWheelDeltaVertical = 0;
 	m_iWheelDeltaHorizontal = 0;
@@ -41,8 +43,7 @@ Mouse::Mouse() : InputDevice()
 
 void Mouse::draw(Graphics *g)
 {
-	if (!debug_mouse.getBool())
-		return;
+	if (!debug_mouse.getBool()) return;
 
 	drawDebug(g);
 
@@ -361,7 +362,7 @@ void Mouse::onLeftChange(bool leftDown)
 
 	for (int i=0; i<m_listeners.size(); i++)
 	{
-		m_listeners[i]->onLeftChange(leftDown);
+		m_listeners[i]->onLeftChange(m_bMouseLeftDown);
 	}
 }
 
@@ -371,7 +372,7 @@ void Mouse::onMiddleChange(bool middleDown)
 
 	for (int i=0; i<m_listeners.size(); i++)
 	{
-		m_listeners[i]->onMiddleChange(middleDown);
+		m_listeners[i]->onMiddleChange(m_bMouseMiddleDown);
 	}
 }
 
@@ -381,7 +382,27 @@ void Mouse::onRightChange(bool rightDown)
 
 	for (int i=0; i<m_listeners.size(); i++)
 	{
-		m_listeners[i]->onRightChange(rightDown);
+		m_listeners[i]->onRightChange(m_bMouseRightDown);
+	}
+}
+
+void Mouse::onButton4Change(bool button4down)
+{
+	m_bMouse4Down = button4down;
+
+	for (int i=0; i<m_listeners.size(); i++)
+	{
+		m_listeners[i]->onButton4Change(m_bMouse4Down);
+	}
+}
+
+void Mouse::onButton5Change(bool button5down)
+{
+	m_bMouse5Down = button5down;
+
+	for (int i=0; i<m_listeners.size(); i++)
+	{
+		m_listeners[i]->onButton5Change(m_bMouse5Down);
 	}
 }
 

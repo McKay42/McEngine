@@ -48,6 +48,15 @@ UString::UString(const char *utf8)
 	fromUtf8(utf8);
 }
 
+UString::UString(const char *utf8, int length)
+{
+	mLength = length;
+	mUnicode = (wchar_t*)nullWString;
+	mUtf8 = (char*)nullString;
+
+	fromUtf8(utf8, length);
+}
+
 UString::UString(const UString &ustr)
 {
 	mLength = 0;
@@ -616,11 +625,11 @@ bool UString::operator < (const UString &ustr) const
 	return mLength < ustr.mLength;
 }
 
-int UString::fromUtf8(const char *utf8)
+int UString::fromUtf8(const char *utf8, int length)
 {
 	if (utf8 == NULL) return 0;
 
-	size_t supposedStringSize = strlen(utf8) + 1; // +1 due to null char, since we're accessing the raw data below in the utf-8/16/32 check
+	size_t supposedStringSize = (length > -1 ? length : strlen(utf8)) + 1; // +1 due to null char, since we're accessing the raw data below in the utf-8/16/32 check
 
 	int startIndex = 0;
 	if (supposedStringSize > 2)
@@ -660,7 +669,7 @@ int UString::fromUtf8(const char *utf8)
 
 	mLength = decode(&(utf8[startIndex]), NULL);
 	mUnicode = new wchar_t[mLength+1]; // +1 for null termination later
-	const int length = decode(&(utf8[startIndex]), mUnicode);
+	length = decode(&(utf8[startIndex]), mUnicode);
 
 	// reencode to utf8
 	updateUtf8();

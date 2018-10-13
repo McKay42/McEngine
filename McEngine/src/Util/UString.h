@@ -21,6 +21,7 @@ public:
 	UString();
 	UString(const wchar_t *str);
 	UString(const char *utf8);
+	UString(const char *utf8, int length);
 	UString(const UString &ustr);
 	UString(UString &&ustr);
 	~UString();
@@ -74,7 +75,7 @@ private:
 
 	static void getUtf8(wchar_t ch, char *utf8, int numBytes, int firstByteValue);
 
-	int fromUtf8(const char *utf8);
+	int fromUtf8(const char *utf8, int length = -1);
 
 	void updateUtf8();
 
