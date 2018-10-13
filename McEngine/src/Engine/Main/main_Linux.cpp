@@ -156,7 +156,7 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 		}
 		break;
 
-	// mouse
+	// mouse, also inject mouse 4 + 5 as keyboard keys
 	case ButtonPress:
 		if (g_engine != NULL)
 		{
@@ -178,6 +178,20 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 			case Button5: // = mouse wheel down
 				g_engine->onMouseWheelVertical(-120);
 				break;
+
+			case 6: // = mouse wheel left
+				g_engine->onMouseWheelHorizontal(-120);
+				break;
+			case 7: // = mouse wheel right
+				g_engine->onMouseWheelHorizontal(120);
+				break;
+
+			case 8: // mouse 4 (backwards)
+				g_engine->onKeyboardKeyDown(XK_Pointer_Button4); // NOTE: abusing "dead vowels for universal syllable entry", no idea what this key does
+				break;
+			case 9: // mouse 5 (forwards)
+				g_engine->onKeyboardKeyDown(XK_Pointer_Button5); // NOTE: abusing "dead vowels for universal syllable entry", no idea what this key does
+				break;
 			}
 		}
 		break;
@@ -195,6 +209,13 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 				break;
 			case Button3:
 				g_engine->onMouseRightChange(false);
+				break;
+
+			case 8: // mouse 4 (backwards)
+				g_engine->onKeyboardKeyUp(XK_Pointer_Button4); // NOTE: abusing "dead vowels for universal syllable entry", no idea what this key does
+				break;
+			case 9: // mouse 5 (forwards)
+				g_engine->onKeyboardKeyUp(XK_Pointer_Button5); // NOTE: abusing "dead vowels for universal syllable entry", no idea what this key does
 				break;
 			}
 		}
