@@ -36,6 +36,8 @@ public:
 	void onLeftChange(bool leftDown);
 	void onMiddleChange(bool middleDown);
 	void onRightChange(bool rightDown);
+	void onButton4Change(bool button4down);
+	void onButton5Change(bool button5down);
 
 	void setPos(Vector2 pos);
 	void setCursorType(CURSORTYPE cursorType);
@@ -52,6 +54,8 @@ public:
 	inline bool isLeftDown() const {return m_bMouseLeftDown;}
 	inline bool isMiddleDown() const {return m_bMouseMiddleDown;}
 	inline bool isRightDown() const {return m_bMouseRightDown;}
+	inline bool isButton4Down() const {return m_bMouse4Down;}
+	inline bool isButton5Down() const {return m_bMouse5Down;}
 
 	bool isCursorVisible();
 
@@ -74,6 +78,8 @@ private:
 	bool m_bMouseLeftDown;
 	bool m_bMouseMiddleDown;
 	bool m_bMouseRightDown;
+	bool m_bMouse4Down;
+	bool m_bMouse5Down;
 
 	int m_iWheelDeltaVertical;
 	int m_iWheelDeltaHorizontal;

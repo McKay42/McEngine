@@ -66,6 +66,8 @@ public:
 	void onMouseLeftChange(bool mouseLeftDown);
 	void onMouseMiddleChange(bool mouseMiddleDown);
 	void onMouseRightChange(bool mouseRightDown);
+	void onMouseButton4Change(bool mouse4down);
+	void onMouseButton5Change(bool mouse5down);
 
 	// primary keyboard messages
 	void onKeyboardKeyDown(KEYCODE keyCode);
