@@ -59,6 +59,14 @@ UString File::readLine()
 	return m_file->readLine();
 }
 
+UString File::readString()
+{
+	const int size = getFileSize();
+	if (size < 1) return "";
+
+	return UString(readFile(), size);
+}
+
 const char *File::readFile()
 {
 	return m_file->readFile();

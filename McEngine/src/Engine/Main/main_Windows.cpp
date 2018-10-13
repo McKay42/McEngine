@@ -382,6 +382,40 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			ReleaseCapture();
 			break;
 
+		// mouse sidebuttons (4 and 5), inject them as keyboard keys as well
+		case WM_XBUTTONDOWN:
+			if (g_engine != NULL)
+			{
+				const DWORD fwButton = GET_XBUTTON_WPARAM(wParam);
+				if (fwButton == XBUTTON1)
+				{
+					g_engine->onMouseButton4Change(true);
+					g_engine->onKeyboardKeyDown(VK_XBUTTON1);
+				}
+				else if (fwButton == XBUTTON2)
+				{
+					g_engine->onMouseButton5Change(true);
+					g_engine->onKeyboardKeyDown(VK_XBUTTON2);
+				}
+			}
+			return TRUE;
+		case WM_XBUTTONUP:
+			if (g_engine != NULL)
+			{
+				const DWORD fwButton = GET_XBUTTON_WPARAM(wParam);
+				if (fwButton == XBUTTON1)
+				{
+					g_engine->onMouseButton4Change(false);
+					g_engine->onKeyboardKeyUp(VK_XBUTTON1);
+				}
+				else if (fwButton == XBUTTON2)
+				{
+					g_engine->onMouseButton5Change(false);
+					g_engine->onKeyboardKeyUp(VK_XBUTTON2);
+				}
+			}
+			return TRUE;
+
 		// cursor visibility handling (for client area)
 		case WM_SETCURSOR:
 			if (!g_bCursorVisible)
