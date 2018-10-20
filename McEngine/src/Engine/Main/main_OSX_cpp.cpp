@@ -66,39 +66,46 @@ MacOSWrapper::~MacOSWrapper()
 void MacOSWrapper::loadApp()
 {
 	g_engine->loadApp();
+
+	m_frameTimer->update();
+	m_deltaTimer->update();
 }
 
 void MacOSWrapper::main_objc_before_winproc()
 {
-	m_frameTimer->update();
+
 }
 
 void MacOSWrapper::main_objc_after_winproc()
 {
 	// update
-	if (g_bUpdate)
-		g_engine->onUpdate();
+	{
+		m_deltaTimer->update();
+
+		if (m_deltaTimer->getElapsedTime() > m_fPrevTime)
+		{
+			m_fPrevTime = m_deltaTimer->getElapsedTime() + 1.0f;
+			printf("fps = %f, delta = %f\n", (1.0f / m_deltaTimer->getDelta()), m_deltaTimer->getDelta());
+		}
+
+		engine->setFrameTime(m_deltaTimer->getDelta());
+
+		if (g_bUpdate)
+			g_engine->onUpdate();
+	}
 
 	// draw
 	if (g_bDraw)
 	{
 		g_bDrawing = true;
+		{
 			g_engine->onPaint();
+		}
 		g_bDrawing = false;
 	}
 
 	// delay the next frame
 	m_frameTimer->update();
-	m_deltaTimer->update();
-
-	if (m_deltaTimer->getElapsedTime() > m_fPrevTime)
-	{
-		m_fPrevTime = m_deltaTimer->getElapsedTime() + 1.0f;
-		printf("fps = %f, delta = %f\n", (1.0f / m_deltaTimer->getDelta()), m_deltaTimer->getDelta());
-	}
-
-	engine->setFrameTime(m_deltaTimer->getDelta());
-
 	const bool inBackground = g_bMinimized || !g_bHasFocus;
 	if (!fps_unlimited.getBool() || inBackground)
 	{
@@ -114,7 +121,7 @@ void MacOSWrapper::main_objc_after_winproc()
 			if (inBackground) // real waiting (very inaccurate, but very good for little background cpu utilization)
 				microSleep((int)((1.0f / fps_max_background.getFloat())*1000.0f*1000.0f));
 			else // more or less "busy" waiting, but giving away the rest of the timeslice at least
-				microSleep(1);
+				microSleep(0);
 
 			// decrease the delayTime by the time we spent in this loop
 			// if the loop is executed more than once, note how delayStart now gets the value of the previous iteration from getElapsedTime()

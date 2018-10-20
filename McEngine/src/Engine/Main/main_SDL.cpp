@@ -112,12 +112,13 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 	g_engine = new Engine(environment, ""); // TODO: args
 	g_engine->loadApp();
 
+	frameTimer->update();
+	deltaTimer->update();
+
 	// main loop
 	SDL_Event e;
 	while (g_bRunning)
 	{
-		frameTimer->update();
-
 		// handle window message queue
 		while (SDL_PollEvent(&e) != 0)
 		{
@@ -187,7 +188,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 				}
 				break;
 
-			// mouse
+			// mouse, also inject mouse 4 + 5 as keyboard keys
 			case SDL_MOUSEBUTTONDOWN:
 				switch (e.button.button)
 				{
@@ -199,6 +200,13 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					break;
 				case SDL_BUTTON_RIGHT:
 					g_engine->onMouseRightChange(true);
+					break;
+
+				case SDL_BUTTON_X1:
+					g_engine->onKeyboardKeyDown(SDL_Scancode::SDL_NUM_SCANCODES + 1); // NOTE: abusing enum value
+					break;
+				case SDL_BUTTON_X2:
+					g_engine->onKeyboardKeyDown(SDL_Scancode::SDL_NUM_SCANCODES + 2); // NOTE: abusing enum value
 					break;
 				}
 				break;
@@ -214,6 +222,13 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					break;
 				case SDL_BUTTON_RIGHT:
 					g_engine->onMouseRightChange(false);
+					break;
+
+				case SDL_BUTTON_X1:
+					g_engine->onKeyboardKeyUp(SDL_Scancode::SDL_NUM_SCANCODES + 1); // NOTE: abusing enum value
+					break;
+				case SDL_BUTTON_X2:
+					g_engine->onKeyboardKeyUp(SDL_Scancode::SDL_NUM_SCANCODES + 2); // NOTE: abusing enum value
 					break;
 				}
 				break;
@@ -233,8 +248,13 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 		}
 
 		// update
-		if (g_bUpdate)
-			g_engine->onUpdate();
+		{
+			deltaTimer->update();
+			engine->setFrameTime(deltaTimer->getDelta());
+
+			if (g_bUpdate)
+				g_engine->onUpdate();
+		}
 
 		// draw
 		if (g_bDraw)
@@ -248,10 +268,6 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 		// delay the next frame
 		frameTimer->update();
-		deltaTimer->update();
-
-		engine->setFrameTime(deltaTimer->getDelta());
-
 		const bool inBackground = g_bMinimized || !g_bHasFocus;
 		if (!fps_unlimited.getBool() || inBackground)
 		{

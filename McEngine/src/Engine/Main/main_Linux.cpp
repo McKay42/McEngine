@@ -156,7 +156,7 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 		}
 		break;
 
-	// mouse
+	// mouse, also inject mouse 4 + 5 as keyboard keys
 	case ButtonPress:
 		if (g_engine != NULL)
 		{
@@ -178,6 +178,20 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 			case Button5: // = mouse wheel down
 				g_engine->onMouseWheelVertical(-120);
 				break;
+
+			case 6: // = mouse wheel left
+				g_engine->onMouseWheelHorizontal(-120);
+				break;
+			case 7: // = mouse wheel right
+				g_engine->onMouseWheelHorizontal(120);
+				break;
+
+			case 8: // mouse 4 (backwards)
+				g_engine->onKeyboardKeyDown(XK_Pointer_Button4); // NOTE: abusing "dead vowels for universal syllable entry", no idea what this key does
+				break;
+			case 9: // mouse 5 (forwards)
+				g_engine->onKeyboardKeyDown(XK_Pointer_Button5); // NOTE: abusing "dead vowels for universal syllable entry", no idea what this key does
+				break;
 			}
 		}
 		break;
@@ -195,6 +209,13 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 				break;
 			case Button3:
 				g_engine->onMouseRightChange(false);
+				break;
+
+			case 8: // mouse 4 (backwards)
+				g_engine->onKeyboardKeyUp(XK_Pointer_Button4); // NOTE: abusing "dead vowels for universal syllable entry", no idea what this key does
+				break;
+			case 9: // mouse 5 (forwards)
+				g_engine->onKeyboardKeyUp(XK_Pointer_Button5); // NOTE: abusing "dead vowels for universal syllable entry", no idea what this key does
 				break;
 			}
 		}
@@ -352,19 +373,22 @@ int main(int argc, char *argv[])
 	// get keyboard focus
 	XSetICFocus(ic);
 
-    // initialize engine
-	LinuxEnvironment *environment = new LinuxEnvironment(dpy, win);
-	g_environment = environment;
-    g_engine = new Engine(environment, argc > 1 ? argv[1] : "");
-    g_engine->loadApp();
-
-    // create timer
+    // create timers
     Timer *frameTimer = new Timer();
     frameTimer->start();
     frameTimer->update();
 
     Timer *deltaTimer = new Timer();
     deltaTimer->start();
+    deltaTimer->update();
+
+    // initialize engine
+	LinuxEnvironment *environment = new LinuxEnvironment(dpy, win);
+	g_environment = environment;
+    g_engine = new Engine(environment, argc > 1 ? argv[1] : "");
+    g_engine->loadApp();
+
+    frameTimer->update();
     deltaTimer->update();
 
     // main loop
@@ -382,23 +406,26 @@ int main(int argc, char *argv[])
 		}
 
 		// update
-		if (g_bUpdate)
-			g_engine->onUpdate();
+		{
+			deltaTimer->update();
+			engine->setFrameTime(deltaTimer->getDelta());
+
+			if (g_bUpdate)
+				g_engine->onUpdate();
+		}
 
 		// draw
 		if (g_bDraw)
 		{
 			g_bDrawing = true;
+			{
 				g_engine->onPaint();
+			}
 			g_bDrawing = false;
 		}
 
 		// delay the next frame
 		frameTimer->update();
-		deltaTimer->update();
-
-		engine->setFrameTime(deltaTimer->getDelta());
-
 		const bool inBackground = /*g_bMinimized ||*/ !g_bHasFocus;
 		if (!fps_unlimited.getBool() || inBackground)
 		{
@@ -414,7 +441,7 @@ int main(int argc, char *argv[])
 				if (inBackground) // real waiting (very inaccurate, but very good for little background cpu utilization)
 					usleep(1000 * (unsigned int)((1.0f / fps_max_background.getFloat())*1000.0f));
 				else // more or less "busy" waiting, but giving away the rest of the timeslice at least
-					usleep(1);
+					usleep(0);
 
 				// decrease the delayTime by the time we spent in this loop
 				// if the loop is executed more than once, note how delayStart now gets the value of the previous iteration from getElapsedTime()
