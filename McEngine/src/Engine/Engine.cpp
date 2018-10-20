@@ -476,6 +476,16 @@ void Engine::onMouseRightChange(bool mouseRightDown)
 		m_mouse->onRightChange(mouseRightDown);
 }
 
+void Engine::onMouseButton4Change(bool mouse4down)
+{
+	m_mouse->onButton4Change(mouse4down);
+}
+
+void Engine::onMouseButton5Change(bool mouse5down)
+{
+	m_mouse->onButton5Change(mouse5down);
+}
+
 void Engine::onKeyboardKeyDown(KEYCODE keyCode)
 {
 	// handle ALT+F4 quit

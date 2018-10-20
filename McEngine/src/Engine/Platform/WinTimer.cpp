@@ -15,20 +15,21 @@ WinTimer::WinTimer()
 	m_elapsedTime = 0;
 
 	LARGE_INTEGER ticks;
-	QueryPerformanceFrequency( &ticks );
+	QueryPerformanceFrequency(&ticks);
 	m_ticksPerSecond = (double)ticks.QuadPart;
 }
 
 void WinTimer::start()
 {
 	QueryPerformanceCounter(&m_startTime);
+	m_currentTime = m_startTime;
 }
 
 void WinTimer::update()
 {
 	// get the current time
 	LARGE_INTEGER nowTime;
-	QueryPerformanceCounter( &nowTime );
+	QueryPerformanceCounter(&nowTime);
 
 	// update timer
 	m_elapsedTime = ((double)nowTime.QuadPart - (double)m_startTime.QuadPart) / m_ticksPerSecond;

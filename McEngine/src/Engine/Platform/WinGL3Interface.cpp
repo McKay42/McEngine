@@ -20,6 +20,7 @@ PIXELFORMATDESCRIPTOR WinGL3Interface::getPixelFormatDescriptor()
 {
 	PIXELFORMATDESCRIPTOR pfd;
 	memset(&pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
+
 	pfd.nSize  = sizeof(PIXELFORMATDESCRIPTOR);
 	pfd.nVersion   = 1;
 	pfd.dwFlags    = PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_DRAW_TO_WINDOW | PFD_SUPPORT_COMPOSITION;
@@ -28,6 +29,10 @@ PIXELFORMATDESCRIPTOR WinGL3Interface::getPixelFormatDescriptor()
 	pfd.cDepthBits = 24;
 	pfd.cStencilBits = 1;
 	pfd.iLayerType = PFD_MAIN_PLANE;
+
+	// experimental, for ghost mode
+	///pfd.cAlphaBits = 8;
+
 	return pfd;
 }
 
@@ -51,9 +56,21 @@ WinGL3Interface::WinGL3Interface(HWND hwnd) : OpenGL3Interface()
 	int pixelFormat = ChoosePixelFormat(m_hdc, &pfd);
 	debugLog("OpenGL: PixelFormat = %i\n", pixelFormat);
 
+	if (pixelFormat == 0)
+	{
+		engine->showMessageErrorFatal("Fatal Engine Error", UString::format("ChoosePixelFormat() returned 0, GetLastError() = %i!\nThe engine will quit now.", GetLastError()));
+		exit(0);
+	}
+
 	// set pixel format
 	BOOL result = SetPixelFormat(m_hdc, pixelFormat, &pfd);
 	debugLog("OpenGL: SetPixelFormat() = %i\n", result);
+
+	if (result == FALSE)
+	{
+		engine->showMessageErrorFatal("Fatal Engine Error", UString::format("SetPixelFormat() returned 0, GetLastError() = %i!\nThe engine will quit now.", GetLastError()));
+		exit(0);
+	}
 
 	// WINDOWS: create temp context and make current
 	HGLRC tempContext = wglCreateContext(m_hdc);

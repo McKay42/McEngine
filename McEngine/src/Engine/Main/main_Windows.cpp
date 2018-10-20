@@ -255,10 +255,20 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		// paint nothing on repaint
 		case WM_PAINT:
 			{
+				// variant 1 (apparently not the correct way of doing this?):
+				/*
 				ValidateRect(hwnd, NULL);
+				*/
+
+				// variant 2 (seems to be what DefWindowProc is doing):
+				PAINTSTRUCT ps;
+				BeginPaint(hwnd, &ps);
+				EndPaint(hwnd, &ps);
+
+				// debug:
 				/*
 				PAINTSTRUCT ps;
-				HDC hdc = BeginPaint(hwnd,&ps);
+				HDC hdc = BeginPaint(hwnd, &ps);
 
 				RECT wr;
 				GetClientRect(hwnd, &wr);
@@ -381,6 +391,40 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				g_engine->onMouseRightChange(false);
 			ReleaseCapture();
 			break;
+
+		// mouse sidebuttons (4 and 5), inject them as keyboard keys as well
+		case WM_XBUTTONDOWN:
+			if (g_engine != NULL)
+			{
+				const DWORD fwButton = GET_XBUTTON_WPARAM(wParam);
+				if (fwButton == XBUTTON1)
+				{
+					g_engine->onMouseButton4Change(true);
+					g_engine->onKeyboardKeyDown(VK_XBUTTON1);
+				}
+				else if (fwButton == XBUTTON2)
+				{
+					g_engine->onMouseButton5Change(true);
+					g_engine->onKeyboardKeyDown(VK_XBUTTON2);
+				}
+			}
+			return TRUE;
+		case WM_XBUTTONUP:
+			if (g_engine != NULL)
+			{
+				const DWORD fwButton = GET_XBUTTON_WPARAM(wParam);
+				if (fwButton == XBUTTON1)
+				{
+					g_engine->onMouseButton4Change(false);
+					g_engine->onKeyboardKeyUp(VK_XBUTTON1);
+				}
+				else if (fwButton == XBUTTON2)
+				{
+					g_engine->onMouseButton5Change(false);
+					g_engine->onKeyboardKeyUp(VK_XBUTTON2);
+				}
+			}
+			return TRUE;
 
 		// cursor visibility handling (for client area)
 		case WM_SETCURSOR:
@@ -937,15 +981,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     g_engine->loadApp();
 
     if (g_bHasFocus)
-    {
     	g_engine->onFocusGained();
-    }
+
+    frameTimer->update();
+    deltaTimer->update();
 
 	// main loop
 	while (g_bRunning)
 	{
-		frameTimer->update();
-
 		// handle windows message queue
 		MSG msg;
 		msg.message = WM_NULL;
@@ -956,23 +999,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		// update
-		if (g_bUpdate)
-			g_engine->onUpdate();
+		{
+			deltaTimer->update();
+			g_engine->setFrameTime(deltaTimer->getDelta());
+
+			if (g_bUpdate)
+				g_engine->onUpdate();
+		}
 
 		// draw
 		if (g_bDraw)
 		{
 			g_bDrawing = true;
+			{
 				g_engine->onPaint();
+			}
 			g_bDrawing = false;
 		}
 
 		// delay the next frame
 		frameTimer->update();
-		deltaTimer->update();
-
-		engine->setFrameTime(deltaTimer->getDelta());
-
 		const bool inBackground = g_bMinimized || !g_bHasFocus;
 		if (!fps_unlimited.getBool() || inBackground)
 		{
