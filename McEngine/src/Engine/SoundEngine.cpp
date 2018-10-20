@@ -45,6 +45,7 @@ SoundEngine::SoundEngine()
 
 	// apply default global settings
 	BASS_SetConfig(BASS_CONFIG_BUFFER, 100);
+	BASS_SetConfig(BASS_CONFIG_NET_BUFFER, 500);
 	BASS_SetConfig(BASS_CONFIG_UPDATEPERIOD, 10);
 	BASS_SetConfig(BASS_CONFIG_UPDATETHREADS, 1);
 	BASS_SetConfig(BASS_CONFIG_VISTA_TRUEPOS, 0); // if set to 1, increases latency from 30 ms to 40 ms on windows 7 (?)
