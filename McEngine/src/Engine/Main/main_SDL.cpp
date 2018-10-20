@@ -112,12 +112,13 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 	g_engine = new Engine(environment, ""); // TODO: args
 	g_engine->loadApp();
 
+	frameTimer->update();
+	deltaTimer->update();
+
 	// main loop
 	SDL_Event e;
 	while (g_bRunning)
 	{
-		frameTimer->update();
-
 		// handle window message queue
 		while (SDL_PollEvent(&e) != 0)
 		{
@@ -247,8 +248,13 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 		}
 
 		// update
-		if (g_bUpdate)
-			g_engine->onUpdate();
+		{
+			deltaTimer->update();
+			engine->setFrameTime(deltaTimer->getDelta());
+
+			if (g_bUpdate)
+				g_engine->onUpdate();
+		}
 
 		// draw
 		if (g_bDraw)
@@ -262,10 +268,6 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 		// delay the next frame
 		frameTimer->update();
-		deltaTimer->update();
-
-		engine->setFrameTime(deltaTimer->getDelta());
-
 		const bool inBackground = g_bMinimized || !g_bHasFocus;
 		if (!fps_unlimited.getBool() || inBackground)
 		{
