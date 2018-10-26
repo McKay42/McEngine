@@ -60,7 +60,7 @@ void AnimationHandler::update()
 		}
 
 		// modify percentage
-		switch(anim->m_animType)
+		switch (anim->m_animType)
 		{
 		case ANIMATION_TYPE::MOVE_SMOOTH_END:
 			percent = clamp<float>(1.0f - std::pow(1.0f - percent, anim->m_fFactor), 0.0f, 1.0f);
@@ -187,6 +187,17 @@ void AnimationHandler::deleteExistingAnimation(float *base)
 			i--;
 		}
 	}
+}
+
+float AnimationHandler::getRemainingDuration(float *base)
+{
+	for (int i=0; i<m_vAnimations.size(); i++)
+	{
+		if (m_vAnimations[i].m_fBase == base)
+			return std::max(0.0f, (m_vAnimations[i].m_fStartTime + m_vAnimations[i].m_fDuration) - (float)engine->getTime());
+	}
+
+	return 0.0f;
 }
 
 bool AnimationHandler::isAnimating(float *base)
