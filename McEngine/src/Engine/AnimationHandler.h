@@ -43,6 +43,7 @@ public:
 
 	void deleteExistingAnimation(float *base);
 
+	float getRemainingDuration(float *base);
 	bool isAnimating(float *base);
 
 private:
