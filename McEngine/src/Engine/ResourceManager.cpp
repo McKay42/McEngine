@@ -221,6 +221,7 @@ void ResourceManager::requestNextLoadUnmanaged()
 Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool mipmapped, bool keepInSystemMemory)
 {
 	// check if it already exists
+	if (resourceName.length() > 0)
 	{
 		Resource *temp = exists(resourceName);
 		if (temp != NULL)
@@ -251,6 +252,7 @@ Image *ResourceManager::loadImageUnnamed(UString filepath, bool mipmapped, bool 
 Image *ResourceManager::loadImageAbs(UString absoluteFilepath, UString resourceName, bool mipmapped, bool keepInSystemMemory)
 {
 	// check if it already exists
+	if (resourceName.length() > 0)
 	{
 		Resource *temp = exists(resourceName);
 		if (temp != NULL)
@@ -296,6 +298,7 @@ Image *ResourceManager::createImage(unsigned int width, unsigned int height, boo
 McFont *ResourceManager::loadFont(UString filepath, UString resourceName, unsigned int fontSize, bool antialiasing)
 {
 	// check if it already exists
+	if (resourceName.length() > 0)
 	{
 		Resource *temp = exists(resourceName);
 		if (temp != NULL)
@@ -315,6 +318,7 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, unsign
 McFont *ResourceManager::loadFont(UString filepath, UString resourceName, std::vector<wchar_t> characters, unsigned int fontSize, bool antialiasing)
 {
 	// check if it already exists
+	if (resourceName.length() > 0)
 	{
 		Resource *temp = exists(resourceName);
 		if (temp != NULL)
@@ -334,6 +338,7 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, std::v
 Sound *ResourceManager::loadSound(UString filepath, UString resourceName, bool stream, bool threeD, bool loop, bool prescan)
 {
 	// check if it already exists
+	if (resourceName.length() > 0)
 	{
 		Resource *temp = exists(resourceName);
 		if (temp != NULL)
@@ -353,6 +358,7 @@ Sound *ResourceManager::loadSound(UString filepath, UString resourceName, bool s
 Sound *ResourceManager::loadSoundAbs(UString filepath, UString resourceName, bool stream, bool threeD, bool loop, bool prescan)
 {
 	// check if it already exists
+	if (resourceName.length() > 0)
 	{
 		Resource *temp = exists(resourceName);
 		if (temp != NULL)
@@ -371,6 +377,7 @@ Sound *ResourceManager::loadSoundAbs(UString filepath, UString resourceName, boo
 Shader *ResourceManager::loadShader(UString vertexShaderFilePath, UString fragmentShaderFilePath, UString resourceName)
 {
 	// check if it already exists
+	if (resourceName.length() > 0)
 	{
 		Resource *temp = exists(resourceName);
 		if (temp != NULL)
@@ -403,6 +410,7 @@ Shader *ResourceManager::loadShader(UString vertexShaderFilePath, UString fragme
 Shader *ResourceManager::createShader(UString vertexShader, UString fragmentShader, UString resourceName)
 {
 	// check if it already exists
+	if (resourceName.length() > 0)
 	{
 		Resource *temp = exists(resourceName);
 		if (temp != NULL)
