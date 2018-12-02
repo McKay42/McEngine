@@ -30,7 +30,7 @@ public:
 	// client/server stuff
 	struct EXTENSION_PACKET
 	{
-		unsigned int size;
+		uint32_t size;
 		std::shared_ptr<void> data;
 	};
 
@@ -47,9 +47,9 @@ public:
 	typedef fastdelegate::FastDelegate1<void *, bool> NetworkServerReceiveClientInfoListener;					// called with the data of the EXTENSION_PACKET (if used) upon receiving a client info packet
 																								// returning false on either one of these will terminate the connection
 
-	typedef fastdelegate::FastDelegate3<unsigned int, void *, size_t, bool> NetworkServerReceiveClientPacketListener;			// packets sent through this class' functions will be received here
-	typedef fastdelegate::FastDelegate3<unsigned int, void *, size_t, bool> NetworkClientReceiveServerPacketListener;			// packets sent through this class' functions will be received here
-	typedef fastdelegate::FastDelegate3<unsigned int, UString, bool> NetworkServerClientChangeListener;		// called when a client's connection state (or another state of it, like its name or something) changes
+	typedef fastdelegate::FastDelegate3<uint32_t, void *, uint32_t, bool> NetworkServerReceiveClientPacketListener;			// packets sent through this class' functions will be received here
+	typedef fastdelegate::FastDelegate3<uint32_t, void *, uint32_t, bool> NetworkClientReceiveServerPacketListener;			// packets sent through this class' functions will be received here
+	typedef fastdelegate::FastDelegate3<uint32_t, UString, bool> NetworkServerClientChangeListener;		// called when a client's connection state (or another state of it, like its name or something) changes
 
 	void update();
 
@@ -64,9 +64,9 @@ public:
 	void kick(UString username);
 
 	// main send functions
-	void broadcast(void *data, size_t size, bool reliable = false); // two functions depending on the callee: [server -> all clients] or [client -> server -> all clients]; if both server and client, server wins (first case)
-	void servercast(void *data, size_t size, bool reliable = false); // [client -> server]; only valid as client
-	void clientcast(void *data, size_t size, unsigned int id, bool reliable = false); // [server -> client]; only valid as server
+	void broadcast(void *data, uint32_t size, bool reliable = false);				// two functions depending on the callee: [server -> all clients] or [client -> server -> all clients]; if both server and client, server wins (first case)
+	void servercast(void *data, uint32_t size, bool reliable = false);				// [client -> server]; only valid as client
+	void clientcast(void *data, uint32_t size, uint32_t id, bool reliable = false);	// [server -> client]; only valid as server
 
 	// callbacks
 	void setOnClientReceiveServerPacketListener(NetworkClientReceiveServerPacketListener listener) {m_clientReceiveServerPacketListener = listener;}
@@ -87,7 +87,7 @@ public:
 
 	// getters
 	int getPing();
-	inline unsigned int getLocalClientID() {return m_iLocalClientID;}
+	inline uint32_t getLocalClientID() {return m_iLocalClientID;}
 	inline UString getServerAddress() {return m_sServerAddress;}
 	bool isClient();
 	bool isServer();
@@ -128,7 +128,7 @@ private:
 
 #ifdef MCENGINE_FEATURE_NETWORKING
 
-	void sendServerInfo(unsigned int assignedID, ENetHost *host, ENetPeer *destination);		// server -> client (on a successful connection)
+	void sendServerInfo(uint32_t assignedID, ENetHost *host, ENetPeer *destination);		// server -> client (on a successful connection)
 
 	void singlecastChatMessage(CHAT_PACKET *cp, ENetHost *host, ENetPeer *destination);
 	void singlecastChatMessage(UString username, UString message, ENetHost *host, ENetPeer *destination);
@@ -142,7 +142,7 @@ private:
 #ifdef MCENGINE_FEATURE_NETWORKING
 
 	CLIENT_PEER *getClientPeerByPeer(ENetPeer *peer);
-	CLIENT_PEER *getClientPeerById(unsigned int id);
+	CLIENT_PEER *getClientPeerById(uint32_t id);
 
 #endif
 
@@ -151,7 +151,7 @@ private:
 	std::string curlReadBuffer;
 
 	// client
-	unsigned int m_iLocalClientID;
+	uint32_t m_iLocalClientID;
 	UString m_sServerAddress;
 
 #ifdef MCENGINE_FEATURE_NETWORKING
@@ -206,7 +206,7 @@ private:
 		UString name;
 		float kickTime; // if the client has been kicked, this serves as a delay to allow the kick chat message to arrive properly
 		float kickKillTime; // if the client doesn't want to freely disconnect after the kick delay, kill him
-		unsigned int id;
+		uint32_t id;
 	};
 
 #endif
@@ -217,24 +217,26 @@ private:
 	//	  Packets	 //
 	//***************//
 
+#pragma pack(1)
+
 	struct CLIENT_BROADCAST_WRAPPER
 	{
 		PACKET_TYPE ntype = CLIENT_BROADCAST_PACKET_TYPE;
-		unsigned int id; // unused; more values can be added here if needed
+		uint32_t id; // unused; more values can be added here if needed
 	};
 
 	struct SERVER_INFO_PACKET
 	{
 		PACKET_TYPE type = SERVER_INFO_PACKET_TYPE;
-		unsigned int id;
+		uint32_t id;
 		bool extension; // if there is a custom packet of the current app, which may be appended to this one by the onServerSendInfo() API
 	};
 
 	struct CLIENT_INFO_PACKET
 	{
 		PACKET_TYPE type = CLIENT_INFO_PACKET_TYPE;
-		unsigned int version;
-		size_t size;
+		uint32_t version;
+		uint32_t size;
 		wchar_t username[255];
 		bool extension; // if there is a custom packet of the current app, which may be appended to this one by the onClientSendInfo() API
 	};
@@ -242,11 +244,13 @@ private:
 	struct CHAT_PACKET
 	{
 		PACKET_TYPE type = CHAT_PACKET_TYPE;
-		size_t usize;
-		size_t msize;
+		uint32_t usize;
+		uint32_t msize;
 		wchar_t username[255];
 		wchar_t message[255];
 	};
+
+#pragma pack()
 };
 
 #endif

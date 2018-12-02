@@ -46,6 +46,9 @@ ConVar _name_admin_("name_admin", "ADMIN");
 ConVar _say_("say", DUMMY_ARGS_CONNECT);
 ConVar _kick_("kick", DUMMY_ARGS_CONNECT);
 
+ConVar cl_cmdrate("cl_cmdrate", 66.0f, "How many client update packets are sent to the server per second");
+ConVar cl_updaterate("cl_updaterate", 66.0f, "How many snapshots/updates/deltas are requested from the server per second");
+
 #endif
 
 NetworkHandler::NetworkHandler()
@@ -540,6 +543,7 @@ void NetworkHandler::onClientEvent(ENetEvent e)
 			switch (*((PACKET_TYPE*)e.packet->data))
 			{
 			case SERVER_INFO_PACKET_TYPE:
+				if (e.packet->dataLength >= sizeof(SERVER_INFO_PACKET))
 				{
 					SERVER_INFO_PACKET *sp = (SERVER_INFO_PACKET*)e.packet->data;
 					m_iLocalClientID = sp->id;
@@ -563,26 +567,32 @@ void NetworkHandler::onClientEvent(ENetEvent e)
 				break;
 
 			case CHAT_PACKET_TYPE:
-				if (!isServer()) // to avoid double logs on local hosts, since the client has already received the message through onServerEvent (and can't send it to itself in the broadcast)
+				if (e.packet->dataLength >= sizeof(CHAT_PACKET))
 				{
-					chatLog(UString(((struct CHAT_PACKET*)e.packet->data)->username).substr(0, ((struct CHAT_PACKET*)e.packet->data)->usize),
-							UString(((struct CHAT_PACKET*)e.packet->data)->message).substr(0, ((struct CHAT_PACKET*)e.packet->data)->msize));
+					if (!isServer()) // to avoid double logs on local hosts, since the client has already received the message through onServerEvent (and can't send it to itself in the broadcast)
+					{
+						chatLog(UString(((struct CHAT_PACKET*)e.packet->data)->username).substr(0, ((struct CHAT_PACKET*)e.packet->data)->usize),
+								UString(((struct CHAT_PACKET*)e.packet->data)->message).substr(0, ((struct CHAT_PACKET*)e.packet->data)->msize));
+					}
 				}
 				break;
 
 			case CLIENT_BROADCAST_PACKET_TYPE:
-				if (m_clientReceiveServerPacketListener != NULL)
+				if (e.packet->dataLength >= sizeof(CLIENT_BROADCAST_WRAPPER))
 				{
-					CLIENT_BROADCAST_WRAPPER *wrapper = (CLIENT_BROADCAST_WRAPPER*)e.packet->data;
+					if (m_clientReceiveServerPacketListener != NULL)
+					{
+						CLIENT_BROADCAST_WRAPPER *wrapper = (CLIENT_BROADCAST_WRAPPER*)e.packet->data;
 
-					// unwrap the packet
-					char *unwrappedPacket = (char*)e.packet->data;
-					const int wrapperSize = sizeof(CLIENT_BROADCAST_WRAPPER);
-					unwrappedPacket += wrapperSize;
+						// unwrap the packet
+						char *unwrappedPacket = (char*)e.packet->data;
+						const int wrapperSize = sizeof(CLIENT_BROADCAST_WRAPPER);
+						unwrappedPacket += wrapperSize;
 
-					// process
-					if (!m_clientReceiveServerPacketListener(wrapper->id, unwrappedPacket, e.packet->dataLength - wrapperSize))
-						debugLog("CLIENT: Received unknown CLIENT_PACKET_TYPE, WTF!\n");
+						// process
+						if (!m_clientReceiveServerPacketListener(wrapper->id, unwrappedPacket, e.packet->dataLength - wrapperSize))
+							debugLog("CLIENT: Received unknown CLIENT_PACKET_TYPE, WTF!\n");
+					}
 				}
 				break;
 
@@ -657,6 +667,7 @@ void NetworkHandler::onServerEvent(ENetEvent e)
 			switch (*((PACKET_TYPE*)e.packet->data))
 			{
 			case CLIENT_INFO_PACKET_TYPE:
+				if (e.packet->dataLength >= sizeof(CLIENT_INFO_PACKET))
 				{
 					CLIENT_INFO_PACKET *cp = new CLIENT_INFO_PACKET(); // 'new' here because this is stored in e.peer->data
 					*cp = *(struct CLIENT_INFO_PACKET*)e.packet->data; // TODO: wtf is even happening here
@@ -698,6 +709,7 @@ void NetworkHandler::onServerEvent(ENetEvent e)
 				break;
 
 			case CHAT_PACKET_TYPE:
+				if (e.packet->dataLength >= sizeof(CHAT_PACKET))
 				{
 					CLIENT_PEER *pp = getClientPeerByPeer(e.peer);
 					if (pp != NULL)
@@ -728,6 +740,7 @@ void NetworkHandler::onServerEvent(ENetEvent e)
 				break;
 
 			case CLIENT_BROADCAST_PACKET_TYPE:
+				if (e.packet->dataLength >= sizeof(PACKET_TYPE))
 				{
 					// HACKHACK: TODO: this is dangerous, broadcasting all client broadcast requests by default if no server listener is set
 					bool accepted = true;
@@ -785,22 +798,25 @@ void NetworkHandler::onServerEvent(ENetEvent e)
 				break;
 
 			case CLIENT_PACKET_TYPE:
-				if (m_serverReceiveClientPacketListener != NULL)
+				if (e.packet->dataLength >= sizeof(PACKET_TYPE))
 				{
-					CLIENT_PEER *pp = getClientPeerByPeer(e.peer);
-					if (pp != NULL)
+					if (m_serverReceiveClientPacketListener != NULL)
 					{
-						// unwrap the packet
-						char *unwrappedPacket = (char*)e.packet->data;
-						const int wrapperSize = sizeof(PACKET_TYPE);
-						unwrappedPacket += wrapperSize;
+						CLIENT_PEER *pp = getClientPeerByPeer(e.peer);
+						if (pp != NULL)
+						{
+							// unwrap the packet
+							char *unwrappedPacket = (char*)e.packet->data;
+							const int wrapperSize = sizeof(PACKET_TYPE);
+							unwrappedPacket += wrapperSize;
 
-						// process
-						if (!m_serverReceiveClientPacketListener(pp->id, unwrappedPacket, e.packet->dataLength - wrapperSize))
-							debugLog("SERVER: Received unknown CLIENT_PACKET_TYPE, WTF!\n");
+							// process
+							if (!m_serverReceiveClientPacketListener(pp->id, unwrappedPacket, e.packet->dataLength - wrapperSize))
+								debugLog("SERVER: Received unknown CLIENT_PACKET_TYPE, WTF!\n");
+						}
+						else
+							debugLog("SERVER: NULL CLIENT_PEER!\n");
 					}
-					else
-						debugLog("SERVER: NULL CLIENT_PEER!\n");
 				}
 				break;
 
@@ -930,7 +946,7 @@ void NetworkHandler::clientDisconnect()
 
 #ifdef MCENGINE_FEATURE_NETWORKING
 
-void NetworkHandler::sendServerInfo(unsigned int assignedID, ENetHost *host, ENetPeer *destination)
+void NetworkHandler::sendServerInfo(uint32_t assignedID, ENetHost *host, ENetPeer *destination)
 {
 	debugLog("SERVER: Sending server info (%i)...\n", assignedID);
 
@@ -1121,7 +1137,7 @@ void NetworkHandler::servercast(void *data, size_t size, bool reliable)
 #endif
 }
 
-void NetworkHandler::clientcast(void *data, size_t size, unsigned int id, bool reliable)
+void NetworkHandler::clientcast(void *data, size_t size, uint32_t id, bool reliable)
 {
 #ifdef MCENGINE_FEATURE_NETWORKING
 
@@ -1264,7 +1280,7 @@ NetworkHandler::CLIENT_PEER *NetworkHandler::getClientPeerByPeer(ENetPeer *peer)
 	return NULL;
 }
 
-NetworkHandler::CLIENT_PEER *NetworkHandler::getClientPeerById(unsigned int id)
+NetworkHandler::CLIENT_PEER *NetworkHandler::getClientPeerById(uint32_t id)
 {
 	for (int c=0; c<m_vConnectedClients.size(); c++)
 	{
