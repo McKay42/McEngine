@@ -379,8 +379,18 @@ void SDLEnvironment::setMousePos(int x, int y)
 
 void SDLEnvironment::setCursorClip(bool clip, McRect rect)
 {
-	// TODO: support custom rects
 	m_cursorClip = rect;
+
+	if (clip)
+	{
+		if (rect.getWidth() == 0 && rect.getHeight() == 0)
+		{
+			m_cursorClip = McRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight());
+		}
+
+		// TODO: custom rect (only fullscreen works atm)
+	}
+
 	SDL_SetWindowGrab(m_window, clip ? SDL_TRUE : SDL_FALSE);
 }
 
