@@ -208,8 +208,15 @@ void Mouse::update()
 	if (env->isCursorClipped() && env->getOS() != Environment::OS::OS_LINUX) // HACKHACK: linux hack
 	{
 		const McRect cursorClip = env->getCursorClip();
-		nextPos.x = clamp<float>(nextPos.x, cursorClip.getMinX() - m_vOffset.x + 1, cursorClip.getMaxX() + m_vOffset.x - 1);
-		nextPos.y = clamp<float>(nextPos.y, cursorClip.getMinY() - m_vOffset.y + 1, cursorClip.getMaxY() + m_vOffset.y - 1);
+
+		const float minX = cursorClip.getMinX() - m_vOffset.x;
+		const float minY = cursorClip.getMinY() - m_vOffset.y;
+
+		const float maxX = minX + cursorClip.getWidth()*m_vScale.x;
+		const float maxY = minY + cursorClip.getHeight()*m_vScale.y;
+
+		nextPos.x = clamp<float>(nextPos.x, minX + 1, maxX - 1);
+		nextPos.y = clamp<float>(nextPos.y, minY + 1, maxY - 1);
 	}
 
 	// set new virtual cursor position (this applies the offset as well)
