@@ -1045,7 +1045,7 @@ void NetworkHandler::broadcastChatMessage(UString username, UString message, ENe
 
 #endif
 
-void NetworkHandler::broadcast(void *data, size_t size, bool reliable)
+void NetworkHandler::broadcast(void *data, uint32_t size, bool reliable)
 {
 #ifdef MCENGINE_FEATURE_NETWORKING
 
@@ -1108,7 +1108,7 @@ void NetworkHandler::broadcast(void *data, size_t size, bool reliable)
 #endif
 }
 
-void NetworkHandler::servercast(void *data, size_t size, bool reliable)
+void NetworkHandler::servercast(void *data, uint32_t size, bool reliable)
 {
 #ifdef MCENGINE_FEATURE_NETWORKING
 
@@ -1137,7 +1137,7 @@ void NetworkHandler::servercast(void *data, size_t size, bool reliable)
 #endif
 }
 
-void NetworkHandler::clientcast(void *data, size_t size, uint32_t id, bool reliable)
+void NetworkHandler::clientcast(void *data, uint32_t size, uint32_t id, bool reliable)
 {
 #ifdef MCENGINE_FEATURE_NETWORKING
 
