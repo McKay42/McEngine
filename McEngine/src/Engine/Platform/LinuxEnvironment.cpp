@@ -769,6 +769,13 @@ void LinuxEnvironment::setCursorClip(bool clip, McRect rect)
 	{
 		const unsigned int eventMask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask | FocusChangeMask;
 		m_bCursorClipped = (XGrabPointer(m_display, m_window, True, eventMask, GrabModeAsync, GrabModeAsync, m_window, None, CurrentTime) == GrabSuccess);
+
+		if (rect.getWidth() == 0 && rect.getHeight() == 0)
+		{
+			m_cursorClip = McRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight());
+		}
+
+		// TODO: custom rect (only fullscreen works atm)
 	}
 	else
 	{

@@ -513,6 +513,17 @@ void MacOSEnvironment::setCursorClip(bool clip, McRect rect)
 {
 	m_bCursorClipped = clip;
 	m_cursorClip = rect;
+
+	if (clip)
+	{
+		if (rect.getWidth() == 0 && rect.getHeight() == 0)
+		{
+			m_cursorClip = McRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight());
+		}
+
+		// TODO: custom rect (only fullscreen works atm)
+	}
+
 	MacOSWrapper::setCursorClip(clip); // TODO
 }
 
