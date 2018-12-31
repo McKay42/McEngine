@@ -12,6 +12,8 @@
 #include <mutex>
 #include "WinMinGW.Mutex.h"
 
+#include "DiscordInterface.h"
+#include "SteamworksInterface.h"
 #include "SquirrelInterface.h"
 #include "OpenCLInterface.h"
 #include "OpenVRInterface.h"
@@ -20,6 +22,7 @@
 #include "ResourceManager.h"
 #include "AnimationHandler.h"
 #include "XInputGamepad.h"
+#include "ContextMenu.h"
 #include "Mouse.h"
 #include "Keyboard.h"
 #include "Timer.h"
@@ -132,8 +135,9 @@ Engine::Engine(Environment *environment, const char *args)
 	m_openCL = new OpenCLInterface();
 	m_openVR = new OpenVRInterface();
 	m_networkHandler = new NetworkHandler();
-
 	m_squirrel = new SquirrelInterface();
+	m_steam = new SteamworksInterface();
+	m_discord = new DiscordInterface();
 
 	// default launch overrides
 	m_graphics->setVSync(false);
@@ -180,6 +184,12 @@ Engine::~Engine()
 
 	debugLog("Engine: Freeing Squirrel...\n");
 	SAFE_DELETE(m_squirrel);
+
+	debugLog("Engine: Freeing Steam...\n");
+	SAFE_DELETE(m_steam);
+
+	debugLog("Engine: Freeing Discord...\n");
+	SAFE_DELETE(m_discord);
 
 	debugLog("Engine: Freeing input devices...\n");
 	for (int i=0; i<m_inputDevices.size(); i++)

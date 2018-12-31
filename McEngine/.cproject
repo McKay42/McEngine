@@ -30,6 +30,9 @@
 									<listOptionValue builtIn="false" value="__cplusplus=201103L"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1011133961" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/discord-rpc/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/steamworks/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/openvr/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bullet/include}&quot;"/>
@@ -46,6 +49,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/VRSandbox}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/Osu}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/FrameworkTest}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/UIFrameworkTest}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/VolumeTheory}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/GUICoherenceMode}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/MetroidModelViewer}&quot;"/>
@@ -80,6 +84,9 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.debug.733651606" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.debug"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.debug.673010526" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.debug">
 								<option id="gnu.cpp.link.option.libs.1074968535" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="discord-rpc"/>
+									<listOptionValue builtIn="false" value="steam_api"/>
+									<listOptionValue builtIn="false" value="SDL2"/>
 									<listOptionValue builtIn="false" value="openvr_api"/>
 									<listOptionValue builtIn="false" value="libcurl"/>
 									<listOptionValue builtIn="false" value="libxinput9_1_0"/>
@@ -107,6 +114,9 @@
 									<listOptionValue builtIn="false" value="libjpeg"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.1174787854" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/discord-rpc/lib/windows}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/steamworks/lib/windows}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/openvr/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/xinput/lib/windows}&quot;"/>
@@ -165,6 +175,9 @@
 								<option id="gnu.cpp.compiler.option.dialect.std.1500769253" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.other.other.622623421" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -Wno-sign-compare -Wno-unused-local-typedefs -Wno-reorder -Wno-switch" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1812970339" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/discord-rpc/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/steamworks/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/openvr/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bullet/include}&quot;"/>
@@ -214,6 +227,9 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release.1568379547" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release.721244101" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release">
 								<option id="gnu.cpp.link.option.libs.1714008846" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="discord-rpc"/>
+									<listOptionValue builtIn="false" value="steam_api"/>
+									<listOptionValue builtIn="false" value="SDL2"/>
 									<listOptionValue builtIn="false" value="openvr_api"/>
 									<listOptionValue builtIn="false" value="libcurl"/>
 									<listOptionValue builtIn="false" value="libxinput9_1_0"/>
@@ -241,6 +257,9 @@
 									<listOptionValue builtIn="false" value="libjpeg"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.425141102" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/discord-rpc/lib/windows}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/steamworks/lib/windows}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/openvr/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/xinput/lib/windows}&quot;"/>
@@ -296,6 +315,9 @@
 								<option id="gnu.cpp.compiler.option.dialect.std.806848702" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.other.other.1498046402" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -Wno-sign-compare -Wno-unused-local-typedefs -Wno-reorder -Wno-switch -fpermissive" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.paths.163729486" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/discord-rpc/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/steamworks/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bullet/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/xinput/include}&quot;"/>
@@ -343,6 +365,8 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release.115800945" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release.576913447" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release">
 								<option id="gnu.cpp.link.option.libs.265632825" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="discord-rpc"/>
+									<listOptionValue builtIn="false" value="steam_api"/>
 									<listOptionValue builtIn="false" value="curl"/>
 									<listOptionValue builtIn="false" value="z"/>
 									<listOptionValue builtIn="false" value="X11"/>
@@ -363,6 +387,8 @@
 									<listOptionValue builtIn="false" value="jpeg"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.668222127" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/discord-rpc/lib/linux}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/steamworks/lib/linux}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/lib/linux}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/xinput/lib/linux}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/enet/lib/linux}&quot;"/>
@@ -417,6 +443,8 @@
 								<option id="gnu.cpp.compiler.option.dialect.std.318089225" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.other.other.376747910" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -Wno-sign-compare -Wno-unused-local-typedefs -Wno-reorder -Wno-switch -fpermissive" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1578928659" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/discord-rpc/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/steamworks/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bullet/include}&quot;"/>
@@ -465,6 +493,8 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release.224118307" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release.1823048921" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release">
 								<option id="gnu.cpp.link.option.libs.384906307" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
+									<listOptionValue builtIn="false" value="discord-rpc"/>
+									<listOptionValue builtIn="false" value="steam_api"/>
 									<listOptionValue builtIn="false" value="bass"/>
 									<listOptionValue builtIn="false" value="bass_fx"/>
 									<listOptionValue builtIn="false" value="jpeg"/>
@@ -473,6 +503,8 @@
 									<listOptionValue builtIn="false" value="freetype"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.1661771986" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/discord-rpc/lib/macos}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/steamworks/lib/macos}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl/lib/macos}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/lib/macos}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/xinput/lib/macos}&quot;"/>
