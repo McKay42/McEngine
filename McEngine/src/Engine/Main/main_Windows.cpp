@@ -292,16 +292,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				if (!HIWORD(wParam)) // if we are not minimized
 				{
-					if (g_engine != NULL)
-						printf("WndProc() : WM_ACTIVATE, not minimized\n");
+					//if (g_engine != NULL)
+					//	printf("WndProc() : WM_ACTIVATE, not minimized\n");
 
 					g_bUpdate = true;
 					g_bDraw = true;
 				}
 				else
 				{
-					if (g_engine != NULL)
-						printf("WndProc() : WM_ACTIVATE, minimized\n");
+					//if (g_engine != NULL)
+					//	printf("WndProc() : WM_ACTIVATE, minimized\n");
 
 					/// g_bUpdate = false;
 					g_bDraw = false;

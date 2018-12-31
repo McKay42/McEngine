@@ -24,7 +24,11 @@ public:
 #ifdef MCENGINE_FEATURE_SQUIRREL
 
 	// API
+
 	static bool createClassInstanceReference(HSQUIRRELVM v, const char *className, SQUserPointer nativeInstancePointer);
+
+	static int createResourceReference(const char *resourceName);
+	static UString getResourceNameByReference(int resourceID);
 
 #endif
 
@@ -35,17 +39,25 @@ public:
 	void draw(Graphics *g);
 	void update();
 
-	void exec(UString script, UString name = "exec");
+	int exec(UString script, UString name = "exec");
 
+	void pushHookArgClass(const char *className, void *nativeInstancePointer);
 	void callHook(UString hookName);
+	void popHookArgs();
+
+	void kill();
+
+	inline bool isReady() const {return m_bReady;}
 
 private:
 
-	void exec(const char *script, size_t length, const char *name);
+	int exec(const char *script, size_t length, const char *name);
+
+	bool m_bReady;
 
 #ifdef MCENGINE_FEATURE_SQUIRREL
 
-	void push();
+	void pushRoot();
 	void pop();
 	void pushTable(const char *tableName);
 	void popTable();
@@ -53,10 +65,30 @@ private:
 	void popClass();
 	void addFunction(const char *functionName, SQFUNCTION function);
 
+	static void squirrel_debugHook(HSQUIRRELVM v, SQInteger type, const SQChar *sourceName, SQInteger line, const SQChar *funcName);
 	static void squirrel_printFunc(HSQUIRRELVM v, const SQChar *fmt, ...);
 	static void squirrel_errorFunc(HSQUIRRELVM v, const SQChar *fmt, ...);
+	static SQInteger squirrel_suspend(HSQUIRRELVM v);
 
+	// vm
 	HSQUIRRELVM m_vm;
+
+	// hooks
+	enum class HOOK_ARG_TYPE
+	{
+		CLASS
+	};
+	struct HOOK_ARG
+	{
+		HOOK_ARG_TYPE type;
+		const char *className;
+		SQUserPointer nativeInstancePointer;
+	};
+	std::vector<HOOK_ARG> m_hookArgs;
+
+	// resources
+	static std::unordered_map<std::string, int> m_resourceNameToRef;	// get
+	static std::vector<UString> m_resourceRefToName;					// draw
 
 #endif
 
@@ -67,6 +99,12 @@ extern SquirrelInterface *squirrel;
 #ifdef MCENGINE_FEATURE_SQUIRREL
 
 // API
+
+class Squirrel_Class
+{
+public:
+	static SQUserPointer getNativeInstancePointer(HSQUIRRELVM v, int offset = -1);
+};
 
 // classes/tables
 
@@ -94,12 +132,21 @@ class Squirrel_Engine
 {
 public:
 	static SQInteger getTime(HSQUIRRELVM v);
+	static SQInteger getTimeReal(HSQUIRRELVM v);
 	static SQInteger getFrameTime(HSQUIRRELVM v);
 	static SQInteger getScreenWidth(HSQUIRRELVM v);
 	static SQInteger getScreenHeight(HSQUIRRELVM v);
 };
 
-class Squirrel_ConVar
+class Squirrel_ResourceManager
+{
+public:
+	static SQInteger getImage(HSQUIRRELVM v);
+	static SQInteger getSound(HSQUIRRELVM v);
+	static SQInteger getFont(HSQUIRRELVM v);
+};
+
+class Squirrel_ConVar : public Squirrel_Class
 {
 public:
 	static SQInteger createConVar(HSQUIRRELVM v);
@@ -113,13 +160,56 @@ public:
 	static SQInteger getString(HSQUIRRELVM v);
 };
 
-class Squirrel_Graphics
+class Squirrel_Graphics : public Squirrel_Class
 {
 public:
+	// color
+	static SQInteger setColor(HSQUIRRELVM v);
+	static SQInteger setAlpha(HSQUIRRELVM v);
+
 	static SQInteger drawLine(HSQUIRRELVM v);
 	static SQInteger fillRect(HSQUIRRELVM v);
 
-	static SQInteger setColor(HSQUIRRELVM v);
+	// 2d resource drawing
+	static SQInteger drawImage(HSQUIRRELVM v);
+	static SQInteger drawString(HSQUIRRELVM v);
+
+	// matrices & transforms
+	static SQInteger pushTransform(HSQUIRRELVM v);
+	static SQInteger popTransform(HSQUIRRELVM v);
+
+	// 2D
+	static SQInteger translate(HSQUIRRELVM v);
+	static SQInteger rotate(HSQUIRRELVM v);
+	static SQInteger scale(HSQUIRRELVM v);
+};
+
+class Squirrel_Image : public Squirrel_Class
+{
+public:
+	static SQInteger getWidth(HSQUIRRELVM v);
+	static SQInteger getHeight(HSQUIRRELVM v);
+};
+
+class Squirrel_Sound : public Squirrel_Class
+{
+public:
+	static SQInteger setPositionMS(HSQUIRRELVM v);
+	static SQInteger setVolume(HSQUIRRELVM v);
+
+	static SQInteger getPositionMS(HSQUIRRELVM v);
+	static SQInteger getLengthMS(HSQUIRRELVM v);
+
+	static SQInteger isPlaying(HSQUIRRELVM v);
+};
+
+class Squirrel_Font : public Squirrel_Class
+{
+public:
+	static SQInteger getHeight(HSQUIRRELVM v);
+
+	static SQInteger getStringWidth(HSQUIRRELVM v);
+	static SQInteger getStringHeight(HSQUIRRELVM v);
 };
 
 #endif

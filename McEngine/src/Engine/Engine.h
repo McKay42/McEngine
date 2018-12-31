@@ -26,6 +26,8 @@ class VulkanInterface;
 class ResourceManager;
 class AnimationHandler;
 class SquirrelInterface;
+class SteamworksInterface;
+class DiscordInterface;
 
 class CBaseUIContainer;
 class ConsoleBox;
@@ -150,6 +152,8 @@ private:
 	ResourceManager *m_resourceManager;
 	AnimationHandler *m_animationHandler;
 	SquirrelInterface *m_squirrel;
+	SteamworksInterface *m_steam;
+	DiscordInterface *m_discord;
 
 	// input devices
 	Mouse *m_mouse;

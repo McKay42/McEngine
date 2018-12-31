@@ -20,26 +20,27 @@ class ConsoleBox : public CBaseUIElement
 {
 public:
 	ConsoleBox();
-	~ConsoleBox();
+	virtual ~ConsoleBox();
 
 	void draw(Graphics *g);
 	void update();
 
 	void onKeyDown(KeyboardEvent &e);
-	void onKeyUp(KeyboardEvent &e);
 	void onChar(KeyboardEvent &e);
+
+	void onResolutionChange(Vector2 newResolution);
 
 	void processCommand(UString command);
 	void execConfigFile(UString filename);
 
 	void log(UString text);
 
-	void setRequireShiftToActivate(bool requireShiftToActivate) {m_bRequireShiftToActivate = requireShiftToActivate; if (requireShiftToActivate) m_bShift = false; else m_bShift = true;}
+	// set
+	void setRequireShiftToActivate(bool requireShiftToActivate) {m_bRequireShiftToActivate = requireShiftToActivate;}
 
+	// get
 	bool isBusy();
 	bool isActive();
-
-	void onResolutionChange(Vector2 newResolution);
 
 private:
 	void onSuggestionClicked(CBaseUIButton *suggestion);
@@ -55,7 +56,6 @@ private:
 	std::vector<CBaseUIButton*> m_vSuggestionButtons;
 	float m_fSuggestionY;
 
-	bool m_bShift;
 	bool m_bRequireShiftToActivate;
 	bool m_bConsoleAnimateOnce;
 	float m_fConsoleDelay;
