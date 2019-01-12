@@ -11,13 +11,11 @@
 /*
  * OpenGL graphics
  */
-
 #define MCENGINE_FEATURE_OPENGL
 
 /*
  * DirectX graphics
  */
-
 //#define MCENGINE_FEATURE_DIRECTX
 
 /*
@@ -59,5 +57,15 @@
  * SDL2 main + Environment
  */
 //#define MCENGINE_FEATURE_SDL
+
+/*
+ * Discord RPC (rich presence)
+ */
+//#define MCENGINE_FEATURE_DISCORD
+
+/*
+ * Steam
+ */
+//#define MCENGINE_FEATURE_STEAMWORKS
 
 #endif

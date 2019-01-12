@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <fstream>
 #include <iostream>
@@ -100,7 +101,7 @@ typedef unsigned char 	UINT8;
 #define COLOR_GET_Af(color) \
 	(((COLORPART)(color >> 24)) / 255.0f)
 
-#define INVERSE_COLOR(color) \
+#define COLOR_INVERT(color) \
 	(COLOR(255, 255-COLOR_GET_Ri(color), 255-COLOR_GET_Gi(color), 255-COLOR_GET_Bi(color)))
 
 #define COLOR_MULTIPLY(color1, color2) \

@@ -15,13 +15,12 @@ class McFont;
 class CBaseUIButton : public CBaseUIElement
 {
 public:
-	CBaseUIButton(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="", UString text="");
+	CBaseUIButton(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "", UString text = "");
 	virtual ~CBaseUIButton() {;}
 
 	ELEMENT_BODY(CBaseUIButton);
 
 	virtual void draw(Graphics *g);
-	virtual void update();
 
 	void click() {onClicked();}
 
@@ -65,6 +64,7 @@ protected:
 	virtual void onClicked();
 
 	virtual void drawText(Graphics *g);
+
 	void drawHoverRect(Graphics *g, int distance);
 
 	void updateStringMetrics();

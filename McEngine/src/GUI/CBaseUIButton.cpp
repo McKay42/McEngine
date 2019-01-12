@@ -6,9 +6,9 @@
 //===============================================================================//
 
 #include "CBaseUIButton.h"
+
 #include "Engine.h"
 #include "Mouse.h"
-
 #include "ResourceManager.h"
 
 CBaseUIButton::CBaseUIButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text) : CBaseUIElement(xPos, yPos, xSize, ySize, name)
@@ -23,8 +23,8 @@ CBaseUIButton::CBaseUIButton(float xPos, float yPos, float xSize, float ySize, U
 	// colors
 	m_frameColor = COLOR(255, 255, 255, 255);
 	m_backgroundColor = COLOR(255, 0, 0, 0);
-	m_textColor = 0xffffffff;
-	m_textBrightColor = m_textDarkColor = 0;
+	m_textColor = COLOR(255, 255, 255, 255);
+	m_textBrightColor = m_textDarkColor = COLOR(0, 0, 0, 0);
 
 	setText(text);
 }
@@ -65,50 +65,41 @@ void CBaseUIButton::draw(Graphics *g)
 
 void CBaseUIButton::drawText(Graphics *g)
 {
-	if (m_font != NULL && m_sText.length() > 0)
+	if (m_font == NULL || m_sText.length() < 1) return;
+
+	g->pushClipRect(McRect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1));
 	{
-		g->pushClipRect(McRect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1));
+		g->setColor(m_textColor);
+		g->pushTransform();
+		{
+			g->translate((int)(m_vPos.x + m_vSize.x/2.0f - m_fStringWidth/2.0f), (int)(m_vPos.y + m_vSize.y/2.0f + m_fStringHeight/2.0f));
+			g->translate(1,1);
 
-			g->setColor(m_textColor);
-			g->pushTransform();
-				g->translate((int)(m_vPos.x + m_vSize.x/2.0f - m_fStringWidth/2.0f), (int)(m_vPos.y + m_vSize.y/2.0f + m_fStringHeight/2.0f));
-				g->translate(1,1);
+			if (m_textDarkColor != 0)
+				g->setColor(m_textDarkColor);
+			else
+				g->setColor(COLOR_INVERT(m_textColor));
 
-				if (m_textDarkColor != 0)
-					g->setColor(m_textDarkColor);
-				else
-					g->setColor(INVERSE_COLOR(m_textColor));
+			g->drawString(m_font, m_sText);
 
-				g->drawString(m_font, m_sText);
+			if (m_textBrightColor != 0)
+				g->setColor(m_textBrightColor);
+			else
+				g->setColor(m_textColor);
 
-			g->popTransform();
-			g->pushTransform();
-				g->translate((int)(m_vPos.x + m_vSize.x/2.0f - m_fStringWidth/2.0f), (int)(m_vPos.y + m_vSize.y/2.0f + m_fStringHeight/2.0f));
-
-				if (m_textBrightColor != 0)
-					g->setColor(m_textBrightColor);
-				else
-					g->setColor(m_textColor);
-
-				g->drawString(m_font, m_sText);
-
-			g->popTransform();
-
-		g->popClipRect();
+			g->drawString(m_font, m_sText);
+		}
+		g->popTransform();
 	}
+	g->popClipRect();
 }
 
 void CBaseUIButton::drawHoverRect(Graphics *g, int distance)
 {
-	g->drawLine(m_vPos.x, m_vPos.y-distance, m_vPos.x+m_vSize.x+1, m_vPos.y-distance);
-	g->drawLine(m_vPos.x, m_vPos.y+m_vSize.y+distance, m_vPos.x+m_vSize.x+1, m_vPos.y+m_vSize.y+distance);
-	g->drawLine(m_vPos.x-distance, m_vPos.y, m_vPos.x-distance, m_vPos.y+m_vSize.y+1);
-	g->drawLine(m_vPos.x+m_vSize.x+distance, m_vPos.y, m_vPos.x+m_vSize.x+distance, m_vPos.y+m_vSize.y+1);
-}
-
-void CBaseUIButton::update()
-{
-	CBaseUIElement::update();
+	g->drawLine(m_vPos.x, m_vPos.y - distance, m_vPos.x + m_vSize.x + 1, m_vPos.y - distance);
+	g->drawLine(m_vPos.x, m_vPos.y + m_vSize.y + distance, m_vPos.x + m_vSize.x + 1, m_vPos.y + m_vSize.y + distance);
+	g->drawLine(m_vPos.x - distance, m_vPos.y, m_vPos.x - distance, m_vPos.y + m_vSize.y + 1);
+	g->drawLine(m_vPos.x + m_vSize.x + distance, m_vPos.y, m_vPos.x + m_vSize.x + distance, m_vPos.y + m_vSize.y + 1);
 }
 
 void CBaseUIButton::onMouseUpInside()
@@ -120,6 +111,7 @@ void CBaseUIButton::onClicked()
 {
 	if (m_clickCallback != NULL)
 		m_clickCallback(this);
+
 	if (m_clickVoidCallback != NULL)
 		m_clickVoidCallback();
 }
