@@ -22,14 +22,14 @@ public:
 	SDLEnvironment(SDL_Window *window);
 	virtual ~SDLEnvironment() {;}
 
-	void update();
+	virtual void update();
 
 	// engine/factory
 	Graphics *createRenderer();
 	ContextMenu *createContextMenu();
 
 	// system
-	OS getOS();
+	virtual OS getOS();
 	void shutdown();
 	void restart();
 	virtual void sleep(unsigned int us); // NOTE: inaccurate
@@ -91,12 +91,12 @@ public:
 	bool isCursorInWindow() {return m_bIsCursorInsideWindow;}
 	bool isCursorVisible() {return m_bCursorVisible;}
 	bool isCursorClipped() {return m_bCursorClipped;}
-	Vector2 getMousePos();
+	virtual Vector2 getMousePos();
 	McRect getCursorClip() {return m_cursorClip;}
 	CURSORTYPE getCursor() {return m_cursorType;}
 	void setCursor(CURSORTYPE cur);
 	void setCursorVisible(bool visible);
-	void setMousePos(int x, int y);
+	virtual void setMousePos(int x, int y);
 	void setCursorClip(bool clip, McRect rect);
 
 	// keyboard
@@ -106,9 +106,10 @@ public:
 	void setWindow(SDL_Window *window) {m_window = window;}
 	inline SDL_Window *getWindow() {return m_window;}
 
-private:
+protected:
 	SDL_Window *m_window;
 
+private:
 	ConVar *m_mouse_sensitivity_ref;
 
 	// monitors

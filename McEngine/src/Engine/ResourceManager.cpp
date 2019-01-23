@@ -10,40 +10,94 @@
 #include "ConVar.h"
 #include "Timer.h"
 
+
+
+// HACKHACK: until I get around to writing an std::thread wrapper implementation
+#ifdef __SWITCH__
+
+#include <switch.h>
+
+#endif
+
+
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 #include <mutex>
 #include "WinMinGW.Mutex.h"
+#include "Horizon.Mutex.h"
+
+#endif
 
 ConVar rm_warnings("rm_warnings", false);
 ConVar rm_async_rand_delay("rm_async_rand_delay", 0.0f);
 ConVar rm_interrupt_on_destroy("rm_interrupt_on_destroy", true);
 ConVar debug_rm("debug_rm", false);
 
+// TODO: rewrite this garbage. support any number of parallel resource loading threads (default to 2)
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 extern bool g_bRunning;
 
-// TODO: rewrite this garbage. support any number of parallel resource loading threads (default to 2)
 std::mutex g_resourceManagerMutex;
 std::mutex g_resourceManagerLoadingMutex;
 std::mutex g_resourceManagerLoadingWorkMutex;
 
-void *_resourceLoadThread(void *data);
+//void *_resourceLoadThread(void *data);
 void *_resourceLoaderThread(void *data);
+void _resourceLoaderThreadVoid(void *data);
+
+#endif
+
+
+
+// HACKHACK: do this with env->getOS() or something
+#ifdef __SWITCH__
+
+const char *ResourceManager::PATH_DEFAULT_IMAGES = "romfs:/materials/";
+const char *ResourceManager::PATH_DEFAULT_FONTS = "romfs:/fonts/";
+const char *ResourceManager::PATH_DEFAULT_SOUNDS = "romfs:/sounds/";
+const char *ResourceManager::PATH_DEFAULT_SHADERS = "romfs:/shaders/";
+
+#else
 
 const char *ResourceManager::PATH_DEFAULT_IMAGES = "materials/";
 const char *ResourceManager::PATH_DEFAULT_FONTS = "fonts/";
 const char *ResourceManager::PATH_DEFAULT_SOUNDS = "sounds/";
 const char *ResourceManager::PATH_DEFAULT_SHADERS = "shaders/";
 
+#endif
+
+
+
+
 ResourceManager::ResourceManager()
 {
 	m_bNextLoadAsync = false;
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+	// stop loading thread, wait for work
+	g_resourceManagerLoadingMutex.lock();
+
+#endif
+
 	// build loading thread
+#ifdef MCENGINE_FEATURE_PTHREADS
+
 	int ret = pthread_create(&m_loadingThread, NULL, _resourceLoaderThread, (void*)&m_loadingWork);
 	if (ret)
 		engine->showMessageError("ResourceManager Error", UString::format("pthread_create() returned %i!", ret));
 
-	// stop loading thread, wait for work
-	g_resourceManagerLoadingMutex.lock();
+#elif defined(__SWITCH__)
+
+	Result rc = threadCreate((Thread*)&m_loadingThread, _resourceLoaderThreadVoid, (void*)&m_loadingWork, 0x1000000, 0x2B, 2);
+	if (R_FAILED(rc))
+		engine->showMessageError("ResourceManager Error", UString::format("threadCreate() returned %i!", (int)rc));
+	else
+		threadStart((Thread*)&m_loadingThread);
+
+#endif
 }
 
 ResourceManager::~ResourceManager()
@@ -51,22 +105,44 @@ ResourceManager::~ResourceManager()
 	// release all resources
 	destroyResources();
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 	if (m_loadingWork.size() < 1)
 		g_resourceManagerLoadingMutex.unlock(); // let it exit
 
+#endif
+
+#ifdef MCENGINE_FEATURE_PTHREADS
+
 	pthread_join(m_loadingThread, NULL); // TODO: not the best solution. will block shutdown until all loading work is done
+
+#elif defined(__SWITCH__)
+
+	threadWaitForExit((Thread*)&m_loadingThread);
+	threadClose((Thread*)&m_loadingThread);
+
+#endif
 }
 
 void ResourceManager::update()
 {
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 	if (debug_rm.getBool())
 	{
 		if (m_threads.size() > 0)
 			debugLog("Resource Manager: %i active worker thread(s)\n", m_threads.size());
 	}
 
+#endif
+
 	bool reLock = false;
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 	g_resourceManagerMutex.lock();
+
+#endif
 	{
 		// handle load finish (and synchronous init())
 		for (int i=0; i<m_loadingWork.size(); i++)
@@ -79,12 +155,23 @@ void ResourceManager::update()
 				// copy pointer, so we can stop everything before finishing
 				Resource *rs = m_loadingWork[i].first;
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 				g_resourceManagerLoadingWorkMutex.lock();
+
+#endif
 				{
 					m_loadingWork.erase(m_loadingWork.begin()+i);
 				}
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 				g_resourceManagerLoadingWorkMutex.unlock();
+
+#endif
+
 				i--;
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
 
 				// stop the worker thread if everything has been loaded
 				if (m_loadingWork.size() < 1)
@@ -92,6 +179,9 @@ void ResourceManager::update()
 
 				// unlock. this allows resources to trigger "recursive" loads within init()
 				g_resourceManagerMutex.unlock();
+
+#endif
+
 				reLock = true;
 
 				// finish (synchronous init())
@@ -101,10 +191,14 @@ void ResourceManager::update()
 			}
 		}
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 	if (reLock)
 	{
 		g_resourceManagerMutex.lock();
 	}
+
+#endif
 
 		// handle async destroy
 		for (int i=0; i<m_loadingWorkAsyncDestroy.size(); i++)
@@ -133,7 +227,11 @@ void ResourceManager::update()
 			}
 		}
 	}
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 	g_resourceManagerMutex.unlock();
+
+#endif
 }
 
 void ResourceManager::destroyResources()
@@ -157,7 +255,11 @@ void ResourceManager::destroyResource(Resource *rs)
 	if (debug_rm.getBool())
 		debugLog("ResourceManager: Destroying %s\n", rs->getName().toUtf8());
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 	g_resourceManagerMutex.lock();
+
+#endif
 	{
 		bool isManagedResource = false;
 		int managedResourceIndex = -1;
@@ -187,7 +289,11 @@ void ResourceManager::destroyResource(Resource *rs)
 					m_vResources.erase(m_vResources.begin()+managedResourceIndex);
 
 				// HACKHACK: ugly
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 				g_resourceManagerMutex.unlock();
+
+#endif
 				return; // we're done here
 			}
 		}
@@ -197,7 +303,11 @@ void ResourceManager::destroyResource(Resource *rs)
 		if (isManagedResource)
 			m_vResources.erase(m_vResources.begin()+managedResourceIndex);
 	}
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 	g_resourceManagerMutex.unlock();
+
+#endif
 }
 
 void ResourceManager::reloadResources()
@@ -541,6 +651,8 @@ void ResourceManager::loadResource(Resource *res, bool load)
 	{
 		m_bNextLoadAsync = false;
 
+#if defined(MCENGINE_FEATURE_MULTITHREADING)
+
 		g_resourceManagerMutex.lock();
 		{
 			// add work to loading thread
@@ -558,6 +670,14 @@ void ResourceManager::loadResource(Resource *res, bool load)
 			g_resourceManagerLoadingWorkMutex.unlock();
 		}
 		g_resourceManagerMutex.unlock();
+
+#else
+
+		// load normally (on platforms which don't support multithreading)
+		res->loadAsync();
+		res->load();
+
+#endif
 	}
 }
 
@@ -595,6 +715,9 @@ Resource *ResourceManager::exists(UString resourceName)
 
 
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+/*
 void *_resourceLoadThread(void *data)
 {
 	// debugging
@@ -614,6 +737,7 @@ void *_resourceLoadThread(void *data)
 	loader->finished = ResourceManager::MobileAtomic<bool>(true);
 	return NULL;
 }
+*/
 
 void *_resourceLoaderThread(void *data)
 {
@@ -668,3 +792,10 @@ void *_resourceLoaderThread(void *data)
 
 	return NULL;
 }
+
+void _resourceLoaderThreadVoid(void *data)
+{
+	_resourceLoaderThread(data);
+}
+
+#endif

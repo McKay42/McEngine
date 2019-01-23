@@ -13,10 +13,18 @@
 
 #endif
 
+#if defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
+
+#include "SDL.h"
+#include "SDL_mixer.h"
+
+#endif
+
 #include "Engine.h"
 #include "ConVar.h"
 #include "Environment.h"
 #include "WinEnvironment.h"
+#include "HorizonSDLEnvironment.h"
 
 #include "Sound.h"
 
@@ -32,6 +40,8 @@ SoundEngine::SoundEngine()
 	m_fPrevOutputDeviceChangeCheckTime = 0.0f;
 
 	m_outputDeviceChangeCallback = nullptr;
+
+	m_fVolume = 1.0f;
 
 #ifdef MCENGINE_FEATURE_SOUND
 
@@ -72,6 +82,36 @@ SoundEngine::SoundEngine()
 	if (m_FLACPluginHandle == NULL)
 		engine->showInfo("Sound Error", "Couldn't load bassflac.dll plugin");
 	*/
+
+	initializeOutputDevice(defaultOutputDevice.id);
+
+	// convar callbacks
+	snd_output_device.setCallback( fastdelegate::MakeDelegate(this, &SoundEngine::setOutputDevice) );
+
+#elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
+
+	m_iMixChunkSize = 256;
+	m_fVolumeMixMusic = 1.0f;
+
+	// NOTE: this seems unnecessary, and doesn't even work for SDL_INIT_OGG/SDL_INIT_MP3/etc., commented for now
+	/*
+	if (Mix_Init(0) == 0)
+	{
+		const char *error = SDL_GetError();
+		debugLog("SoundEngine: Couldn't Mix_Init(): %s\n", error);
+		engine->showMessageError("Sound Error", UString::format("Couldn't Mix_Init(): %s", error));
+		return;
+	}
+	*/
+
+	OUTPUT_DEVICE defaultOutputDevice;
+	defaultOutputDevice.id = -1;
+	defaultOutputDevice.name = "Default";
+	defaultOutputDevice.enabled = true;
+	defaultOutputDevice.isDefault = false; // custom -1 can never have default
+
+	snd_output_device.setValue(defaultOutputDevice.name);
+	m_outputDevices.push_back(defaultOutputDevice);
 
 	initializeOutputDevice(defaultOutputDevice.id);
 
@@ -171,11 +211,11 @@ void SoundEngine::updateOutputDevices(bool handleOutputDeviceChanges, bool print
 
 bool SoundEngine::initializeOutputDevice(int id)
 {
-#ifdef MCENGINE_FEATURE_SOUND
-
 	debugLog("SoundEngine: initializeOutputDevice( %i ) ...\n", id);
 
 	m_iCurrentOutputDevice = id;
+
+#ifdef MCENGINE_FEATURE_SOUND
 
 	// cleanup potential previous device
 	if (m_bReady)
@@ -225,6 +265,33 @@ bool SoundEngine::initializeOutputDevice(int id)
 
 	return true;
 
+#elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
+
+	// cleanup potential previous device
+	if (m_bReady)
+		Mix_CloseAudio();
+
+	const int freq = 44100;
+	const int channels = 16;
+
+	if (Mix_OpenAudio(freq, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, m_iMixChunkSize) < 0)
+	{
+		const char *error = SDL_GetError();
+		debugLog("SoundEngine: Couldn't Mix_OpenAudio(): %s\n", error);
+		engine->showMessageError("Sound Error", UString::format("Couldn't Mix_OpenAudio(): %s", error));
+		return false;
+	}
+
+	const int numAllocatedChannels = Mix_AllocateChannels(channels);
+	debugLog("SoundEngine: Allocated %i channels\n", numAllocatedChannels);
+
+	// tag all channels to allow overriding in play()
+	Mix_GroupChannels(0, numAllocatedChannels-1, 1);
+
+	m_bReady = true;
+
+	return true;
+
 #else
 	return false;
 #endif
@@ -237,6 +304,13 @@ SoundEngine::~SoundEngine()
 	// and free it
 	if (m_bReady)
 		BASS_Free();
+
+#elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
+
+	if (m_bReady)
+		Mix_CloseAudio();
+
+	Mix_Quit();
 
 #endif
 }
@@ -257,6 +331,8 @@ bool SoundEngine::play(Sound *snd, float pan)
 {
 	if (!m_bReady || snd == NULL || !snd->isReady()) return false;
 
+	pan = clamp<float>(pan, -1.0f, 1.0f);
+
 #ifdef MCENGINE_FEATURE_SOUND
 
 	if (!snd_restrict_play_frame.getBool() || engine->getTime() > snd->getLastPlayTime())
@@ -264,7 +340,6 @@ bool SoundEngine::play(Sound *snd, float pan)
 		DWORD handle = snd->getHandle();
 		if (BASS_ChannelIsActive(handle) != BASS_ACTIVE_PLAYING)
 		{
-			pan = clamp<float>(pan, -1.0f, 1.0f);
 			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
 
 			bool ret = BASS_ChannelPlay(handle, FALSE);
@@ -272,6 +347,45 @@ bool SoundEngine::play(Sound *snd, float pan)
 				debugLog("SoundEngine::play() couldn't BASS_ChannelPlay(), errorcode %i\n", BASS_ErrorGetCode());
 			else
 				snd->setLastPlayTime(engine->getTime());
+
+			return ret;
+		}
+	}
+
+#elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
+
+	if (!snd_restrict_play_frame.getBool() || engine->getTime() > snd->getLastPlayTime())
+	{
+		if (snd->isStream() && Mix_PlayingMusic() && Mix_PausedMusic())
+		{
+			Mix_ResumeMusic();
+			return true;
+		}
+		else
+		{
+			int channel = (snd->isStream() ? (Mix_PlayMusic((Mix_Music*)snd->getMixChunkOrMixMusic(), 1)) : Mix_PlayChannel(-1, (Mix_Chunk*)snd->getMixChunkOrMixMusic(), 0));
+
+			// allow overriding (oldest channel gets reused)
+			if (!snd->isStream() && channel < 0)
+			{
+				const int oldestChannel = Mix_GroupOldest(1);
+				if (oldestChannel > -1)
+				{
+					Mix_HaltChannel(oldestChannel);
+					channel = Mix_PlayChannel(-1, (Mix_Chunk*)snd->getMixChunkOrMixMusic(), 0);
+				}
+			}
+
+			const bool ret = (channel > -1);
+
+			if (!ret)
+				debugLog(snd->isStream() ? "SoundEngine::play() couldn't Mix_PlayMusic(), error on %s!\n" : "SoundEngine::play() couldn't Mix_PlayChannel(), error on %s!\n", snd->getFilePath().toUtf8());
+			else
+			{
+				snd->setHandle(channel);
+				snd->setPan(pan);
+				snd->setLastPlayTime(engine->getTime());
+			}
 
 			return ret;
 		}
@@ -309,6 +423,10 @@ bool SoundEngine::play3d(Sound *snd, Vector3 pos)
 		}
 	}
 
+#elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
+
+	return play(snd);
+
 #endif
 
 	return false;
@@ -316,25 +434,39 @@ bool SoundEngine::play3d(Sound *snd, Vector3 pos)
 
 void SoundEngine::pause(Sound *snd)
 {
-#ifdef MCENGINE_FEATURE_SOUND
-
 	if (!m_bReady || snd == NULL || !snd->isReady()) return;
 
+#ifdef MCENGINE_FEATURE_SOUND
+
 	BASS_ChannelPause(snd->getHandle());
+
+#elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
+
+	if (snd->isStream())
+		Mix_PauseMusic();
+	else
+		Mix_Pause(snd->getHandle());
 
 #endif
 }
 
 void SoundEngine::stop(Sound *snd)
 {
-#ifdef MCENGINE_FEATURE_SOUND
-
 	if (!m_bReady || snd == NULL || !snd->isReady()) return;
+
+#ifdef MCENGINE_FEATURE_SOUND
 
 	BASS_ChannelStop(snd->getHandle());
 	snd->setPosition(0.0); // HACKHACK: necessary
 	snd->clear();
 	snd->setLastPlayTime(0.0f);
+
+#elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
+
+	if (snd->isStream())
+		Mix_HaltMusic();
+	else
+		Mix_HaltChannel(snd->getHandle());
 
 #endif
 }
@@ -368,21 +500,30 @@ void SoundEngine::setOutputDevice(UString outputDeviceName)
 
 	debugLog("SoundEngine::setOutputDevice() couldn't find output device \"%s\"!\n", outputDeviceName.toUtf8());
 
+#elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
+
+	initializeOutputDevice(-1);
+
 #endif
 }
 
 void SoundEngine::setVolume(float volume)
 {
-#ifdef MCENGINE_FEATURE_SOUND
-
 	if (!m_bReady) return;
 
-	volume = clamp<float>(volume, 0.0f, 1.0f);
+	m_fVolume = clamp<float>(volume, 0.0f, 1.0f);
+
+#ifdef MCENGINE_FEATURE_SOUND
 
 	// 0 (silent) - 10000 (full).
-	BASS_SetConfig(BASS_CONFIG_GVOL_SAMPLE, (DWORD)(volume*10000));
-	BASS_SetConfig(BASS_CONFIG_GVOL_STREAM, (DWORD)(volume*10000));
-	BASS_SetConfig(BASS_CONFIG_GVOL_MUSIC, (DWORD)(volume*10000));
+	BASS_SetConfig(BASS_CONFIG_GVOL_SAMPLE, (DWORD)(m_fVolume*10000));
+	BASS_SetConfig(BASS_CONFIG_GVOL_STREAM, (DWORD)(m_fVolume*10000));
+	BASS_SetConfig(BASS_CONFIG_GVOL_MUSIC, (DWORD)(m_fVolume*10000));
+
+#elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
+
+	Mix_VolumeMusic((int)(m_fVolume*m_fVolumeMixMusic*MIX_MAX_VOLUME));
+	Mix_Volume(-1, (int)(m_fVolume*MIX_MAX_VOLUME));
 
 #endif
 }
@@ -420,9 +561,9 @@ std::vector<UString> SoundEngine::getOutputDevices()
 
 float SoundEngine::getAmplitude(Sound *snd)
 {
-#ifdef MCENGINE_FEATURE_SOUND
-
 	if (!m_bReady || snd == NULL || !snd->isReady() || !snd->isPlaying()) return 0.0f;
+
+#ifdef MCENGINE_FEATURE_SOUND
 
 	float fft[128];
 	fft[0] = 0.0f;

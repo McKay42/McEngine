@@ -133,7 +133,7 @@ void Mouse::update()
 
 	Vector2 nextPos = osMousePos;
 
-	if (osCursorVisible || (!sensitivityAdjustmentNeeded && !mouse_raw_input.getBool()) || m_bAbsolute || env->getOS() == Environment::OS::OS_LINUX) // HACKHACK: linux hack
+	if (osCursorVisible || (!sensitivityAdjustmentNeeded && !mouse_raw_input.getBool()) || m_bAbsolute || env->getOS() == Environment::OS::OS_HORIZON || env->getOS() == Environment::OS::OS_LINUX) // HACKHACK: linux hack
 	{
 		// this block handles visible/active OS cursor movement without sensitivity adjustments, and absolute input device movement
 		if (m_bAbsolute)

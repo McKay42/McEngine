@@ -10,7 +10,7 @@
 
 #include "Image.h"
 
-#ifdef MCENGINE_FEATURE_OPENGL
+#if defined(MCENGINE_FEATURE_OPENGL) || defined (MCENGINE_FEATURE_OPENGLES)
 
 class OpenGLImage : public Image
 {

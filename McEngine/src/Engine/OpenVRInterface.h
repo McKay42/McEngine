@@ -276,11 +276,16 @@ public:
 	const std::string &getName() const {return m_sModelName;}
 
 private:
+
+#ifdef MCENGINE_FEATURE_OPENVR
+
 	GLuint m_glVertBuffer;
 	GLuint m_glIndexBuffer;
 	GLuint m_glVertArray;
 	GLuint m_glTexture;
 	GLsizei m_unVertexCount;
+
+#endif
 
 	std::string m_sModelName;
 };
