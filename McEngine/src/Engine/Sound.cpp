@@ -654,7 +654,7 @@ bool Sound::isFinished()
 
 	return BASS_ChannelIsActive(getHandle()) == BASS_ACTIVE_STOPPED;
 
-#elif defined(MCENGINE_FEATURE_SDL_MIXER)
+#elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
 
 	return (m_bStream ? !Mix_PlayingMusic() && !Mix_PausedMusic() : !Mix_Playing(m_HCHANNEL) && !Mix_Paused(m_HCHANNEL));
 
