@@ -23,7 +23,8 @@ public:
 		OS_NULL,
 		OS_WINDOWS,
 		OS_LINUX,
-		OS_MACOS
+		OS_MACOS,
+		OS_HORIZON
 	};
 
 public:

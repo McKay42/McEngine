@@ -44,10 +44,10 @@ void LinuxTimer::update()
 	timespec t;
 	clock_gettime(CLOCK_REALTIME, &t);
 
-	timespec delta = diff(m_currentTime, t);
+	const timespec delta = diff(m_currentTime, t);
 	m_delta = delta.tv_sec + (double)delta.tv_nsec / 1000000000.0;
 
-	timespec elapsed = diff(m_startTime, t);
+	const timespec elapsed = diff(m_startTime, t);
 	m_elapsedTime = elapsed.tv_sec + (double)elapsed.tv_nsec / 1000000000.0;
 
 	m_currentTime = t;

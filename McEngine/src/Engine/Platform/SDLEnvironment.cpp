@@ -14,6 +14,8 @@
 
 #include "NullGraphicsInterface.h"
 #include "SDLGLLegacyInterface.h"
+#include "SDLGLES2Interface.h"
+#include "WinSDLGLES2Interface.h"
 #include "NullContextMenu.h"
 
 SDLEnvironment::SDLEnvironment(SDL_Window *window) : Environment()
@@ -48,7 +50,17 @@ void SDLEnvironment::update()
 Graphics *SDLEnvironment::createRenderer()
 {
 	//return new NullGraphicsInterface();
-	return new SDLGLLegacyInterface(m_window);
+	//return new SDLGLLegacyInterface(m_window);
+
+#if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
+
+	return new WinSDLGLES2Interface(m_window);
+
+#else
+
+	return new SDLGLES2Interface(m_window);
+
+#endif
 }
 
 ContextMenu *SDLEnvironment::createContextMenu()

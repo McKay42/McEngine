@@ -177,6 +177,7 @@
 								<option id="gnu.cpp.compiler.option.include.paths.1812970339" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/discord-rpc/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/steamworks/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl_mixer/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/openvr/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/include}&quot;"/>
@@ -227,8 +228,18 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release.1568379547" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release.721244101" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release">
 								<option id="gnu.cpp.link.option.libs.1714008846" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="ogg"/>
+									<listOptionValue builtIn="false" value="ADLMIDI"/>
+									<listOptionValue builtIn="false" value="mad"/>
+									<listOptionValue builtIn="false" value="modplug"/>
+									<listOptionValue builtIn="false" value="smpeg"/>
+									<listOptionValue builtIn="false" value="gme"/>
+									<listOptionValue builtIn="false" value="vorbis"/>
+									<listOptionValue builtIn="false" value="opus"/>
+									<listOptionValue builtIn="false" value="vorbisfile"/>
 									<listOptionValue builtIn="false" value="discord-rpc"/>
 									<listOptionValue builtIn="false" value="steam_api"/>
+									<listOptionValue builtIn="false" value="SDL2_mixer_ext.dll"/>
 									<listOptionValue builtIn="false" value="SDL2"/>
 									<listOptionValue builtIn="false" value="openvr_api"/>
 									<listOptionValue builtIn="false" value="libcurl"/>
@@ -259,6 +270,7 @@
 								<option id="gnu.cpp.link.option.paths.425141102" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/discord-rpc/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/steamworks/lib/windows}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl_mixer/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/sdl/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/openvr/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libcurl/lib/windows}&quot;"/>

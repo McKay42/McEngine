@@ -16,7 +16,7 @@ WinTimer::WinTimer()
 
 	LARGE_INTEGER ticks;
 	QueryPerformanceFrequency(&ticks);
-	m_ticksPerSecond = (double)ticks.QuadPart;
+	m_secondsPerTick = 1.0 / (double)ticks.QuadPart;
 }
 
 void WinTimer::start()
@@ -32,8 +32,8 @@ void WinTimer::update()
 	QueryPerformanceCounter(&nowTime);
 
 	// update timer
-	m_elapsedTime = ((double)nowTime.QuadPart - (double)m_startTime.QuadPart) / m_ticksPerSecond;
-	m_delta = (double)((nowTime.QuadPart - m_currentTime.QuadPart) / m_ticksPerSecond);
+	m_elapsedTime = (double)(nowTime.QuadPart - m_startTime.QuadPart) * m_secondsPerTick;
+	m_delta = (double)(nowTime.QuadPart - m_currentTime.QuadPart) * m_secondsPerTick;
 	m_currentTime = nowTime;
 }
 

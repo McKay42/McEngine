@@ -29,7 +29,8 @@ public:
     inline double getElapsedTime() const {return m_elapsedTime;}
 
 private:
-    double m_ticksPerSecond;
+    double m_secondsPerTick;
+
     LARGE_INTEGER m_currentTime;
     LARGE_INTEGER m_startTime;
 

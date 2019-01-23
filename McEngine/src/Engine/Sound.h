@@ -41,6 +41,7 @@ public:
 
 	bool isPlaying();
 	bool isFinished();
+	inline bool isStream() const {return m_bStream;}
 	inline bool is3d() const {return m_bIs3d;}
 	inline bool isLooped() const {return m_bIsLooped;}
 
@@ -56,6 +57,10 @@ public:
 		long long offset;
 	};
 
+	// ILLEGAL:
+	void setHandle(SOUNDHANDLE handle) {m_HCHANNEL = handle;}
+	inline void *getMixChunkOrMixMusic() const {return m_mixChunkOrMixMusic;}
+
 private:
 	virtual void init();
 	virtual void initAsync();
@@ -66,10 +71,13 @@ private:
 	SOUND_PROC_USERDATA *m_soundProcUserData;
 
 	float m_fVolume;
+
 	SOUNDHANDLE m_HSTREAM;
 	SOUNDHANDLE m_HSTREAMBACKUP;
 	SOUNDHANDLE m_HCHANNEL;
 	SOUNDHANDLE m_HCHANNELBACKUP;
+
+	void *m_mixChunkOrMixMusic;
 
 	bool m_bStream;
 	bool m_bIs3d;

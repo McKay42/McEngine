@@ -21,8 +21,13 @@
 #include "CBaseUIButton.h"
 #include "AnimationHandler.h"
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 #include <mutex>
 #include "WinMinGW.Mutex.h"
+#include "Horizon.Mutex.h"
+
+#endif
 
 #define CONSOLE_YPOS 32.0f
 
@@ -31,7 +36,11 @@ ConVar console_animspeed2("console_animspeed2", 12.0f);
 ConVar console_overlay("console_overlay", true);
 ConVar console_overlay_lines("console_overlay_lines", 6.0f);
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 std::mutex g_consoleBoxLogOverlayMutex;
+
+#endif
 
 ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, "")
 {
@@ -90,7 +99,11 @@ void ConsoleBox::draw(Graphics *g)
 		// draw overlay
 		if (console_overlay.getBool() || m_textbox->isVisible())
 		{
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 			std::lock_guard<std::mutex> lk(g_consoleBoxLogOverlayMutex);
+
+#endif
 
 			g->setColor(0xff000000);
 			if (m_fLogYPos != 0.0f)
@@ -520,7 +533,11 @@ void ConsoleBox::clearSuggestions()
 
 void ConsoleBox::log(UString text)
 {
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 	std::lock_guard<std::mutex> lk(g_consoleBoxLogOverlayMutex);
+
+#endif
 
 	int newline = text.find("\n", 0);
 	while (newline != -1)

@@ -18,7 +18,27 @@
 #include "TextureAtlas.h"
 #include "VertexArrayObject.h"
 
-#include "pthread.h"
+#ifdef MCENGINE_FEATURE_PTHREADS
+
+#include <pthread.h>
+
+#endif
+
+
+
+// HACKHACK: until I get around to writing an std::thread wrapper implementation
+#ifdef __SWITCH__
+
+typedef struct {
+    uint32_t handle;     ///< Thread handle.
+    void*  stack_mem;    ///< Pointer to stack memory.
+    void*  stack_mirror; ///< Pointer to stack memory mirror.
+    size_t stack_sz;     ///< Stack size.
+} HorizonThread;
+
+#endif
+
+
 
 class ResourceManager
 {
@@ -102,12 +122,25 @@ public:
 	};
 	typedef MobileAtomic<bool> MobileAtomicBool;
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 	struct LOAD_THREAD
 	{
+#ifdef MCENGINE_FEATURE_PTHREADS
+
 		pthread_t thread;
+
+#elif defined(__SWITCH__)
+
+		HorizonThread thread;
+
+#endif
+
 		Resource *resource;
 		MobileAtomicBool finished;
 	};
+
+#endif
 
 private:
 	void loadResource(Resource *res, bool load);
@@ -116,14 +149,28 @@ private:
 
 	std::vector<Resource*> m_vResources;
 	std::vector<Resource*> m_vAsyncDestroy;
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 	std::vector<LOAD_THREAD*> m_threads;
+
+#endif
 
 	bool m_bNextLoadAsync;
 	std::stack<bool> m_nextLoadUnmanagedStack;
 
 	std::vector<std::pair<Resource*, MobileAtomicBool>> m_loadingWork;
 	std::vector<Resource*> m_loadingWorkAsyncDestroy;
+
+#ifdef MCENGINE_FEATURE_PTHREADS
+
 	pthread_t m_loadingThread;
+
+#elif defined(__SWITCH__)
+
+	HorizonThread m_loadingThread;
+
+#endif
 };
 
 #endif

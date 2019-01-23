@@ -35,6 +35,15 @@ public:
 	inline UString getOutputDevice() const {return m_sCurrentOutputDevice;}
 	inline int getLatency() const {return m_iLatency;}
 	float getAmplitude(Sound *snd);
+	inline float getVolume() const {return m_fVolume;}
+
+	// ILLEGAL:
+#if defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
+
+	void setMixChunkSize(int mixChunkSize) {m_iMixChunkSize = mixChunkSize;}
+	void setVolumeMixMusic(float volumeMixMusic) {m_fVolumeMixMusic = volumeMixMusic;}
+
+#endif
 
 private:
 	void updateOutputDevices(bool handleOutputDeviceChanges, bool printInfo);
@@ -57,6 +66,15 @@ private:
 
 	int m_iCurrentOutputDevice;
 	UString m_sCurrentOutputDevice;
+
+	float m_fVolume;
+
+#if defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
+
+	int m_iMixChunkSize;
+	float m_fVolumeMixMusic;
+
+#endif
 };
 
 #endif

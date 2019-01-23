@@ -9,9 +9,24 @@
 #define ENGINEFEATURES_H
 
 /*
- * OpenGL graphics
+ * std::thread/std::mutex support
+ */
+#define MCENGINE_FEATURE_MULTITHREADING
+
+/*
+ * pthread support
+ */
+#define MCENGINE_FEATURE_PTHREADS
+
+/*
+ * OpenGL graphics (Desktop, legacy + modern)
  */
 #define MCENGINE_FEATURE_OPENGL
+
+/*
+ * OpenGL graphics (Mobile, ES/EGL)
+ */
+//#define MCENGINE_FEATURE_OPENGLES
 
 /*
  * DirectX graphics
@@ -57,6 +72,11 @@
  * SDL2 main + Environment
  */
 //#define MCENGINE_FEATURE_SDL
+
+/*
+ * SDL2 mixer (audio)
+ */
+//#define MCENGINE_FEATURE_SDL_MIXER
 
 /*
  * Discord RPC (rich presence)

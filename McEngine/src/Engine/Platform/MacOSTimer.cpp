@@ -35,7 +35,7 @@ void MacOSTimer::start()
 void MacOSTimer::update()
 {
 	// get current time
-	uint64_t nowTime = mach_absolute_time();
+	const uint64_t nowTime = mach_absolute_time();
 
 	// update timer
 	m_elapsedTime = (((nowTime - m_startTime) * m_timebaseInfo.numer) / m_timebaseInfo.denom) / 1000000000.0;
