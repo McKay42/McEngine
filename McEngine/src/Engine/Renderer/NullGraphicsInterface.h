@@ -92,8 +92,7 @@ public:
 	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory);
 
 protected:
-	void init() {;}
-
+	virtual void init() {;}
 	virtual void onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix) {;}
 
 private:

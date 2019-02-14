@@ -95,7 +95,7 @@ void DiscordInterface::setRichPresence(UString key, UString value, bool pool)
 {
 #ifdef MCENGINE_FEATURE_DISCORD
 
-	if (value.length() > 128) return;
+	if (!m_bReady || value.length() > 128) return;
 
 	if (key == "state")
 	{

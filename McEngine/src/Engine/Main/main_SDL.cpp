@@ -527,7 +527,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 				if (inBackground) // real waiting (very inaccurate, but very good for little background cpu utilization)
 					frameTimer->sleep((int)((1.0f / fps_max_background.getFloat())*1000.0f*1000.0f));
 				else // more or less "busy" waiting, but giving away the rest of the timeslice at least
-					frameTimer->sleep(delayTime); // yes, there is a zero in there
+					frameTimer->sleep(0); // yes, there is a zero in there
 
 				// decrease the delayTime by the time we spent in this loop
 				// if the loop is executed more than once, note how delayStart now gets the value of the previous iteration from getElapsedTime()
