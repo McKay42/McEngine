@@ -40,5 +40,4 @@ private:
     BaseTimer *m_timer;
 };
 
-
 #endif
