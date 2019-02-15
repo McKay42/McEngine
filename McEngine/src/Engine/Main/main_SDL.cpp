@@ -9,7 +9,9 @@
 
 #ifdef MCENGINE_FEATURE_SDL
 
-#ifndef MCENGINE_FEATURE_OPENGL
+//#define MCENGINE_SDL_JOYSTICK
+
+#if !defined(MCENGINE_FEATURE_OPENGL) && !defined(MCENGINE_FEATURE_OPENGLES)
 #error OpenGL support is currently required for SDL
 #endif
 
@@ -19,8 +21,10 @@
 #include "Timer.h"
 #include "Mouse.h"
 #include "ConVar.h"
+#include "ConsoleBox.h"
 
 #include "SDLEnvironment.h"
+#include "HorizonSDLEnvironment.h"
 
 
 
@@ -50,43 +54,90 @@ ConVar fps_max("fps_max", 60.0f);
 ConVar fps_max_background("fps_max_background", 30.0f);
 ConVar fps_unlimited("fps_unlimited", false);
 
-
-
 int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 {
 	SDLEnvironment *environment = customSDLEnvironment;
 
+	uint32_t flags = SDL_INIT_VIDEO;
+
+#ifdef MCENGINE_SDL_JOYSTICK
+
+	flags |= SDL_INIT_JOYSTICK;
+
+#endif
+
+#ifdef MCENGINE_FEATURE_SDL_MIXER
+
+	flags |= SDL_INIT_AUDIO;
+
+#endif
+
 	// initialize sdl
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	if (SDL_Init(flags) < 0)
 	{
-		fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
+		fprintf(stderr, "Couldn't SDL_Init(): %s\n", SDL_GetError());
 		return 1;
 	}
 
 	// pre window-creation settings
+#ifdef MCENGINE_FEATURE_OPENGL
+
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+#endif
+
+#ifdef MCENGINE_FEATURE_OPENGLES
+
+	// NOTE: hardcoded to OpenGL ES 2.0 currently
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+
+#endif
+
+	uint32_t windowFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_FOREIGN;
+
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_OPENGLES)
+
+	windowFlags |= SDL_WINDOW_OPENGL;
+
+#endif
 
 	// create window
 	g_window = SDL_CreateWindow(
 			WINDOW_TITLE,
 			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 			WINDOW_WIDTH, WINDOW_HEIGHT,
-			SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_FOREIGN | SDL_WINDOW_OPENGL
-	);
+			windowFlags);
+
 	if (g_window == NULL)
 	{
-		fprintf(stderr, "Couldn't create window: %s\n", SDL_GetError());
+		fprintf(stderr, "Couldn't SDL_CreateWindow(): %s\n", SDL_GetError());
 		return 1;
 	}
 
 	// post window-creation settings
 	SDL_SetWindowMinimumSize(g_window, WINDOW_WIDTH_MIN, WINDOW_HEIGHT_MIN);
 
-#ifdef MCENGINE_FEATURE_OPENGL
-
 	// create OpenGL context
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_OPENGLES)
+
 	SDL_GLContext context = SDL_GL_CreateContext(g_window);
+
+#endif
+
+#ifdef MCENGINE_SDL_JOYSTICK
+
+	SDL_JoystickOpen(0);
+	SDL_JoystickOpen(1);
+
+	ConVar *m_mouse_sensitivity_ref = convar->getConVarByName("mouse_sensitivity");
+
+	float m_fJoystick0XPercent = 0.0f;
+	float m_fJoystick0YPercent = 0.0f;
+
+	bool xDown = false;
 
 #endif
 
@@ -114,6 +165,8 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 	frameTimer->update();
 	deltaTimer->update();
+
+	Vector2 mousePos;
 
 	// main loop
 	SDL_Event e;
@@ -244,13 +297,204 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 				if (SDL_GetRelativeMouseMode() == SDL_TRUE)
 					g_engine->onMouseRawMove(e.motion.xrel, e.motion.yrel);
 				break;
+
+			// touch mouse
+			case SDL_FINGERDOWN:
+				if (e.tfinger.fingerId == 0)
+				{
+					mousePos = Vector2(e.tfinger.x, e.tfinger.y) * g_engine->getScreenSize();
+					environment->setMousePos(mousePos.x, mousePos.y);
+					g_engine->getMouse()->onPosChange(mousePos);
+
+					if (g_engine->getMouse()->isLeftDown())
+						g_engine->onMouseLeftChange(false);
+
+					g_engine->onMouseLeftChange(true);
+				}
+				else if (e.tfinger.fingerId == 1)
+				{
+					if (g_engine->getMouse()->isRightDown())
+						g_engine->onMouseRightChange(false);
+
+					g_engine->onMouseRightChange(true);
+				}
+				else if (e.tfinger.fingerId == 2)
+				{
+					if (g_engine->getMouse()->isLeftDown())
+						g_engine->onMouseLeftChange(false);
+
+					g_engine->onMouseLeftChange(true);
+				}
+				break;
+
+			case SDL_FINGERUP:
+				if (e.tfinger.fingerId == 0)
+					g_engine->onMouseLeftChange(false);
+				else if (e.tfinger.fingerId == 1)
+					g_engine->onMouseRightChange(false);
+				else if (e.tfinger.fingerId == 2)
+					g_engine->onMouseLeftChange(false);
+				break;
+
+			case SDL_FINGERMOTION:
+				if (e.tfinger.fingerId == 0)
+				{
+					mousePos = Vector2(e.tfinger.x, e.tfinger.y) * g_engine->getScreenSize();
+					environment->setMousePos(mousePos.x, mousePos.y);
+					g_engine->getMouse()->onPosChange(mousePos);
+				}
+				break;
+
+			// joystick keyboard
+			// NOTE: currently hardcoded for nintendo switch (rewrite if joystick support for other platforms)
+#ifdef MCENGINE_SDL_JOYSTICK
+
+			case SDL_JOYBUTTONDOWN:
+				//debugLog("joybuttondown: %i button %i down\n", (int)e.jbutton.which, (int)e.jbutton.button);
+				if (e.jbutton.button == 0) // KEY_A
+				{
+					g_engine->onMouseLeftChange(true);
+
+					if (engine->getConsoleBox()->isActive())
+					{
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_RETURN);
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_RETURN);
+					}
+				}
+				else if (e.jbutton.button == 10 || e.jbutton.button == 1) // KEY_PLUS || KEY_B
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_ESCAPE);
+				else if (e.jbutton.button == 2) // KEY_X
+				{
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_X);
+					xDown = true;
+				}
+				else if (e.jbutton.button == 3) // KEY_Y
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_Y);
+				else if (e.jbutton.button == 21 || e.jbutton.button == 13) // right stick up || dpad up
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_UP);
+				else if (e.jbutton.button == 23 || e.jbutton.button == 15) // right stick down || dpad down
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_DOWN);
+				else if (e.jbutton.button == 20 || e.jbutton.button == 12) // right stick left || dpad left
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_LEFT);
+				else if (e.jbutton.button == 22 || e.jbutton.button == 14) // right stick right || dpad right
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_RIGHT);
+				else if (e.jbutton.button == 6) // KEY_L
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_L);
+				else if (e.jbutton.button == 7) // KEY_R
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_R);
+				else if (e.jbutton.button == 8) // KEY_ZL
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_Z);
+				else if (e.jbutton.button == 9) // KEY_ZR
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_V);
+				else if (e.jbutton.button == 11) // KEY_MINUS
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_F1);
+				else if (e.jbutton.button == 4) // left stick press
+				{
+					// toggle options (CTRL + O)
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_LCTRL);
+					g_engine->onKeyboardKeyDown(SDL_SCANCODE_O);
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_LCTRL);
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_O);
+				}
+				else if (e.jbutton.button == 5) // right stick press
+				{
+					if (xDown)
+					{
+						// toggle console
+						/*
+						ConVar *console_overlay_ref = convar->getConVarByName("console_overlay");
+						console_overlay_ref->setValue(console_overlay_ref->getBool() ? 0.0f : 1.0f);
+						*/
+
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_LSHIFT);
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_F1);
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_LSHIFT);
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_F1);
+					}
+					else
+					{
+#ifdef __SWITCH__
+
+						((HorizonSDLEnvironment*)environment)->showKeyboard();
+
+#endif
+					}
+				}
+				break;
+
+			case SDL_JOYBUTTONUP:
+				if (e.jbutton.button == 0) // KEY_A
+					g_engine->onMouseLeftChange(false);
+				else if (e.jbutton.button == 10 || e.jbutton.button == 1) // KEY_PLUS || KEY_B
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_ESCAPE);
+				else if (e.jbutton.button == 2) // KEY_X
+				{
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_X);
+					xDown = false;
+				}
+				else if (e.jbutton.button == 3) // KEY_Y
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_Y);
+				else if (e.jbutton.button == 21 || e.jbutton.button == 13) // right stick up || dpad up
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_UP);
+				else if (e.jbutton.button == 23 || e.jbutton.button == 15) // right stick down || dpad down
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_DOWN);
+				else if (e.jbutton.button == 20 || e.jbutton.button == 12) // right stick left || dpad left
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_LEFT);
+				else if (e.jbutton.button == 22 || e.jbutton.button == 14) // right stick right || dpad right
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_RIGHT);
+				else if (e.jbutton.button == 6) // KEY_L
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_L);
+				else if (e.jbutton.button == 7) // KEY_R
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_R);
+				else if (e.jbutton.button == 8) // KEY_ZL
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_Z);
+				else if (e.jbutton.button == 9) // KEY_ZR
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_V);
+				else if (e.jbutton.button == 11) // KEY_MINUS
+					g_engine->onKeyboardKeyUp(SDL_SCANCODE_F1);
+				break;
+
+			case SDL_JOYAXISMOTION:
+				//debugLog("joyaxismotion: stick %i : axis = %i, value = %i\n", (int)e.jaxis.which, (int)e.jaxis.axis, (int)e.jaxis.value);
+				// left stick
+				if (e.jaxis.axis == 1 || e.jaxis.axis == 0)
+				{
+					if (e.jaxis.axis == 0)
+						m_fJoystick0XPercent = (float)e.jaxis.value / 32767.0f;
+					else
+						m_fJoystick0YPercent = (float)e.jaxis.value / 32767.0f;
+				}
+				break;
+
+#endif
 			}
 		}
 
 		// update
 		{
 			deltaTimer->update();
-			engine->setFrameTime(deltaTimer->getDelta());
+			g_engine->setFrameTime(deltaTimer->getDelta());
+
+#ifdef MCENGINE_SDL_JOYSTICK
+
+			// joystick mouse
+			if (m_fJoystick0XPercent != 0.0f || m_fJoystick0YPercent != 0.0f)
+			{
+				const float hardcodedMultiplier = 1000.0f;
+				const Vector2 hardcodedResolution = Vector2(1280, 720);
+				Vector2 joystickDelta = Vector2(m_fJoystick0XPercent*m_mouse_sensitivity_ref->getFloat(), m_fJoystick0YPercent*m_mouse_sensitivity_ref->getFloat()) * g_engine->getFrameTime() * hardcodedMultiplier;
+				joystickDelta *= g_engine->getScreenSize().x/hardcodedResolution.x > g_engine->getScreenSize().y/hardcodedResolution.y ?
+								 g_engine->getScreenSize().y/hardcodedResolution.y : g_engine->getScreenSize().x/hardcodedResolution.x; // normalize
+
+				mousePos += joystickDelta;
+				mousePos.x = clamp<float>(mousePos.x, 0.0f, g_engine->getScreenSize().x);
+				mousePos.y = clamp<float>(mousePos.y, 0.0f, g_engine->getScreenSize().y);
+
+				environment->setMousePos(mousePos.x, mousePos.y);
+				g_engine->getMouse()->onPosChange(mousePos);
+			}
+
+#endif
 
 			if (g_bUpdate)
 				g_engine->onUpdate();
@@ -281,7 +525,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 			while (delayTime > 0.0)
 			{
 				if (inBackground) // real waiting (very inaccurate, but very good for little background cpu utilization)
-					frameTimer->sleep((int)((1.0f / fps_max_background.getFloat())*1000.0f));
+					frameTimer->sleep((int)((1.0f / fps_max_background.getFloat())*1000.0f*1000.0f));
 				else // more or less "busy" waiting, but giving away the rest of the timeslice at least
 					frameTimer->sleep(0); // yes, there is a zero in there
 
@@ -302,8 +546,14 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
     // release engine
     SAFE_DELETE(g_engine);
 
-    // finally, destroy the window
+    // and the opengl context
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_OPENGLES)
+
 	SDL_GL_DeleteContext(context);
+
+#endif
+
+	// finally, destroy the window
 	SDL_DestroyWindow(g_window);
 	SDL_Quit();
 

@@ -20,6 +20,10 @@
 
 #include "MacOSTimer.h"
 
+#elif defined __SWITCH__
+
+#include "HorizonTimer.h"
+
 #endif
 
 Timer::Timer()
@@ -37,6 +41,10 @@ Timer::Timer()
 #elif defined __APPLE__
 
 	m_timer = new MacOSTimer();
+
+#elif defined __SWITCH__
+
+	m_timer = new HorizonTimer();
 
 #else
 #error Missing Timer implementation for OS!

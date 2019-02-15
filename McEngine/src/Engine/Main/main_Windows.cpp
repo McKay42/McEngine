@@ -43,6 +43,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #include <winuser.h>
 typedef WINBOOL (WINAPI *PGPI)(UINT32 pointerId, POINTER_INFO *pointerInfo);
 PGPI g_GetPointerInfo = (PGPI)GetProcAddress(GetModuleHandle(TEXT("user32.dll")), "GetPointerInfo");
+#ifndef TWF_WANTPALM
+#define TWF_WANTPALM 0x00000002
+#endif
 #endif
 
 #ifdef MCENGINE_WINDOWS_REALTIMESTYLUS_SUPPORT
@@ -359,7 +362,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		// left mouse button
 		case WM_LBUTTONDOWN:
 			if (g_engine != NULL && (!win_realtimestylus->getBool() || !IsPenEvent(GetMessageExtraInfo()))) // if realtimestylus support is enabled, all clicks are handled by it and not here
+			{
 				g_engine->onMouseLeftChange(true);
+			}
 			SetCapture(hwnd);
 			break;
 		case WM_LBUTTONUP:
@@ -457,7 +462,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					}
 				}
 			}
-			break;
 
 			// this logic below would mean that we have to handle the cursor when moving from resizing into the client area
 			// seems very annoying; unfinished
@@ -468,60 +472,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				break; // if not, let DefWindowProc do its thing
 			*/
 
-		// raw input experiments
-		/*
-		case WM_INPUT_DEVICE_CHANGE:
-			if (g_engine != NULL)
-			{
-				RID_DEVICE_INFO deviceInfo[1];
-				deviceInfo->cbSize = sizeof(RID_DEVICE_INFO);
-				unsigned int devInfoSize = sizeof(RID_DEVICE_INFO);
-
-				char deviceName[255];
-				unsigned int numChars = 255;
-				GetRawInputDeviceInfo((void*)lParam, RIDI_DEVICENAME, deviceName, &numChars);
-				debugLog("WINDOWS: RawInputDevice %s\n", deviceName);
-
-				UString message = "WINDOWS: WM_INPUT_DEVICE_CHANGE of ";
-				if (wParam == GIDC_ARRIVAL)
-				{
-					// WARNING: using GetRawInputDeviceInfo() directly in the if-block does NOT work! the condition will never be true for some reason >:(
-					int result = GetRawInputDeviceInfo((void*)lParam, RIDI_DEVICEINFO, deviceInfo, &devInfoSize);
-					if (result > -1)
-					{
-						if (deviceInfo->dwType == RIM_TYPEMOUSE)
-							message.append("RIM_TYPEMOUSE");
-						else if (deviceInfo->dwType == RIM_TYPEKEYBOARD)
-							message.append("RIM_TYPEKEYBOARD");
-						else if (deviceInfo->dwType == RIM_TYPEHID)
-							message.append("RIM_TYPEHID");
-
-						message.append(" with GIDC_ARRIVAL\n");
-						engine->debugLog(0xff00ff00, message.toUtf8());
-					}
-				}
-				else if (wParam == GIDC_REMOVAL)
-				{
-					message.append("GIDC_REMOVAL\n");
-					engine->debugLog(0xffff0000, message.toUtf8());
-				}
-
-				unsigned int numDevices = 0;
-				GetRawInputDeviceList(NULL, &numDevices, sizeof(RAWINPUTDEVICELIST));
-				debugLog("numDevices = %i\n", numDevices);
-
-				RAWINPUTDEVICELIST devices[numDevices];
-				if (GetRawInputDeviceList(devices, &numDevices, sizeof(RAWINPUTDEVICELIST)) != (UINT)-1)
-				{
-					for (int i=0; i<numDevices; i++)
-					{
-						if (devices[i].dwType == RIM_TYPEMOUSE)
-							debugLog("got mouse @ %i\n", i);
-					}
-				}
-			}
-			return 0;
-		*/
+			break;
 
 #ifdef MCENGINE_WINDOWS_TOUCH_SUPPORT
 		case WM_POINTERUP:
@@ -958,6 +909,33 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 	else
 		printf("WARNING: Couldn't CoInitialize()! RealTimeStylus is not going to work.\n");
+#endif
+
+	// initialize touch support/settings
+#ifdef MCENGINE_WINDOWS_TOUCH_SUPPORT
+
+	// http://robertinventor.com/bmwiki/How_to_disable_guestures_etc._for_multi_touch_playable_on_screen_keyboards
+
+	LPCTSTR tabletAtom = "MicrosoftTabletPenServiceProperty";
+	unsigned short pressAndHoldAtomID = GlobalAddAtom(tabletAtom);
+	if (pressAndHoldAtomID != 0)
+	{
+		DWORD dwHwndTabletProperty = TABLET_DISABLE_PRESSANDHOLD
+								| TABLET_DISABLE_PENTAPFEEDBACK
+								| TABLET_DISABLE_PENBARRELFEEDBACK
+								| TABLET_DISABLE_FLICKS
+								| TABLET_DISABLE_SMOOTHSCROLLING
+								| TABLET_DISABLE_FLICKFALLBACKKEYS
+								| TABLET_ENABLE_MULTITOUCHDATA;
+
+		SetProp(hwnd, tabletAtom, (HANDLE)dwHwndTabletProperty);
+	}
+
+	typedef BOOL (WINAPI *pfnRegisterTouchWindow)(HWND, ULONG);
+	pfnRegisterTouchWindow pRegisterTouchWindow = (pfnRegisterTouchWindow)GetProcAddress(GetModuleHandle(TEXT("user32.dll")), "RegisterTouchWindow");
+	if (pRegisterTouchWindow != NULL)
+		pRegisterTouchWindow(hwnd, TWF_WANTPALM);
+
 #endif
 
     // create timers

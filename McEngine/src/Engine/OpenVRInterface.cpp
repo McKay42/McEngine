@@ -2442,11 +2442,15 @@ CGLRenderModel::CGLRenderModel(const std::string &sRenderModelName)
 {
 	m_sModelName = sRenderModelName;
 
+#ifdef MCENGINE_FEATURE_OPENVR
+
 	m_glIndexBuffer = 0;
 	m_glVertArray = 0;
 	m_glVertBuffer = 0;
 	m_glTexture = 0;
 	m_unVertexCount = 0;
+
+#endif
 }
 
 CGLRenderModel::~CGLRenderModel()
@@ -2456,6 +2460,8 @@ CGLRenderModel::~CGLRenderModel()
 
 void CGLRenderModel::cleanup()
 {
+#ifdef MCENGINE_FEATURE_OPENVR
+
 	if (m_glVertBuffer)
 	{
 		glDeleteBuffers(1, &m_glIndexBuffer);
@@ -2466,10 +2472,14 @@ void CGLRenderModel::cleanup()
 		m_glVertArray = 0;
 		m_glVertBuffer = 0;
 	}
+
+#endif
 }
 
 void CGLRenderModel::draw()
 {
+#ifdef MCENGINE_FEATURE_OPENVR
+
 	glBindVertexArray(m_glVertArray);
 
 	glActiveTexture(GL_TEXTURE0);
@@ -2478,6 +2488,8 @@ void CGLRenderModel::draw()
 	glDrawElements(GL_TRIANGLES, m_unVertexCount, GL_UNSIGNED_SHORT, 0);
 
 	glBindVertexArray(0);
+
+#endif
 }
 
 #ifdef MCENGINE_FEATURE_OPENVR

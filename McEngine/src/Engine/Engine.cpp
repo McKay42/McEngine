@@ -9,8 +9,14 @@
 #include "Engine.h"
 
 #include <stdio.h>
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 #include <mutex>
 #include "WinMinGW.Mutex.h"
+#include "Horizon.Mutex.h"
+
+#endif
 
 #include "DiscordInterface.h"
 #include "SteamworksInterface.h"
@@ -467,10 +473,20 @@ void Engine::onMouseWheelHorizontal(int delta)
 	m_mouse->onWheelHorizontal(delta);
 }
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 std::mutex g_engineMouseLeftClickMutex;
+
+#endif
+
 void Engine::onMouseLeftChange(bool mouseLeftDown)
 {
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 	std::lock_guard<std::mutex> lk(g_engineMouseLeftClickMutex); // async calls from WinRealTimeStylus must be protected
+
+#endif
+
 	if (m_mouse->isLeftDown() != mouseLeftDown) // necessary due to WinRealTimeStylus and Touch, would cause double clicks otherwise
 		m_mouse->onLeftChange(mouseLeftDown);
 }

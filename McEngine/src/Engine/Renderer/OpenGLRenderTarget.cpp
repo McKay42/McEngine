@@ -7,7 +7,7 @@
 
 #include "OpenGLRenderTarget.h"
 
-#ifdef MCENGINE_FEATURE_OPENGL
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_OPENGLES)
 
 #include "Engine.h"
 #include "ConVar.h"
@@ -65,18 +65,37 @@ void OpenGLRenderTarget::init()
 		engine->showMessageError("RenderTarget Error", "Couldn't glGenRenderBuffers() or glBindRenderBuffer()!");
 		return;
 	}
+
 	// fill depth buffer
+#ifdef MCENGINE_FEATURE_OPENGL
+
 	if (isMultiSampled())
 		glRenderbufferStorageMultisample(GL_RENDERBUFFER, numMultiSamples, GL_DEPTH_COMPONENT, (int)m_vSize.x, (int)m_vSize.y);
 	else
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (int)m_vSize.x, (int)m_vSize.y);
+
+#else
+
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, (int)m_vSize.x, (int)m_vSize.y);
+
+#endif
 
 	// set depth buffer as depth attachment on the framebuffer
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_iDepthBuffer);
 
 	// create texture
 	glGenTextures(1, &m_iRenderTexture);
+
+#ifdef MCENGINE_FEATURE_OPENGL
+
 	glBindTexture(isMultiSampled() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, m_iRenderTexture);
+
+#else
+
+	glBindTexture(GL_TEXTURE_2D, m_iRenderTexture);
+
+#endif
+
 	if (m_iRenderTexture == 0)
 	{
 		engine->showMessageError("RenderTarget Error", "Couldn't glGenTextures() or glBindTexture()!");
@@ -84,6 +103,8 @@ void OpenGLRenderTarget::init()
 	}
 
 	// fill texture
+#ifdef MCENGINE_FEATURE_OPENGL
+
 	if (isMultiSampled())
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numMultiSamples, GL_RGBA8, (int)m_vSize.x, (int)m_vSize.y, true); // use fixed sample locations
 	else
@@ -98,10 +119,32 @@ void OpenGLRenderTarget::init()
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
 
+#else
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)m_vSize.x, (int)m_vSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	// set texture parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // disable texture wrap
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+#endif
+
 	// set render texture as color attachment0 on the framebuffer
+#ifdef MCENGINE_FEATURE_OPENGL
+
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, isMultiSampled() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, m_iRenderTexture, 0);
 
+#else
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_iRenderTexture, 0);
+
+#endif
+
 	// if multisampled, create resolve framebuffer/texture
+#ifdef MCENGINE_FEATURE_OPENGL
+
 	if (isMultiSampled())
 	{
 		if (m_iResolveFrameBuffer == 0)
@@ -135,6 +178,8 @@ void OpenGLRenderTarget::init()
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_iResolveTexture, 0);
 		}
 	}
+
+#endif
 
 	// error checking
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -197,6 +242,8 @@ void OpenGLRenderTarget::disable()
 	if (!m_bReady) return;
 
 	// if multisampled, blit content for multisampling into resolve texture
+#ifdef MCENGINE_FEATURE_OPENGL
+
 	if (isMultiSampled())
 	{
 		// HACKHACK: force disable antialiasing
@@ -211,6 +258,8 @@ void OpenGLRenderTarget::disable()
 	 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	}
+
+#endif
 
 	// restore viewport
 	glViewport(m_iViewportBackup[0], m_iViewportBackup[1], m_iViewportBackup[2], m_iViewportBackup[3]);
@@ -252,6 +301,8 @@ void OpenGLRenderTarget::unbind()
 
 void OpenGLRenderTarget::blitResolveFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt)
 {
+#ifdef MCENGINE_FEATURE_OPENGL
+
 	if (isMultiSampled())
 	{
 		// HACKHACK: force disable antialiasing
@@ -265,10 +316,14 @@ void OpenGLRenderTarget::blitResolveFrameBufferIntoFrameBuffer(OpenGLRenderTarge
 	 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	}
+
+#endif
 }
 
 void OpenGLRenderTarget::blitFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt)
 {
+#ifdef MCENGINE_FEATURE_OPENGL
+
 	// HACKHACK: force disable antialiasing
 	engine->getGraphics()->setAntialiasing(false);
 
@@ -279,6 +334,8 @@ void OpenGLRenderTarget::blitFrameBufferIntoFrameBuffer(OpenGLRenderTarget *rt)
 
  	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+#endif
 }
 
 #endif

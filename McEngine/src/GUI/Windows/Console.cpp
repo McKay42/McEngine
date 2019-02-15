@@ -11,8 +11,13 @@
 #include "ConVar.h"
 #include "ResourceManager.h"
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 #include <mutex>
 #include "WinMinGW.Mutex.h"
+#include "Horizon.Mutex.h"
+
+#endif
 
 #include "CBaseUIContainer.h"
 #include "CBaseUITextbox.h"
@@ -32,7 +37,11 @@ ConVar _clear("clear", DUMMY_ARGS_CLEAR);
 
 std::vector<UString> Console::g_commandQueue;
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 std::mutex g_consoleLogMutex;
+
+#endif
 
 Console::Console() : CBaseUIWindow(350, 100, 620, 550, "Console")
 {
@@ -252,7 +261,11 @@ void Console::update()
 
 void Console::log(UString text, Color textColor)
 {
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
 	std::lock_guard<std::mutex> lk(g_consoleLogMutex);
+
+#endif
 
 	if (text.length() < 1)
 		return;
