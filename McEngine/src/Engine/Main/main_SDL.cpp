@@ -10,6 +10,7 @@
 #ifdef MCENGINE_FEATURE_SDL
 
 //#define MCENGINE_SDL_JOYSTICK
+//#define MCENGINE_SDL_JOYSTICK_MOUSE
 
 #if !defined(MCENGINE_FEATURE_OPENGL) && !defined(MCENGINE_FEATURE_OPENGLES)
 #error OpenGL support is currently required for SDL
@@ -53,6 +54,8 @@ SDL_Window *g_window = NULL;
 ConVar fps_max("fps_max", 60.0f);
 ConVar fps_max_background("fps_max_background", 30.0f);
 ConVar fps_unlimited("fps_unlimited", false);
+
+ConVar sdl_joystick_mouse_sensitivity("sdl_joystick_mouse_sensitivity", 1.0f);
 
 int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 {
@@ -132,8 +135,6 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 	SDL_JoystickOpen(0);
 	SDL_JoystickOpen(1);
 
-	ConVar *m_mouse_sensitivity_ref = convar->getConVarByName("mouse_sensitivity");
-
 	float m_fJoystick0XPercent = 0.0f;
 	float m_fJoystick0YPercent = 0.0f;
 
@@ -172,6 +173,16 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 	SDL_Event e;
 	while (g_bRunning)
 	{
+
+		// HACKHACK: switch hack (mouse/keyboard)
+#ifdef __SWITCH__
+
+		HorizonSDLEnvironment *horizonSDLenv = dynamic_cast<HorizonSDLEnvironment*>(environment);
+		if (horizonSDLenv != NULL)
+			horizonSDLenv->update_before_winproc();
+
+#endif
+
 		// handle window message queue
 		while (SDL_PollEvent(&e) != 0)
 		{
@@ -299,6 +310,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 				break;
 
 			// touch mouse
+			// NOTE: sometimes when quickly tapping with two fingers, events will get lost (due to the touchscreen believing that it was one finger which moved very quickly, instead of 2 tapping fingers)
 			case SDL_FINGERDOWN:
 				if (e.tfinger.fingerId == 0)
 				{
@@ -313,10 +325,10 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 				}
 				else if (e.tfinger.fingerId == 1)
 				{
-					if (g_engine->getMouse()->isRightDown())
-						g_engine->onMouseRightChange(false);
+					if (g_engine->getMouse()->isLeftDown())
+						g_engine->onMouseLeftChange(false);
 
-					g_engine->onMouseRightChange(true);
+					g_engine->onMouseLeftChange(true);
 				}
 				else if (e.tfinger.fingerId == 2)
 				{
@@ -330,10 +342,10 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 			case SDL_FINGERUP:
 				if (e.tfinger.fingerId == 0)
 					g_engine->onMouseLeftChange(false);
-				else if (e.tfinger.fingerId == 1)
-					g_engine->onMouseRightChange(false);
-				else if (e.tfinger.fingerId == 2)
-					g_engine->onMouseLeftChange(false);
+				//else if (e.tfinger.fingerId == 1)
+				//	g_engine->onMouseRightChange(false);
+				//else if (e.tfinger.fingerId == 2)
+				//	g_engine->onMouseLeftChange(false);
 				break;
 
 			case SDL_FINGERMOTION:
@@ -346,11 +358,11 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 				break;
 
 			// joystick keyboard
-			// NOTE: currently hardcoded for nintendo switch (rewrite if joystick support for other platforms)
+			// HACKHACK: currently hardcoded for nintendo switch (rewrite if joystick support for other platforms)
 #ifdef MCENGINE_SDL_JOYSTICK
 
 			case SDL_JOYBUTTONDOWN:
-				//debugLog("joybuttondown: %i button %i down\n", (int)e.jbutton.which, (int)e.jbutton.button);
+				///debugLog("joybuttondown: %i button %i down\n", (int)e.jbutton.which, (int)e.jbutton.button);
 				if (e.jbutton.button == 0) // KEY_A
 				{
 					g_engine->onMouseLeftChange(true);
@@ -401,11 +413,6 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					if (xDown)
 					{
 						// toggle console
-						/*
-						ConVar *console_overlay_ref = convar->getConVarByName("console_overlay");
-						console_overlay_ref->setValue(console_overlay_ref->getBool() ? 0.0f : 1.0f);
-						*/
-
 						g_engine->onKeyboardKeyDown(SDL_SCANCODE_LSHIFT);
 						g_engine->onKeyboardKeyDown(SDL_SCANCODE_F1);
 						g_engine->onKeyboardKeyUp(SDL_SCANCODE_LSHIFT);
@@ -455,7 +462,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 				break;
 
 			case SDL_JOYAXISMOTION:
-				//debugLog("joyaxismotion: stick %i : axis = %i, value = %i\n", (int)e.jaxis.which, (int)e.jaxis.axis, (int)e.jaxis.value);
+				///debugLog("joyaxismotion: stick %i : axis = %i, value = %i\n", (int)e.jaxis.which, (int)e.jaxis.axis, (int)e.jaxis.value);
 				// left stick
 				if (e.jaxis.axis == 1 || e.jaxis.axis == 0)
 				{
@@ -475,14 +482,14 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 			deltaTimer->update();
 			g_engine->setFrameTime(deltaTimer->getDelta());
 
-#ifdef MCENGINE_SDL_JOYSTICK
+#if defined(MCENGINE_SDL_JOYSTICK) && defined(MCENGINE_SDL_JOYSTICK_MOUSE)
 
 			// joystick mouse
 			if (m_fJoystick0XPercent != 0.0f || m_fJoystick0YPercent != 0.0f)
 			{
 				const float hardcodedMultiplier = 1000.0f;
 				const Vector2 hardcodedResolution = Vector2(1280, 720);
-				Vector2 joystickDelta = Vector2(m_fJoystick0XPercent*m_mouse_sensitivity_ref->getFloat(), m_fJoystick0YPercent*m_mouse_sensitivity_ref->getFloat()) * g_engine->getFrameTime() * hardcodedMultiplier;
+				Vector2 joystickDelta = Vector2(m_fJoystick0XPercent * sdl_joystick_mouse_sensitivity.getFloat(), m_fJoystick0YPercent * sdl_joystick_mouse_sensitivity.getFloat()) * g_engine->getFrameTime() * hardcodedMultiplier;
 				joystickDelta *= g_engine->getScreenSize().x/hardcodedResolution.x > g_engine->getScreenSize().y/hardcodedResolution.y ?
 								 g_engine->getScreenSize().y/hardcodedResolution.y : g_engine->getScreenSize().x/hardcodedResolution.x; // normalize
 

@@ -14,6 +14,10 @@
 
 #ifdef MCENGINE_FEATURE_SDL
 
+#define MCENGINE_HORIZON_SDL_NUM_SCANCODES_SWITCH 160
+
+class ConVar;
+
 class HorizonSDLEnvironment : public SDLEnvironment
 {
 public:
@@ -21,6 +25,7 @@ public:
 	virtual ~HorizonSDLEnvironment();
 
 	virtual void update();
+	void update_before_winproc(); // HACKHACK: mouse/keyboard
 
 	// system
 	virtual OS getOS();
@@ -45,11 +50,19 @@ public:
 	int getMemUsedMB();
 
 private:
+	static ConVar *m_mouse_sensitivity_ref;
+
 	bool m_bDocked;
 
 	Vector2 m_vMousePos;
 
 	uint32_t m_sensorHandles[4];
+
+	// HACKHACK: manual keyboard/mouse handling
+	static uint8_t locks;
+	static bool keystate[MCENGINE_HORIZON_SDL_NUM_SCANCODES_SWITCH];
+	static uint64_t prev_buttons;
+	float m_fLastMouseDeltaTime;
 };
 
 #endif
