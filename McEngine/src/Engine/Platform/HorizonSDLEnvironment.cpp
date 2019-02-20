@@ -23,29 +23,192 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+ConVar horizon_snd_chunk_size_docked("horizon_snd_chunk_size_docked", 512);
+ConVar horizon_snd_chunk_size_undocked("horizon_snd_chunk_size_undocked", 256);
+
+// HACKHACK: manual keyboard/mouse handling from sdl internals, until audio gets fixed, see https://github.com/devkitPro/SDL/commit/b91efb18a1a4752c03d56594b079aa804fe4e9ea
+// audio was broken here: https://github.com/devkitPro/SDL/commit/51d12c191cdc7eb2ea7acca3daaf5e714b436128
+static const HidKeyboardScancode switch_scancodes[MCENGINE_HORIZON_SDL_NUM_SCANCODES_SWITCH] = {
+	KBD_A,
+	KBD_B,
+	KBD_C,
+	KBD_D,
+	KBD_E,
+	KBD_F,
+	KBD_G,
+	KBD_H,
+	KBD_I,
+	KBD_J,
+	KBD_K,
+	KBD_L,
+	KBD_M,
+	KBD_N,
+	KBD_O,
+	KBD_P,
+	KBD_Q,
+	KBD_R,
+	KBD_S,
+	KBD_T,
+	KBD_U,
+	KBD_V,
+	KBD_W,
+	KBD_X,
+	KBD_Y,
+	KBD_Z,
+	KBD_1,
+	KBD_2,
+	KBD_3,
+	KBD_4,
+	KBD_5,
+	KBD_6,
+	KBD_7,
+	KBD_8,
+	KBD_9,
+	KBD_0,
+	KBD_ENTER,
+	KBD_ESC,
+	KBD_BACKSPACE,
+	KBD_TAB,
+	KBD_SPACE,
+	KBD_MINUS,
+	KBD_EQUAL,
+	KBD_LEFTBRACE,
+	KBD_RIGHTBRACE,
+	KBD_BACKSLASH,
+	KBD_HASHTILDE,
+	KBD_SEMICOLON,
+	KBD_APOSTROPHE,
+	KBD_GRAVE,
+	KBD_COMMA,
+	KBD_DOT,
+	KBD_SLASH,
+	KBD_CAPSLOCK,
+	KBD_F1,
+	KBD_F2,
+	KBD_F3,
+	KBD_F4,
+	KBD_F5,
+	KBD_F6,
+	KBD_F7,
+	KBD_F8,
+	KBD_F9,
+	KBD_F10,
+	KBD_F11,
+	KBD_F12,
+	KBD_SYSRQ,
+	KBD_SCROLLLOCK,
+	KBD_PAUSE,
+	KBD_INSERT,
+	KBD_HOME,
+	KBD_PAGEUP,
+	KBD_DELETE,
+	KBD_END,
+	KBD_PAGEDOWN,
+	KBD_RIGHT,
+	KBD_LEFT,
+	KBD_DOWN,
+	KBD_UP,
+	KBD_NUMLOCK,
+	KBD_KPSLASH,
+	KBD_KPASTERISK,
+	KBD_KPMINUS,
+	KBD_KPPLUS,
+	KBD_KPENTER,
+	KBD_KP1,
+	KBD_KP2,
+	KBD_KP3,
+	KBD_KP4,
+	KBD_KP5,
+	KBD_KP6,
+	KBD_KP7,
+	KBD_KP8,
+	KBD_KP9,
+	KBD_KP0,
+	KBD_KPDOT,
+	KBD_102ND,
+	KBD_COMPOSE,
+	KBD_POWER,
+	KBD_KPEQUAL,
+	KBD_F13,
+	KBD_F14,
+	KBD_F15,
+	KBD_F16,
+	KBD_F17,
+	KBD_F18,
+	KBD_F19,
+	KBD_F20,
+	KBD_F21,
+	KBD_F22,
+	KBD_F23,
+	KBD_F24,
+	KBD_OPEN,
+	KBD_HELP,
+	KBD_PROPS,
+	KBD_FRONT,
+	KBD_STOP,
+	KBD_AGAIN,
+	KBD_UNDO,
+	KBD_CUT,
+	KBD_COPY,
+	KBD_PASTE,
+	KBD_FIND,
+	KBD_MUTE,
+	KBD_VOLUMEUP,
+	KBD_VOLUMEDOWN,
+	KBD_CAPSLOCK_ACTIVE,
+	KBD_NUMLOCK_ACTIVE,
+	KBD_SCROLLLOCK_ACTIVE,
+	KBD_KPCOMMA,
+	KBD_KPLEFTPAREN,
+	KBD_KPRIGHTPAREN,
+	KBD_LEFTCTRL,
+	KBD_LEFTSHIFT,
+	KBD_LEFTALT,
+	KBD_LEFTMETA,
+	KBD_RIGHTCTRL,
+	KBD_RIGHTSHIFT,
+	KBD_RIGHTALT,
+	KBD_RIGHTMETA,
+	KBD_MEDIA_PLAYPAUSE,
+	KBD_MEDIA_STOPCD,
+	KBD_MEDIA_PREVIOUSSONG,
+	KBD_MEDIA_NEXTSONG,
+	KBD_MEDIA_EJECTCD,
+	KBD_MEDIA_VOLUMEUP,
+	KBD_MEDIA_VOLUMEDOWN,
+	KBD_MEDIA_MUTE,
+	KBD_MEDIA_WWW,
+	KBD_MEDIA_BACK,
+	KBD_MEDIA_FORWARD,
+	KBD_MEDIA_STOP,
+	KBD_MEDIA_FIND,
+	KBD_MEDIA_SCROLLUP,
+	KBD_MEDIA_SCROLLDOWN,
+	KBD_MEDIA_EDIT,
+	KBD_MEDIA_SLEEP,
+	KBD_MEDIA_COFFEE,
+	KBD_MEDIA_REFRESH,
+	KBD_MEDIA_CALC
+};
+
+ConVar *HorizonSDLEnvironment::m_mouse_sensitivity_ref = NULL;
+
+uint8_t HorizonSDLEnvironment::locks = 0;
+bool HorizonSDLEnvironment::keystate[] = {0};
+uint64_t HorizonSDLEnvironment::prev_buttons = 0;
+
 HorizonSDLEnvironment::HorizonSDLEnvironment() : SDLEnvironment(NULL)
 {
+	if (m_mouse_sensitivity_ref == NULL)
+		m_mouse_sensitivity_ref = convar->getConVarByName("mouse_sensitivity");
+
 	m_bDocked = false;
 
-	/*
-    hidGetSixAxisSensorHandles(&m_sensorHandles[0], 2, CONTROLLER_PLAYER_1, TYPE_JOYCON_PAIR);
-    hidGetSixAxisSensorHandles(&m_sensorHandles[2], 1, CONTROLLER_PLAYER_1, TYPE_PROCONTROLLER);
-    hidGetSixAxisSensorHandles(&m_sensorHandles[3], 1, CONTROLLER_HANDHELD, TYPE_HANDHELD);
-    hidStartSixAxisSensor(m_sensorHandles[0]);
-    hidStartSixAxisSensor(m_sensorHandles[1]);
-    hidStartSixAxisSensor(m_sensorHandles[2]);
-    hidStartSixAxisSensor(m_sensorHandles[3]);
-    */
+	m_fLastMouseDeltaTime = 0.0f;
 }
 
 HorizonSDLEnvironment::~HorizonSDLEnvironment()
 {
-	/*
-	hidStopSixAxisSensor(m_sensorHandles[0]);
-	hidStopSixAxisSensor(m_sensorHandles[1]);
-	hidStopSixAxisSensor(m_sensorHandles[2]);
-	hidStopSixAxisSensor(m_sensorHandles[3]);
-	*/
 }
 
 void HorizonSDLEnvironment::update()
@@ -64,7 +227,7 @@ void HorizonSDLEnvironment::update()
 		// restart sound engine
 #ifdef MCENGINE_FEATURE_SDL_MIXER
 
-		engine->getSound()->setMixChunkSize(m_bDocked ? 512 : 256);
+		engine->getSound()->setMixChunkSize(m_bDocked ? horizon_snd_chunk_size_docked.getInt() : horizon_snd_chunk_size_undocked.getInt());
 
 #endif
 		convar->getConVarByName("snd_output_device")->setValue("Default");
@@ -77,37 +240,158 @@ void HorizonSDLEnvironment::update()
 		}
 	}
 
-	/*
-	SixAxisSensorValues sixaxis;
-	hidSixAxisSensorValuesRead(&sixaxis, CONTROLLER_P1_AUTO, 1);
-
-    //printf("Accelerometer:    x=% .4f, y=% .4f, z=% .4f\n", sixaxis.accelerometer.x, sixaxis.accelerometer.y, sixaxis.accelerometer.z);
-    //printf("Gyroscope:        x=% .4f, y=% .4f, z=% .4f\n", sixaxis.gyroscope.x, sixaxis.gyroscope.y, sixaxis.gyroscope.z);
-    //printf("Orientation matrix:\n"
-    //       "                  [ % .4f,   % .4f,   % .4f ]\n"
-    //       "                  [ % .4f,   % .4f,   % .4f ]\n"
-    //       "                  [ % .4f,   % .4f,   % .4f ]\n",
-    //    sixaxis.orientation[0].x, sixaxis.orientation[0].y, sixaxis.orientation[0].z,
-    //    sixaxis.orientation[1].x, sixaxis.orientation[1].y, sixaxis.orientation[1].z,
-    //    sixaxis.orientation[2].x, sixaxis.orientation[2].y, sixaxis.orientation[2].z);
-
-	// row column
-	float yaw = std::atan2(sixaxis.orientation[1].x, sixaxis.orientation[0].x);
-	float pitch = std::atan2(sixaxis.orientation[2].y, sixaxis.orientation[2].z);
-	float roll = std::atan2(-sixaxis.orientation[2].x, std::sqrt(sixaxis.orientation[2].y*sixaxis.orientation[2].y + sixaxis.orientation[2].z*sixaxis.orientation[2].z));
-
-    debugLog("ypr = [ % .4f,   % .4f,   % .4f ]\n", yaw, pitch, roll);
-
-    yaw += 1.0f;
-    yaw /= 2.0f;
-
-    Vector2 mousePos = Vector2(engine->getScreenSize().x*yaw, engine->getScreenSize().y*pitch);
-
-	setMousePos(mousePos.x, mousePos.y);
-	engine->getMouse()->onPosChange(mousePos);
-	*/
-
 	SDLEnvironment::update();
+}
+
+void HorizonSDLEnvironment::update_before_winproc()
+{
+	hidScanInput(); // for manually handling keyboard/mouse
+
+	// HACKHACK: manually handle keyboard
+	{
+		for (int i=0; i<MCENGINE_HORIZON_SDL_NUM_SCANCODES_SWITCH; i++)
+		{
+			const HidKeyboardScancode keyCode = switch_scancodes[i];
+
+			if (hidKeyboardHeld(keyCode) && !keystate[i])
+			{
+				switch (keyCode)
+				{
+					case SDL_SCANCODE_NUMLOCKCLEAR:
+						if (!(locks & 0x1))
+						{
+							engine->onKeyboardKeyDown(keyCode);
+							locks |= 0x1;
+						}
+						else
+						{
+							engine->onKeyboardKeyUp(keyCode);
+							locks &= ~0x1;
+						}
+						break;
+
+					case SDL_SCANCODE_CAPSLOCK:
+						if (!(locks & 0x2))
+						{
+							engine->onKeyboardKeyDown(keyCode);
+							locks |= 0x2;
+						}
+						else
+						{
+							engine->onKeyboardKeyUp(keyCode);
+							locks &= ~0x2;
+						}
+						break;
+
+					case SDL_SCANCODE_SCROLLLOCK:
+						if (!(locks & 0x4))
+						{
+							engine->onKeyboardKeyDown(keyCode);
+							locks |= 0x4;
+						}
+						else
+						{
+							engine->onKeyboardKeyUp(keyCode);
+							locks &= ~0x4;
+						}
+						break;
+
+					default:
+						engine->onKeyboardKeyDown(keyCode);
+				}
+
+				keystate[i] = true;
+			}
+			else if (!hidKeyboardHeld(keyCode) && keystate[i])
+			{
+				switch (keyCode)
+				{
+					case SDL_SCANCODE_CAPSLOCK:
+					case SDL_SCANCODE_NUMLOCKCLEAR:
+					case SDL_SCANCODE_SCROLLLOCK:
+						break;
+
+					default:
+						engine->onKeyboardKeyUp(keyCode);
+				}
+
+				keystate[i] = false;
+			}
+		}
+	}
+
+	// HACKHACK: manually handle mouse
+	{
+		uint64_t buttons = hidMouseButtonsHeld();
+		uint64_t changed_buttons = buttons ^ prev_buttons;
+
+		// buttons
+		if (changed_buttons & MOUSE_LEFT)
+		{
+			if (prev_buttons & MOUSE_LEFT)
+				engine->onMouseLeftChange(false);
+			else
+				engine->onMouseLeftChange(true);
+		}
+
+		if (changed_buttons & MOUSE_RIGHT)
+		{
+			if (prev_buttons & MOUSE_RIGHT)
+				engine->onMouseRightChange(false);
+			else
+				engine->onMouseRightChange(true);
+		}
+
+		if (changed_buttons & MOUSE_MIDDLE)
+		{
+			if (prev_buttons & MOUSE_MIDDLE)
+				engine->onMouseMiddleChange(false);
+			else
+				engine->onMouseMiddleChange(true);
+		}
+
+		prev_buttons = buttons;
+
+		MousePosition newMousePos;
+		hidMouseRead(&newMousePos);
+
+		// raw delta
+		// NOTE: the delta values are framerate dependent (poll-dependent), so basically unusable
+		const int32_t dx = (int32_t)newMousePos.velocityX * 2;
+		const int32_t dy = (int32_t)newMousePos.velocityY * 2;
+
+		if (dx != 0 || dy != 0)
+		{
+			m_fLastMouseDeltaTime = engine->getTime();
+			engine->onMouseRawMove(dx, dy);
+		}
+
+		// position
+		// NOTE: the only use case for mouse control is docked mode. the raw coordinates from hidMouseRead() are restricted to 720p, so upscaling only gives 1.5x1.5 pixel accuracy at most
+		if (engine->getTime() < m_fLastMouseDeltaTime + 0.5f)
+		{
+			const float rawRangeX = 1280.0f;
+			const float rawRangeY = 720.0f;
+
+			m_vMousePos.x = ((((float)newMousePos.x - rawRangeX/2.0f) * m_mouse_sensitivity_ref->getFloat()) + rawRangeX/2.0f) / rawRangeX;
+			m_vMousePos.y = ((((float)newMousePos.y - rawRangeY/2.0f) * m_mouse_sensitivity_ref->getFloat()) + rawRangeY/2.0f) / rawRangeY;
+
+			m_vMousePos *= engine->getScreenSize(); // scale to 1080p
+
+			m_vMousePos.x = clamp<float>(m_vMousePos.x, 0.0f, engine->getScreenSize().x);
+			m_vMousePos.y = clamp<float>(m_vMousePos.y, 0.0f, engine->getScreenSize().y);
+
+			engine->getMouse()->onPosChange(m_vMousePos);
+		}
+
+		// scrolling
+		const int scrollVelocityX = (int)newMousePos.scrollVelocityX;
+		const int scrollVelocityY = (int)newMousePos.scrollVelocityY;
+		if (scrollVelocityY != 0)
+			engine->onMouseWheelHorizontal(scrollVelocityY);
+		if (scrollVelocityX != 0)
+			engine->onMouseWheelVertical(scrollVelocityX);
+	}
 }
 
 Environment::OS HorizonSDLEnvironment::getOS()

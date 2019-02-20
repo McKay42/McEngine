@@ -29,6 +29,9 @@
 #include "Sound.h"
 
 ConVar snd_output_device("snd_output_device", "Default");
+
+ConVar snd_chunk_size("snd_chunk_size", 256);
+
 ConVar snd_restrict_play_frame("snd_restrict_play_frame", true, "only allow one new channel per frame for overlayable sounds (prevents lag and earrape)");
 ConVar snd_change_check_interval("snd_change_check_interval", 0.0f, "check for output device changes every this many seconds. 0 = disabled (default)");
 
@@ -90,7 +93,7 @@ SoundEngine::SoundEngine()
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
 
-	m_iMixChunkSize = 256;
+	m_iMixChunkSize = snd_chunk_size.getInt();
 	m_fVolumeMixMusic = 1.0f;
 
 	// NOTE: this seems unnecessary, and doesn't even work for SDL_INIT_OGG/SDL_INIT_MP3/etc., commented for now
