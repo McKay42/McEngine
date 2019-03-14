@@ -11,6 +11,9 @@
 #include "ConVar.h"
 #include "Camera.h"
 
+ConVar r_3dscene_zn("r_3dscene_zn", 5.0f);
+ConVar r_3dscene_zf("r_3dscene_zf", 5000.0f);
+
 ConVar _r_globaloffset_x("r_globaloffset_x", 0.0f);
 ConVar _r_globaloffset_y("r_globaloffset_y", 0.0f);
 ConVar _r_debug_disable_cliprect("r_debug_disable_cliprect", false);
@@ -149,7 +152,7 @@ void Graphics::push3DScene(McRect region)
 
 	// set projection matrix
 	Matrix4 trans2 = Matrix4().translate(-1 + (region.getWidth()) / (float)engine->getScreenWidth() + (region.getX()*2) / (float)engine->getScreenWidth(), 1 - region.getHeight() / (float)engine->getScreenHeight() - (region.getY()*2) / (float)engine->getScreenHeight(), 0);
-	Matrix4 projectionMatrix = trans2 * Camera::buildMatrixPerspectiveFov(deg2rad(m_fFov),((float) engine->getScreenWidth())/((float) engine->getScreenHeight()), -10.0f, 10.0f);
+	Matrix4 projectionMatrix = trans2 * Camera::buildMatrixPerspectiveFov(deg2rad(m_fFov),((float) engine->getScreenWidth())/((float) engine->getScreenHeight()), r_3dscene_zn.getFloat(), r_3dscene_zf.getFloat());
 	m_3dSceneProjectionMatrix = projectionMatrix;
 
 	// set world matrix
