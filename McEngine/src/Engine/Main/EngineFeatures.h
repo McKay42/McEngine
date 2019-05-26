@@ -44,6 +44,11 @@
 #define MCENGINE_FEATURE_SOUND
 
 /*
+ * BASS WASAPI sound (Windows only)
+ */
+//#define MCENGINE_FEATURE_BASS_WASAPI
+
+/*
  * XInput gamepads
  */
 //#define MCENGINE_FEATURE_GAMEPAD

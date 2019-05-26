@@ -224,7 +224,7 @@ void CBaseUISlider::onKeyDown(KeyboardEvent &e)
 	}
 }
 
-void CBaseUISlider::forceCallCallback()
+void CBaseUISlider::fireChangeCallback()
 {
 	if (m_sliderChangeCallback != NULL)
 		m_sliderChangeCallback(this);

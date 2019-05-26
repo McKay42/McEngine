@@ -7,11 +7,18 @@
 
 #include "Sound.h"
 #include "ConVar.h"
+#include "File.h"
 
 #ifdef MCENGINE_FEATURE_SOUND
 
 #include <bass.h>
 #include <bass_fx.h>
+
+#ifdef MCENGINE_FEATURE_BASS_WASAPI
+
+#include <bassmix.h>
+
+#endif
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
 
@@ -29,6 +36,8 @@ DWORD CALLBACK soundFXCallbackProc(HSTREAM handle, void *buffer, DWORD length, v
 
 #endif
 
+ConVar snd_speed_compensate_pitch("snd_speed_compensate_pitch", true, "automatically keep pitch constant if speed changes");
+
 Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan) : Resource(filepath)
 {
 	m_fVolume = 1.0f;
@@ -37,7 +46,6 @@ Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan
 	m_HSTREAMBACKUP = 0;
 	m_HCHANNEL = 0;
 	m_HCHANNELBACKUP = 0;
-	m_mixChunkOrMixMusic = NULL;
 
 	m_bStream = stream;
 	m_bIs3d = threeD;
@@ -49,6 +57,11 @@ Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan
 
 	m_bisSpeedAndPitchHackEnabled = false;
 	m_soundProcUserData = new SOUND_PROC_USERDATA();
+
+	m_iPrevPosition = 0;
+	m_mixChunkOrMixMusic = NULL;
+	m_wasapiSampleBuffer = NULL;
+	m_iWasapiSampleBufferSize = 0;
 }
 
 void Sound::init()
@@ -58,7 +71,7 @@ void Sound::init()
 #ifdef MCENGINE_FEATURE_SOUND
 
 	// error checking
-	if (m_HSTREAM == 0)
+	if (m_HSTREAM == 0 && m_iWasapiSampleBufferSize < 1)
 	{
 		UString msg = "Couldn't load sound \"";
 		msg.append(m_sFilePath);
@@ -87,22 +100,31 @@ void Sound::initAsync()
 	// create the sound
 	if (m_bStream)
 	{
+		DWORD extraStreamCreateFileFlags = 0;
+		DWORD extraFXTempoCreateFlags = 0;
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
-		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.wc_str(), 0, 0, BASS_STREAM_DECODE | BASS_UNICODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0));
+#ifdef MCENGINE_FEATURE_BASS_WASAPI
 
-#elif defined __linux__
-
-		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, BASS_STREAM_DECODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0));
-
-#else
-
-		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, BASS_STREAM_DECODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0));
+		extraStreamCreateFileFlags |= BASS_SAMPLE_FLOAT;
+		extraFXTempoCreateFlags |= BASS_STREAM_DECODE;
 
 #endif
 
-		m_HSTREAM = BASS_FX_TempoCreate(m_HSTREAM, BASS_FX_FREESOURCE);
+		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.wc_str(), 0, 0, BASS_STREAM_DECODE | BASS_UNICODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | extraStreamCreateFileFlags);
+
+#elif defined __linux__
+
+		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, BASS_STREAM_DECODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | extraStreamCreateFileFlags);
+
+#else
+
+		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, BASS_STREAM_DECODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | extraStreamCreateFileFlags);
+
+#endif
+
+		m_HSTREAM = BASS_FX_TempoCreate(m_HSTREAM, BASS_FX_FREESOURCE | extraFXTempoCreateFlags);
 
 		BASS_ChannelSetAttribute(m_HSTREAM, BASS_ATTRIB_TEMPO_OPTION_USE_QUICKALGO, true);
 		BASS_ChannelSetAttribute(m_HSTREAM, BASS_ATTRIB_TEMPO_OPTION_OVERLAP_MS, 4.0f);
@@ -110,12 +132,32 @@ void Sound::initAsync()
 
 		m_HCHANNELBACKUP = m_HSTREAM;
 	}
-	else
+	else // not a stream
 	{
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
+#ifdef MCENGINE_FEATURE_BASS_WASAPI
+
+		File file(m_sFilePath);
+		if (file.canRead())
+		{
+			m_iWasapiSampleBufferSize = file.getFileSize();
+			if (m_iWasapiSampleBufferSize > 0)
+			{
+				m_wasapiSampleBuffer = new char[file.getFileSize()];
+				memcpy(m_wasapiSampleBuffer, file.readFile(), file.getFileSize());
+			}
+		}
+		else
+			debugLog("ERROR: Couldn't file.read on %s\n", m_sFilePath.toUtf8());
+
+#else
+
 		m_HSTREAM = BASS_SampleLoad(FALSE, m_sFilePath.wc_str(), 0, 0, 5, (m_bIsLooped ? BASS_SAMPLE_LOOP : 0 ) | (m_bIs3d ? BASS_SAMPLE_3D | BASS_SAMPLE_MONO : 0) | BASS_SAMPLE_OVER_POS | BASS_UNICODE);
+
+#endif
+
 
 #elif defined __linux__
 
@@ -161,6 +203,23 @@ SOUNDHANDLE Sound::getHandle()
 		return m_HSTREAM;
 	else
 	{
+
+#ifdef MCENGINE_FEATURE_BASS_WASAPI
+
+		// HACKHACK: wasapi stream objects can't be reused
+		if (m_HCHANNEL == 0 || m_bIsOverlayable)
+		{
+			m_HCHANNEL = BASS_StreamCreateFile(TRUE, m_wasapiSampleBuffer, 0, m_iWasapiSampleBufferSize, BASS_SAMPLE_FLOAT | BASS_STREAM_DECODE | BASS_UNICODE | (m_bIsLooped ? BASS_SAMPLE_LOOP : 0));
+			if (m_HCHANNEL == 0)
+				debugLog("BASS_StreamCreateFile() error %i\n", BASS_ErrorGetCode());
+
+			BASS_ChannelSetAttribute(m_HCHANNEL, BASS_ATTRIB_VOL, m_fVolume);
+		}
+
+		return m_HCHANNEL;
+
+#endif
+
 		if (m_HCHANNEL != 0 && !m_bIsOverlayable)
 			return m_HCHANNEL;
 
@@ -219,10 +278,28 @@ void Sound::destroy()
 
 	if (m_bStream)
 	{
+
+#ifdef MCENGINE_FEATURE_BASS_WASAPI
+
+		BASS_Mixer_ChannelRemove(m_HSTREAM);
+
+#endif
+
 		BASS_StreamFree(m_HSTREAM); // fx (but with BASS_FX_FREESOURCE)
 	}
 	else
 	{
+
+#ifdef MCENGINE_FEATURE_BASS_WASAPI
+
+		if (m_wasapiSampleBuffer != NULL)
+		{
+			delete[] m_wasapiSampleBuffer;
+			m_wasapiSampleBuffer = NULL;
+		}
+
+#endif
+
 		if (m_HCHANNEL)
 			BASS_ChannelStop(m_HCHANNEL);
 		if (m_HSTREAMBACKUP)
@@ -399,7 +476,10 @@ void Sound::setSpeed(float speed)
 	}
 	*/
 
-	BASS_ChannelSetAttribute(m_HSTREAM, BASS_ATTRIB_TEMPO, (speed-1.0f)*100.0f);
+	float originalFreq = 44100.0f;
+	BASS_ChannelGetAttribute(m_HSTREAM, BASS_ATTRIB_FREQ, &originalFreq);
+
+	BASS_ChannelSetAttribute(m_HSTREAM, (snd_speed_compensate_pitch.getBool() ? BASS_ATTRIB_TEMPO : BASS_ATTRIB_TEMPO_FREQ), (snd_speed_compensate_pitch.getBool() ? (speed-1.0f)*100.0f : speed*originalFreq));
 
 #endif
 }
@@ -637,7 +717,17 @@ bool Sound::isPlaying()
 
 #ifdef MCENGINE_FEATURE_SOUND
 
+#ifdef MCENGINE_FEATURE_BASS_WASAPI
+
+	DWORD handle = getHandle();
+
+	return BASS_ChannelIsActive(handle) == BASS_ACTIVE_PLAYING && ((!m_bStream && m_bIsOverlayable) || BASS_Mixer_ChannelGetMixer(handle) != 0);
+
+#else
+
 	return BASS_ChannelIsActive(getHandle()) == BASS_ACTIVE_PLAYING;
+
+#endif
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
 

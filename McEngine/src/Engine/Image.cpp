@@ -183,6 +183,9 @@ bool Image::loadRawImage()
 			m_iWidth = cinfo.image_width;
 			m_iHeight = cinfo.image_height;
 			m_iNumChannels = cinfo.num_components;
+
+			// TODO: add proper CMYK support, check via cinfo.jpeg_color_space
+
 			if (m_iNumChannels == 4)
 				m_bHasAlphaChannel = true;
 

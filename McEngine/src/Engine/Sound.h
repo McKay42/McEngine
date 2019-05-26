@@ -59,7 +59,9 @@ public:
 
 	// ILLEGAL:
 	void setHandle(SOUNDHANDLE handle) {m_HCHANNEL = handle;}
+	void setPrevPosition(unsigned long prevPosition) {m_iPrevPosition = prevPosition;}
 	inline void *getMixChunkOrMixMusic() const {return m_mixChunkOrMixMusic;}
+	inline unsigned long getPrevPosition() const {return m_iPrevPosition;}
 
 private:
 	virtual void init();
@@ -77,8 +79,6 @@ private:
 	SOUNDHANDLE m_HCHANNEL;
 	SOUNDHANDLE m_HCHANNELBACKUP;
 
-	void *m_mixChunkOrMixMusic;
-
 	bool m_bStream;
 	bool m_bIs3d;
 	bool m_bIsLooped;
@@ -88,6 +88,11 @@ private:
 	double m_fLastPlayTime;
 
 	bool m_bisSpeedAndPitchHackEnabled;
+
+	void *m_mixChunkOrMixMusic;
+	unsigned long m_iPrevPosition;
+	char *m_wasapiSampleBuffer;
+	unsigned long long m_iWasapiSampleBufferSize;
 };
 
 #endif

@@ -267,8 +267,7 @@ void Engine::loadApp()
 
 void Engine::onPaint()
 {
-	if (m_bBlackout || m_bIsMinimized)
-		return;
+	if (m_bBlackout || m_bIsMinimized) return;
 
 	m_bDrawing = true;
 

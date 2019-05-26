@@ -49,6 +49,32 @@ Matrix4 Camera::buildMatrixPerspectiveFov(float fovRad, float aspect, float zn, 
 				   0,		0,		-1,		0).transpose();
 }
 
+Matrix4 Camera::buildMatrixPerspectiveFovVertical(float fovRad, float aspectRatioWidthToHeight, float zn, float zf)
+{
+	const float f = 1.0f / std::tan(fovRad/2.0f);
+
+	const float q = (zf+zn)/(zn-zf);
+	const float qn = (2*zf*zn)/(zn-zf);
+
+	return Matrix4(f/aspectRatioWidthToHeight,	0,		0, 		0,
+				   0, 							f, 		0,		0,
+				   0, 							0,		q,		qn,
+				   0,							0,		-1,		0).transpose();
+}
+
+Matrix4 Camera::buildMatrixPerspectiveFovHorizontal(float fovRad, float aspectRatioHeightToWidth, float zn, float zf)
+{
+	const float f = 1.0f / std::tan(fovRad/2.0f);
+
+	const float q = (zf+zn)/(zn-zf);
+	const float qn = (2*zf*zn)/(zn-zf);
+
+	return Matrix4(f,	0,							0, 		0,
+				   0, 	f/aspectRatioHeightToWidth, 0,		0,
+				   0, 	0,							q,		qn,
+				   0,	0,							-1,		0).transpose();
+}
+
 Quaternion MatrixToQuaternion( Matrix4 &in )
 {
 	float trace = in[0] + in[5] + in[10];
