@@ -26,7 +26,7 @@ public:
 
 	virtual void onKeyDown(KeyboardEvent &e);
 
-	void forceCallCallback();
+	void fireChangeCallback();
 
 	void setOrientation(bool horizontal) {m_bHorizontal = horizontal;onResized();}
 

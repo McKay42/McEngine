@@ -318,7 +318,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			g_bHasFocus = true;
 			if (g_bRunning && g_engine != NULL)
 			{
-				g_engine->onFocusGained();
+				if (!g_engine->hasFocus())
+					g_engine->onFocusGained();
 			}
 			break;
 
@@ -326,7 +327,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			g_bHasFocus = false;
 			if (g_bRunning && g_engine != NULL)
 			{
-				g_engine->onFocusLost();
+				if (g_engine->hasFocus())
+					g_engine->onFocusLost();
 			}
 			break;
 
@@ -551,12 +553,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				UINT dwSize;
 
 				GetRawInputData((HRAWINPUT)lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
-				LPBYTE lpb[dwSize]; // the msdn example uses heap allocation here, but stack should be faster
+
+				BYTE lpb[dwSize]; // the msdn example uses heap allocation here, but stack should be faster
 
 				if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER)) != dwSize && g_engine != NULL)
 					debugLog("WARNING: GetRawInputData() does not return the correct size!!!\n");
 
-				RAWINPUT* raw = (RAWINPUT*)lpb;
+				RAWINPUT *raw = (RAWINPUT*)lpb;
 
 				if (raw->header.dwType == RIM_TYPEMOUSE && g_engine != NULL)
 				{
@@ -947,6 +950,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     deltaTimer->start();
     deltaTimer->update();
 
+    // NOTE: it seems that focus events get lost between CreateWindow() above and ShowWindow() here
+    // can be simulated by sleeping and alt-tab for testing.
+    // seems to be a Windows bug? if you switch to the window after all of this, no activate or focus events will be received!
+    //Sleep(1000);
+
 	// make the window visible
 	ShowWindow(hwnd, nCmdShow);
 #ifdef WINDOW_MAXIMIZED
@@ -957,6 +965,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	WinEnvironment *environment = new WinEnvironment(hwnd, hInstance);
     g_engine = new Engine(environment, lpCmdLine);
     g_engine->loadApp();
+
+    g_bHasFocus = g_bHasFocus && (GetForegroundWindow() == hwnd);	// HACKHACK: workaround (1), see above
+    bool wasLaunchedInBackgroundAndWaitingForFocus = !g_bHasFocus;	// HACKHACK: workaround (2), see above
 
     if (g_bHasFocus)
     	g_engine->onFocusGained();
@@ -974,6 +985,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			TranslateMessage(&msg);
 			DispatchMessageW(&msg);
+		}
+
+		// HACKHACK: focus bug workaround (3), see above
+		{
+			if (wasLaunchedInBackgroundAndWaitingForFocus)
+			{
+				const bool actuallyGotFocusEvenThoughThereIsNoFocusOrActivateEvent = (GetForegroundWindow() == hwnd);
+				if (actuallyGotFocusEvenThoughThereIsNoFocusOrActivateEvent)
+				{
+					wasLaunchedInBackgroundAndWaitingForFocus = false;
+
+					g_bHasFocus = true;
+					if (!g_engine->hasFocus())
+						g_engine->onFocusGained();
+				}
+			}
 		}
 
 		// update

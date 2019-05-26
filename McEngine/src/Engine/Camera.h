@@ -16,7 +16,9 @@ class Camera
 public:
 	static Matrix4 buildMatrixOrtho2D(float left, float right, float bottom, float top);
 	static Matrix4 buildMatrixLookAt(Vector3 eye, Vector3 target, Vector3 up);
-	static Matrix4 buildMatrixPerspectiveFov(float fovRad, float aspect, float zn, float zf);
+	static Matrix4 buildMatrixPerspectiveFov(float fovRad, float aspect, float zn, float zf); // DEPRECATED
+	static Matrix4 buildMatrixPerspectiveFovVertical(float fovRad, float aspectRatioWidthToHeight, float zn, float zf);
+	static Matrix4 buildMatrixPerspectiveFovHorizontal(float fovRad, float aspectRatioHeightToWidth, float zn, float zf);
 
 public:
 	enum CAMERA_TYPE

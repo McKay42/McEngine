@@ -69,9 +69,10 @@ CBaseUICheckbox *CBaseUICheckbox::setChecked(bool checked, bool fireChangeEvent)
 {
 	if (m_bChecked != checked)
 	{
-		m_bChecked = checked;
-		if (m_changeCallback != NULL && fireChangeEvent)
-			m_changeCallback(this);
+		if (fireChangeEvent)
+			onPressed();
+		else
+			m_bChecked = checked;
 	}
 
 	return this;

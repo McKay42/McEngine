@@ -24,6 +24,7 @@ CBaseUILabel::CBaseUILabel(float xPos, float yPos, float xSize, float ySize, USt
 	m_bDrawFrame = true;
 	m_bDrawBackground = true;
 	m_bCenterText = false;
+	m_textJustification = TEXT_JUSTIFICATION::TEXT_JUSTIFICATION_LEFT;
 }
 
 void CBaseUILabel::draw(Graphics *g)
