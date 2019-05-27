@@ -32,7 +32,7 @@ public:
 	CBaseUICheckbox *setChangeCallback( CheckboxChangeCallback clickCallback ) {m_changeCallback = clickCallback; return this;}
 
 protected:
-	void onPressed();
+	virtual void onPressed();
 
 	bool m_bChecked;
 	CheckboxChangeCallback m_changeCallback;

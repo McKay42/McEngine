@@ -28,6 +28,7 @@ public:
 	void setOnOutputDeviceChange(std::function<void()> callback);
 
 	void setOutputDevice(UString outputDeviceName);
+	void setOutputDeviceForce(UString outputDeviceName);
 	void setVolume(float volume);
 	void set3dPosition(Vector3 headPos, Vector3 viewDir, Vector3 viewUp);
 

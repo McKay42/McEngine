@@ -44,6 +44,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/vulkan/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bass/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bassfx/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/basswasapi/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bassmix/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libjpeg/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Engine/Main}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/App/VRSandbox}&quot;"/>
@@ -103,6 +105,8 @@
 									<listOptionValue builtIn="false" value="gdi32"/>
 									<listOptionValue builtIn="false" value="bass"/>
 									<listOptionValue builtIn="false" value="bass_fx"/>
+									<listOptionValue builtIn="false" value="basswasapi"/>
+									<listOptionValue builtIn="false" value="bassmix"/>
 									<listOptionValue builtIn="false" value="comctl32"/>
 									<listOptionValue builtIn="false" value="Dwmapi"/>
 									<listOptionValue builtIn="false" value="Comdlg32"/>
@@ -128,6 +132,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/vulkan/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bass/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bassfx/lib/windows}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/basswasapi/lib/windows}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bassmix/lib/windows}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libjpeg/lib/windows}&quot;"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.400740818" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-static-libstdc++ -static-libgcc -mwindows" valueType="string"/>
