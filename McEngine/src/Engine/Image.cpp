@@ -55,8 +55,8 @@ Image::Image(UString filepath, bool mipmapped, bool keepInSystemMemory) : Resour
 
 	m_type = Image::TYPE::TYPE_PNG;
 	m_iNumChannels = 4;
-	m_iWidth = 0;
-	m_iHeight = 0;
+	m_iWidth = 1;
+	m_iHeight = 1;
 
 	m_bHasAlphaChannel = true;
 	m_bCreatedImage = false;
