@@ -56,8 +56,14 @@ public:
 
 	// conversions
 	float toFloat() const;
+	double toDouble() const;
+	long double toLongDouble() const;
 	int toInt() const;
 	long toLong() const;
+	long long toLongLong() const;
+	unsigned int toUnsignedInt() const;
+	unsigned long toUnsignedLong() const;
+	unsigned long long toUnsignedLongLong() const;
 
 	// operators
 	wchar_t operator [] (int index) const;
