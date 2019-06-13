@@ -31,8 +31,8 @@ public:
 	inline UString getName() const {return m_sName;}
 	inline UString getFilePath() const {return m_sFilePath;}
 
-	inline bool isReady() const {return m_bReady;}
-	inline bool isAsyncReady() const {return m_bAsyncReady;}
+	inline bool isReady() const {return m_bReady.load();}
+	inline bool isAsyncReady() const {return m_bAsyncReady.load();}
 
 protected:
 	virtual void init() = 0;
@@ -42,9 +42,9 @@ protected:
 	UString m_sFilePath;
 	UString m_sName;
 
-	bool m_bReady;
-	bool m_bAsyncReady;
-	bool m_bInterrupted;
+	std::atomic<bool> m_bReady;
+	std::atomic<bool> m_bAsyncReady;
+	std::atomic<bool> m_bInterrupted;
 };
 
 #endif
