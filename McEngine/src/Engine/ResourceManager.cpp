@@ -160,9 +160,11 @@ void ResourceManager::update()
 				g_resourceManagerLoadingWorkMutex.lock();
 
 #endif
+
 				{
 					m_loadingWork.erase(m_loadingWork.begin()+i);
 				}
+
 #ifdef MCENGINE_FEATURE_MULTITHREADING
 
 				g_resourceManagerLoadingWorkMutex.unlock();
@@ -333,7 +335,7 @@ Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool m
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = exists(resourceName);
+		Resource *temp = existsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<Image*>(temp);
 	}
@@ -364,7 +366,7 @@ Image *ResourceManager::loadImageAbs(UString absoluteFilepath, UString resourceN
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = exists(resourceName);
+		Resource *temp = existsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<Image*>(temp);
 	}
@@ -410,7 +412,7 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, unsign
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = exists(resourceName);
+		Resource *temp = existsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<McFont*>(temp);
 	}
@@ -430,7 +432,7 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, std::v
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = exists(resourceName);
+		Resource *temp = existsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<McFont*>(temp);
 	}
@@ -450,7 +452,7 @@ Sound *ResourceManager::loadSound(UString filepath, UString resourceName, bool s
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = exists(resourceName);
+		Resource *temp = existsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<Sound*>(temp);
 	}
@@ -470,7 +472,7 @@ Sound *ResourceManager::loadSoundAbs(UString filepath, UString resourceName, boo
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = exists(resourceName);
+		Resource *temp = existsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<Sound*>(temp);
 	}
@@ -489,7 +491,7 @@ Shader *ResourceManager::loadShader(UString vertexShaderFilePath, UString fragme
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = exists(resourceName);
+		Resource *temp = existsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<Shader*>(temp);
 	}
@@ -522,7 +524,7 @@ Shader *ResourceManager::createShader(UString vertexShader, UString fragmentShad
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = exists(resourceName);
+		Resource *temp = existsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<Shader*>(temp);
 	}
@@ -631,17 +633,31 @@ Shader *ResourceManager::getShader(UString resourceName)
 	return NULL;
 }
 
+bool ResourceManager::isLoadingResource(Resource *rs) const
+{
+	for (int i=0; i<m_loadingWork.size(); i++)
+	{
+		if (m_loadingWork[i].first == rs)
+			return true;
+	}
+
+	return false;
+}
+
 void ResourceManager::loadResource(Resource *res, bool load)
 {
+	// handle flags
 	if (m_nextLoadUnmanagedStack.size() < 1 || !m_nextLoadUnmanagedStack.top())
 		m_vResources.push_back(res); // add managed resource
 
-	if (m_nextLoadUnmanagedStack.size() > 0)
-		m_nextLoadUnmanagedStack.pop();
+	const bool isNextLoadAsync = m_bNextLoadAsync;
+
+	// flags must be reset on every load, to not carry over
+	resetFlags();
 
 	if (!load) return;
 
-	if (!m_bNextLoadAsync)
+	if (!isNextLoadAsync)
 	{
 		// load normally
 		res->loadAsync();
@@ -649,8 +665,6 @@ void ResourceManager::loadResource(Resource *res, bool load)
 	}
 	else
 	{
-		m_bNextLoadAsync = false;
-
 #if defined(MCENGINE_FEATURE_MULTITHREADING)
 
 		g_resourceManagerMutex.lock();
@@ -692,25 +706,31 @@ void ResourceManager::doesntExistWarning(UString resourceName)
 	}
 }
 
-Resource *ResourceManager::exists(UString resourceName)
+Resource *ResourceManager::existsAndHandle(UString resourceName)
 {
 	for (int i=0; i<m_vResources.size(); i++)
 	{
 		if (m_vResources[i]->getName() == resourceName)
 		{
 			if (rm_warnings.getBool())
-			{
-				UString errormsg = "Resource \"";
-				errormsg.append(resourceName);
-				errormsg.append("\" already loaded!");
-				debugLog("RESOURCE MANAGER: %s\n",errormsg.toUtf8());
-			}
+				debugLog("RESOURCE MANAGER: Resource \"%s\" already loaded!\n", resourceName.toUtf8());
+
+			// handle flags (reset them)
+			resetFlags();
 
 			return m_vResources[i];
 		}
 	}
 
 	return NULL;
+}
+
+void ResourceManager::resetFlags()
+{
+	if (m_nextLoadUnmanagedStack.size() > 0)
+		m_nextLoadUnmanagedStack.pop();
+
+	m_bNextLoadAsync = false;
 }
 
 
