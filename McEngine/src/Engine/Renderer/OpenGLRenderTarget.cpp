@@ -17,8 +17,15 @@
 
 OpenGLRenderTarget::OpenGLRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType) : RenderTarget(x, y, width, height, multiSampleType)
 {
-	m_iFrameBuffer = m_iRenderTexture = m_iDepthBuffer = m_iResolveTexture = m_iResolveFrameBuffer = 0;
-	m_iFrameBufferBackup = m_iTextureUnitBackup = 0;
+	m_iFrameBuffer = 0;
+	m_iRenderTexture = 0;
+	m_iDepthBuffer = 0;
+	m_iResolveTexture = 0;
+	m_iResolveFrameBuffer = 0;
+
+	m_iFrameBufferBackup = 0;
+	m_iTextureUnitBackup = 0;
+
 	m_iViewportBackup[0] = 0;
 	m_iViewportBackup[1] = 0;
 	m_iViewportBackup[2] = 0;
@@ -29,7 +36,11 @@ void OpenGLRenderTarget::init()
 {
 	debugLog("Building RenderTarget (%ix%i) ...\n", (int)m_vSize.x, (int)m_vSize.y);
 
-	m_iFrameBuffer = m_iRenderTexture = m_iDepthBuffer = m_iResolveTexture = m_iResolveFrameBuffer = 0;
+	m_iFrameBuffer = 0;
+	m_iRenderTexture = 0;
+	m_iDepthBuffer = 0;
+	m_iResolveTexture = 0;
+	m_iResolveFrameBuffer = 0;
 
 	int numMultiSamples = 2;
 	switch (m_multiSampleType)
@@ -212,7 +223,11 @@ void OpenGLRenderTarget::destroy()
 	if (m_iFrameBuffer != 0)
 		glDeleteFramebuffers(1, &m_iFrameBuffer);
 
-	m_iDepthBuffer = m_iRenderTexture = m_iFrameBuffer = m_iResolveTexture = m_iResolveFrameBuffer = 0;
+	m_iFrameBuffer = 0;
+	m_iRenderTexture = 0;
+	m_iDepthBuffer = 0;
+	m_iResolveTexture = 0;
+	m_iResolveFrameBuffer = 0;
 }
 
 void OpenGLRenderTarget::enable()
