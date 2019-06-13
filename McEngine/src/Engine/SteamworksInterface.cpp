@@ -18,7 +18,7 @@
 
 #endif
 
-#define STEAMWORKS_APPID 607260
+#define STEAMWORKS_APPID 0
 
 SteamworksInterface *steam = NULL;
 
