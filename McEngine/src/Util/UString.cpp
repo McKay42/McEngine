@@ -519,7 +519,17 @@ UString UString::trim() const
 
 float UString::toFloat() const
 {
-	return !isUtf8Null() ? std::strtof(mUtf8, NULL) : 0;
+	return !isUtf8Null() ? std::strtof(mUtf8, NULL) : 0.0f;
+}
+
+double UString::toDouble() const
+{
+	return !isUtf8Null() ? std::strtod(mUtf8, NULL) : 0.0;
+}
+
+long double UString::toLongDouble() const
+{
+	return !isUtf8Null() ? std::strtold(mUtf8, NULL) : 0.0l;
 }
 
 int UString::toInt() const
@@ -530,6 +540,26 @@ int UString::toInt() const
 long UString::toLong() const
 {
 	return !isUtf8Null() ? std::strtol(mUtf8, NULL, 0) : 0;
+}
+
+long long UString::toLongLong() const
+{
+	return !isUtf8Null() ? std::strtoll(mUtf8, NULL, 0) : 0;
+}
+
+unsigned int UString::toUnsignedInt() const
+{
+	return !isUtf8Null() ? (unsigned int)std::strtoul(mUtf8, NULL, 0) : 0;
+}
+
+unsigned long UString::toUnsignedLong() const
+{
+	return !isUtf8Null() ? std::strtoul(mUtf8, NULL, 0) : 0;
+}
+
+unsigned long long UString::toUnsignedLongLong() const
+{
+	return !isUtf8Null() ? std::strtoull(mUtf8, NULL, 0) : 0;
 }
 
 wchar_t UString::operator [] (int index) const
