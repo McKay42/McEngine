@@ -154,10 +154,7 @@ void Console::processCommand(UString command)
 	ConVar *var = convar->getConVarByName(commandName, false);
 	if (var == NULL)
 	{
-		UString temp = "Unknown command \"";
-		temp.append(commandName);
-		temp.append("\"!\n");
-		debugLog("%s", temp.toUtf8());
+		debugLog("Unknown command: %s\n", commandName.toUtf8());
 		return;
 	}
 
@@ -173,23 +170,22 @@ void Console::processCommand(UString command)
 		UString logMessage;
 
 		bool doLog = false;
-		if (commandValue.length() < 1 && var->getHelpstring().length() > 0)
+		if (commandValue.length() < 1)
 		{
-			doLog = true;
+			doLog = var->hasValue(); // assume ConCommands never have helpstrings
 
 			logMessage = commandName;
-			logMessage.append(" : ");
 
 			if (var->hasValue())
 			{
-				logMessage.append(var->getString());
+				logMessage.append(UString::format(" = %s ( def. \"%s\" )", var->getString().toUtf8(), var->getDefaultString().toUtf8()));
+			}
+
+			if (var->getHelpstring().length() > 0)
+			{
 				logMessage.append(" - ");
 				logMessage.append(var->getHelpstring());
 			}
-			else
-				logMessage.append(var->getHelpstring());
-
-			logMessage.append("\n");
 		}
 		else if (var->hasValue())
 		{
@@ -197,13 +193,12 @@ void Console::processCommand(UString command)
 
 			logMessage = commandName;
 			logMessage.append(" : ");
+			///logMessage.append(" ");
 			logMessage.append(var->getString());
-
-			logMessage.append("\n");
 		}
 
 		if (logMessage.length() > 0 && doLog)
-			debugLog("%s", logMessage.toUtf8());
+			debugLog("%s\n", logMessage.toUtf8());
 	}
 }
 
@@ -211,7 +206,7 @@ void Console::execConfigFile(UString filename)
 {
 	// handle extension
 	filename.insert(0, CFG_FOLDER);
-	if (filename.find(".cfg", filename.length()-4, filename.length()) == -1)
+	if (filename.find(".cfg", (filename.length() - 4), filename.length()) == -1)
 		filename.append(".cfg");
 
 	// open it
@@ -231,8 +226,9 @@ void Console::execConfigFile(UString filename)
 		{
 			// handle comments
 			UString cmd = UString(line.c_str());
-			if (cmd.find("//", 0, cmd.length()) != -1)
-				cmd.erase(cmd.find("//", 0, cmd.length()), cmd.length()-cmd.find("//", 0, cmd.length()));
+			const int commentIndex = cmd.find("//", 0, cmd.length());
+			if (commentIndex != -1)
+				cmd.erase(commentIndex, cmd.length() - commentIndex);
 
 			// add command
 			cmds.push_back(cmd);
@@ -267,8 +263,7 @@ void Console::log(UString text, Color textColor)
 
 #endif
 
-	if (text.length() < 1)
-		return;
+	if (text.length() < 1) return;
 
 	// delete illegal characters
 	int newline = text.find("\n", 0);

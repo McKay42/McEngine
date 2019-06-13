@@ -53,8 +53,8 @@ public:
 	void execArgs(UString args);
 
 	// set
-	void setDefaultFloat(float defaultValue) {m_fDefaultValue = defaultValue;}
-	void setDefaultString(UString defaultValue) {m_sDefaultValue = defaultValue;}
+	void setDefaultFloat(float defaultValue);
+	void setDefaultString(UString defaultValue);
 
 	void setValue(float value);
 	void setValue(UString sValue);
@@ -66,18 +66,18 @@ public:
 	void setHelpString(UString helpString) {m_sHelpString = helpString;}
 
 	// get
-	inline const float getDefaultFloat() const {return m_fDefaultValue;}
+	inline float getDefaultFloat() const {return m_fDefaultValue.load();}
 	inline const UString getDefaultString() const {return m_sDefaultValue;}
 
-	inline const bool getBool() const {return (m_fValue > 0);}
-	inline const float getFloat() const {return m_fValue;}
-	inline const int getInt() const {return (int)(m_fValue);}
+	inline bool getBool() const {return (m_fValue.load() > 0);}
+	inline float getFloat() const {return m_fValue.load();}
+	inline int getInt() const {return (int)(m_fValue.load());}
 	inline const UString getString() const {return m_sValue;}
 
 	inline const UString getHelpstring() const {return m_sHelpString;}
 	inline const UString getName() const {return m_sName;}
 
-	inline const bool hasValue() const {return m_bHasValue;}
+	inline bool hasValue() const {return m_bHasValue.load();}
 	bool hasCallbackArgs();
 
 private:
@@ -88,13 +88,13 @@ private:
 	void init(UString name, float defaultValue, UString helpString, ConVarChangeCallback callback);
 	void init(UString name, UString defaultValue, UString helpString, ConVarChangeCallback callback);
 
-	bool m_bHasValue;
+	std::atomic<bool> m_bHasValue;
 
 	UString m_sName;
 	UString m_sHelpString;
 
-	float m_fValue;
-	float m_fDefaultValue;
+	std::atomic<float> m_fValue;
+	std::atomic<float> m_fDefaultValue;
 
 	UString m_sValue;
 	UString m_sDefaultValue;
