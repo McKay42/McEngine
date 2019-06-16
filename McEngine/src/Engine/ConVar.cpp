@@ -8,7 +8,9 @@
 #include "ConVar.h"
 #include "Engine.h"
 
-std::vector<ConVar*> &getGlobalConVarArray() // if we don't do it like this, the random order of static initializations will rape us
+
+
+std::vector<ConVar*> &getGlobalConVarArray()
 {
 	static std::vector<ConVar*> g_vConVarArray; // (singleton)
 	return g_vConVarArray;
@@ -67,8 +69,10 @@ void ConVar::init(UString name, float defaultValue, UString helpString, ConVarCh
 	init();
 
 	m_sName = name;
-	m_fDefaultValue = defaultValue;
-	setValue(defaultValue);
+	setDefaultFloat(defaultValue);
+	{
+		setValue(defaultValue);
+	}
 	m_sHelpString = helpString;
 	m_changecallback = callback;
 }
@@ -78,8 +82,10 @@ void ConVar::init(UString name, UString defaultValue, UString helpString, ConVar
 	init();
 
 	m_sName = name;
-	m_sDefaultValue = defaultValue;
-	setValue(defaultValue);
+	setDefaultString(defaultValue);
+	{
+		setValue(defaultValue);
+	}
 	m_sHelpString = helpString;
 	m_changecallback = callback;
 }
@@ -210,30 +216,44 @@ void ConVar::execArgs(UString args)
 		m_callbackfuncargs(args);
 }
 
+void ConVar::setDefaultFloat(float defaultValue)
+{
+	m_fDefaultValue = defaultValue;
+	m_sDefaultValue = UString::format("%g", defaultValue);
+}
+
+void ConVar::setDefaultString(UString defaultValue)
+{
+	m_sDefaultValue = defaultValue;
+}
+
 void ConVar::setValue(float value)
 {
 	// backup previous value
-	const float oldValue = m_fValue;
+	const float oldValue = m_fValue.load();
 
 	// then set the new value
 	m_fValue = value;
-	m_sValue = UString::format("%g", m_fValue);
+	m_sValue = UString::format("%g", m_fValue.load());
 
-	// possible void callback
-	exec();
+	// handle callbacks
+	{
+		// possible void callback
+		exec();
 
-	// possible change callback
-	if (m_changecallback != NULL)
-		m_changecallback(UString::format("%g", oldValue), UString::format("%g", value));
+		// possible change callback
+		if (m_changecallback != NULL)
+			m_changecallback(UString::format("%g", oldValue), UString::format("%g", value));
 
-	// possible arg callback
-	execArgs(UString::format("%g", value));
+		// possible arg callback
+		execArgs(UString::format("%g", value));
+	}
 }
 
 void ConVar::setValue(UString sValue)
 {
 	// backup previous value
-	UString oldValue = sValue;
+	const UString oldValue = m_sValue;
 
 	// possible void callback
 	exec();
@@ -269,7 +289,7 @@ void ConVar::setCallback(NativeConVarChangeCallback callback)
 
 bool ConVar::hasCallbackArgs()
 {
-	return m_callbackfuncargs != NULL || m_changecallback != NULL;
+	return (m_callbackfuncargs != NULL || m_changecallback != NULL);
 }
 
 
@@ -424,7 +444,13 @@ void _help(UString args)
 	}
 
 	UString thelog = temp[0]->getName();
-	thelog.append(" : ");
+
+	if (temp[0]->hasValue())
+	{
+		thelog.append(UString::format(" = %s ( def. \"%s\" )", temp[0]->getString().toUtf8(), temp[0]->getDefaultString().toUtf8()));
+	}
+
+	thelog.append(" - ");
 	thelog.append(temp[0]->getHelpstring());
 
 	debugLog("%s", thelog.toUtf8());
@@ -440,12 +466,20 @@ void _listcommands(void)
 	for (int i=0; i<convars.size(); i++)
 	{
 		UString tstring = convars[i]->getName();
+
+		if (convars[i]->hasValue())
+		{
+			tstring.append(UString::format(" = %s ( def. \"%s\" )", convars[i]->getString().toUtf8(), convars[i]->getDefaultString().toUtf8()));
+		}
+
 		if (convars[i]->getHelpstring().length() > 0)
 		{
-			tstring.append(" : ");
+			tstring.append(" - ");
 			tstring.append(convars[i]->getHelpstring());
 		}
+
 		tstring.append("\n");
+
 		debugLog("%s", tstring.toUtf8());
 	}
 

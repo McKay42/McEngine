@@ -49,8 +49,10 @@ void SDLEnvironment::update()
 
 Graphics *SDLEnvironment::createRenderer()
 {
-	//return new NullGraphicsInterface();
+	return new NullGraphicsInterface();
 	//return new SDLGLLegacyInterface(m_window);
+
+#ifdef MCENGINE_FEATURE_OPENGLES
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
@@ -59,6 +61,8 @@ Graphics *SDLEnvironment::createRenderer()
 #else
 
 	return new SDLGLES2Interface(m_window);
+
+#endif
 
 #endif
 }

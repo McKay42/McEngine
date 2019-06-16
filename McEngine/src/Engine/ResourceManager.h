@@ -102,6 +102,8 @@ public:
 	int getNumResources() const {return m_vResources.size();}
 	inline std::vector<Resource*> getResources() const {return m_vResources;}
 
+	bool isLoadingResource(Resource *rs) const;
+
 	template<typename T>
 	struct MobileAtomic
 	{
@@ -145,7 +147,8 @@ public:
 private:
 	void loadResource(Resource *res, bool load);
 	void doesntExistWarning(UString resourceName);
-	Resource *exists(UString resourceName);
+	Resource *existsAndHandle(UString resourceName);
+	void resetFlags();
 
 	std::vector<Resource*> m_vResources;
 	std::vector<Resource*> m_vAsyncDestroy;

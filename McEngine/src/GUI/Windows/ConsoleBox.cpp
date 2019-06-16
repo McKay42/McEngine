@@ -346,7 +346,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 					if (i == m_iSelectedSuggestion)
 					{
 						m_vSuggestionButtons[i]->setTextColor(0xff00ff00);
-						m_vSuggestionButtons[i]->setTextDarkColor(0);
+						m_vSuggestionButtons[i]->setTextDarkColor(0xff000000);
 					}
 					else
 						m_vSuggestionButtons[i]->setTextColor(0xffffffff);
@@ -379,7 +379,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 					if (i == m_iSelectedSuggestion)
 					{
 						m_vSuggestionButtons[i]->setTextColor(0xff00ff00);
-						m_vSuggestionButtons[i]->setTextDarkColor(0);
+						m_vSuggestionButtons[i]->setTextDarkColor(0xff000000);
 					}
 					else
 						m_vSuggestionButtons[i]->setTextColor(0xffffffff);

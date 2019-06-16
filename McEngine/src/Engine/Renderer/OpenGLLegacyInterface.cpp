@@ -198,25 +198,25 @@ void OpenGLLegacyInterface::drawLine(Vector2 pos1, Vector2 pos2)
 
 void OpenGLLegacyInterface::drawRect(int x, int y, int width, int height)
 {
-	drawLine(x, y, x+width, y);
-	drawLine(x, y, x, y+height);
-	drawLine(x, y+height, x+width+1, y+height);
-	drawLine(x+width, y, x+width, y+height);
+	drawLine((x + 1), y, (x + width), y);
+	drawLine(x, y, x, (y + height));
+	drawLine(x, (y + height), (x + width + 1), (y + height));
+	drawLine((x + width), y, (x + width), (y + height));
 }
 
 void OpenGLLegacyInterface::drawRect(int x, int y, int width, int height, Color top, Color right, Color bottom, Color left)
 {
 	setColor(top);
-	drawLine(x, y, x+width, y);
+	drawLine((x + 1), y, (x + width), y);
 
 	setColor(left);
-	drawLine(x, y, x, y+height);
+	drawLine(x, y, x, (y + height));
 
 	setColor(bottom);
-	drawLine(x, y+height, x+width+1, y+height);
+	drawLine(x, (y + height), (x + width + 1), (y + height));
 
 	setColor(right);
-	drawLine(x+width, y, x+width, y+height);
+	drawLine((x + width), y, (x + width), (y + height));
 }
 
 void OpenGLLegacyInterface::fillRect(int x, int y, int width, int height)
@@ -228,9 +228,9 @@ void OpenGLLegacyInterface::fillRect(int x, int y, int width, int height)
 	glBegin(GL_QUADS);
 	{
 		glVertex2i(x, y);
-		glVertex2i(x, y+height);
-		glVertex2i(x+width, y+height);
-		glVertex2i(x+width, y);
+		glVertex2i(x, (y + height));
+		glVertex2i((x + width), (y + height));
+		glVertex2i((x + width), y);
 	}
 	glEnd();
 }
@@ -287,13 +287,13 @@ void OpenGLLegacyInterface::fillGradient(int x, int y, int width, int height, Co
 		glVertex2i(x, y);
 
 		setColor(topRightColor);
-		glVertex2i(x+width, y);
+		glVertex2i((x + width), y);
 
 		setColor(bottomRightColor);
-		glVertex2i(x+width, y+height);
+		glVertex2i((x + width), (y + height));
 
 		setColor(bottomLeftColor);
-		glVertex2i(x, y+height);
+		glVertex2i(x, (y + height));
 	}
 	glEnd();
 }
@@ -310,15 +310,15 @@ void OpenGLLegacyInterface::drawQuad(int x, int y, int width, int height)
 
 		setColor(m_color);
 		glTexCoord2f(0, 1);
-		glVertex2f(x, y+height);
+		glVertex2f(x, (y + height));
 
 		setColor(m_color);
 		glTexCoord2f(1, 1);
-		glVertex2f(x+width, y+height);
+		glVertex2f((x + width), (y + height));
 
 		setColor(m_color);
 		glTexCoord2f(1, 0);
-		glVertex2f(x+width, y);
+		glVertex2f((x + width), y);
 	}
 	glEnd();
 }
@@ -373,13 +373,13 @@ void OpenGLLegacyInterface::drawImage(Image *image)
 			glVertex2f(x, y);
 
 			glTexCoord2f(0, 1);
-			glVertex2f(x, y+height);
+			glVertex2f(x, (y + height));
 
 			glTexCoord2f(1, 1);
-			glVertex2f(x+width, y+height);
+			glVertex2f((x + width), (y + height));
 
 			glTexCoord2f(1, 0);
-			glVertex2f(x+width, y);
+			glVertex2f((x + width), y);
 		}
 		glEnd();
 	}
@@ -587,7 +587,7 @@ std::vector<unsigned char> OpenGLLegacyInterface::getScreenshot()
 	glFinish();
 	for (int y=0; y<height; y++) // flip it while reading
 	{
-		glReadPixels(0, height-(y+1), width, 1, GL_RGB, GL_UNSIGNED_BYTE, &(pixels[y*width*3]));
+		glReadPixels(0, (height - (y + 1)), width, 1, GL_RGB, GL_UNSIGNED_BYTE, &(pixels[y*width*3]));
 	}
 
 	// copy to vector
