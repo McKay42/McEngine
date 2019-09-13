@@ -453,15 +453,16 @@ void CBaseUIWindow::minimize()
 
 CBaseUIWindow *CBaseUIWindow::setSizeToContent(int horizontalBorderSize, int verticalBorderSize)
 {
-	std::vector<CBaseUIElement*> *elements = m_container->getAllBaseUIElementsPointer();
-	if (elements->size() < 1)
+	const std::vector<CBaseUIElement*> &elements = m_container->getElements();
+	if (elements.size() < 1)
 		return this;
 
 	Vector2 newSize = Vector2(horizontalBorderSize, verticalBorderSize);
 
-	for (int i=0; i<elements->size(); i++)
+	for (int i=0; i<elements.size(); i++)
 	{
-		CBaseUIElement *el = (*elements)[i];
+		const CBaseUIElement *el = elements[i];
+
 		int xReach = el->getRelPos().x + el->getSize().x + horizontalBorderSize;
 		int yReach = el->getRelPos().y + el->getSize().y + verticalBorderSize;
 		if (xReach > newSize.x)

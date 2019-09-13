@@ -37,7 +37,7 @@ void CBaseUIButton::draw(Graphics *g)
 	if (m_bDrawBackground)
 	{
 		g->setColor(m_backgroundColor);
-		g->fillRect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1);
+		g->fillRect(m_vPos.x + 1, m_vPos.y + 1, m_vSize.x - 1, m_vSize.y - 1);
 	}
 
 	// draw frame
@@ -48,16 +48,17 @@ void CBaseUIButton::draw(Graphics *g)
 	}
 
 	// draw hover rects
+	const int hoverRectOffset = std::round(3.0f * ((float)m_font->getDPI() / 96.0f)); // NOTE: abusing font dpi
 	g->setColor(m_frameColor);
 	if (m_bMouseInside && m_bEnabled)
 	{
 		if (!m_bActive && !engine->getMouse()->isLeftDown())
-			drawHoverRect(g, 3);
+			drawHoverRect(g, hoverRectOffset);
 		else if (m_bActive)
-			drawHoverRect(g, 3);
+			drawHoverRect(g, hoverRectOffset);
 	}
 	if (m_bActive && m_bEnabled)
-		drawHoverRect(g, 6);
+		drawHoverRect(g, hoverRectOffset * 2);
 
 	// draw text
 	drawText(g);
@@ -67,14 +68,17 @@ void CBaseUIButton::drawText(Graphics *g)
 {
 	if (m_font == NULL || m_sText.length() < 1) return;
 
-	g->pushClipRect(McRect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1));
+	const int shadowOffset = std::round(1.0f * ((float)m_font->getDPI() / 96.0f)); // NOTE: abusing font dpi
+
+	g->pushClipRect(McRect(m_vPos.x + 1, m_vPos.y + 1, m_vSize.x - 1, m_vSize.y - 1));
 	{
 		g->setColor(m_textColor);
 		g->pushTransform();
 		{
 			g->translate((int)(m_vPos.x + m_vSize.x/2.0f - m_fStringWidth/2.0f), (int)(m_vPos.y + m_vSize.y/2.0f + m_fStringHeight/2.0f));
 
-			g->translate(1, 1);
+			// shadow
+			g->translate(shadowOffset, shadowOffset);
 			{
 				if (m_textDarkColor != 0)
 					g->setColor(m_textDarkColor);
@@ -83,7 +87,8 @@ void CBaseUIButton::drawText(Graphics *g)
 			}
 			g->drawString(m_font, m_sText);
 
-			g->translate(-1, -1);
+			// top
+			g->translate(-shadowOffset, -shadowOffset);
 			{
 				if (m_textBrightColor != 0)
 					g->setColor(m_textBrightColor);

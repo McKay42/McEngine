@@ -43,6 +43,9 @@ public:
 	UString openFileWindow(const char *filetypefilters, UString title, UString initialpath);
 	UString openFolderWindow(UString title, UString initialpath);
 
+	// window
+	int getDPI();
+
 private:
 	MacOSEnvironment *m_environment;
 };

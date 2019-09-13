@@ -14,6 +14,8 @@
 #define WINVER 0x0A00 // Windows 10, to enable the ifdefs in winuser.h for touch
 #endif
 
+
+
 #include "cbase.h"
 
 // because "Please include winsock2.h before windows.h"
@@ -32,6 +34,15 @@ extern int mainSDL(int argc, char *argv[]);
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+	// if supported (>= Windows Vista), enable DPI awareness so that GetSystemMetrics returns correct values
+	// without this, on e.g. 150% scaling, the screen pixels of a 1080p monitor would be reported by GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN) as only 720p!
+	{
+		typedef WINBOOL (WINAPI *PSPDA)(void);
+		PSPDA g_SetProcessDPIAware = (PSPDA)GetProcAddress(GetModuleHandle(TEXT("user32.dll")), "SetProcessDPIAware");
+		if (g_SetProcessDPIAware != NULL)
+			g_SetProcessDPIAware();
+	}
+
 	return mainSDL(0, NULL);
 }
 
@@ -112,9 +123,11 @@ __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001; // http://develope
 __declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001; // https://community.amd.com/thread/169965
 }
 
-ConVar fps_max("fps_max", 60.0f);
-ConVar fps_max_background("fps_max_background", 30.0f);
+ConVar fps_max("fps_max", 60.0f, "framerate limiter, foreground");
+ConVar fps_max_yield("fps_max_yield", true, "always release rest of timeslice once per frame (call scheduler via sleep(0))");
+ConVar fps_max_background("fps_max_background", 30.0f, "framerate limiter, background");
 ConVar fps_unlimited("fps_unlimited", false);
+ConVar fps_unlimited_yield("fps_unlimited_yield", true, "always release rest of timeslice once per frame (call scheduler via sleep(0)), even if unlimited fps are enabled");
 
 extern ConVar *win_realtimestylus;
 
@@ -634,11 +647,39 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		// resize limit
 		case WM_GETMINMAXINFO:
 			{
+				// min
 				LPMINMAXINFO pMMI = (LPMINMAXINFO)lParam;
 				pMMI->ptMinTrackSize.x = WINDOW_WIDTH_MIN;
 				pMMI->ptMinTrackSize.y = WINDOW_HEIGHT_MIN;
+
+				// allow dynamic overscale (offscreen window borders/decorations)
+				HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+				{
+					MONITORINFO info;
+					info.cbSize = sizeof(MONITORINFO);
+
+					if (GetMonitorInfo(monitor, &info) >= 0)
+					{
+						RECT clientRect;
+						RECT windowRect;
+
+						GetClientRect(hwnd, &clientRect);
+						GetWindowRect(hwnd, &windowRect);
+
+						const LONG decorationsSumWidth = (windowRect.right - windowRect.left) - clientRect.right;
+						const LONG decorationsSumHeight = (windowRect.bottom - windowRect.top) - clientRect.bottom;
+
+						pMMI->ptMaxTrackSize.x = std::abs(info.rcMonitor.left - info.rcMonitor.right) + decorationsSumWidth;
+						pMMI->ptMaxTrackSize.y = std::abs(info.rcMonitor.top - info.rcMonitor.bottom) + decorationsSumHeight;
+
+						/*
+						pMMI->ptMaxTrackSize.x = 9999;
+						pMMI->ptMaxTrackSize.y = 9999;
+						*/
+					}
+				}
 			}
-			break;
+			return 0;
     }
 
     return DefWindowProcW(hwnd, msg, wParam, lParam);
@@ -724,24 +765,6 @@ HWND createWinWindow(HINSTANCE hInstance)
     return hwnd;
 }
 
-typedef BOOL (WINAPI *pfnImmDisableIME)(DWORD);
-void DisableIME()
-{
-    HMODULE hImm32 = LoadLibrary("imm32.dll");
-    if (hImm32 == NULL)
-    	return;
-
-    pfnImmDisableIME pImmDisableIME = (pfnImmDisableIME)GetProcAddress(hImm32, "ImmDisableIME");
-    if (pImmDisableIME == NULL)
-    {
-        FreeLibrary(hImm32);
-        return;
-    }
-
-    pImmDisableIME(-1);
-    FreeLibrary(hImm32);
-}
-
 
 
 //********************//
@@ -753,21 +776,40 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// NOTE: add -mwindows to linker options to disable console window if compiling with Eclipse
 
 	// disable IME text input
-	DisableIME();
+	{
+		typedef BOOL (WINAPI *pfnImmDisableIME)(DWORD);
+
+	    HMODULE hImm32 = LoadLibrary("imm32.dll");
+	    if (hImm32 != NULL)
+	    {
+			pfnImmDisableIME pImmDisableIME = (pfnImmDisableIME)GetProcAddress(hImm32, "ImmDisableIME");
+			if (pImmDisableIME == NULL)
+				FreeLibrary(hImm32);
+			else
+			{
+				pImmDisableIME(-1);
+				FreeLibrary(hImm32);
+			}
+	    }
+	}
 
 	// enable fancy themed windows controls (v6+), requires McEngine.exe.manifest AND linking to comctl32, for fucks sake
 	// only noticeable in MessageBox()-es and a few other dialogs
-	INITCOMMONCONTROLSEX icc;
-	icc.dwSize = sizeof(icc);
-	icc.dwICC = ICC_WIN95_CLASSES;
-	InitCommonControlsEx(&icc);
+	{
+		INITCOMMONCONTROLSEX icc;
+		icc.dwSize = sizeof(icc);
+		icc.dwICC = ICC_WIN95_CLASSES;
+		InitCommonControlsEx(&icc);
+	}
 
 	// if supported (>= Windows Vista), enable DPI awareness so that GetSystemMetrics returns correct values
 	// without this, on e.g. 150% scaling, the screen pixels of a 1080p monitor would be reported by GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN) as only 720p!
-	typedef WINBOOL (WINAPI *PSPDA)(void);
-	PSPDA g_SetProcessDPIAware = (PSPDA)GetProcAddress(GetModuleHandle(TEXT("user32.dll")), "SetProcessDPIAware");
-	if (g_SetProcessDPIAware != NULL)
-		g_SetProcessDPIAware();
+	{
+		typedef WINBOOL (WINAPI *PSPDA)(void);
+		PSPDA g_SetProcessDPIAware = (PSPDA)GetProcAddress(GetModuleHandle(TEXT("user32.dll")), "SetProcessDPIAware");
+		if (g_SetProcessDPIAware != NULL)
+			g_SetProcessDPIAware();
+	}
 
 	// prepare window class
     WNDCLASSEXW wc;
@@ -847,98 +889,103 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #endif
 
 #ifdef WINDOW_FRAMELESS
+	{
+		MARGINS m = {1,1,1,1};
+		printf("DwmExtendFrameIntoClientArea() = %x\n",(int)DwmExtendFrameIntoClientArea(hwnd, &m));
+		SetWindowPos(hwnd, NULL, 0,0,0,0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
 
-	MARGINS m = {1,1,1,1};
-	printf("DwmExtendFrameIntoClientArea() = %x\n",(int)DwmExtendFrameIntoClientArea(hwnd, &m));
-	SetWindowPos(hwnd, NULL, 0,0,0,0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
-
-	/*
-	DWM_BLURBEHIND bb = {0};
-	bb.dwFlags = DWM_BB_ENABLE;
-	bb.fEnable = 0;
-	bb.hRgnBlur = NULL;
-	DwmEnableBlurBehindWindow(hwnd, &bb);
-	*/
-
+		/*
+		DWM_BLURBEHIND bb = {0};
+		bb.dwFlags = DWM_BB_ENABLE;
+		bb.fEnable = 0;
+		bb.hRgnBlur = NULL;
+		DwmEnableBlurBehindWindow(hwnd, &bb);
+		*/
+	}
 #endif
 
 #ifdef WINDOW_GHOST
+	{
+		DWM_BLURBEHIND bb = {0};
+		HRGN hRgn = CreateRectRgn(0, 0, -1, -1);
 
-	DWM_BLURBEHIND bb = {0};
-	HRGN hRgn = CreateRectRgn(0, 0, -1, -1);
+		bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
+		bb.hRgnBlur = hRgn;
+		bb.fEnable = TRUE;
 
-	bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
-	bb.hRgnBlur = hRgn;
-	bb.fEnable = TRUE;
+		printf("DwmEnableBlurBehindWindow() = %x\n", (int)DwmEnableBlurBehindWindow(hwnd, &bb));
 
-	printf("DwmEnableBlurBehindWindow() = %x\n", (int)DwmEnableBlurBehindWindow(hwnd, &bb));
-
-	SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 0, LWA_COLORKEY);
-
+		SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 0, LWA_COLORKEY);
+	}
 #endif
 
 	// get the screen refresh rate, and set fps_max to that as default
-	DEVMODE lpDevMode;
-	memset(&lpDevMode, 0, sizeof(DEVMODE));
-	lpDevMode.dmSize = sizeof(DEVMODE);
-	lpDevMode.dmDriverExtra = 0;
-
-	if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &lpDevMode))
 	{
-		float displayFrequency = static_cast<float>(lpDevMode.dmDisplayFrequency);
-		///printf("Display Refresh Rate is %.2f Hz, setting fps_max to %i.\n\n", displayFrequency, (int)displayFrequency);
-		fps_max.setValue((int)displayFrequency);
+		DEVMODE lpDevMode;
+		memset(&lpDevMode, 0, sizeof(DEVMODE));
+		lpDevMode.dmSize = sizeof(DEVMODE);
+		lpDevMode.dmDriverExtra = 0;
+
+		if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &lpDevMode))
+		{
+			float displayFrequency = static_cast<float>(lpDevMode.dmDisplayFrequency);
+			///printf("Display Refresh Rate is %.2f Hz, setting fps_max to %i.\n\n", displayFrequency, (int)displayFrequency);
+			fps_max.setValue((int)displayFrequency);
+		}
 	}
 
 	// initialize raw input
-	RAWINPUTDEVICE Rid[1];
-	Rid[0].usUsagePage = ((USHORT) 0x01);
-	Rid[0].usUsage = ((USHORT) 0x02);
-	Rid[0].dwFlags = /*RIDEV_INPUTSINK | RIDEV_DEVNOTIFY*/0;
-	Rid[0].hwndTarget = hwnd;
-	if (RegisterRawInputDevices(Rid, 1, sizeof(Rid[0])) == FALSE)
 	{
-		printf("WARNING: Couldn't RegisterRawInputDevices(), GetLastError() = %i\n", (int)GetLastError());
-		MessageBox(NULL, "Couldn't RegisterRawInputDevices()!", "Warning", MB_ICONEXCLAMATION | MB_OK);
+		RAWINPUTDEVICE Rid[1];
+		Rid[0].usUsagePage = ((USHORT) 0x01);
+		Rid[0].usUsage = ((USHORT) 0x02);
+		Rid[0].dwFlags = /*RIDEV_INPUTSINK | RIDEV_DEVNOTIFY*/0;
+		Rid[0].hwndTarget = hwnd;
+		if (RegisterRawInputDevices(Rid, 1, sizeof(Rid[0])) == FALSE)
+		{
+			printf("WARNING: Couldn't RegisterRawInputDevices(), GetLastError() = %i\n", (int)GetLastError());
+			MessageBox(NULL, "Couldn't RegisterRawInputDevices()!", "Warning", MB_ICONEXCLAMATION | MB_OK);
+		}
 	}
 
-	// initialize RealTimeStylus (COM)
 #ifdef MCENGINE_WINDOWS_REALTIMESTYLUS_SUPPORT
-	HRESULT hr = CoInitialize(NULL);
-	if (hr == S_OK || hr == S_FALSE) // if we initialized successfully, or if we are already initialized
+	// initialize RealTimeStylus (COM)
 	{
-		if (!InitRealTimeStylus(hInstance, hwnd))
-			printf("WARNING: Couldn't InitRealTimeStylus()! RealTimeStylus is not going to work.\n");
+		HRESULT hr = CoInitialize(NULL);
+		if (hr == S_OK || hr == S_FALSE) // if we initialized successfully, or if we are already initialized
+		{
+			if (!InitRealTimeStylus(hInstance, hwnd))
+				printf("WARNING: Couldn't InitRealTimeStylus()! RealTimeStylus is not going to work.\n");
+		}
+		else
+			printf("WARNING: Couldn't CoInitialize()! RealTimeStylus is not going to work.\n");
 	}
-	else
-		printf("WARNING: Couldn't CoInitialize()! RealTimeStylus is not going to work.\n");
 #endif
 
-	// initialize touch support/settings
 #ifdef MCENGINE_WINDOWS_TOUCH_SUPPORT
-
+	// initialize touch support/settings
 	// http://robertinventor.com/bmwiki/How_to_disable_guestures_etc._for_multi_touch_playable_on_screen_keyboards
-
-	LPCTSTR tabletAtom = "MicrosoftTabletPenServiceProperty";
-	unsigned short pressAndHoldAtomID = GlobalAddAtom(tabletAtom);
-	if (pressAndHoldAtomID != 0)
 	{
-		DWORD dwHwndTabletProperty = TABLET_DISABLE_PRESSANDHOLD
-								| TABLET_DISABLE_PENTAPFEEDBACK
-								| TABLET_DISABLE_PENBARRELFEEDBACK
-								| TABLET_DISABLE_FLICKS
-								| TABLET_DISABLE_SMOOTHSCROLLING
-								| TABLET_DISABLE_FLICKFALLBACKKEYS
-								| TABLET_ENABLE_MULTITOUCHDATA;
+		LPCTSTR tabletAtom = "MicrosoftTabletPenServiceProperty";
+		unsigned short pressAndHoldAtomID = GlobalAddAtom(tabletAtom);
+		if (pressAndHoldAtomID != 0)
+		{
+			DWORD dwHwndTabletProperty = TABLET_DISABLE_PRESSANDHOLD
+									| TABLET_DISABLE_PENTAPFEEDBACK
+									| TABLET_DISABLE_PENBARRELFEEDBACK
+									| TABLET_DISABLE_FLICKS
+									| TABLET_DISABLE_SMOOTHSCROLLING
+									| TABLET_DISABLE_FLICKFALLBACKKEYS
+									| TABLET_ENABLE_MULTITOUCHDATA;
 
-		SetProp(hwnd, tabletAtom, (HANDLE)dwHwndTabletProperty);
+			SetProp(hwnd, tabletAtom, (HANDLE)dwHwndTabletProperty);
+		}
+
+		typedef BOOL (WINAPI *pfnRegisterTouchWindow)(HWND, ULONG);
+		pfnRegisterTouchWindow pRegisterTouchWindow = (pfnRegisterTouchWindow)GetProcAddress(GetModuleHandle(TEXT("user32.dll")), "RegisterTouchWindow");
+		if (pRegisterTouchWindow != NULL)
+			pRegisterTouchWindow(hwnd, TWF_WANTPALM);
 	}
-
-	typedef BOOL (WINAPI *pfnRegisterTouchWindow)(HWND, ULONG);
-	pfnRegisterTouchWindow pRegisterTouchWindow = (pfnRegisterTouchWindow)GetProcAddress(GetModuleHandle(TEXT("user32.dll")), "RegisterTouchWindow");
-	if (pRegisterTouchWindow != NULL)
-		pRegisterTouchWindow(hwnd, TWF_WANTPALM);
-
 #endif
 
     // create timers
@@ -1034,6 +1081,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			else
 				delayTime = (1.0 / (double)fps_max.getFloat()) - frameTimer->getDelta();
 
+			const bool didSleep = delayTime > 0.0;
 			while (delayTime > 0.0)
 			{
 				if (inBackground) // real waiting (very inaccurate, but very good for little background cpu utilization)
@@ -1048,7 +1096,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				frameTimer->update();
 				delayTime -= (frameTimer->getElapsedTime() - delayStart);
 			}
+
+			if (!didSleep && fps_max_yield.getBool())
+				Sleep(0); // yes, there is a zero in there
 		}
+		else if (fps_unlimited_yield.getBool())
+			Sleep(0); // yes, there is a zero in there
 	}
 
     // uninitialize RealTimeStylus (COM)
@@ -1061,7 +1114,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	SAFE_DELETE(frameTimer);
 	SAFE_DELETE(deltaTimer);
 
-	bool isRestartScheduled = environment->isRestartScheduled();
+	const bool isRestartScheduled = environment->isRestartScheduled();
 
     // release engine
     SAFE_DELETE(g_engine);

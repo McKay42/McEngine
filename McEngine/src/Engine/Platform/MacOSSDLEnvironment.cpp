@@ -88,6 +88,16 @@ UString MacOSSDLEnvironment::openFolderWindow(UString title, UString initialpath
 	return m_environment->openFolderWindow(title, initialpath);
 }
 
+int MacOSSDLEnvironment::getDPI()
+{
+	const int displayIndex = 0;
+
+	float dpi = 72.0f; // macOS doesn't default to 96 dpi, because fuck you
+	SDL_GetDisplayDPI(displayIndex, NULL, &dpi, NULL);
+
+	return (clamp<int>((int)dpi, 72, 96*4) + 24); // compensate with +24
+}
+
 #endif
 
 #endif

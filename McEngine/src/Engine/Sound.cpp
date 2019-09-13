@@ -53,7 +53,7 @@ Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan
 	m_bPrescan = prescan;
 	m_bIsOverlayable = false;
 
-	m_fLastPlayTime = 0.0;
+	m_fLastPlayTime = -1.0f;
 
 	m_bisSpeedAndPitchHackEnabled = false;
 	m_soundProcUserData = new SOUND_PROC_USERDATA();

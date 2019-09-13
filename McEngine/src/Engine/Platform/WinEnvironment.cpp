@@ -32,6 +32,7 @@ bool g_bCursorVisible = true;
 
 bool WinEnvironment::m_bResizable = true;
 std::vector<McRect> WinEnvironment::m_vMonitors;
+int WinEnvironment::m_iNumCoresForProcessAffinity = -1;
 
 WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance) : Environment()
 {
@@ -53,6 +54,9 @@ WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance) : Environment()
 		debugLog("WARNING: No monitors found! Adding default monitor ...\n");
 		m_vMonitors.push_back(McRect(0, 0, m_vWindowSize.x, m_vWindowSize.y));
 	}
+
+	// convar refs
+	convar->getConVarByName("win_processpriority")->setCallback( fastdelegate::MakeDelegate(this, &WinEnvironment::onProcessPriorityChange) );
 }
 
 void WinEnvironment::update()
@@ -473,18 +477,18 @@ void WinEnvironment::center()
 	int yPos = desktopRect.getY() + (desktopRect.getHeight()/2) - (int)(height/2);
 
 	// calculate window size for client size (to respect borders etc.)
-	RECT clientArea;
-	clientArea.left = xPos;
-	clientArea.top = yPos;
-	clientArea.right = xPos + width;
-	clientArea.bottom = yPos + height;
-	AdjustWindowRect(&clientArea, getWindowStyleWindowed(), FALSE);
+	RECT serverRect;
+	serverRect.left = xPos;
+	serverRect.top = yPos;
+	serverRect.right = xPos + width;
+	serverRect.bottom = yPos + height;
+	AdjustWindowRect(&serverRect, getWindowStyleWindowed(), FALSE);
 
 	// set window pos as prev pos, apply it
-	xPos = clientArea.left;
-	yPos = clientArea.top;
-	width = std::abs(clientArea.right - clientArea.left);
-	height = std::abs(clientArea.bottom - clientArea.top);
+	xPos = serverRect.left;
+	yPos = serverRect.top;
+	width = std::abs(serverRect.right - serverRect.left);
+	height = std::abs(serverRect.bottom - serverRect.top);
 	m_vLastWindowPos.x = xPos;
 	m_vLastWindowPos.y = yPos;
 	MoveWindow(m_hwnd, xPos, yPos, width, height, FALSE); // non-client width/height!
@@ -504,12 +508,17 @@ void WinEnvironment::enableFullscreen()
 {
 	if (m_bFullScreen) return;
 
-	// backup prev window pos + size
+	// backup prev window pos
 	RECT rect;
 	GetWindowRect(m_hwnd, &rect);
 	m_vLastWindowPos.x = rect.left;
 	m_vLastWindowPos.y = rect.top;
-	m_vLastWindowSize = m_vWindowSize;
+
+	// backup prev client size
+	RECT clientRect;
+	GetClientRect(m_hwnd, &clientRect);
+	m_vLastWindowSize.x = std::abs(clientRect.right - clientRect.left);
+	m_vLastWindowSize.y = std::abs(clientRect.bottom - clientRect.top);
 
 	// get nearest monitor, build fullscreen resolution
 	const McRect desktopRect = getDesktopRect();
@@ -527,13 +536,27 @@ void WinEnvironment::disableFullscreen()
 {
 	if (!m_bFullScreen) return;
 
-	// clamp window size to monitor
+	// clamp prev window client size to monitor
 	const McRect desktopRect = getDesktopRect();
 	m_vLastWindowSize.x = std::min(m_vLastWindowSize.x, desktopRect.getWidth());
 	m_vLastWindowSize.y = std::min(m_vLastWindowSize.y, desktopRect.getHeight());
 
+	// request window size based on prev client size
+	RECT rect;
+	rect.left = 0;
+	rect.top = 0;
+	rect.right = m_vLastWindowSize.x;
+	rect.bottom = m_vLastWindowSize.y;
+	AdjustWindowRect(&rect, getWindowStyleWindowed(), FALSE);
+
+	// build new size, set it as the current size
+	m_vWindowSize.x = std::abs(rect.right - rect.left);
+	m_vWindowSize.y = std::abs(rect.bottom - rect.top);
+
+	// HACKHACK: double MoveWindow is a workaround for a windows bug (otherwise overscale would get clamped to taskbar)
 	SetWindowLongPtr(m_hwnd, GWL_STYLE, getWindowStyleWindowed());
-	MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vLastWindowSize.x, (int)m_vLastWindowSize.y, FALSE); // non-client width/height!
+	MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vWindowSize.x, (int)m_vWindowSize.y, FALSE); // non-client width/height!
+	MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vWindowSize.x, (int)m_vWindowSize.y, FALSE); // non-client width/height!
 
 	m_bFullScreen = false;
 }
@@ -563,10 +586,13 @@ void WinEnvironment::setWindowSize(int width, int height)
 	rect.bottom = height;
 	AdjustWindowRect(&rect, getWindowStyleWindowed(), FALSE);
 
-	// build new size, set it as the last size
+	// remember prev client size
+	m_vLastWindowSize.x = width;
+	m_vLastWindowSize.y = height;
+
+	// build new size, set it as the current size
 	m_vWindowSize.x = std::abs(rect.right - rect.left);
 	m_vWindowSize.y = std::abs(rect.bottom - rect.top);
-	m_vLastWindowSize = m_vWindowSize;
 
 	MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vWindowSize.x, (int)m_vWindowSize.y, FALSE); // non-client width/height!
 }
@@ -670,6 +696,19 @@ McRect WinEnvironment::getDesktopRect()
 	GetMonitorInfo(monitor, &info);
 
 	return McRect(info.rcMonitor.left, info.rcMonitor.top, std::abs(info.rcMonitor.left - info.rcMonitor.right), std::abs(info.rcMonitor.top - info.rcMonitor.bottom));
+}
+
+int WinEnvironment::getDPI()
+{
+	HDC hdc = GetDC(m_hwnd);
+	if (hdc != NULL)
+	{
+		const int dpi = GetDeviceCaps(hdc, LOGPIXELSX);
+		ReleaseDC(m_hwnd, hdc);
+		return clamp<int>(dpi, 96, 96*4); // sanity clamp
+	}
+	else
+		return 96;
 }
 
 bool WinEnvironment::isCursorInWindow()
@@ -833,6 +872,70 @@ UString WinEnvironment::keyCodeToString(KEYCODE keyCode)
     return UString(keyNameString);
 }
 
+bool WinEnvironment::setProcessPriority(int priority)
+{
+	return SetPriorityClass(GetCurrentProcess(), priority < 1 ? NORMAL_PRIORITY_CLASS : HIGH_PRIORITY_CLASS);
+}
+
+bool WinEnvironment::setProcessAffinity(int affinity)
+{
+	HANDLE currentProcess = GetCurrentProcess();
+	DWORD_PTR dwProcessAffinityMask;
+	DWORD_PTR dwSystemAffinityMask;
+	if (SUCCEEDED(GetProcessAffinityMask(currentProcess, &dwProcessAffinityMask, &dwSystemAffinityMask)))
+	{
+		// count cores and print current mask
+		debugLog("dwProcessAffinityMask = ");
+		DWORD_PTR dwProcessAffinityMaskTemp = dwProcessAffinityMask;
+		int numCores = 0;
+		while (dwProcessAffinityMaskTemp)
+		{
+			if (dwProcessAffinityMaskTemp & 1)
+			{
+				numCores++;
+				debugLog("1");
+			}
+			else
+				debugLog("0");
+
+			dwProcessAffinityMaskTemp >>= 1;
+		}
+		if (m_iNumCoresForProcessAffinity < 1)
+			m_iNumCoresForProcessAffinity = numCores;
+
+		switch (affinity)
+		{
+		case 0: // first core (e.g. 1111 -> 1000, 11 -> 10, etc.)
+			dwProcessAffinityMask >>= m_iNumCoresForProcessAffinity-1;
+			break;
+		case 1: // last core (e.g. 1111 -> 0001, 11 -> 01, etc.)
+			dwProcessAffinityMask >>= m_iNumCoresForProcessAffinity-1;
+			dwProcessAffinityMask <<= m_iNumCoresForProcessAffinity-1;
+			break;
+		default: // reset, all cores (e.g. ???? -> 1111, ?? -> 11, etc.)
+			for (int i=0; i<m_iNumCoresForProcessAffinity; i++)
+			{
+				dwProcessAffinityMask |= (1 << i);
+			}
+			break;
+		}
+		debugLog("\ndwProcessAffinityMask = %i\n", dwProcessAffinityMask);
+
+		if (FAILED(SetProcessAffinityMask(currentProcess, dwProcessAffinityMask)))
+		{
+			debugLog("Couldn't SetProcessAffinityMask(), GetLastError() = %i!\n", GetLastError());
+			return false;
+		}
+	}
+	else
+	{
+		debugLog("Couldn't GetProcessAffinityMask(), GetLastError() = %i!\n", GetLastError());
+		return false;
+	}
+
+	return true;
+}
+
 
 
 // helper functions
@@ -889,6 +992,11 @@ void WinEnvironment::enumerateMonitors()
 {
 	m_vMonitors.clear();
 	EnumDisplayMonitors(NULL, NULL, WinEnvironment::monitorEnumProc, 0);
+}
+
+void WinEnvironment::onProcessPriorityChange(UString oldValue, UString newValue)
+{
+	setProcessPriority(newValue.toInt());
 }
 
 BOOL CALLBACK WinEnvironment::monitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)

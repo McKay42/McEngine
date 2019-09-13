@@ -26,6 +26,7 @@
 
 #include "SDLEnvironment.h"
 #include "HorizonSDLEnvironment.h"
+#include "WinSDLEnvironment.h"
 
 
 

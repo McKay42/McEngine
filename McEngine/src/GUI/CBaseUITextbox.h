@@ -47,6 +47,7 @@ public:
 	void setCursorPosRight();
 
 	inline const UString getText() const {return m_sText;}
+	inline UString &getTextRef() {return m_sText;}
 	inline McFont *getFont() const {return m_font;}
 
 	bool hitEnter();

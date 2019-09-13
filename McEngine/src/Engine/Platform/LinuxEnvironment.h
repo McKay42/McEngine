@@ -83,6 +83,7 @@ public:
 	Vector2 getNativeScreenSize();
 	McRect getVirtualScreenRect();
 	McRect getDesktopRect();
+	int getDPI();
 	bool isFullscreen() {return m_bFullScreen;}
 	bool isWindowResizable() {return m_bResizable;}
 
@@ -134,6 +135,7 @@ private:
 	bool m_bFullScreen;
 	Vector2 m_vLastWindowPos;
 	Vector2 m_vLastWindowSize;
+	int m_iDPI;
 
 	// mouse
 	bool m_bCursorClipped;
