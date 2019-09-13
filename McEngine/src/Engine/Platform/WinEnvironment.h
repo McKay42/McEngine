@@ -86,6 +86,7 @@ public:
 	Vector2 getNativeScreenSize();
 	McRect getVirtualScreenRect();
 	McRect getDesktopRect();
+	int getDPI();
 	bool isFullscreen() {return m_bFullScreen;}
 	bool isWindowResizable() {return m_bResizable;}
 
@@ -105,6 +106,8 @@ public:
 	UString keyCodeToString(KEYCODE keyCode);
 
 	// ILLEGAL:
+	bool setProcessPriority(int priority); // 0 = normal, 1 = high
+	bool setProcessAffinity(int affinity); // -1 = reset (all cores), 0 = first core, 1 = last core
 	inline HWND getHwnd() const {return m_hwnd;}
 	inline HINSTANCE getHInstance() const {return m_hInstance;}
 	inline bool isRestartScheduled() const {return m_bIsRestartScheduled;}
@@ -113,6 +116,7 @@ private:
 	void path_strip_filename(TCHAR *Path);
 	void handleShowMessageFullscreen();
 	void enumerateMonitors();
+	void onProcessPriorityChange(UString oldValue, UString newValue);
 	static BOOL CALLBACK monitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 
 	HWND m_hwnd;
@@ -138,6 +142,7 @@ private:
 
 	// custom
 	bool m_bIsRestartScheduled;
+	static int m_iNumCoresForProcessAffinity;
 };
 
 #endif

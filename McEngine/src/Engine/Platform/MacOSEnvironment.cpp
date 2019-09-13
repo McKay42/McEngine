@@ -422,6 +422,12 @@ McRect MacOSEnvironment::getDesktopRect()
 	return McRect(0, 0, screen.x, screen.y);
 }
 
+int MacOSEnvironment::getDPI()
+{
+	// TODO
+	return 96;
+}
+
 bool MacOSEnvironment::isCursorInWindow()
 {
 	return m_bIsCursorInsideWindow;

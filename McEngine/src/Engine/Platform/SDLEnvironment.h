@@ -84,6 +84,7 @@ public:
 	Vector2 getNativeScreenSize();
 	McRect getVirtualScreenRect();
 	McRect getDesktopRect();
+	int getDPI();
 	bool isFullscreen() {return m_bFullscreen;}
 	bool isWindowResizable() {return m_bResizable;}
 

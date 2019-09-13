@@ -35,7 +35,7 @@ void CBaseUILabel::draw(Graphics *g)
 	if (m_bDrawBackground)
 	{
 		g->setColor(m_backgroundColor);
-		g->fillRect(m_vPos.x+1, m_vPos.y+1, m_vSize.x-1, m_vSize.y-1);
+		g->fillRect(m_vPos.x + 1, m_vPos.y + 1, m_vSize.x - 1, m_vSize.y - 1);
 	}
 
 	// draw frame
@@ -70,8 +70,10 @@ void CBaseUILabel::drawText(Graphics *g)
 
 			g->setColor(m_textColor);
 			g->pushTransform();
+			{
 				g->translate((int)(m_vPos.x + (m_bCenterText ? + m_vSize.x/2.0f - m_fStringWidth/2.0f : xPosAdd)), (int)(m_vPos.y + m_vSize.y/2.0f + m_fStringHeight/2.0f));
 				g->drawString(m_font, m_sText);
+			}
 			g->popTransform();
 
 		//g->popClipRect();

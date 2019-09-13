@@ -76,6 +76,7 @@ public:
 	Vector2 getNativeScreenSize() {return Vector2(1920, 1080);}
 	McRect getVirtualScreenRect() {return McRect(0, 0, 1920, 1080);}
 	McRect getDesktopRect() {return McRect(0, 0, 1920, 1080);}
+	int getDPI() {return 96;}
 	bool isFullscreen() {return false;}
 	bool isWindowResizable() {return true;}
 

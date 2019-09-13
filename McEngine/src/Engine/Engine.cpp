@@ -66,6 +66,8 @@ ConVar minimize_on_focus_lost_if_fullscreen("minimize_on_focus_lost_if_fullscree
 ConVar minimize_on_focus_lost_if_borderless_windowed_fullscreen("minimize_on_focus_lost_if_borderless_windowed_fullscreen", false);
 ConVar _win_realtimestylus("win_realtimestylus", false, "if compiled on Windows, enables native RealTimeStylus support for tablet clicks");
 ConVar *win_realtimestylus = &_win_realtimestylus;
+ConVar _win_processpriority("win_processpriority", 0, "if compiled on Windows, sets the main process priority (0 = normal, 1 = high)");
+ConVar *win_processpriority = &_win_processpriority;
 
 Engine *engine = NULL;
 Environment *env = NULL;
@@ -226,8 +228,8 @@ void Engine::loadApp()
 	debugLog("Engine: Loading default resources ...\n");
 
 	// load default resources
-	engine->getResourceManager()->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15.0f);
-	engine->getResourceManager()->loadFont("tahoma.ttf", "FONT_CONSOLE", 8.0f, false);
+	engine->getResourceManager()->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, m_environment->getDPI());
+	engine->getResourceManager()->loadFont("tahoma.ttf", "FONT_CONSOLE", 8, false, 96);
 	Image *missingTexture = engine->getResourceManager()->createImage(512, 512);
 	missingTexture->setName("MISSING_TEXTURE");
 	for (int x=0; x<512; x++)

@@ -274,7 +274,7 @@ void Console::log(UString text, Color textColor)
 	}
 
 	// get index
-	int index = m_log->getContainer()->getAllBaseUIElementsPointer()->size();
+	const int index = m_log->getContainer()->getElements().size();
 	int height = 13;
 
 	// create new label, add it

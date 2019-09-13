@@ -404,7 +404,7 @@ std::vector<uint64_t> SteamworksInterface::getWorkshopSubscribedItems()
 	{
 		subscribedItems.resize(numSubscribedItems);
 
-		const uint32_t numPopulatedSubscribedItems = SteamUGC()->GetSubscribedItems(static_cast<PublishedFileId_t*>(&subscribedItems[0]), numSubscribedItems);
+		const uint32_t numPopulatedSubscribedItems = SteamUGC()->GetSubscribedItems((PublishedFileId_t*)(&subscribedItems[0]), numSubscribedItems);
 
 		if (numPopulatedSubscribedItems != numSubscribedItems)
 		{

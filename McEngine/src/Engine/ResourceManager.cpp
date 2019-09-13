@@ -407,7 +407,7 @@ Image *ResourceManager::createImage(unsigned int width, unsigned int height, boo
 	return img;
 }
 
-McFont *ResourceManager::loadFont(UString filepath, UString resourceName, unsigned int fontSize, bool antialiasing)
+McFont *ResourceManager::loadFont(UString filepath, UString resourceName, int fontSize, bool antialiasing, int fontDPI)
 {
 	// check if it already exists
 	if (resourceName.length() > 0)
@@ -419,7 +419,7 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, unsign
 
 	// create instance and load it
 	filepath.insert(0, PATH_DEFAULT_FONTS);
-	McFont *fnt = new McFont(filepath, fontSize, antialiasing);
+	McFont *fnt = new McFont(filepath, fontSize, antialiasing, fontDPI);
 	fnt->setName(resourceName);
 
 	loadResource(fnt, true);
@@ -427,7 +427,7 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, unsign
 	return fnt;
 }
 
-McFont *ResourceManager::loadFont(UString filepath, UString resourceName, std::vector<wchar_t> characters, unsigned int fontSize, bool antialiasing)
+McFont *ResourceManager::loadFont(UString filepath, UString resourceName, std::vector<wchar_t> characters, int fontSize, bool antialiasing, int fontDPI)
 {
 	// check if it already exists
 	if (resourceName.length() > 0)
@@ -439,7 +439,7 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, std::v
 
 	// create instance and load it
 	filepath.insert(0, PATH_DEFAULT_FONTS);
-	McFont *fnt = new McFont(filepath, characters, fontSize, antialiasing);
+	McFont *fnt = new McFont(filepath, characters, fontSize, antialiasing, fontDPI);
 	fnt->setName(resourceName);
 
 	loadResource(fnt, true);

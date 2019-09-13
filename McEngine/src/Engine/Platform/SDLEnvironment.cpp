@@ -359,10 +359,21 @@ McRect SDLEnvironment::getDesktopRect()
 	return McRect(0, 0, screen.x, screen.y);
 }
 
+int SDLEnvironment::getDPI()
+{
+	const int displayIndex = 0;
+
+	float dpi = 96.0f;
+	SDL_GetDisplayDPI(displayIndex, NULL, &dpi, NULL);
+
+	return clamp<int>((int)dpi, 96, 96*4); // sanity clamp
+}
+
 Vector2 SDLEnvironment::getMousePos()
 {
 	int x = 0;
 	int y = 0;
+
 	// HACKHACK:
 	if (m_mouse_sensitivity_ref->getFloat() == 1.0f)
 	{

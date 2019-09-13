@@ -48,6 +48,10 @@ private:
 	void addSuggestion(UString text);
 	void clearSuggestions();
 
+	float getAnimTargetY();
+
+	float getDPIScale();
+
 	int m_iSuggestionCount;
 	int m_iSelectedSuggestion; // for up/down buttons
 

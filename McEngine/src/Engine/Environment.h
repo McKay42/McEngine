@@ -93,6 +93,7 @@ public:
 	virtual Vector2 getNativeScreenSize() = 0;
 	virtual McRect getVirtualScreenRect() = 0;
 	virtual McRect getDesktopRect() = 0;
+	virtual int getDPI() = 0;
 	virtual bool isFullscreen() = 0;
 	virtual bool isWindowResizable() = 0;
 
@@ -117,6 +118,7 @@ public:
 	// window
 	virtual void setFullscreenWindowedBorderless(bool fullscreenWindowedBorderless);
 	virtual bool isFullscreenWindowedBorderless() {return m_bFullscreenWindowedBorderless;}
+	virtual float getDPIScale() {return (float)getDPI() / 96.0f;}
 
 protected:
 	static ConVar *debug_env;

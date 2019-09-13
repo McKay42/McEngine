@@ -1815,8 +1815,7 @@ bool OpenVRInterface::isLIVReady()
 void OpenVRInterface::updateControllerAxes()
 {
 	// don't update controller axis lines if we don't have input focus
-	if (m_pHMD->IsInputFocusCapturedByAnotherProcess())
-		return;
+	if (m_pHMD->IsInputFocusCapturedByAnotherProcess()) return;
 
 	std::vector<float> vertdataarray;
 
@@ -1910,8 +1909,7 @@ void OpenVRInterface::updateControllerAxes()
 
 void OpenVRInterface::updateRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
 {
-	if (unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount)
-		return;
+	if (unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount) return;
 
 	// try to find a model we've already set up
 	std::string sRenderModelName = getTrackedDeviceString(m_pHMD, unTrackedDeviceIndex, vr::Prop_RenderModelName_String);

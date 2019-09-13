@@ -15,6 +15,8 @@
 
 #include <X11/cursorfont.h>
 #include <X11/Xatom.h>
+#include <X11/Xresource.h>
+
 #include <dirent.h>
 #include <libgen.h>
 #include <sys/stat.h>
@@ -57,11 +59,35 @@ LinuxEnvironment::LinuxEnvironment(Display *display, Window window) : Environmen
 	m_atom_TARGETS = XInternAtom(m_display, "TARGETS", False);
 
 	m_bFullScreen = false;
+	m_iDPI = 96;
 
 	m_bIsRestartScheduled = false;
 	m_bResizeDelayHack = false;
 	m_bPrevCursorHack = false;
 	m_bFullscreenWasResizable = true;
+
+	// init dpi
+	{
+		XrmInitialize();
+
+		char *resourceString = XResourceManagerString(m_display);
+		XrmDatabase db = XrmGetStringDatabase(resourceString);
+
+		if (resourceString)
+		{
+			char *type = NULL;
+			XrmValue value;
+
+			if (XrmGetResource(db, "Xft.dpi", "String", &type, &value) == True)
+			{
+				if (value.addr)
+				{
+					m_iDPI = (int)std::atof(value.addr);
+					///debugLog("m_iDPI = %i\n", m_iDPI);
+				}
+			}
+		}
+	}
 
 	// TODO: init monitors
 	if (m_vMonitors.size() < 1)
@@ -671,6 +697,11 @@ McRect LinuxEnvironment::getDesktopRect()
 	// TODO:
 	Vector2 screen = getNativeScreenSize();
 	return McRect(0, 0, screen.x, screen.y);
+}
+
+int LinuxEnvironment::getDPI()
+{
+	return clamp<int>(m_iDPI, 96, 96*4); // sanity clamp
 }
 
 bool LinuxEnvironment::isCursorInWindow()

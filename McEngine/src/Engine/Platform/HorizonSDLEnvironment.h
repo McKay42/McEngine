@@ -39,6 +39,9 @@ public:
 	virtual std::vector<UString> getLogicalDrives();
 	virtual UString getFolderFromFilePath(UString filepath);
 
+	// window
+	int getDPI() {return 96;}
+
 	// mouse
 	Vector2 getMousePos();
 	void setMousePos(int x, int y);

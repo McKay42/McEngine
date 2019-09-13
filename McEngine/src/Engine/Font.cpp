@@ -26,7 +26,7 @@ const wchar_t McFont::UNKNOWN_CHAR;
 void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, TextureAtlas *textureAtlas, bool antialiasing, std::unordered_map<wchar_t, McFont::GLYPH_METRICS> *glyphMetrics);
 unsigned char *unpackMonoBitmap(FT_Bitmap bitmap);
 
-McFont::McFont(UString filepath, unsigned int fontSize, bool antialiasing) : Resource(filepath)
+McFont::McFont(UString filepath, int fontSize, bool antialiasing, int fontDPI) : Resource(filepath)
 {
 	// the default set of wchar_t glyphs (ASCII table of non-whitespace glyphs, including cyrillics)
 	std::vector<wchar_t> characters;
@@ -35,15 +35,15 @@ McFont::McFont(UString filepath, unsigned int fontSize, bool antialiasing) : Res
 		characters.push_back((wchar_t)i);
 	}
 
-	constructor(characters, fontSize, antialiasing);
+	constructor(characters, fontSize, antialiasing, fontDPI);
 }
 
-McFont::McFont(UString filepath, std::vector<wchar_t> characters, unsigned int fontSize, bool antialiasing) : Resource(filepath)
+McFont::McFont(UString filepath, std::vector<wchar_t> characters, int fontSize, bool antialiasing, int fontDPI) : Resource(filepath)
 {
-	constructor(characters, fontSize, antialiasing);
+	constructor(characters, fontSize, antialiasing, fontDPI);
 }
 
-void McFont::constructor(std::vector<wchar_t> characters, unsigned int fontSize, bool antialiasing)
+void McFont::constructor(std::vector<wchar_t> characters, int fontSize, bool antialiasing, int fontDPI)
 {
 	for (int i=0; i<characters.size(); i++)
 	{
@@ -52,6 +52,7 @@ void McFont::constructor(std::vector<wchar_t> characters, unsigned int fontSize,
 
 	m_iFontSize = fontSize;
 	m_bAntialiasing = antialiasing;
+	m_iFontDPI = fontDPI;
 
 	m_textureAtlas = NULL;
 
@@ -88,7 +89,7 @@ void McFont::init()
 		return;
 	}
 
-	if (FT_Select_Charmap(face , ft_encoding_unicode))
+	if (FT_Select_Charmap(face, ft_encoding_unicode))
 	{
 		engine->showMessageError("Font Error", "FT_Select_Charmap() failed!");
 		return;
@@ -96,13 +97,12 @@ void McFont::init()
 
 	// set font height
 	// "The character width and heights are specified in 1/64th of points"
-	// HACKHACK: forcing 96 DPI
-	unsigned int height = m_iFontSize;
-	FT_Set_Char_Size(face, height*64, height*64, 96, 96);
+	FT_Set_Char_Size(face, m_iFontSize*64, m_iFontSize*64, m_iFontDPI, m_iFontDPI);
 
 	// create texture atlas
+	const int atlasSize = (m_iFontDPI > 96 ? (m_iFontDPI > 2*96 ? 2048 : 1024) : 512); // HACKHACK: hardcoded max atlas size, and heuristic
 	engine->getResourceManager()->requestNextLoadUnmanaged();
-	m_textureAtlas = engine->getResourceManager()->createTextureAtlas(512, 512); // HACKHACK: hardcoded max atlas size!
+	m_textureAtlas = engine->getResourceManager()->createTextureAtlas(atlasSize, atlasSize);
 
 	// now render all glyphs into the atlas
 	for (int i=0; i<m_vGlyphs.size(); i++)
@@ -126,7 +126,7 @@ void McFont::init()
 	m_fHeight = 0.0f;
 	for (int i=0; i<128; i++)
 	{
-		int curHeight = getGlyphMetrics((wchar_t)i).top;
+		const int curHeight = getGlyphMetrics((wchar_t)i).top;
 		if (curHeight > m_fHeight)
 			m_fHeight = curHeight;
 	}
@@ -164,17 +164,17 @@ void McFont::drawString(Graphics *g, UString text)
 
 	// texture atlas rendering
 	m_textureAtlas->getAtlasImage()->bind();
-	m_worldMatrixBackup = g->getWorldMatrix();
-	g->pushTransform();
 	{
-		for (int i=0; i<text.length(); i++)
+		m_worldMatrixBackup = g->getWorldMatrix();
+		g->pushTransform();
 		{
-			drawAtlasGlyph(g, text[i]);
+			for (int i=0; i<text.length(); i++)
+			{
+				drawAtlasGlyph(g, text[i]);
+			}
 		}
+		g->popTransform();
 	}
-	g->popTransform();
-
-	// NOTE: there is no unbind() of the atlas texture on purpose, for performance reasons
 	if (r_debug_drawstring_unbind.getBool())
 		m_textureAtlas->getAtlasImage()->unbind();
 }
@@ -193,11 +193,11 @@ void McFont::drawAtlasGlyph(Graphics *g, wchar_t ch)
 	const GLYPH_METRICS &gm = getGlyphMetrics(ch);
 
 	g->pushTransform();
-
+	{
 		// apply font offsets and flip horizontally
 		Matrix4 glyphMatrix;
 		glyphMatrix.translate(gm.left, (gm.top - gm.rows), 0);
-		glyphMatrix.scale(1, -1, 1);
+		glyphMatrix.scale(1.0f, -1.0f, 1.0f);
 
 		// this and the last few lines in this function are needed to keep outside transforms consistent
 		// else we would e.g. scale every glyph by its center, instead of by the whole string
@@ -216,17 +216,17 @@ void McFont::drawAtlasGlyph(Graphics *g, wchar_t ch)
 		vao.addTexcoord(x, y);
 		vao.addVertex(0, gm.rows);
 
-		vao.addTexcoord(x, y+sy);
+		vao.addTexcoord(x, y + sy);
 		vao.addVertex(0, 0);
 
-		vao.addTexcoord(x+sx, y+sy);
+		vao.addTexcoord(x + sx, y + sy);
 		vao.addVertex(gm.width,0);
 
-		vao.addTexcoord(x+sx, y);
+		vao.addTexcoord(x + sx, y);
 		vao.addVertex(gm.width,gm.rows);
 
 		g->drawVAO(&vao);
-
+	}
 	g->popTransform();
 
 	// go to possible next glyph
@@ -237,6 +237,7 @@ void McFont::drawAtlasGlyph(Graphics *g, wchar_t ch)
 
 void McFont::drawTextureAtlas(Graphics *g)
 {
+	// debug
 	g->pushTransform();
 	{
 		g->translate(m_textureAtlas->getWidth()/2 + 50, m_textureAtlas->getHeight()/2 + 50);
@@ -245,13 +246,7 @@ void McFont::drawTextureAtlas(Graphics *g)
 	g->popTransform();
 }
 
-void McFont::setSize(int fontSize)
-{
-	m_iFontSize = fontSize;
-	reload();
-}
-
-float McFont::getStringWidth(UString text)
+float McFont::getStringWidth(UString text) const
 {
 	if (!m_bReady) return 1.0f;
 
@@ -264,7 +259,7 @@ float McFont::getStringWidth(UString text)
 	return width;
 }
 
-float McFont::getStringHeight(UString text)
+float McFont::getStringHeight(UString text) const
 {
 	if (!m_bReady) return 1.0f;
 
@@ -277,7 +272,7 @@ float McFont::getStringHeight(UString text)
 	return height;
 }
 
-const McFont::GLYPH_METRICS &McFont::getGlyphMetrics(wchar_t ch)
+const McFont::GLYPH_METRICS &McFont::getGlyphMetrics(wchar_t ch) const
 {
 	if (m_vGlyphMetrics.find(ch) != m_vGlyphMetrics.end())
 		return m_vGlyphMetrics.at(ch);
@@ -290,7 +285,7 @@ const McFont::GLYPH_METRICS &McFont::getGlyphMetrics(wchar_t ch)
 	}
 }
 
-const bool McFont::hasGlyph(wchar_t ch)
+const bool McFont::hasGlyph(wchar_t ch) const
 {
 	return (m_vGlyphMetrics.find(ch) != m_vGlyphMetrics.end());
 }
@@ -321,9 +316,9 @@ void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, T
     FT_BitmapGlyph bitmapGlyph = (FT_BitmapGlyph)glyph;
 
     // get width & height of the glyph bitmap
-    FT_Bitmap& bitmap = bitmapGlyph->bitmap;
-	int width = bitmap.width;
-	int height = bitmap.rows;
+    FT_Bitmap &bitmap = bitmapGlyph->bitmap;
+	const int width = bitmap.width;
+	const int height = bitmap.rows;
 
 	// build texture
 	Vector2 atlasPos;

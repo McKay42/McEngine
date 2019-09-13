@@ -36,26 +36,32 @@ public:
 	};
 
 public:
-	McFont(UString filepath, unsigned int fontSize = 16, bool antialiasing = true);
-	McFont(UString filepath, std::vector<wchar_t> characters, unsigned int fontSize = 16, bool antialiasing = true);
+	McFont(UString filepath, int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
+	McFont(UString filepath, std::vector<wchar_t> characters, int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
 	virtual ~McFont() {destroy();}
 
 	void drawString(Graphics *g, UString text);
 	void drawTextureAtlas(Graphics *g);
 
-	void setSize(int fontSize);
+	void setSize(int fontSize) {m_iFontSize = fontSize;}
+	void setDPI(int dpi) {m_iFontDPI = dpi;}
 	void setHeight(float height) {m_fHeight = height;}
 
-	inline TextureAtlas *getTextureAtlas() const {return m_textureAtlas;}
+	inline int getSize() const {return m_iFontSize;}
+	inline int getDPI() const {return m_iFontDPI;}
 	inline float getHeight() const {return m_fHeight;} // precomputed average height (fast)
-	float getStringWidth(UString text);
-	float getStringHeight(UString text);
 
-	const GLYPH_METRICS &getGlyphMetrics(wchar_t ch);
-	const bool hasGlyph(wchar_t ch);
+	float getStringWidth(UString text) const;
+	float getStringHeight(UString text) const;
+
+	const GLYPH_METRICS &getGlyphMetrics(wchar_t ch) const;
+	const bool hasGlyph(wchar_t ch) const;
+
+	// ILLEGAL:
+	inline TextureAtlas *getTextureAtlas() const {return m_textureAtlas;}
 
 protected:
-	void constructor(std::vector<wchar_t> characters, unsigned int fontSize, bool antialiasing);
+	void constructor(std::vector<wchar_t> characters, int fontSize, bool antialiasing, int fontDPI);
 
 	virtual void init();
 	virtual void initAsync();
@@ -65,8 +71,9 @@ protected:
 
 	void drawAtlasGlyph(Graphics *g, wchar_t ch);
 
-	unsigned int m_iFontSize;
+	int m_iFontSize;
 	bool m_bAntialiasing;
+	int m_iFontDPI;
 
 	// glyphs
 	TextureAtlas *m_textureAtlas;
