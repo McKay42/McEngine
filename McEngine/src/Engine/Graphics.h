@@ -175,6 +175,8 @@ public:
 	// 3D
 	void translate3D(float x, float y, float z);
 	void translate3D(Vector3 translation) {translate3D(translation.x, translation.y, translation.z);}
+	void rotate3D(float deg, float x, float y, float z);
+	void rotate3D(float deg, Vector3 axis) {rotate3D(deg, axis.x, axis.y, axis.z);}
 	void setWorldMatrix(Matrix4 &worldMatrix);
 	void setWorldMatrixMul(Matrix4 &worldMatrix);
 	void setProjectionMatrix(Matrix4 &projectionMatrix);
