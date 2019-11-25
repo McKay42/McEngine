@@ -71,10 +71,11 @@ LinuxEnvironment::LinuxEnvironment(Display *display, Window window) : Environmen
 		XrmInitialize();
 
 		char *resourceString = XResourceManagerString(m_display);
-		XrmDatabase db = XrmGetStringDatabase(resourceString);
 
 		if (resourceString)
 		{
+			XrmDatabase db = XrmGetStringDatabase(resourceString);
+
 			char *type = NULL;
 			XrmValue value;
 

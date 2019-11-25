@@ -92,6 +92,13 @@ void Graphics::translate3D(float x, float y, float z)
 	setWorldMatrixMul(translation);
 }
 
+void Graphics::rotate3D(float deg, float x, float y, float z)
+{
+	Matrix4 rotation;
+	rotation.rotate(deg, x, y, z);
+	setWorldMatrixMul(rotation);
+}
+
 void Graphics::setWorldMatrix(Matrix4 &worldMatrix)
 {
 	m_worldTransformStack.pop();
