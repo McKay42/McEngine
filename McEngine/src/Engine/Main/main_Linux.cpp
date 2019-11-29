@@ -15,7 +15,7 @@
 #include "Timer.h"
 
 #include "LinuxGLLegacyInterface.h"
-#include "LinuxEnvironment.h"
+#include "LinuxX11Environment.h"
 
 #define XLIB_ILLEGAL_ACCESS
 #include <X11/X.h>
@@ -37,7 +37,7 @@
 #define WINDOW_HEIGHT_MIN 100
 
 Engine *g_engine = NULL;
-LinuxEnvironment *g_environment = NULL;
+LinuxX11Environment *g_environment = NULL;
 
 bool g_bRunning = true;
 bool g_bUpdate = true;
@@ -383,7 +383,7 @@ int main(int argc, char *argv[])
     deltaTimer->update();
 
     // initialize engine
-	LinuxEnvironment *environment = new LinuxEnvironment(dpy, win);
+	LinuxX11Environment *environment = new LinuxX11Environment(dpy, win);
 	g_environment = environment;
     g_engine = new Engine(environment, argc > 1 ? argv[1] : "");
     g_engine->loadApp();

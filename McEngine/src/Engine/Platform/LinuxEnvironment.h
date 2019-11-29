@@ -12,25 +12,22 @@
 
 #include "Environment.h"
 
-#include <X11/X.h>
-#include <X11/Xlib.h>
-
 class LinuxEnvironment : public Environment
 {
 public:
-	LinuxEnvironment(Display *display, Window window);
-	virtual ~LinuxEnvironment();
+	LinuxEnvironment() {;}
+	virtual ~LinuxEnvironment() {;}
 
-	void update();
+	virtual void update() = 0;
 
 	// engine/factory
-	Graphics *createRenderer();
+	virtual Graphics *createRenderer() = 0;
 	ContextMenu *createContextMenu();
 
 	// system
 	OS getOS();
-	void shutdown();
-	void restart();
+	void shutdown() = 0;
+	void restart() = 0;
 	void sleep(unsigned int us);
 	UString getExecutablePath();
 	void openURLInDefaultBrowser(UString url);
@@ -52,8 +49,8 @@ public:
 	UString getFileExtensionFromFilePath(UString filepath, bool includeDot = false);
 
 	// clipboard
-	UString getClipBoardText();
-	void setClipBoardText(UString text);
+	virtual UString getClipBoardText() = 0;
+	virtual void setClipBoardText(UString text) = 0;
 
 	// dialogs & message boxes
 	void showMessageInfo(UString title, UString message);
@@ -64,103 +61,47 @@ public:
 	UString openFolderWindow(UString title, UString initialpath);
 
 	// window
-	void focus();
-	void center();
-	void minimize();
-	void maximize();
-	void enableFullscreen();
-	void disableFullscreen();
-	void setWindowTitle(UString title);
-	void setWindowPos(int x, int y);
-	void setWindowSize(int width, int height);
-	void setWindowResizable(bool resizable);
-	void setWindowGhostCorporeal(bool corporeal);
-	void setMonitor(int monitor);
-	Vector2 getWindowPos();
-	Vector2 getWindowSize();
-	int getMonitor();
-	std::vector<McRect> getMonitors();
-	Vector2 getNativeScreenSize();
-	McRect getVirtualScreenRect();
-	McRect getDesktopRect();
-	int getDPI();
-	bool isFullscreen() {return m_bFullScreen;}
-	bool isWindowResizable() {return m_bResizable;}
+	virtual void focus() = 0;
+	virtual void center() = 0;
+	virtual void minimize() = 0;
+	virtual void maximize() = 0;
+	virtual void enableFullscreen() = 0;
+	virtual void disableFullscreen() = 0;
+	virtual void setWindowTitle(UString title) = 0;
+	virtual void setWindowPos(int x, int y) = 0;
+	virtual void setWindowSize(int width, int height) = 0;
+	virtual void setWindowResizable(bool resizable) = 0;
+	virtual void setWindowGhostCorporeal(bool corporeal) = 0;
+	virtual void setMonitor(int monitor) = 0;
+	virtual Vector2 getWindowPos() = 0;
+	virtual Vector2 getWindowSize() = 0;
+	virtual int getMonitor() = 0;
+	virtual std::vector<McRect> getMonitors() = 0;
+	virtual Vector2 getNativeScreenSize() = 0;
+	virtual McRect getVirtualScreenRect() = 0;
+	virtual McRect getDesktopRect() = 0;
+	virtual int getDPI() = 0;
+	virtual bool isFullscreen() = 0;
+	virtual bool isWindowResizable() = 0;
 
 	// mouse
-	bool isCursorInWindow();
-	bool isCursorVisible();
-	bool isCursorClipped();
-	Vector2 getMousePos();
-	McRect getCursorClip();
-	CURSORTYPE getCursor();
-	void setCursor(CURSORTYPE cur);
-	void setCursorVisible(bool visible);
-	void setMousePos(int x, int y);
-	void setCursorClip(bool clip, McRect rect);
+	virtual bool isCursorInWindow() = 0;
+	virtual bool isCursorVisible() = 0;
+	virtual bool isCursorClipped() = 0;
+	virtual Vector2 getMousePos() = 0;
+	virtual McRect getCursorClip() = 0;
+	virtual CURSORTYPE getCursor() = 0;
+	virtual void setCursor(CURSORTYPE cur) = 0;
+	virtual void setCursorVisible(bool visible) = 0;
+	virtual void setMousePos(int x, int y) = 0;
+	virtual void setCursorClip(bool clip, McRect rect) = 0;
 
 	// keyboard
-	UString keyCodeToString(KEYCODE keyCode);
-
-	// ILLEGAL:
-	inline Display *getDisplay() const {return m_display;}
-	inline Window getWindow() const {return m_window;}
-	inline bool isRestartScheduled() const {return m_bIsRestartScheduled;}
-
-	void handleSelectionRequest(XSelectionRequestEvent &evt);
+	virtual UString keyCodeToString(KEYCODE keyCode) = 0;
 
 private:
 	static int getFilesInFolderFilter(const struct dirent *entry);
 	static int getFoldersInFolderFilter(const struct dirent *entry);
-
-	void setWindowResizableInt(bool resizable, Vector2 windowSize);
-	Vector2 getWindowSizeServer();
-
-	Cursor makeBlankCursor();
-	void setCursorInt(Cursor cursor);
-
-	UString readWindowProperty(Window window, Atom prop, Atom fmt /* XA_STRING or UTF8_STRING */, bool deleteAfterReading);
-	bool requestSelectionContent(UString &selection_content, Atom selection, Atom requested_format);
-	void setClipBoardTextInt(UString clipText);
-	UString getClipboardTextInt();
-
-	Display *m_display;
-	Window m_window;
-
-	// monitors
-	static std::vector<McRect> m_vMonitors;
-
-	// window
-	static bool m_bResizable;
-	bool m_bFullScreen;
-	Vector2 m_vLastWindowPos;
-	Vector2 m_vLastWindowSize;
-	int m_iDPI;
-
-	// mouse
-	bool m_bCursorClipped;
-	McRect m_cursorClip;
-	bool m_bCursorRequest;
-	bool m_bCursorReset;
-	bool m_bCursorVisible;
-	bool m_bIsCursorInsideWindow;
-	Cursor m_mouseCursor;
-	Cursor m_invisibleCursor;
-	CURSORTYPE m_cursorType;
-
-	// clipboard
-	UString m_sLocalClipboardContent;
-	Atom m_atom_UTF8_STRING;
-	Atom m_atom_CLIPBOARD;
-	Atom m_atom_TARGETS;
-
-	// custom
-	bool m_bIsRestartScheduled;
-	bool m_bResizeDelayHack;
-	Vector2 m_vResizeHackSize;
-	bool m_bPrevCursorHack;
-	bool m_bFullscreenWasResizable;
-	Vector2 m_vPrevDisableFullscreenWindowSize;
 };
 
 #endif
