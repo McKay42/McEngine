@@ -14,7 +14,7 @@
 #include "ConVar.h"
 #include "Timer.h"
 
-#include "LinuxGLLegacyInterface.h"
+#include "LinuxGLXLegacyInterface.h"
 #include "LinuxX11Environment.h"
 
 #define XLIB_ILLEGAL_ACCESS

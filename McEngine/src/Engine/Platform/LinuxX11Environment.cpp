@@ -2,7 +2,7 @@
 
 #include "LinuxX11Environment.h"
 
-#include "LinuxGLLegacyInterface.h"
+#include "LinuxGLXLegacyInterface.h"
 #include "Engine.h"
 
 #include <X11/cursorfont.h>
@@ -105,7 +105,7 @@ void LinuxX11Environment::update()
 
 Graphics *LinuxX11Environment::createRenderer()
 {
-	return new LinuxGLLegacyInterface(m_display, m_window);
+	return new LinuxGLXLegacyInterface(m_display, m_window);
 }
 
 void LinuxX11Environment::shutdown()

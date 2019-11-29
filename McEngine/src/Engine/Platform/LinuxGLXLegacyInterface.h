@@ -7,8 +7,8 @@
 
 #ifdef __linux__
 
-#ifndef LINUXGLINTERFACE_H
-#define LINUXGLINTERFACE_H
+#ifndef LINUXGLXLEGACYINTERFACE_H
+#define LINUXGLXLEGACYINTERFACE_H
 
 typedef unsigned char BYTE;
 
@@ -24,11 +24,11 @@ typedef unsigned char BYTE;
 
 XVisualInfo *getVisualInfo(Display *display);
 
-class LinuxGLLegacyInterface : public OpenGLLegacyInterface
+class LinuxGLXLegacyInterface : public OpenGLLegacyInterface
 {
 public:
-	LinuxGLLegacyInterface(Display *display, Window window);
-	virtual ~LinuxGLLegacyInterface();
+	LinuxGLXLegacyInterface(Display *display, Window window);
+	virtual ~LinuxGLXLegacyInterface();
 
 	// scene
 	void endScene();

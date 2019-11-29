@@ -7,7 +7,7 @@
 
 #ifdef __linux__
 
-#include "LinuxGLLegacyInterface.h"
+#include "LinuxGLXLegacyInterface.h"
 
 #ifdef MCENGINE_FEATURE_OPENGL
 
@@ -21,7 +21,7 @@ XVisualInfo *getVisualInfo(Display *display)
 	return glXChooseVisual(display, 0, att);
 }
 
-LinuxGLLegacyInterface::LinuxGLLegacyInterface(Display *display, Window window) : OpenGLLegacyInterface()
+LinuxGLXLegacyInterface::LinuxGLXLegacyInterface(Display *display, Window window) : OpenGLLegacyInterface()
 {
 	m_display = display;
 	m_window = window;
@@ -36,19 +36,19 @@ LinuxGLLegacyInterface::LinuxGLLegacyInterface(Display *display, Window window) 
 	glXMakeCurrent(m_display, m_window, m_glc);
 }
 
-LinuxGLLegacyInterface::~LinuxGLLegacyInterface()
+LinuxGLXLegacyInterface::~LinuxGLXLegacyInterface()
 {
 	glXMakeCurrent(m_display, None, NULL);
 	glXDestroyContext(m_display, m_glc);
 }
 
-void LinuxGLLegacyInterface::endScene()
+void LinuxGLXLegacyInterface::endScene()
 {
 	OpenGLLegacyInterface::endScene();
 	glXSwapBuffers(m_display, m_window);
 }
 
-void LinuxGLLegacyInterface::setVSync(bool vsync)
+void LinuxGLXLegacyInterface::setVSync(bool vsync)
 {
 	typedef void (*PFNWGLSWAPINTERVALPROC)(Display*, GLXDrawable, int);
 	PFNWGLSWAPINTERVALPROC wglSwapIntervalEXT = 0;
