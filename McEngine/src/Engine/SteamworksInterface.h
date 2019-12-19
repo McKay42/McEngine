@@ -15,6 +15,8 @@ class SteamworksInterface
 public:
 	struct WorkshopItemDetails
 	{
+		uint64_t publishedFileId;
+
 		UString title;
 		UString description;
 	};
@@ -42,7 +44,7 @@ public:
 	bool isWorkshopSubscribedItemInstalled(uint64_t publishedFileId);
 	bool isWorkshopSubscribedItemDownloading(uint64_t publishedFileId);
 	UString getWorkshopItemInstallInfo(uint64_t publishedFileId);
-	WorkshopItemDetails getWorkshopItemDetails(uint64_t publishedFileId);
+	std::vector<WorkshopItemDetails> getWorkshopItemDetails(const std::vector<uint64_t> &publishedFileIds);
 	void forceWorkshopItemUpdateDownload(uint64_t publishedFileId);
 
 	void startWorkshopItemPlaytimeTracking(uint64_t publishedFileId);

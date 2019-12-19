@@ -476,42 +476,56 @@ UString SteamworksInterface::getWorkshopItemInstallInfo(uint64_t publishedFileId
 	return "";
 }
 
-SteamworksInterface::WorkshopItemDetails SteamworksInterface::getWorkshopItemDetails(uint64_t publishedFileId)
+std::vector<SteamworksInterface::WorkshopItemDetails> SteamworksInterface::getWorkshopItemDetails(const std::vector<uint64_t> &publishedFileIds)
 {
-	WorkshopItemDetails ret;
+	std::vector<WorkshopItemDetails> results;
 
 #ifdef MCENGINE_FEATURE_STEAMWORKS
 
-	if (!m_bReady) return ret;
+	if (!m_bReady || publishedFileIds.size() < 1) return results;
 
-	const UGCQueryHandle_t handle = SteamUGC()->CreateQueryUGCDetailsRequest(&publishedFileId, 1);
+	const uint32_t numPagesToRequest = (publishedFileIds.size() / kNumUGCResultsPerPage) + 1;
+	for (uint32_t p=0; p<numPagesToRequest; p++)
 	{
-		if (handle != k_UGCQueryHandleInvalid)
+		const uint32_t requestDataOffset = clamp<uint32_t>(p * kNumUGCResultsPerPage, 0, publishedFileIds.size());
+		const uint32_t requestDataSize = clamp<uint32_t>(kNumUGCResultsPerPage, 0, publishedFileIds.size() - requestDataOffset);
+
+		if (requestDataSize < 1)
+			break;
+
+		const UGCQueryHandle_t handle = SteamUGC()->CreateQueryUGCDetailsRequest((uint64_t*)&publishedFileIds[requestDataOffset], requestDataSize);
 		{
-			const SteamAPICall_t apiCall = SteamUGC()->SendQueryUGCRequest(handle);
-
-			SteamUGCQueryCompleted_t res;
-			if (!SteamworksInterfaceWaitAPICallBlocking(apiCall, &res, sizeof(SteamUGCQueryCompleted_t), SteamUGCQueryCompleted_t::k_iCallback))
+			if (handle != k_UGCQueryHandleInvalid)
 			{
-				SteamUGC()->ReleaseQueryUGCRequest(handle);
-				return ret;
-			}
+				const SteamAPICall_t apiCall = SteamUGC()->SendQueryUGCRequest(handle);
 
-			if (res.m_eResult != EResult::k_EResultOK)
-			{
-				handleLastError(res.m_eResult);
-				debugLog("STEAM: SendQueryUGCRequest() error %i (%s)!\n", res.m_eResult, m_sLastError.toUtf8());
-				SteamUGC()->ReleaseQueryUGCRequest(handle);
-				return ret;
-			}
-
-			for (uint32_t i=0; i<res.m_unNumResultsReturned; i++)
-			{
-				SteamUGCDetails_t details;
-				if (SteamUGC()->GetQueryUGCResult(res.m_handle, i, &details))
+				SteamUGCQueryCompleted_t res;
+				if (!SteamworksInterfaceWaitAPICallBlocking(apiCall, &res, sizeof(SteamUGCQueryCompleted_t), SteamUGCQueryCompleted_t::k_iCallback))
 				{
-					if (details.m_nPublishedFileId == publishedFileId)
+					SteamUGC()->ReleaseQueryUGCRequest(handle);
+					return results;
+				}
+
+				if (res.m_eResult != EResult::k_EResultOK)
+				{
+					handleLastError(res.m_eResult);
+					debugLog("STEAM: SendQueryUGCRequest() error %i (%s)!\n", res.m_eResult, m_sLastError.toUtf8());
+					SteamUGC()->ReleaseQueryUGCRequest(handle);
+					return results;
+				}
+
+				for (uint32_t r=0; r<res.m_unNumResultsReturned; r++)
+				{
+					SteamUGCDetails_t details;
+					if (SteamUGC()->GetQueryUGCResult(res.m_handle, r, &details))
 					{
+						WorkshopItemDetails ret;
+
+						// id
+						{
+							ret.publishedFileId = details.m_nPublishedFileId;
+						}
+
 						// title
 						{
 							const int stringBufferSize = k_cchPublishedDocumentTitleMax + 1;
@@ -532,28 +546,27 @@ SteamworksInterface::WorkshopItemDetails SteamworksInterface::getWorkshopItemDet
 							ret.description = UString(stringBuffer);
 						}
 
-						SteamUGC()->ReleaseQueryUGCRequest(handle);
-						return ret;
+						results.push_back(ret);
+					}
+					else
+					{
+						debugLog("STEAM: GetQueryUGCResult() error (%u)!\n", r);
+						break;
 					}
 				}
-				else
-				{
-					debugLog("STEAM: GetQueryUGCResult() error (%u)!\n", i);
-					break;
-				}
+			}
+			else
+			{
+				debugLog("STEAM: CreateQueryUGCDetailsRequest() error!\n");
+				return results;
 			}
 		}
-		else
-		{
-			debugLog("STEAM: CreateQueryUserUGCRequest() error!\n");
-			return ret;
-		}
+		SteamUGC()->ReleaseQueryUGCRequest(handle);
 	}
-	SteamUGC()->ReleaseQueryUGCRequest(handle);
 
 #endif
 
-	return ret;
+	return results;
 }
 
 void SteamworksInterface::forceWorkshopItemUpdateDownload(uint64_t publishedFileId)

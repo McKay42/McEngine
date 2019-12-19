@@ -22,7 +22,7 @@ public:
 
 public:
 	WinEnvironment(HWND hwnd, HINSTANCE hinstance);
-	virtual ~WinEnvironment() {;}
+	virtual ~WinEnvironment();
 
 	void update();
 
@@ -108,6 +108,8 @@ public:
 	// ILLEGAL:
 	bool setProcessPriority(int priority); // 0 = normal, 1 = high
 	bool setProcessAffinity(int affinity); // -1 = reset (all cores), 0 = first core, 1 = last core
+	void disableWindowsKey();
+	void enableWindowsKey();
 	inline HWND getHwnd() const {return m_hwnd;}
 	inline HINSTANCE getHInstance() const {return m_hInstance;}
 	inline bool isRestartScheduled() const {return m_bIsRestartScheduled;}
@@ -117,7 +119,9 @@ private:
 	void handleShowMessageFullscreen();
 	void enumerateMonitors();
 	void onProcessPriorityChange(UString oldValue, UString newValue);
+	void onDisableWindowsKeyChange(UString oldValue, UString newValue);
 	static BOOL CALLBACK monitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
+	static LRESULT CALLBACK lowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 
 	HWND m_hwnd;
 	HINSTANCE m_hInstance;
@@ -143,6 +147,7 @@ private:
 	// custom
 	bool m_bIsRestartScheduled;
 	static int m_iNumCoresForProcessAffinity;
+	static HHOOK g_hKeyboardHook;
 };
 
 #endif
