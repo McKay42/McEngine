@@ -26,13 +26,12 @@
 #include <tchar.h>
 #include <string>
 
-#define WINDOW_RESIZABLE
-
 bool g_bCursorVisible = true;
 
 bool WinEnvironment::m_bResizable = true;
 std::vector<McRect> WinEnvironment::m_vMonitors;
 int WinEnvironment::m_iNumCoresForProcessAffinity = -1;
+HHOOK WinEnvironment::g_hKeyboardHook = NULL;
 
 WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance) : Environment()
 {
@@ -55,8 +54,14 @@ WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance) : Environment()
 		m_vMonitors.push_back(McRect(0, 0, m_vWindowSize.x, m_vWindowSize.y));
 	}
 
-	// convar refs
+	// convar callbacks
 	convar->getConVarByName("win_processpriority")->setCallback( fastdelegate::MakeDelegate(this, &WinEnvironment::onProcessPriorityChange) );
+	convar->getConVarByName("win_disable_windows_key")->setCallback( fastdelegate::MakeDelegate(this, &WinEnvironment::onDisableWindowsKeyChange) );
+}
+
+WinEnvironment::~WinEnvironment()
+{
+	enableWindowsKey();
 }
 
 void WinEnvironment::update()
@@ -936,6 +941,21 @@ bool WinEnvironment::setProcessAffinity(int affinity)
 	return true;
 }
 
+void WinEnvironment::disableWindowsKey()
+{
+	if (g_hKeyboardHook != NULL) return;
+
+	g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, WinEnvironment::lowLevelKeyboardProc, GetModuleHandle(NULL), 0);
+}
+
+void WinEnvironment::enableWindowsKey()
+{
+	if (g_hKeyboardHook == NULL) return;
+
+	UnhookWindowsHookEx(g_hKeyboardHook);
+	g_hKeyboardHook = NULL;
+}
+
 
 
 // helper functions
@@ -999,6 +1019,14 @@ void WinEnvironment::onProcessPriorityChange(UString oldValue, UString newValue)
 	setProcessPriority(newValue.toInt());
 }
 
+void WinEnvironment::onDisableWindowsKeyChange(UString oldValue, UString newValue)
+{
+	if (newValue.toInt())
+		disableWindowsKey();
+	else
+		enableWindowsKey();
+}
+
 BOOL CALLBACK WinEnvironment::monitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
 	MONITORINFO monitorInfo;
@@ -1016,6 +1044,31 @@ BOOL CALLBACK WinEnvironment::monitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor,
 		debugLog("Monitor %i: (right = %ld, bottom = %ld, left = %ld, top = %ld), isPrimaryMonitor = %i\n", m_vMonitors.size(), lprcMonitor->right, lprcMonitor->bottom, lprcMonitor->left, lprcMonitor->top, (int)isPrimaryMonitor);
 
 	return TRUE;
+}
+
+LRESULT CALLBACK WinEnvironment::lowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	if (nCode < 0 || nCode != HC_ACTION)
+		return CallNextHookEx(g_hKeyboardHook, nCode, wParam, lParam);
+
+	bool ignoreKeyStroke = false;
+	KBDLLHOOKSTRUCT *p = (KBDLLHOOKSTRUCT*)lParam;
+	switch (wParam)
+	{
+		case WM_KEYDOWN:
+		case WM_KEYUP:
+		case WM_SYSKEYDOWN:
+		case WM_SYSKEYUP:
+		{
+			ignoreKeyStroke = ((p->vkCode == VK_LWIN) || (p->vkCode == VK_RWIN)) && (p->flags == 1);
+			break;
+		}
+	}
+
+	if (ignoreKeyStroke)
+		return 1;
+	else
+		return CallNextHookEx(g_hKeyboardHook, nCode, wParam, lParam);
 }
 
 long WinEnvironment::getWindowStyleWindowed()

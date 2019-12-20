@@ -68,6 +68,8 @@ ConVar _win_realtimestylus("win_realtimestylus", false, "if compiled on Windows,
 ConVar *win_realtimestylus = &_win_realtimestylus;
 ConVar _win_processpriority("win_processpriority", 0, "if compiled on Windows, sets the main process priority (0 = normal, 1 = high)");
 ConVar *win_processpriority = &_win_processpriority;
+ConVar _win_disable_windows_key("win_disable_windows_key", false, "if compiled on Windows, set to 0/1 to disable/enable all windows keys via low level keyboard hook");
+ConVar *win_disable_windows_key = &_win_disable_windows_key;
 
 Engine *engine = NULL;
 Environment *env = NULL;
