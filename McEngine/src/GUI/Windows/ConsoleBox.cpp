@@ -26,7 +26,6 @@
 
 #include <mutex>
 #include "WinMinGW.Mutex.h"
-#include "Horizon.Mutex.h"
 
 #endif
 

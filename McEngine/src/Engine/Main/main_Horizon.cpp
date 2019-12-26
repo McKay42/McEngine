@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 
 	romfsInit();
 	{
-		appletSetScreenShotPermission(1);
+		appletSetScreenShotPermission(AppletScreenShotPermission_Enable);
 		appletSetFocusHandlingMode(AppletFocusHandlingMode_SuspendHomeSleepNotify); // TODO: seems broken? no notification is received when going to sleep
 
 		// NOTE: yuzu emulator timing bug workaround (armGetSystemTick() is way too fast), uncomment for testing

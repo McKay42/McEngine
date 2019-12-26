@@ -407,8 +407,8 @@ UString HorizonSDLEnvironment::getUsername()
 
     Result rc = 0;
 
-    u128 userID = 0;
-    bool account_selected = 0;
+    AccountUid userID;
+    ///bool account_selected = 0;
     AccountProfile profile;
     AccountUserData userdata;
     AccountProfileBase profilebase;
@@ -418,25 +418,25 @@ UString HorizonSDLEnvironment::getUsername()
     memset(&userdata, 0, sizeof(userdata));
     memset(&profilebase, 0, sizeof(profilebase));
 
-    rc = accountInitialize();
+    rc = accountInitialize(AccountServiceType_Application);
     if (R_FAILED(rc))
         debugLog("accountInitialize() failed: 0x%x\n", rc);
 
     if (R_SUCCEEDED(rc))
     {
-        rc = accountGetActiveUser(&userID, &account_selected);
+        rc = accountGetLastOpenedUser(&userID);
 
         if (R_FAILED(rc))
         	debugLog("accountGetActiveUser() failed: 0x%x\n", rc);
-        else if(!account_selected)
-        {
-        	debugLog("No user is currently selected.\n");
-            rc = -1;
-        }
+        ///else if(!account_selected)
+        ///{
+        ///	debugLog("No user is currently selected.\n");
+        ///    rc = -1;
+        ///}
 
         if (R_SUCCEEDED(rc))
         {
-        	debugLog("Current userID: 0x%lx 0x%lx\n", (u64)(userID>>64), (u64)userID);
+        	///debugLog("Current userID: 0x%lx 0x%lx\n", (u64)(userID>>64), (u64)userID);
 
             rc = accountGetProfile(&profile, userID);
 
@@ -453,7 +453,7 @@ UString HorizonSDLEnvironment::getUsername()
 
             if (R_SUCCEEDED(rc)) {
                 memset(username,  0, sizeof(username));
-                strncpy(username, profilebase.username, sizeof(username)-1); // even though profilebase.username usually has a NUL-terminator, don't assume it does for safety.
+                strncpy(username, profilebase.nickname, sizeof(username)-1); // even though profilebase.username usually has a NUL-terminator, don't assume it does for safety.
                 debugLog("Username: %s\n", username);
                 uUsername = UString(username);
             }

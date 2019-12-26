@@ -26,14 +26,18 @@
 
 
 
-// HACKHACK: until I get around to writing an std::thread wrapper implementation
+// HACKHACK: until I get around to writing an std::thread wrapper implementation, see libnx/include/switch/kernel/thread.h
 #ifdef __SWITCH__
 
 typedef struct {
-    uint32_t handle;     ///< Thread handle.
-    void*  stack_mem;    ///< Pointer to stack memory.
-    void*  stack_mirror; ///< Pointer to stack memory mirror.
-    size_t stack_sz;     ///< Stack size.
+	uint32_t handle;       ///< Thread handle.
+    bool   owns_stack_mem; ///< Whether the stack memory is automatically allocated.
+    void*  stack_mem;      ///< Pointer to stack memory.
+    void*  stack_mirror;   ///< Pointer to stack memory mirror.
+    size_t stack_sz;       ///< Stack size.
+    void** tls_array;
+    struct Thread* next;
+    struct Thread** prev_next;
 } HorizonThread;
 
 #endif

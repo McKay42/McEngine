@@ -25,7 +25,6 @@
 
 #include <mutex>
 #include "WinMinGW.Mutex.h"
-#include "Horizon.Mutex.h"
 
 #endif
 
@@ -91,7 +90,7 @@ ResourceManager::ResourceManager()
 
 #elif defined(__SWITCH__)
 
-	Result rc = threadCreate((Thread*)&m_loadingThread, _resourceLoaderThreadVoid, (void*)&m_loadingWork, 0x1000000, 0x2B, 2);
+	Result rc = threadCreate((Thread*)&m_loadingThread, _resourceLoaderThreadVoid, (void*)&m_loadingWork, NULL, 0x1000000, 0x2B, 2);
 	if (R_FAILED(rc))
 		engine->showMessageError("ResourceManager Error", UString::format("threadCreate() returned %i!", (int)rc));
 	else
