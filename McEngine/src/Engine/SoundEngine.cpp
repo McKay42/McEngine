@@ -62,10 +62,20 @@ ConVar snd_change_check_interval("snd_change_check_interval", 0.0f, "check for o
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
 void _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE(UString oldValue, UString newValue);
+void _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE(UString oldValue, UString newValue);
 void _WIN_SND_WASAPI_EXCLUSIVE_CHANGE(UString oldValue, UString newValue);
 ConVar win_snd_wasapi_buffer_size("win_snd_wasapi_buffer_size", 0.011f, "buffer size/length in seconds (e.g. 0.011 = 11 ms), directly responsible for audio delay and crackling", _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE);
+ConVar win_snd_wasapi_period_size("win_snd_wasapi_period_size", 0.0f, "interval between OutputWasapiProc calls in seconds (e.g. 0.016 = 16 ms) (0 = use default)", _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE);
 ConVar win_snd_wasapi_exclusive("win_snd_wasapi_exclusive", true, "whether to use exclusive device mode to further reduce latency", _WIN_SND_WASAPI_EXCLUSIVE_CHANGE);
 void _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE(UString oldValue, UString newValue)
+{
+	const int oldValueMS = std::round(oldValue.toFloat()*1000.0f);
+	const int newValueMS = std::round(newValue.toFloat()*1000.0f);
+
+	if (oldValueMS != newValueMS)
+		engine->getSound()->setOutputDeviceForce(engine->getSound()->getOutputDevice()); // force restart
+}
+void _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE(UString oldValue, UString newValue)
 {
 	const int oldValueMS = std::round(oldValue.toFloat()*1000.0f);
 	const int newValueMS = std::round(newValue.toFloat()*1000.0f);
@@ -337,16 +347,23 @@ bool SoundEngine::initializeOutputDevice(int id)
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
-	const float bufferSize = std::round(win_snd_wasapi_buffer_size.getFloat() * 1000.0f) / 1000.0f;	// in seconds
-	const float updatePeriod = 0.0f;	// in seconds
+	const float bufferSize = std::round(win_snd_wasapi_buffer_size.getFloat() * 1000.0f) / 1000.0f;		// in seconds
+	const float updatePeriod = std::round(win_snd_wasapi_period_size.getFloat() * 1000.0f) / 1000.0f;	// in seconds
 
-	debugLog("WASAPI Exclusive Mode = %i, bufferSize = %f\n", (int)win_snd_wasapi_exclusive.getBool(), bufferSize);
+	debugLog("WASAPI Exclusive Mode = %i, bufferSize = %f, updatePeriod = %f\n", (int)win_snd_wasapi_exclusive.getBool(), bufferSize, updatePeriod);
 	ret = BASS_WASAPI_Init(id, 0, 0, (win_snd_wasapi_exclusive.getBool() ? BASS_WASAPI_EXCLUSIVE : 0), bufferSize, updatePeriod, OutputWasapiProc, NULL);
 
 	if (!ret)
 	{
 		m_bReady = false;
-		engine->showMessageError("Sound Error", UString::format("BASS_WASAPI_Init() failed (%i)!", BASS_ErrorGetCode()));
+
+		const int errorCode = BASS_ErrorGetCode();
+
+		if (errorCode == BASS_ERROR_WASAPI_BUFFER)
+			debugLog("Sound Error: BASS_WASAPI_Init() failed with BASS_ERROR_WASAPI_BUFFER!");
+		else
+			engine->showMessageError("Sound Error", UString::format("BASS_WASAPI_Init() failed (%i)!", errorCode));
+
 		return false;
 	}
 
