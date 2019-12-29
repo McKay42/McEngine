@@ -495,6 +495,9 @@ bool SoundEngine::play(Sound *snd, float pan)
 		SOUNDHANDLE handle = snd->getHandle();
 		BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
 
+		if (!snd->isStream())
+			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_NORAMP, 1.0f); // see https://github.com/ppy/osu-framework/pull/3146
+
 		// HACKHACK: temp
 		if (handle != 0)
 		{
@@ -528,6 +531,9 @@ bool SoundEngine::play(Sound *snd, float pan)
 		if (BASS_ChannelIsActive(handle) != BASS_ACTIVE_PLAYING)
 		{
 			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
+
+			if (!snd->isStream())
+				BASS_ChannelSetAttribute(handle, BASS_ATTRIB_NORAMP, 1.0f); // see https://github.com/ppy/osu-framework/pull/3146
 
 			const bool ret = BASS_ChannelPlay(handle, FALSE);
 			if (!ret)
