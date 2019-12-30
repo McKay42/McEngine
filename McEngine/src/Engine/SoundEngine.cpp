@@ -67,6 +67,7 @@ void _WIN_SND_WASAPI_EXCLUSIVE_CHANGE(UString oldValue, UString newValue);
 ConVar win_snd_wasapi_buffer_size("win_snd_wasapi_buffer_size", 0.011f, "buffer size/length in seconds (e.g. 0.011 = 11 ms), directly responsible for audio delay and crackling", _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE);
 ConVar win_snd_wasapi_period_size("win_snd_wasapi_period_size", 0.0f, "interval between OutputWasapiProc calls in seconds (e.g. 0.016 = 16 ms) (0 = use default)", _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE);
 ConVar win_snd_wasapi_exclusive("win_snd_wasapi_exclusive", true, "whether to use exclusive device mode to further reduce latency", _WIN_SND_WASAPI_EXCLUSIVE_CHANGE);
+ConVar win_snd_wasapi_shared_volume_affects_device("win_snd_wasapi_shared_volume_affects_device", false, "if in shared mode, whether to affect device volume globally or use separate session volume (default)");
 void _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE(UString oldValue, UString newValue)
 {
 	const int oldValueMS = std::round(oldValue.toFloat()*1000.0f);
@@ -788,7 +789,7 @@ void SoundEngine::setVolume(float volume)
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
-	BASS_WASAPI_SetVolume(BASS_WASAPI_CURVE_WINDOWS, m_fVolume);
+	BASS_WASAPI_SetVolume(BASS_WASAPI_CURVE_WINDOWS | (!win_snd_wasapi_exclusive.getBool() && !win_snd_wasapi_shared_volume_affects_device.getBool() ? BASS_WASAPI_VOL_SESSION : 0), m_fVolume);
 
 #endif
 
