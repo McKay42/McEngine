@@ -45,8 +45,11 @@ public:
 private:
 	void onSuggestionClicked(CBaseUIButton *suggestion);
 
-	void addSuggestion(UString text);
+	void addSuggestion(UString text, UString command);
 	void clearSuggestions();
+
+	void show();
+	void toggle(KeyboardEvent &e);
 
 	float getAnimTargetY();
 

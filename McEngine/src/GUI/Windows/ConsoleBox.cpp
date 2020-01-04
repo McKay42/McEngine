@@ -29,8 +29,9 @@
 
 #endif
 
-ConVar console_animspeed("console_animspeed", 6.0f);
-ConVar console_animspeed2("console_animspeed2", 12.0f);
+ConVar showconsolebox("showconsolebox");
+
+ConVar consolebox_animspeed("consolebox_animspeed", 12.0f);
 
 ConVar console_overlay("console_overlay", true, "should the log overlay always be visible (or only if the console is out)");
 ConVar console_overlay_lines("console_overlay_lines", 6, "max number of lines of text");
@@ -82,6 +83,9 @@ ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, "")
 	m_fLogYPos = 0.0f;
 
 	clearSuggestions();
+
+	// convar callbacks
+	showconsolebox.setCallback( fastdelegate::MakeDelegate(this, &ConsoleBox::show) );
 }
 
 ConsoleBox::~ConsoleBox()
@@ -232,7 +236,7 @@ void ConsoleBox::update()
 		if (m_fSuggestionAnimation <= m_fSuggestionY)
 		{
 			m_suggestion->setPosY( engine->getScreenHeight() - (m_fSuggestionY - m_fSuggestionAnimation) );
-			m_fSuggestionAnimation += console_animspeed2.getFloat();
+			m_fSuggestionAnimation += consolebox_animspeed.getFloat();
 		}
 		else
 		{
@@ -248,7 +252,7 @@ void ConsoleBox::update()
 		if (m_fSuggestionAnimation >= 0)
 		{
 			m_suggestion->setPosY( engine->getScreenHeight() - (m_fSuggestionY - m_fSuggestionAnimation) );
-			m_fSuggestionAnimation -= console_animspeed2.getFloat();
+			m_fSuggestionAnimation -= consolebox_animspeed.getFloat();
 		}
 		else
 		{
@@ -295,38 +299,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 {
 	// toggle visibility
 	if ((e == KEY_F1 && (m_textbox->isActive() && m_textbox->isVisible() && !m_bConsoleAnimateOut ? true : engine->getKeyboard()->isShiftDown())) || (m_textbox->isActive() && m_textbox->isVisible() && !m_bConsoleAnimateOut && e == KEY_ESCAPE))
-	{
-		if (m_textbox->isVisible() && !m_bConsoleAnimateIn  && !m_bSuggestionAnimateIn)
-		{
-			m_bConsoleAnimateOut = true;
-			anim->moveSmoothEnd(&m_fConsoleAnimation, 0, 2.0f*0.8f);
-
-			if (m_suggestion->getContainer()->getElements().size() > 0)
-				m_bSuggestionAnimateOut = true;
-
-			e.consume();
-		}
-		else if (!m_bConsoleAnimateOut && !m_bSuggestionAnimateOut)
-		{
-			m_textbox->setVisible(true);
-			m_textbox->setActive(true);
-			m_textbox->setBusy(true);
-			m_bConsoleAnimateIn = true;
-
-			anim->moveSmoothEnd(&m_fConsoleAnimation, getAnimTargetY(), 1.5f*0.6f);
-
-			if (m_suggestion->getContainer()->getElements().size() > 0)
-			{
-				m_bSuggestionAnimateIn = true;
-				m_suggestion->setVisible(true);
-			}
-
-			e.consume();
-		}
-
-		// force layout update
-		onResolutionChange(engine->getScreenSize());
-	}
+		toggle(e);
 
 	if (m_bConsoleAnimateOut) return;
 
@@ -345,13 +318,13 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 
 			if (m_iSelectedSuggestion > -1 && m_iSelectedSuggestion < m_vSuggestionButtons.size())
 			{
-				UString text = m_vSuggestionButtons[m_iSelectedSuggestion]->getName();
+				UString command = m_vSuggestionButtons[m_iSelectedSuggestion]->getName();
 
-				ConVar *temp = convar->getConVarByName(text, false);
+				ConVar *temp = convar->getConVarByName(command, false);
 				if (temp != NULL && (temp->hasValue() || temp->hasCallbackArgs()))
-					text.append(" ");
+					command.append(" ");
 
-				m_textbox->setText(text);
+				m_textbox->setText(command);
 				m_textbox->setCursorPosRight();
 				m_suggestion->scrollToElement(m_vSuggestionButtons[m_iSelectedSuggestion]);
 
@@ -378,13 +351,13 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 
 			if (m_iSelectedSuggestion > -1 && m_iSelectedSuggestion < m_vSuggestionButtons.size())
 			{
-				UString text = m_vSuggestionButtons[m_iSelectedSuggestion]->getName();
+				UString command = m_vSuggestionButtons[m_iSelectedSuggestion]->getName();
 
-				ConVar *temp = convar->getConVarByName(text, false);
+				ConVar *temp = convar->getConVarByName(command, false);
 				if (temp != NULL && (temp->hasValue() || temp->hasCallbackArgs()))
-					text.append(" ");
+					command.append(" ");
 
-				m_textbox->setText(text);
+				m_textbox->setText(command);
 				m_textbox->setCursorPosRight();
 				m_suggestion->scrollToElement(m_vSuggestionButtons[m_iSelectedSuggestion]);
 
@@ -454,7 +427,35 @@ void ConsoleBox::onChar(KeyboardEvent &e)
 		std::vector<ConVar*> suggestions = convar->getConVarByLetter(m_textbox->getText());
 		for (int i=0; i<suggestions.size(); i++)
 		{
-			addSuggestion(suggestions[i]->getName());
+			UString suggestionText = suggestions[i]->getName();
+
+			if (suggestions[i]->hasValue())
+			{
+				switch (suggestions[i]->getType())
+				{
+				case ConVar::CONVAR_TYPE::CONVAR_TYPE_BOOL:
+					suggestionText.append(UString::format(" %i", (int)suggestions[i]->getBool()));
+					//suggestionText.append(UString::format(" ( def. \"%i\" )", (int)(suggestions[i]->getDefaultFloat() > 0)));
+					break;
+				case ConVar::CONVAR_TYPE::CONVAR_TYPE_INT:
+					suggestionText.append(UString::format(" %i", suggestions[i]->getInt()));
+					//suggestionText.append(UString::format(" ( def. \"%i\" )", (int)suggestions[i]->getDefaultFloat()));
+					break;
+				case ConVar::CONVAR_TYPE::CONVAR_TYPE_FLOAT:
+					suggestionText.append(UString::format(" %g", suggestions[i]->getFloat()));
+					//suggestionText.append(UString::format(" ( def. \"%g\" )", suggestions[i]->getDefaultFloat()));
+					break;
+				case ConVar::CONVAR_TYPE::CONVAR_TYPE_STRING:
+					suggestionText.append(" ");
+					suggestionText.append(suggestions[i]->getString());
+					//suggestionText.append(" ( def. \"");
+					//suggestionText.append(suggestions[i]->getDefaultString());
+					//suggestionText.append("\" )");
+					break;
+				}
+			}
+
+			addSuggestion(suggestionText, suggestions[i]->getName());
 		}
 		m_suggestion->setVisible(suggestions.size() > 0);
 
@@ -502,7 +503,7 @@ bool ConsoleBox::isActive()
 	return (m_textbox->isActive() || m_suggestion->isActive()) && m_textbox->isVisible();
 }
 
-void ConsoleBox::addSuggestion(UString text)
+void ConsoleBox::addSuggestion(UString text, UString command)
 {
 	const float dpiScale = getDPIScale();
 
@@ -512,7 +513,7 @@ void ConsoleBox::addSuggestion(UString text)
 	const int addheight = (17 + 8) * dpiScale;
 
 	// create button and add it
-	CBaseUIButton *button = new CBaseUIButton(3 * dpiScale, (vsize - 1)*buttonheight + 2 * dpiScale, 100, addheight, text, text);
+	CBaseUIButton *button = new CBaseUIButton(3 * dpiScale, (vsize - 1)*buttonheight + 2 * dpiScale, 100, addheight, command, text);
 	button->setDrawFrame(false);
 	button->setSizeX(button->getFont()->getStringWidth(text));
 	button->setClickCallback( fastdelegate::MakeDelegate(this, &ConsoleBox::onSuggestionClicked) );
@@ -547,6 +548,49 @@ void ConsoleBox::clearSuggestions()
 	m_suggestion->getContainer()->clear();
 	m_vSuggestionButtons = std::vector<CBaseUIButton*>();
 	m_suggestion->setVisible(false);
+}
+
+void ConsoleBox::show()
+{
+	if (!m_textbox->isVisible())
+	{
+		KeyboardEvent fakeEvent(KEY_F1);
+		toggle(fakeEvent);
+	}
+}
+
+void ConsoleBox::toggle(KeyboardEvent &e)
+{
+	if (m_textbox->isVisible() && !m_bConsoleAnimateIn && !m_bSuggestionAnimateIn)
+	{
+		m_bConsoleAnimateOut = true;
+		anim->moveSmoothEnd(&m_fConsoleAnimation, 0, 2.0f*0.8f);
+
+		if (m_suggestion->getContainer()->getElements().size() > 0)
+			m_bSuggestionAnimateOut = true;
+
+		e.consume();
+	}
+	else if (!m_bConsoleAnimateOut && !m_bSuggestionAnimateOut)
+	{
+		m_textbox->setVisible(true);
+		m_textbox->setActive(true);
+		m_textbox->setBusy(true);
+		m_bConsoleAnimateIn = true;
+
+		anim->moveSmoothEnd(&m_fConsoleAnimation, getAnimTargetY(), 1.5f*0.6f);
+
+		if (m_suggestion->getContainer()->getElements().size() > 0)
+		{
+			m_bSuggestionAnimateIn = true;
+			m_suggestion->setVisible(true);
+		}
+
+		e.consume();
+	}
+
+	// force layout update
+	onResolutionChange(engine->getScreenSize());
 }
 
 void ConsoleBox::log(UString text)
