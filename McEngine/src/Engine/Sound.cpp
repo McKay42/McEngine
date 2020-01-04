@@ -36,6 +36,8 @@ DWORD CALLBACK soundFXCallbackProc(HSTREAM handle, void *buffer, DWORD length, v
 
 #endif
 
+ConVar debug_snd("debug_snd", false);
+
 ConVar snd_speed_compensate_pitch("snd_speed_compensate_pitch", true, "automatically keep pitch constant if speed changes");
 
 Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan) : Resource(filepath)
@@ -342,7 +344,7 @@ void Sound::setPosition(double percent)
 	}
 	else
 	{
-		if (!BASS_ChannelSetPosition(getHandle(), (QWORD) ((double)(length)*percent), BASS_POS_BYTE))
+		if (!BASS_ChannelSetPosition(getHandle(), (QWORD) ((double)(length)*percent), BASS_POS_BYTE) && debug_snd.getBool())
 			debugLog("Sound::setPosition( %f ) BASS_ChannelSetPosition() Error %i on %s !\n", percent, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 	}
 
@@ -401,7 +403,7 @@ void Sound::setPositionMS(unsigned long ms, bool internal)
 	}
 	else
 	{
-		if (!BASS_ChannelSetPosition(handle, BASS_ChannelSeconds2Bytes(handle, ms/1000.0), BASS_POS_BYTE) && !internal)
+		if (!BASS_ChannelSetPosition(handle, BASS_ChannelSeconds2Bytes(handle, ms/1000.0), BASS_POS_BYTE) && !internal && debug_snd.getBool())
 			debugLog("Sound::setPositionMS( %lu ) BASS_ChannelSetPosition() Error %i on %s !\n", ms, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 	}
 
