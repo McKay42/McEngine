@@ -18,6 +18,9 @@ std::vector<ConVar*> &getGlobalConVarArray()
 
 void addConVar(ConVar *c)
 {
+	if (getGlobalConVarArray().size() < 1)
+		getGlobalConVarArray().reserve(1024);
+
 	getGlobalConVarArray().push_back(c);
 }
 
@@ -33,6 +36,7 @@ void ConVar::init()
 	m_fDefaultValue = 0.0f;
 
 	m_bHasValue = true;
+	m_type = CONVAR_TYPE::CONVAR_TYPE_FLOAT;
 }
 
 void ConVar::init(UString name)
@@ -42,6 +46,7 @@ void ConVar::init(UString name)
 	m_sName = name;
 
 	m_bHasValue = false;
+	m_type = CONVAR_TYPE::CONVAR_TYPE_STRING;
 }
 
 void ConVar::init(UString name, ConVarCallback callback)
@@ -52,6 +57,7 @@ void ConVar::init(UString name, ConVarCallback callback)
 	m_callbackfunc = callback;
 
 	m_bHasValue = false;
+	m_type = CONVAR_TYPE::CONVAR_TYPE_STRING;
 }
 
 void ConVar::init(UString name, ConVarCallbackArgs callbackARGS)
@@ -62,12 +68,14 @@ void ConVar::init(UString name, ConVarCallbackArgs callbackARGS)
 	m_callbackfuncargs = callbackARGS;
 
 	m_bHasValue = false;
+	m_type = CONVAR_TYPE::CONVAR_TYPE_STRING;
 }
 
 void ConVar::init(UString name, float defaultValue, UString helpString, ConVarChangeCallback callback)
 {
 	init();
 
+	m_type = CONVAR_TYPE::CONVAR_TYPE_FLOAT;
 	m_sName = name;
 	setDefaultFloat(defaultValue);
 	{
@@ -81,6 +89,7 @@ void ConVar::init(UString name, UString defaultValue, UString helpString, ConVar
 {
 	init();
 
+	m_type = CONVAR_TYPE::CONVAR_TYPE_STRING;
 	m_sName = name;
 	setDefaultString(defaultValue);
 	{
@@ -135,48 +144,56 @@ ConVar::ConVar(UString name, float fDefaultValue, UString helpString, ConVarChan
 ConVar::ConVar(UString name, int iDefaultValue)
 {
 	init(name, (float)iDefaultValue, "", NULL);
+	m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
 	addConVar(this);
 }
 
 ConVar::ConVar(UString name, int iDefaultValue, ConVarChangeCallback callback)
 {
 	init(name, (float)iDefaultValue, "", callback);
+	m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
 	addConVar(this);
 }
 
 ConVar::ConVar(UString name, int iDefaultValue, UString helpString)
 {
 	init(name, (float)iDefaultValue, helpString, NULL);
+	m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
 	addConVar(this);
 }
 
 ConVar::ConVar(UString name, int iDefaultValue, UString helpString, ConVarChangeCallback callback)
 {
 	init(name, (float)iDefaultValue, helpString, callback);
+	m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
 	addConVar(this);
 }
 
 ConVar::ConVar(UString name, bool bDefaultValue)
 {
 	init(name, bDefaultValue ? 1.0f : 0.0f, "", NULL);
+	m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
 	addConVar(this);
 }
 
 ConVar::ConVar(UString name, bool bDefaultValue, ConVarChangeCallback callback)
 {
 	init(name, bDefaultValue ? 1.0f : 0.0f, "", callback);
+	m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
 	addConVar(this);
 }
 
 ConVar::ConVar(UString name, bool bDefaultValue, UString helpString)
 {
 	init(name, bDefaultValue ? 1.0f : 0.0f, helpString, NULL);
+	m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
 	addConVar(this);
 }
 
 ConVar::ConVar(UString name, bool bDefaultValue, UString helpString, ConVarChangeCallback callback)
 {
 	init(name, bDefaultValue ? 1.0f : 0.0f, helpString, callback);
+	m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
 	addConVar(this);
 }
 
@@ -363,6 +380,7 @@ std::vector<ConVar*> ConVarHandler::getConVarByLetter(UString letters)
 		if (getGlobalConVarArray()[i]->getName().find(letters, 0, letters.length()) == 0)
 			temp.push_back((getGlobalConVarArray()[i]));
 	}
+
 	return temp;
 }
 

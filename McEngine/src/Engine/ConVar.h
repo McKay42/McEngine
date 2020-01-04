@@ -18,6 +18,15 @@ typedef void (*ConVarCallbackArgs)(UString args);
 class ConVar
 {
 public:
+	enum class CONVAR_TYPE
+	{
+		CONVAR_TYPE_BOOL,
+		CONVAR_TYPE_INT,
+		CONVAR_TYPE_FLOAT,
+		CONVAR_TYPE_STRING
+	};
+
+public:
 	// delegate callbacks
 	typedef fastdelegate::FastDelegate0<> NativeConVarCallback;
 	typedef fastdelegate::FastDelegate1<UString> NativeConVarCallbackArgs;
@@ -76,6 +85,7 @@ public:
 
 	inline const UString getHelpstring() const {return m_sHelpString;}
 	inline const UString getName() const {return m_sName;}
+	inline CONVAR_TYPE getType() const {return m_type;}
 
 	inline bool hasValue() const {return m_bHasValue.load();}
 	bool hasCallbackArgs();
@@ -89,6 +99,7 @@ private:
 	void init(UString name, UString defaultValue, UString helpString, ConVarChangeCallback callback);
 
 	std::atomic<bool> m_bHasValue;
+	CONVAR_TYPE m_type;
 
 	UString m_sName;
 	UString m_sHelpString;
