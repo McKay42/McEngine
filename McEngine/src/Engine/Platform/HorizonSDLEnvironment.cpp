@@ -399,6 +399,11 @@ Environment::OS HorizonSDLEnvironment::getOS()
 	return Environment::OS::OS_HORIZON;
 }
 
+void HorizonSDLEnvironment::sleep(unsigned int us)
+{
+	svcSleepThread(us*1000);
+}
+
 UString HorizonSDLEnvironment::getUsername()
 {
 	UString uUsername = convar->getConVarByName("name")->getString();

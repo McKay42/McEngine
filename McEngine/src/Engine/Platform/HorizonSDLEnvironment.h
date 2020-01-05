@@ -29,6 +29,7 @@ public:
 
 	// system
 	virtual OS getOS();
+	virtual void sleep(unsigned int us);
 
 	// user
 	virtual UString getUsername();

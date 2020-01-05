@@ -18,31 +18,7 @@
 #include "TextureAtlas.h"
 #include "VertexArrayObject.h"
 
-#ifdef MCENGINE_FEATURE_PTHREADS
-
-#include <pthread.h>
-
-#endif
-
-
-
-// HACKHACK: until I get around to writing an std::thread wrapper implementation, see libnx/include/switch/kernel/thread.h
-#ifdef __SWITCH__
-
-typedef struct {
-	uint32_t handle;       ///< Thread handle.
-    bool   owns_stack_mem; ///< Whether the stack memory is automatically allocated.
-    void*  stack_mem;      ///< Pointer to stack memory.
-    void*  stack_mirror;   ///< Pointer to stack memory mirror.
-    size_t stack_sz;       ///< Stack size.
-    void** tls_array;
-    struct Thread* next;
-    struct Thread** prev_next;
-} HorizonThread;
-
-#endif
-
-
+class ResourceManagerLoaderThread;
 
 class ResourceManager
 {
@@ -97,14 +73,15 @@ public:
 	// models/meshes
 	VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC, bool keepInSystemMemory = false);
 
-	// resource access by name // TODO: should probably use generics for this
-	Image *getImage(UString resourceName);
-	McFont *getFont(UString resourceName);
-	Sound *getSound(UString resourceName);
-	Shader *getShader(UString resourceName);
+	// resource access by name
+	Image *getImage(UString resourceName) const;
+	McFont *getFont(UString resourceName) const;
+	Sound *getSound(UString resourceName) const;
+	Shader *getShader(UString resourceName) const;
 
+	int getNumThreads() const {return m_threads.size();}
 	int getNumResources() const {return m_vResources.size();}
-	inline std::vector<Resource*> getResources() const {return m_vResources;}
+	inline const std::vector<Resource*> &getResources() const {return m_vResources;}
 
 	bool isLoadingResource(Resource *rs) const;
 
@@ -115,69 +92,46 @@ public:
 
 		MobileAtomic() : atomic(T()) {}
 
-		explicit MobileAtomic ( T const& v ) : atomic ( v ) {}
-		explicit MobileAtomic ( std::atomic<T> const& a ) : atomic ( a.load() ) {}
+		explicit MobileAtomic(T const &v) : atomic(v) {}
+		explicit MobileAtomic(std::atomic<T> const &a) : atomic(a.load()) {}
 
-		MobileAtomic ( MobileAtomic const&other ) : atomic( other.atomic.load() ) {}
+		MobileAtomic(MobileAtomic const &other) : atomic(other.atomic.load()) {}
 
-		MobileAtomic& operator=( MobileAtomic const &other )
+		MobileAtomic &operator = (MobileAtomic const &other)
 		{
-			atomic.store( other.atomic.load() );
+			atomic.store(other.atomic.load());
 			return *this;
 		}
 	};
 	typedef MobileAtomic<bool> MobileAtomicBool;
+	typedef MobileAtomic<size_t> MobileAtomicSizeT;
+	typedef MobileAtomic<Resource*> MobileAtomicResource;
 
-#ifdef MCENGINE_FEATURE_MULTITHREADING
-
-	struct LOAD_THREAD
+	struct LOADING_WORK
 	{
-#ifdef MCENGINE_FEATURE_PTHREADS
-
-		pthread_t thread;
-
-#elif defined(__SWITCH__)
-
-		HorizonThread thread;
-
-#endif
-
-		Resource *resource;
-		MobileAtomicBool finished;
+		MobileAtomicResource resource;
+		MobileAtomicSizeT threadIndex;
+		MobileAtomicBool done;
 	};
-
-#endif
 
 private:
 	void loadResource(Resource *res, bool load);
-	void doesntExistWarning(UString resourceName);
+	void doesntExistWarning(UString resourceName) const;
 	Resource *existsAndHandle(UString resourceName);
 	void resetFlags();
 
+	// content
 	std::vector<Resource*> m_vResources;
 	std::vector<Resource*> m_vAsyncDestroy;
 
-#ifdef MCENGINE_FEATURE_MULTITHREADING
-
-	std::vector<LOAD_THREAD*> m_threads;
-
-#endif
-
+	// flags
 	bool m_bNextLoadAsync;
 	std::stack<bool> m_nextLoadUnmanagedStack;
 
-	std::vector<std::pair<Resource*, MobileAtomicBool>> m_loadingWork;
+	// async
+	std::vector<ResourceManagerLoaderThread*> m_threads;
+	std::vector<LOADING_WORK> m_loadingWork;
 	std::vector<Resource*> m_loadingWorkAsyncDestroy;
-
-#ifdef MCENGINE_FEATURE_PTHREADS
-
-	pthread_t m_loadingThread;
-
-#elif defined(__SWITCH__)
-
-	HorizonThread m_loadingThread;
-
-#endif
 };
 
 #endif
