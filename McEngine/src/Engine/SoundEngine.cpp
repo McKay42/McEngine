@@ -109,7 +109,9 @@ SoundEngine::SoundEngine()
 #ifdef MCENGINE_FEATURE_SOUND
 
 	// lib version check
-	if (HIWORD(BASS_GetVersion()) != BASSVERSION)
+	m_iBASSVersion = BASS_GetVersion();
+	debugLog("SoundEngine: BASS version = 0x%08x\n", m_iBASSVersion);
+	if (HIWORD(m_iBASSVersion) != BASSVERSION)
 	{
 		engine->showMessageErrorFatal("Fatal Sound Error", "An incorrect version of the BASS library file was loaded!");
 		engine->shutdown();
@@ -132,7 +134,7 @@ SoundEngine::SoundEngine()
 
 #endif
 
-	BASS_SetConfig(BASS_CONFIG_VISTA_TRUEPOS, 0); // if set to 1, increases latency from 30 ms to 40 ms on windows 7 (?)
+	BASS_SetConfig(BASS_CONFIG_VISTA_TRUEPOS, 0); // NOTE: if set to 1, increases sample playback latency +10 ms
 
 	// add default output device
 	m_iCurrentOutputDevice = -1;
@@ -496,7 +498,10 @@ bool SoundEngine::play(Sound *snd, float pan)
 		SOUNDHANDLE handle = snd->getHandle();
 		BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
 
-		if (!snd->isStream())
+		if (snd->isStream() && snd->isLooped())
+			BASS_ChannelFlags(handle, BASS_SAMPLE_LOOP, BASS_SAMPLE_LOOP);
+
+		if (!snd->isStream() && LOWORD(m_iBASSVersion) >= 0x0c00) // BASS_ATTRIB_NORAMP is available >= 2.4.12 - 10/3/2016
 			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_NORAMP, 1.0f); // see https://github.com/ppy/osu-framework/pull/3146
 
 		// HACKHACK: temp
@@ -533,7 +538,10 @@ bool SoundEngine::play(Sound *snd, float pan)
 		{
 			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
 
-			if (!snd->isStream())
+			if (snd->isStream() && snd->isLooped())
+				BASS_ChannelFlags(handle, BASS_SAMPLE_LOOP, BASS_SAMPLE_LOOP);
+
+			if (!snd->isStream() && LOWORD(m_iBASSVersion) >= 0x0c00) // BASS_ATTRIB_NORAMP is available >= 2.4.12 - 10/3/2016
 				BASS_ChannelSetAttribute(handle, BASS_ATTRIB_NORAMP, 1.0f); // see https://github.com/ppy/osu-framework/pull/3146
 
 			const bool ret = BASS_ChannelPlay(handle, FALSE);

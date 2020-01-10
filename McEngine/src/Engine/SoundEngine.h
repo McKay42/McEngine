@@ -76,6 +76,12 @@ private:
 	float m_fVolumeMixMusic;
 
 #endif
+
+#ifdef MCENGINE_FEATURE_SOUND
+
+	uint32_t m_iBASSVersion;
+
+#endif
 };
 
 #endif

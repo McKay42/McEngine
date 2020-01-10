@@ -114,15 +114,15 @@ void Sound::initAsync()
 
 #endif
 
-		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.wc_str(), 0, 0, BASS_STREAM_DECODE | BASS_UNICODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | extraStreamCreateFileFlags);
+		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.wc_str(), 0, 0, (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | BASS_STREAM_DECODE | BASS_UNICODE | extraStreamCreateFileFlags);
 
 #elif defined __linux__
 
-		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, BASS_STREAM_DECODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | extraStreamCreateFileFlags);
+		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | BASS_STREAM_DECODE | extraStreamCreateFileFlags);
 
 #else
 
-		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, BASS_STREAM_DECODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | extraStreamCreateFileFlags);
+		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | BASS_STREAM_DECODE | extraStreamCreateFileFlags);
 
 #endif
 
@@ -541,6 +541,17 @@ void Sound::setPan(float pan)
 		const int left = (int)lerp<float>(rangeHalfLimit/2.0f, 254.0f - rangeHalfLimit/2.0f, 1.0f - ((pan + 1.0f) / 2.0f));
 		Mix_SetPanning(getHandle(), left, 254 - left);
 	}
+
+#endif
+}
+
+void Sound::setLoop(bool loop)
+{
+	if (!m_bReady) return;
+
+#ifdef MCENGINE_FEATURE_SOUND
+
+	BASS_ChannelFlags(getHandle(), loop ? BASS_SAMPLE_LOOP : 0, BASS_SAMPLE_LOOP);
 
 #endif
 }
