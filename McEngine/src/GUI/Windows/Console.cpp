@@ -161,7 +161,10 @@ void Console::processCommand(UString command)
 	if (commandValue.length() > 0)
 		var->setValue(commandValue);
 	else
+	{
 		var->exec();
+		var->execArgs("");
+	}
 
 	// log
 	if (console_logging.getBool())
