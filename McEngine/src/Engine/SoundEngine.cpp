@@ -62,10 +62,21 @@ ConVar snd_change_check_interval("snd_change_check_interval", 0.0f, "check for o
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
 void _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE(UString oldValue, UString newValue);
+void _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE(UString oldValue, UString newValue);
 void _WIN_SND_WASAPI_EXCLUSIVE_CHANGE(UString oldValue, UString newValue);
 ConVar win_snd_wasapi_buffer_size("win_snd_wasapi_buffer_size", 0.011f, "buffer size/length in seconds (e.g. 0.011 = 11 ms), directly responsible for audio delay and crackling", _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE);
+ConVar win_snd_wasapi_period_size("win_snd_wasapi_period_size", 0.0f, "interval between OutputWasapiProc calls in seconds (e.g. 0.016 = 16 ms) (0 = use default)", _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE);
 ConVar win_snd_wasapi_exclusive("win_snd_wasapi_exclusive", true, "whether to use exclusive device mode to further reduce latency", _WIN_SND_WASAPI_EXCLUSIVE_CHANGE);
+ConVar win_snd_wasapi_shared_volume_affects_device("win_snd_wasapi_shared_volume_affects_device", false, "if in shared mode, whether to affect device volume globally or use separate session volume (default)");
 void _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE(UString oldValue, UString newValue)
+{
+	const int oldValueMS = std::round(oldValue.toFloat()*1000.0f);
+	const int newValueMS = std::round(newValue.toFloat()*1000.0f);
+
+	if (oldValueMS != newValueMS)
+		engine->getSound()->setOutputDeviceForce(engine->getSound()->getOutputDevice()); // force restart
+}
+void _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE(UString oldValue, UString newValue)
 {
 	const int oldValueMS = std::round(oldValue.toFloat()*1000.0f);
 	const int newValueMS = std::round(newValue.toFloat()*1000.0f);
@@ -98,7 +109,9 @@ SoundEngine::SoundEngine()
 #ifdef MCENGINE_FEATURE_SOUND
 
 	// lib version check
-	if (HIWORD(BASS_GetVersion()) != BASSVERSION)
+	m_iBASSVersion = BASS_GetVersion();
+	debugLog("SoundEngine: BASS version = 0x%08x\n", m_iBASSVersion);
+	if (HIWORD(m_iBASSVersion) != BASSVERSION)
 	{
 		engine->showMessageErrorFatal("Fatal Sound Error", "An incorrect version of the BASS library file was loaded!");
 		engine->shutdown();
@@ -121,7 +134,7 @@ SoundEngine::SoundEngine()
 
 #endif
 
-	BASS_SetConfig(BASS_CONFIG_VISTA_TRUEPOS, 0); // if set to 1, increases latency from 30 ms to 40 ms on windows 7 (?)
+	BASS_SetConfig(BASS_CONFIG_VISTA_TRUEPOS, 0); // NOTE: if set to 1, increases sample playback latency +10 ms
 
 	// add default output device
 	m_iCurrentOutputDevice = -1;
@@ -337,16 +350,23 @@ bool SoundEngine::initializeOutputDevice(int id)
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
-	const float bufferSize = std::round(win_snd_wasapi_buffer_size.getFloat() * 1000.0f) / 1000.0f;	// in seconds
-	const float updatePeriod = 0.0f;	// in seconds
+	const float bufferSize = std::round(win_snd_wasapi_buffer_size.getFloat() * 1000.0f) / 1000.0f;		// in seconds
+	const float updatePeriod = std::round(win_snd_wasapi_period_size.getFloat() * 1000.0f) / 1000.0f;	// in seconds
 
-	debugLog("WASAPI Exclusive Mode = %i, bufferSize = %f\n", (int)win_snd_wasapi_exclusive.getBool(), bufferSize);
+	debugLog("WASAPI Exclusive Mode = %i, bufferSize = %f, updatePeriod = %f\n", (int)win_snd_wasapi_exclusive.getBool(), bufferSize, updatePeriod);
 	ret = BASS_WASAPI_Init(id, 0, 0, (win_snd_wasapi_exclusive.getBool() ? BASS_WASAPI_EXCLUSIVE : 0), bufferSize, updatePeriod, OutputWasapiProc, NULL);
 
 	if (!ret)
 	{
 		m_bReady = false;
-		engine->showMessageError("Sound Error", UString::format("BASS_WASAPI_Init() failed (%i)!", BASS_ErrorGetCode()));
+
+		const int errorCode = BASS_ErrorGetCode();
+
+		if (errorCode == BASS_ERROR_WASAPI_BUFFER)
+			debugLog("Sound Error: BASS_WASAPI_Init() failed with BASS_ERROR_WASAPI_BUFFER!");
+		else
+			engine->showMessageError("Sound Error", UString::format("BASS_WASAPI_Init() failed (%i)!", errorCode));
+
 		return false;
 	}
 
@@ -478,6 +498,12 @@ bool SoundEngine::play(Sound *snd, float pan)
 		SOUNDHANDLE handle = snd->getHandle();
 		BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
 
+		if (snd->isStream() && snd->isLooped())
+			BASS_ChannelFlags(handle, BASS_SAMPLE_LOOP, BASS_SAMPLE_LOOP);
+
+		if (!snd->isStream() && LOWORD(m_iBASSVersion) >= 0x0c00) // BASS_ATTRIB_NORAMP is available >= 2.4.12 - 10/3/2016
+			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_NORAMP, 1.0f); // see https://github.com/ppy/osu-framework/pull/3146
+
 		// HACKHACK: temp
 		if (handle != 0)
 		{
@@ -511,6 +537,12 @@ bool SoundEngine::play(Sound *snd, float pan)
 		if (BASS_ChannelIsActive(handle) != BASS_ACTIVE_PLAYING)
 		{
 			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
+
+			if (snd->isStream() && snd->isLooped())
+				BASS_ChannelFlags(handle, BASS_SAMPLE_LOOP, BASS_SAMPLE_LOOP);
+
+			if (!snd->isStream() && LOWORD(m_iBASSVersion) >= 0x0c00) // BASS_ATTRIB_NORAMP is available >= 2.4.12 - 10/3/2016
+				BASS_ChannelSetAttribute(handle, BASS_ATTRIB_NORAMP, 1.0f); // see https://github.com/ppy/osu-framework/pull/3146
 
 			const bool ret = BASS_ChannelPlay(handle, FALSE);
 			if (!ret)
@@ -765,7 +797,7 @@ void SoundEngine::setVolume(float volume)
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
-	BASS_WASAPI_SetVolume(BASS_WASAPI_CURVE_WINDOWS, m_fVolume);
+	BASS_WASAPI_SetVolume(BASS_WASAPI_CURVE_WINDOWS | (!win_snd_wasapi_exclusive.getBool() && !win_snd_wasapi_shared_volume_affects_device.getBool() ? BASS_WASAPI_VOL_SESSION : 0), m_fVolume);
 
 #endif
 

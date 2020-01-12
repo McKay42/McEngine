@@ -36,6 +36,8 @@ DWORD CALLBACK soundFXCallbackProc(HSTREAM handle, void *buffer, DWORD length, v
 
 #endif
 
+ConVar debug_snd("debug_snd", false);
+
 ConVar snd_speed_compensate_pitch("snd_speed_compensate_pitch", true, "automatically keep pitch constant if speed changes");
 
 Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan) : Resource(filepath)
@@ -112,15 +114,15 @@ void Sound::initAsync()
 
 #endif
 
-		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.wc_str(), 0, 0, BASS_STREAM_DECODE | BASS_UNICODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | extraStreamCreateFileFlags);
+		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.wc_str(), 0, 0, (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | BASS_STREAM_DECODE | BASS_UNICODE | extraStreamCreateFileFlags);
 
 #elif defined __linux__
 
-		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, BASS_STREAM_DECODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | extraStreamCreateFileFlags);
+		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | BASS_STREAM_DECODE | extraStreamCreateFileFlags);
 
 #else
 
-		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, BASS_STREAM_DECODE | (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | extraStreamCreateFileFlags);
+		m_HSTREAM = BASS_StreamCreateFile(FALSE, m_sFilePath.toUtf8(), 0, 0, (m_bPrescan ? BASS_STREAM_PRESCAN : 0) | BASS_STREAM_DECODE | extraStreamCreateFileFlags);
 
 #endif
 
@@ -342,7 +344,7 @@ void Sound::setPosition(double percent)
 	}
 	else
 	{
-		if (!BASS_ChannelSetPosition(getHandle(), (QWORD) ((double)(length)*percent), BASS_POS_BYTE))
+		if (!BASS_ChannelSetPosition(getHandle(), (QWORD) ((double)(length)*percent), BASS_POS_BYTE) && debug_snd.getBool())
 			debugLog("Sound::setPosition( %f ) BASS_ChannelSetPosition() Error %i on %s !\n", percent, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 	}
 
@@ -401,7 +403,7 @@ void Sound::setPositionMS(unsigned long ms, bool internal)
 	}
 	else
 	{
-		if (!BASS_ChannelSetPosition(handle, BASS_ChannelSeconds2Bytes(handle, ms/1000.0), BASS_POS_BYTE) && !internal)
+		if (!BASS_ChannelSetPosition(handle, BASS_ChannelSeconds2Bytes(handle, ms/1000.0), BASS_POS_BYTE) && !internal && debug_snd.getBool())
 			debugLog("Sound::setPositionMS( %lu ) BASS_ChannelSetPosition() Error %i on %s !\n", ms, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 	}
 
@@ -539,6 +541,17 @@ void Sound::setPan(float pan)
 		const int left = (int)lerp<float>(rangeHalfLimit/2.0f, 254.0f - rangeHalfLimit/2.0f, 1.0f - ((pan + 1.0f) / 2.0f));
 		Mix_SetPanning(getHandle(), left, 254 - left);
 	}
+
+#endif
+}
+
+void Sound::setLoop(bool loop)
+{
+	if (!m_bReady) return;
+
+#ifdef MCENGINE_FEATURE_SOUND
+
+	BASS_ChannelFlags(getHandle(), loop ? BASS_SAMPLE_LOOP : 0, BASS_SAMPLE_LOOP);
 
 #endif
 }
