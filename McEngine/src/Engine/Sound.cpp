@@ -64,6 +64,7 @@ Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan
 	m_mixChunkOrMixMusic = NULL;
 	m_wasapiSampleBuffer = NULL;
 	m_iWasapiSampleBufferSize = 0;
+	m_danglingWasapiStreams.reserve(32);
 }
 
 void Sound::init()
@@ -211,11 +212,26 @@ SOUNDHANDLE Sound::getHandle()
 		// HACKHACK: wasapi stream objects can't be reused
 		if (m_HCHANNEL == 0 || m_bIsOverlayable)
 		{
+			for (int i=0; i<m_danglingWasapiStreams.size(); i++)
+			{
+				if (BASS_ChannelIsActive(m_danglingWasapiStreams[i]) != BASS_ACTIVE_PLAYING)
+				{
+					BASS_StreamFree(m_danglingWasapiStreams[i]);
+
+					m_danglingWasapiStreams.erase(m_danglingWasapiStreams.begin() + i);
+					i--;
+				}
+			}
+
 			m_HCHANNEL = BASS_StreamCreateFile(TRUE, m_wasapiSampleBuffer, 0, m_iWasapiSampleBufferSize, BASS_SAMPLE_FLOAT | BASS_STREAM_DECODE | BASS_UNICODE | (m_bIsLooped ? BASS_SAMPLE_LOOP : 0));
 			if (m_HCHANNEL == 0)
 				debugLog("BASS_StreamCreateFile() error %i\n", BASS_ErrorGetCode());
+			else
+			{
+				BASS_ChannelSetAttribute(m_HCHANNEL, BASS_ATTRIB_VOL, m_fVolume);
 
-			BASS_ChannelSetAttribute(m_HCHANNEL, BASS_ATTRIB_VOL, m_fVolume);
+				m_danglingWasapiStreams.push_back(m_HCHANNEL);
+			}
 		}
 
 		return m_HCHANNEL;
@@ -291,8 +307,19 @@ void Sound::destroy()
 	}
 	else
 	{
+		if (m_HCHANNEL)
+			BASS_ChannelStop(m_HCHANNEL);
+		if (m_HSTREAMBACKUP)
+			BASS_SampleFree(m_HSTREAMBACKUP);
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
+
+		// NOTE: must guarantee that all channels are stopped before memory is deleted!
+		for (const SOUNDHANDLE danglingWasapiStream : m_danglingWasapiStreams)
+		{
+			BASS_StreamFree(danglingWasapiStream);
+		}
+		m_danglingWasapiStreams.clear();
 
 		if (m_wasapiSampleBuffer != NULL)
 		{
@@ -302,10 +329,6 @@ void Sound::destroy()
 
 #endif
 
-		if (m_HCHANNEL)
-			BASS_ChannelStop(m_HCHANNEL);
-		if (m_HSTREAMBACKUP)
-			BASS_SampleFree(m_HSTREAMBACKUP);
 	}
 
 	m_HSTREAM = 0;
