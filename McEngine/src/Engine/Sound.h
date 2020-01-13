@@ -94,6 +94,7 @@ private:
 	unsigned long m_iPrevPosition;
 	char *m_wasapiSampleBuffer;
 	unsigned long long m_iWasapiSampleBufferSize;
+	std::vector<SOUNDHANDLE> m_danglingWasapiStreams;
 };
 
 #endif
