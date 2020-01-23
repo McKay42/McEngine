@@ -441,9 +441,9 @@ void _help(UString args)
 		return;
 	}
 
-	std::vector<ConVar*> temp = convar->getConVarByLetter(args);
+	const std::vector<ConVar*> matches = convar->getConVarByLetter(args);
 
-	if (temp.size() < 1)
+	if (matches.size() < 1)
 	{
 		UString thelog = "ConVar \"";
 		thelog.append(args);
@@ -452,24 +452,36 @@ void _help(UString args)
 		return;
 	}
 
-	if (temp[0]->getHelpstring().length() < 1)
+	// use closest match
+	int index = 0;
+	for (int i=0; i<matches.size(); i++)
+	{
+		if (matches[i]->getName() == args)
+		{
+			index = i;
+			break;
+		}
+	}
+
+	const ConVar *match = matches[index];
+
+	if (match->getHelpstring().length() < 1)
 	{
 		UString thelog = "ConVar \"";
-		thelog.append(args);
+		thelog.append(match->getName());
 		thelog.append("\" does not have a helpstring.\n");
 		debugLog("%s", thelog.toUtf8());
 		return;
 	}
 
-	UString thelog = temp[0]->getName();
-
-	if (temp[0]->hasValue())
+	UString thelog = match->getName();
 	{
-		thelog.append(UString::format(" = %s ( def. \"%s\" )", temp[0]->getString().toUtf8(), temp[0]->getDefaultString().toUtf8()));
-	}
+		if (match->hasValue())
+			thelog.append(UString::format(" = %s ( def. \"%s\" )", match->getString().toUtf8(), match->getDefaultString().toUtf8()));
 
-	thelog.append(" - ");
-	thelog.append(temp[0]->getHelpstring());
+		thelog.append(" - ");
+		thelog.append(match->getHelpstring());
+	}
 
 	debugLog("%s", thelog.toUtf8());
 }
