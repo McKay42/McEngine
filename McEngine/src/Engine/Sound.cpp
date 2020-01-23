@@ -153,7 +153,7 @@ void Sound::initAsync()
 			}
 		}
 		else
-			debugLog("ERROR: Couldn't file.read on %s\n", m_sFilePath.toUtf8());
+			printf("Sound Error: Couldn't file.canRead() on file %s\n", m_sFilePath.toUtf8());
 
 #else
 
@@ -175,7 +175,7 @@ void Sound::initAsync()
 		m_HSTREAMBACKUP = m_HSTREAM; // needed for proper cleanup for FX HSAMPLES
 
 		if (m_HSTREAM == 0)
-			printf("Sound::initAsync() BASS_SampleLoad() error %i on %s !\n", BASS_ErrorGetCode(), m_sFilePath.toUtf8());
+			printf("Sound Error: BASS_SampleLoad() error %i on file %s\n", BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 	}
 
 	m_bAsyncReady = true;
@@ -188,7 +188,7 @@ void Sound::initAsync()
 		m_mixChunkOrMixMusic = Mix_LoadWAV(m_sFilePath.toUtf8());
 
 	if (m_mixChunkOrMixMusic == NULL)
-		printf(m_bStream ? "Sound::initAsync() Mix_LoadMUS() error %s on %s!\n" : "Sound::initAsync() Mix_LoadWAV() error %s on %s!\n", SDL_GetError(), m_sFilePath.toUtf8());
+		printf(m_bStream ? "Sound Error: Mix_LoadMUS() error %s on file %s\n" : "Sound Error: Mix_LoadWAV() error %s on file %s\n", SDL_GetError(), m_sFilePath.toUtf8());
 
 	m_bAsyncReady = (m_mixChunkOrMixMusic != NULL);
 
@@ -357,18 +357,21 @@ void Sound::setPosition(double percent)
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	QWORD length = BASS_ChannelGetLength(m_HCHANNELBACKUP, BASS_POS_BYTE);
+	const SOUNDHANDLE handle = (m_HCHANNELBACKUP != 0 ? m_HCHANNELBACKUP : getHandle());
 
-	// HACKHACK:
+	const QWORD length = BASS_ChannelGetLength(handle, BASS_POS_BYTE);
+
+	// HACKHACK: m_bisSpeedAndPitchHackEnabled
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
 	{
 		setPositionMS(0, true);
-		m_soundProcUserData->offset = (QWORD) ((double)(length)*percent);
+		m_soundProcUserData->offset = (QWORD)((double)(length)*percent);
 	}
 	else
 	{
-		if (!BASS_ChannelSetPosition(getHandle(), (QWORD) ((double)(length)*percent), BASS_POS_BYTE) && debug_snd.getBool())
-			debugLog("Sound::setPosition( %f ) BASS_ChannelSetPosition() Error %i on %s !\n", percent, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
+		const BOOL res = BASS_ChannelSetPosition(handle, (QWORD)((double)(length)*percent), BASS_POS_BYTE);
+		if (!res && debug_snd.getBool())
+			debugLog("Sound::setPosition( %f ) BASS_ChannelSetPosition() error %i on file %s\n", percent, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 	}
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER) && defined(SDL_MIXER_X)
@@ -416,18 +419,21 @@ void Sound::setPositionMS(unsigned long ms, bool internal)
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	SOUNDHANDLE handle = getHandle();
+	const SOUNDHANDLE handle = getHandle();
 
-	// HACKHACK:
+	const QWORD position = BASS_ChannelSeconds2Bytes(handle, ms/1000.0);
+
+	// HACKHACK: m_bisSpeedAndPitchHackEnabled
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
 	{
 		BASS_ChannelSetPosition(handle, 0, BASS_POS_BYTE);
-		m_soundProcUserData->offset = BASS_ChannelSeconds2Bytes(handle, ms/1000.0);
+		m_soundProcUserData->offset = position;
 	}
 	else
 	{
-		if (!BASS_ChannelSetPosition(handle, BASS_ChannelSeconds2Bytes(handle, ms/1000.0), BASS_POS_BYTE) && !internal && debug_snd.getBool())
-			debugLog("Sound::setPositionMS( %lu ) BASS_ChannelSetPosition() Error %i on %s !\n", ms, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
+		const BOOL res = BASS_ChannelSetPosition(handle, position, BASS_POS_BYTE);
+		if (!res && !internal && debug_snd.getBool())
+			debugLog("Sound::setPositionMS( %lu ) BASS_ChannelSetPosition() error %i on file %s\n", ms, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 	}
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
@@ -463,14 +469,15 @@ void Sound::setPositionMS(unsigned long ms, bool internal)
 
 void Sound::setVolume(float volume)
 {
-	if (!m_bReady || volume < 0.0f || volume > 1.0f) return;
+	if (!m_bReady) return;
 
 	m_fVolume = clamp<float>(volume, 0.0f, 1.0f);
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	if (!m_bIsOverlayable)
-		BASS_ChannelSetAttribute(getHandle(), BASS_ATTRIB_VOL, m_fVolume);
+	const SOUNDHANDLE handle = getHandle();
+
+	BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, m_fVolume);
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
 
@@ -491,8 +498,6 @@ void Sound::setSpeed(float speed)
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	speed = clamp<float>(speed, 0.05f, 50.0f);
-
 	/*
 	if (!m_bStream)
 	{
@@ -501,10 +506,14 @@ void Sound::setSpeed(float speed)
 	}
 	*/
 
-	float originalFreq = 44100.0f;
-	BASS_ChannelGetAttribute(m_HSTREAM, BASS_ATTRIB_FREQ, &originalFreq);
+	speed = clamp<float>(speed, 0.05f, 50.0f);
 
-	BASS_ChannelSetAttribute(m_HSTREAM, (snd_speed_compensate_pitch.getBool() ? BASS_ATTRIB_TEMPO : BASS_ATTRIB_TEMPO_FREQ), (snd_speed_compensate_pitch.getBool() ? (speed-1.0f)*100.0f : speed*originalFreq));
+	const SOUNDHANDLE handle = getHandle();
+
+	float originalFreq = 44100.0f;
+	BASS_ChannelGetAttribute(handle, BASS_ATTRIB_FREQ, &originalFreq);
+
+	BASS_ChannelSetAttribute(handle, (snd_speed_compensate_pitch.getBool() ? BASS_ATTRIB_TEMPO : BASS_ATTRIB_TEMPO_FREQ), (snd_speed_compensate_pitch.getBool() ? (speed-1.0f)*100.0f : speed*originalFreq));
 
 #endif
 }
@@ -515,8 +524,6 @@ void Sound::setPitch(float pitch)
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	pitch = clamp<float>(pitch, 0.0f, 2.0f);
-
 	/*
 	if (!m_bStream)
 	{
@@ -525,7 +532,11 @@ void Sound::setPitch(float pitch)
 	}
 	*/
 
-	BASS_ChannelSetAttribute(m_HSTREAM, BASS_ATTRIB_TEMPO_PITCH, (pitch-1.0f)*60.0f);
+	pitch = clamp<float>(pitch, 0.0f, 2.0f);
+
+	const SOUNDHANDLE handle = getHandle();
+
+	BASS_ChannelSetAttribute(handle, BASS_ATTRIB_TEMPO_PITCH, (pitch-1.0f)*60.0f);
 
 #endif
 }
@@ -536,12 +547,11 @@ void Sound::setFrequency(float frequency)
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	if (frequency > 99.0f)
-		frequency = clamp<float>(frequency, 100.0f, 100000.0f);
-	else
-		frequency = 0.0f;
+	frequency = (frequency > 99.0f ? clamp<float>(frequency, 100.0f, 100000.0f) : 0.0f);
 
-	BASS_ChannelSetAttribute(getHandle(), BASS_ATTRIB_FREQ, frequency);
+	const SOUNDHANDLE handle = getHandle();
+
+	BASS_ChannelSetAttribute(handle, BASS_ATTRIB_FREQ, frequency);
 
 #endif
 }
@@ -554,7 +564,9 @@ void Sound::setPan(float pan)
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	BASS_ChannelSetAttribute(getHandle(), BASS_ATTRIB_PAN, pan);
+	const SOUNDHANDLE handle = getHandle();
+
+	BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
 
@@ -574,7 +586,9 @@ void Sound::setLoop(bool loop)
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	BASS_ChannelFlags(getHandle(), loop ? BASS_SAMPLE_LOOP : 0, BASS_SAMPLE_LOOP);
+	const SOUNDHANDLE handle = getHandle();
+
+	BASS_ChannelFlags(handle, loop ? BASS_SAMPLE_LOOP : 0, BASS_SAMPLE_LOOP);
 
 #endif
 }
@@ -585,16 +599,16 @@ float Sound::getPosition()
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	QWORD length = BASS_ChannelGetLength(m_HCHANNELBACKUP, BASS_POS_BYTE);
-	QWORD position = BASS_ChannelGetPosition(getHandle(), BASS_POS_BYTE);
+	const SOUNDHANDLE handle = (m_HCHANNELBACKUP != 0 ? m_HCHANNELBACKUP : getHandle());
 
-	// HACKHACK:
+	const QWORD length = BASS_ChannelGetLength(handle, BASS_POS_BYTE);
+	const QWORD position = BASS_ChannelGetPosition(handle, BASS_POS_BYTE);
+
+	// HACKHACK: m_bisSpeedAndPitchHackEnabled
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
-	{
-		return (float) ((double)(position + m_soundProcUserData->offset) / (double)(length));
-	}
+		return (float)((double)(position + m_soundProcUserData->offset) / (double)(length));
 	else
-		return (float) ((double)(position) / (double)(length));
+		return (float)((double)(position) / (double)(length));
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER) && defined(SDL_MIXER_X)
 
@@ -622,17 +636,18 @@ unsigned long Sound::getPositionMS()
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	SOUNDHANDLE handle = getHandle();
-	QWORD position = BASS_ChannelGetPosition(handle, BASS_POS_BYTE);
+	const SOUNDHANDLE handle = getHandle();
 
-	double positionInSeconds = BASS_ChannelBytes2Seconds(handle, position);
-	double positionInMilliSeconds = positionInSeconds * 1000.0;
+	const QWORD position = BASS_ChannelGetPosition(handle, BASS_POS_BYTE);
 
-	// HACKHACK:
+	const double positionInSeconds = BASS_ChannelBytes2Seconds(handle, position);
+	const double positionInMilliSeconds = positionInSeconds * 1000.0;
+
+	// HACKHACK: m_bisSpeedAndPitchHackEnabled
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
 	{
-		double offsetInSeconds = BASS_ChannelBytes2Seconds(handle, m_soundProcUserData->offset);
-		double offsetInMilliSeconds = offsetInSeconds * 1000.0;
+		const double offsetInSeconds = BASS_ChannelBytes2Seconds(handle, m_soundProcUserData->offset);
+		const double offsetInMilliSeconds = offsetInSeconds * 1000.0;
 		return static_cast<unsigned long>(positionInMilliSeconds + offsetInMilliSeconds);
 	}
 	else
@@ -660,10 +675,12 @@ unsigned long Sound::getLengthMS()
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	SOUNDHANDLE handle = m_bStream ? m_HSTREAM : m_HCHANNELBACKUP;
-	QWORD length = BASS_ChannelGetLength(handle, BASS_POS_BYTE);
-	double lengthInSeconds = BASS_ChannelBytes2Seconds(handle, length);
-	double lengthInMilliSeconds = lengthInSeconds * 1000.0;
+	const SOUNDHANDLE handle = getHandle();
+
+	const QWORD length = BASS_ChannelGetLength(handle, BASS_POS_BYTE);
+
+	const double lengthInSeconds = BASS_ChannelBytes2Seconds(handle, length);
+	const double lengthInMilliSeconds = lengthInSeconds * 1000.0;
 
 	return static_cast<unsigned long>(lengthInMilliSeconds);
 
@@ -687,6 +704,8 @@ float Sound::getSpeed()
 {
 	if (!m_bReady) return 1.0f;
 
+#ifdef MCENGINE_FEATURE_SOUND
+
 	/*
 	if (!m_bStream)
 	{
@@ -695,12 +714,12 @@ float Sound::getSpeed()
 	}
 	*/
 
-#ifdef MCENGINE_FEATURE_SOUND
+	const SOUNDHANDLE handle = getHandle();
 
 	float speed = 0.0f;
-	BASS_ChannelGetAttribute(getHandle(), BASS_ATTRIB_TEMPO, &speed);
+	BASS_ChannelGetAttribute(handle, BASS_ATTRIB_TEMPO, &speed);
 
-	return (speed/100.0f)+1.0f;
+	return ((speed / 100.0f) + 1.0f);
 
 #else
 	return 1.0f;
@@ -711,6 +730,8 @@ float Sound::getPitch()
 {
 	if (!m_bReady) return 1.0f;
 
+#ifdef MCENGINE_FEATURE_SOUND
+
 	/*
 	if (!m_bStream)
 	{
@@ -719,12 +740,12 @@ float Sound::getPitch()
 	}
 	*/
 
-#ifdef MCENGINE_FEATURE_SOUND
+	const SOUNDHANDLE handle = getHandle();
 
 	float pitch = 0.0f;
-	BASS_ChannelGetAttribute(getHandle(), BASS_ATTRIB_TEMPO_PITCH, &pitch);
+	BASS_ChannelGetAttribute(handle, BASS_ATTRIB_TEMPO_PITCH, &pitch);
 
-	return (pitch/60.0f)+1.0f;
+	return ((pitch / 60.0f) + 1.0f);
 
 #else
 	return 1.0f;
@@ -737,8 +758,10 @@ float Sound::getFrequency()
 
 #ifdef MCENGINE_FEATURE_SOUND
 
+	const SOUNDHANDLE handle = getHandle();
+
 	float frequency = 44100.0f;
-	BASS_ChannelGetAttribute(getHandle(), BASS_ATTRIB_FREQ, &frequency);
+	BASS_ChannelGetAttribute(handle, BASS_ATTRIB_FREQ, &frequency);
 
 	return frequency;
 
@@ -753,15 +776,15 @@ bool Sound::isPlaying()
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-#ifdef MCENGINE_FEATURE_BASS_WASAPI
+	const SOUNDHANDLE handle = getHandle();
 
-	DWORD handle = getHandle();
+#ifdef MCENGINE_FEATURE_BASS_WASAPI
 
 	return BASS_ChannelIsActive(handle) == BASS_ACTIVE_PLAYING && ((!m_bStream && m_bIsOverlayable) || BASS_Mixer_ChannelGetMixer(handle) != 0);
 
 #else
 
-	return BASS_ChannelIsActive(getHandle()) == BASS_ACTIVE_PLAYING;
+	return BASS_ChannelIsActive(handle) == BASS_ACTIVE_PLAYING;
 
 #endif
 
@@ -778,7 +801,9 @@ bool Sound::isFinished()
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	return BASS_ChannelIsActive(getHandle()) == BASS_ACTIVE_STOPPED;
+	const SOUNDHANDLE handle = getHandle();
+
+	return BASS_ChannelIsActive(handle) == BASS_ACTIVE_STOPPED;
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
 
@@ -796,7 +821,8 @@ void Sound::refactor(UString newFilePath)
 
 void Sound::clear()
 {
-	//if (!(m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)) // HACKHACK: this function also shouldn't exist
+	// HACKHACK: this function also shouldn't exist
+	//if (!(m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable))
 	{
 		m_HCHANNEL = 0;
 		m_HCHANNELBACKUP = 0;
