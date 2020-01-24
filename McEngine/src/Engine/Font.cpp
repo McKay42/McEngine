@@ -19,6 +19,7 @@
 #include <ftoutln.h>
 #include <fttrigon.h>
 
+ConVar r_drawstring_max_string_length("r_drawstring_max_string_length", 65536, "maximum number of characters per call, sanity/memory buffer limit");
 ConVar r_debug_drawstring_unbind("r_debug_drawstring_unbind", false);
 
 const wchar_t McFont::UNKNOWN_CHAR;
@@ -162,24 +163,27 @@ void McFont::drawString(Graphics *g, UString text)
 {
 	if (!m_bReady) return;
 
+	const int maxNumGlyphs = r_drawstring_max_string_length.getInt();
+
 	// texture atlas rendering
 	m_textureAtlas->getAtlasImage()->bind();
 	{
-		m_worldMatrixBackup = g->getWorldMatrix();
-		g->pushTransform();
+		float advanceX = 0.0f;
+		static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS); // keep memory, avoid reallocations
+		vao.empty();
+
+		for (int i=0; i<text.length() && i<maxNumGlyphs; i++)
 		{
-			for (int i=0; i<text.length(); i++)
-			{
-				drawAtlasGlyph(g, text[i]);
-			}
+			addAtlasGlyphToVao(g, text[i], advanceX, &vao);
 		}
-		g->popTransform();
+
+		g->drawVAO(&vao);
 	}
 	if (r_debug_drawstring_unbind.getBool())
 		m_textureAtlas->getAtlasImage()->unbind();
 }
 
-void McFont::drawAtlasGlyph(Graphics *g, wchar_t ch)
+void McFont::addAtlasGlyphToVao(Graphics *g, wchar_t ch, float &advanceX, VertexArrayObject *vao)
 {
 	// TODO: dynamic glyph loading, finish this
 	/*
@@ -192,47 +196,34 @@ void McFont::drawAtlasGlyph(Graphics *g, wchar_t ch)
 
 	const GLYPH_METRICS &gm = getGlyphMetrics(ch);
 
-	g->pushTransform();
-	{
-		// apply font offsets and flip horizontally
-		Matrix4 glyphMatrix;
-		glyphMatrix.translate(gm.left, (gm.top - gm.rows), 0);
-		glyphMatrix.scale(1.0f, -1.0f, 1.0f);
+	// apply glyph offsets and flip horizontally
+	const float x = gm.left + advanceX;
+	const float y = -(gm.top - gm.rows);
 
-		// this and the last few lines in this function are needed to keep outside transforms consistent
-		// else we would e.g. scale every glyph by its center, instead of by the whole string
-		Matrix4 finalMat = m_worldMatrixBackup * glyphMatrix;
-		g->setWorldMatrix(finalMat);
+	const float sx = gm.width;
+	const float sy = -gm.rows;
 
-		const float x = (float)gm.uvPixelsX / (float)m_textureAtlas->getAtlasImage()->getWidth();
-		const float y = (float)gm.uvPixelsY / (float)m_textureAtlas->getAtlasImage()->getHeight();
+	const float texX = ((float)gm.uvPixelsX / (float)m_textureAtlas->getAtlasImage()->getWidth());
+	const float texY = ((float)gm.uvPixelsY / (float)m_textureAtlas->getAtlasImage()->getHeight());
 
-		const float sx = (float)gm.sizePixelsX / (float)m_textureAtlas->getAtlasImage()->getWidth();
-		const float sy = (float)gm.sizePixelsY / (float)m_textureAtlas->getAtlasImage()->getHeight();
+	const float texSizeX = (float)gm.sizePixelsX / (float)m_textureAtlas->getAtlasImage()->getWidth();
+	const float texSizeY = (float)gm.sizePixelsY / (float)m_textureAtlas->getAtlasImage()->getHeight();
 
-		// draw it
-		VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+	// add it
+	vao->addVertex(x, y + sy);
+	vao->addTexcoord(texX, texY);
 
-		vao.addTexcoord(x, y);
-		vao.addVertex(0, gm.rows);
+	vao->addVertex(x, y);
+	vao->addTexcoord(texX, texY + texSizeY);
 
-		vao.addTexcoord(x, y + sy);
-		vao.addVertex(0, 0);
+	vao->addVertex(x + sx, y);
+	vao->addTexcoord(texX + texSizeX, texY + texSizeY);
 
-		vao.addTexcoord(x + sx, y + sy);
-		vao.addVertex(gm.width,0);
+	vao->addVertex(x + sx, y + sy);
+	vao->addTexcoord(texX + texSizeX, texY);
 
-		vao.addTexcoord(x + sx, y);
-		vao.addVertex(gm.width,gm.rows);
-
-		g->drawVAO(&vao);
-	}
-	g->popTransform();
-
-	// go to possible next glyph
-	Matrix4 translateWorld;
-	translateWorld.translate(gm.advance_x, 0, 0);
-	m_worldMatrixBackup = m_worldMatrixBackup * translateWorld;
+	// move to next glyph
+	advanceX += gm.advance_x;
 }
 
 void McFont::drawTextureAtlas(Graphics *g)
@@ -299,7 +290,8 @@ void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, T
 	// load current glyph
 	if (FT_Load_Glyph(face, FT_Get_Char_Index(face, ch), antialiasing ? FT_LOAD_TARGET_NORMAL : FT_LOAD_TARGET_MONO))
 	{
-		engine->showMessageError("Font Error", "FT_Load_Glyph() failed!");
+		//engine->showMessageError("Font Error", "FT_Load_Glyph() failed!");
+		debugLog("Font Error: FT_Load_Glyph() failed!\n");
 		return;
 	}
 
@@ -307,7 +299,8 @@ void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, T
     FT_Glyph glyph;
     if (FT_Get_Glyph(face->glyph, &glyph))
     {
-    	engine->showMessageError("Font Error", "FT_Get_Glyph() failed!");
+    	//engine->showMessageError("Font Error", "FT_Get_Glyph() failed!");
+    	debugLog("Font Error: FT_Get_Glyph() failed!\n");
     	return;
     }
 

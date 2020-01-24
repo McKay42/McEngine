@@ -259,7 +259,7 @@ bool Image::loadRawImage()
 	// error checking
 	if (m_rawImage.size() < m_iWidth*m_iHeight*m_iNumChannels) // sanity check
 	{
-		printf("Image Error: Loaded image has only %i/%i bytes in file %s\n", m_rawImage.size(), m_iWidth*m_iHeight*m_iNumChannels, m_sFilePath.toUtf8());
+		printf("Image Error: Loaded image has only %lu/%i bytes in file %s\n", (unsigned long)m_rawImage.size(), m_iWidth*m_iHeight*m_iNumChannels, m_sFilePath.toUtf8());
 		//engine->showMessageError("Image Error", UString::format("Loaded image has only %i/%i bytes in file %s", m_rawImage.size(), m_iWidth*m_iHeight*m_iNumChannels, m_sFilePath.toUtf8()));
 		return false;
 	}

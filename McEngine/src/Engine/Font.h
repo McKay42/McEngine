@@ -12,6 +12,7 @@
 
 class Image;
 class TextureAtlas;
+class VertexArrayObject;
 
 class McFont : public Resource
 {
@@ -69,7 +70,7 @@ protected:
 
 	bool addGlyph(wchar_t ch);
 
-	void drawAtlasGlyph(Graphics *g, wchar_t ch);
+	void addAtlasGlyphToVao(Graphics *g, wchar_t ch, float &advanceX, VertexArrayObject *vao);
 
 	int m_iFontSize;
 	bool m_bAntialiasing;
@@ -85,9 +86,6 @@ protected:
 	float m_fHeight;
 
 	GLYPH_METRICS m_errorGlyph;
-
-	// rendering
-	Matrix4 m_worldMatrixBackup;
 };
 
 #endif

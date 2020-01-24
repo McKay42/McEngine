@@ -35,8 +35,8 @@ public:
 	void setType(Graphics::PRIMITIVE primitive);
 	void setDrawPercent(float fromPercent = 0.0f, float toPercent = 1.0f, int nearestMultiple = 0);
 
-	inline Graphics::PRIMITIVE getPrimitive() {return m_primitive;}
-	inline Graphics::USAGE_TYPE getUsage() {return m_usage;}
+	inline Graphics::PRIMITIVE getPrimitive() const {return m_primitive;}
+	inline Graphics::USAGE_TYPE getUsage() const {return m_usage;}
 
 	const std::vector<Vector3> &getVertices() const {return m_vertices;}
 	const std::vector<std::vector<Vector2>> &getTexcoords() const {return m_texcoords;}

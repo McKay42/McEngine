@@ -145,7 +145,8 @@ void OpenGLLegacyInterface::setColor(Color color)
 	if (color == m_color) return;
 
 	m_color = color;
-	glColor4f(((unsigned char)(m_color >> 16))  / 255.0f, ((unsigned char)(m_color >> 8)) / 255.0f, ((unsigned char)(m_color >> 0)) / 255.0f, ((unsigned char)(m_color >> 24)) / 255.0f);
+	//glColor4f(((unsigned char)(m_color >> 16))  / 255.0f, ((unsigned char)(m_color >> 8)) / 255.0f, ((unsigned char)(m_color >> 0)) / 255.0f, ((unsigned char)(m_color >> 24)) / 255.0f);
+	glColor4ub((unsigned char)(m_color >> 16), (unsigned char)(m_color >> 8), (unsigned char)(m_color >> 0), (unsigned char)(m_color >> 24));
 }
 
 void OpenGLLegacyInterface::setAlpha(float alpha)
@@ -198,25 +199,52 @@ void OpenGLLegacyInterface::drawLine(Vector2 pos1, Vector2 pos2)
 
 void OpenGLLegacyInterface::drawRect(int x, int y, int width, int height)
 {
-	drawLine((x + 1), y, (x + width), y);
-	drawLine(x, y, x, (y + height));
-	drawLine(x, (y + height), (x + width + 1), (y + height));
-	drawLine((x + width), y, (x + width), (y + height));
+	updateTransform();
+
+	glDisable(GL_TEXTURE_2D);
+
+	glBegin(GL_LINES);
+	{
+		glVertex2f((x + 1) + 0.5f, y + 0.5f);
+		glVertex2f((x + width) + 0.5f, y + 0.5f);
+
+		glVertex2f(x + 0.5f, y + 0.5f);
+		glVertex2f(x + 0.5f, (y + height) + 0.5f);
+
+		glVertex2f(x + 0.5f, (y + height) + 0.5f);
+		glVertex2f((x + width + 1) + 0.5f, (y + height) + 0.5f);
+
+		glVertex2f((x + width) + 0.5f, y + 0.5f);
+		glVertex2f((x + width) + 0.5f, (y + height) + 0.5f);
+	}
+	glEnd();
 }
 
 void OpenGLLegacyInterface::drawRect(int x, int y, int width, int height, Color top, Color right, Color bottom, Color left)
 {
-	setColor(top);
-	drawLine((x + 1), y, (x + width), y);
+	updateTransform();
 
-	setColor(left);
-	drawLine(x, y, x, (y + height));
+	glDisable(GL_TEXTURE_2D);
 
-	setColor(bottom);
-	drawLine(x, (y + height), (x + width + 1), (y + height));
+	glBegin(GL_LINES);
+	{
+		setColor(top);
+		glVertex2f((x + 1) + 0.5f, y + 0.5f);
+		glVertex2f((x + width) + 0.5f, y + 0.5f);
 
-	setColor(right);
-	drawLine((x + width), y, (x + width), (y + height));
+		setColor(left);
+		glVertex2f(x + 0.5f, y + 0.5f);
+		glVertex2f(x + 0.5f, (y + height) + 0.5f);
+
+		setColor(bottom);
+		glVertex2f(x + 0.5f, (y + height) + 0.5f);
+		glVertex2f((x + width + 1) + 0.5f, (y + height) + 0.5f);
+
+		setColor(right);
+		glVertex2f((x + width) + 0.5f, y + 0.5f);
+		glVertex2f((x + width) + 0.5f, (y + height) + 0.5f);
+	}
+	glEnd();
 }
 
 void OpenGLLegacyInterface::fillRect(int x, int y, int width, int height)
@@ -237,11 +265,11 @@ void OpenGLLegacyInterface::fillRect(int x, int y, int width, int height)
 
 void OpenGLLegacyInterface::fillRoundedRect(int x, int y, int width, int height, int radius)
 {
-	float xOffset= x + radius;
+	float xOffset = x + radius;
 	float yOffset = y + radius;
 
 	double i = 0;
-	double factor = 0.05;
+	const double factor = 0.05;
 
 	updateTransform();
 
@@ -249,27 +277,31 @@ void OpenGLLegacyInterface::fillRoundedRect(int x, int y, int width, int height,
 
 	glBegin(GL_POLYGON);
 	{
-		for(i=PI; i<=(1.5*PI); i+=factor)
+		// top left
+		for (i=PI; i<=(1.5*PI); i+=factor)
 		{
-			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // top left
+			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset);
 		}
 
+		// top right
 		xOffset = x + width - radius;
-		for(i=(1.5*PI); i<=(2*PI); i+=factor)
+		for (i=(1.5*PI); i<=(2*PI); i+=factor)
 		{
-			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // top right
+			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset);
 		}
 
+		// bottom right
 		yOffset = y + height - radius;
-		for(i=0; i<=(0.5*PI); i+=factor)
+		for (i=0; i<=(0.5*PI); i+=factor)
 		{
-			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // bottom right
+			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset);
 		}
 
+		// bottom left
 		xOffset = x + radius;
-		for(i=(0.5*PI); i<=PI; i+=factor)
+		for (i=(0.5*PI); i<=PI; i+=factor)
 		{
-			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // bottom left
+			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset);
 		}
 	}
 	glEnd();
@@ -304,19 +336,15 @@ void OpenGLLegacyInterface::drawQuad(int x, int y, int width, int height)
 
 	glBegin(GL_QUADS);
 	{
-		setColor(m_color);
 		glTexCoord2f(0, 0);
 		glVertex2f(x, y);
 
-		setColor(m_color);
 		glTexCoord2f(0, 1);
 		glVertex2f(x, (y + height));
 
-		setColor(m_color);
 		glTexCoord2f(1, 1);
 		glVertex2f((x + width), (y + height));
 
-		setColor(m_color);
 		glTexCoord2f(1, 0);
 		glVertex2f((x + width), y);
 	}
