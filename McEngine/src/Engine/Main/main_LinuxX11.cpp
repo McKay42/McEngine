@@ -36,19 +36,19 @@
 #define WINDOW_WIDTH_MIN 100
 #define WINDOW_HEIGHT_MIN 100
 
-Engine *g_engine = NULL;
-LinuxX11Environment *g_environment = NULL;
+extern Engine *g_engine;
+extern LinuxX11Environment *g_environment;
 
-bool g_bRunning = true;
+extern bool g_bRunning;
 bool g_bUpdate = true;
 bool g_bDraw = true;
 bool g_bDrawing = false;
 
 bool g_bHasFocus = false; // for fps_max_background
 
-ConVar fps_max("fps_max", 60);
-ConVar fps_max_background("fps_max_background", 30);
-ConVar fps_unlimited("fps_unlimited", false);
+extern ConVar fps_max;
+extern ConVar fps_max_background;
+extern ConVar fps_unlimited;
 
 Display                 *dpy;
 Window                  root;
@@ -272,12 +272,6 @@ void WndProc(int type, int xcookieType, int xcookieExtension)
 int mainX11(int argc, char *argv[], Display *display)
 {
 	dpy = display;
-	if (dpy == NULL)
-	{
-		printf("FATAL ERROR: XOpenDisplay() can't connect to X server!\n\n");
-        exit(1);
-	}
-
 
 	// before we do anything, check if XInput is available (for raw mouse input, smooth horizontal & vertical mouse wheel etc.)
 	int xi2firstEvent, xi2error;

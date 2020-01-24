@@ -26,8 +26,8 @@ public:
 
 	// system
 	OS getOS();
-	void shutdown() = 0;
-	void restart() = 0;
+	virtual void shutdown() = 0;
+	virtual void restart() = 0;
 	void sleep(unsigned int us);
 	UString getExecutablePath();
 	void openURLInDefaultBrowser(UString url);
