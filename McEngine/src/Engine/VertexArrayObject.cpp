@@ -71,12 +71,14 @@ void VertexArrayObject::empty()
 
 void VertexArrayObject::addVertex(Vector2 v)
 {
-	addVertex(Vector3(v.x, v.y, 0));
+	m_vertices.push_back(Vector3(v.x, v.y, 0));
+	m_iNumVertices = m_vertices.size();
 }
 
 void VertexArrayObject::addVertex(float x, float y, float z)
 {
-	addVertex(Vector3(x,y,z));
+	m_vertices.push_back(Vector3(x,y,z));
+	m_iNumVertices = m_vertices.size();
 }
 
 void VertexArrayObject::addVertex(Vector3 v)
@@ -126,7 +128,7 @@ void VertexArrayObject::setDrawPercent(float fromPercent, float toPercent, int n
 
 void VertexArrayObject::updateTexcoordArraySize(unsigned int textureUnit)
 {
-	while (m_texcoords.size() < textureUnit+1)
+	while (m_texcoords.size() < (textureUnit + 1))
 	{
 		std::vector<Vector2> emptyVector;
 		m_texcoords.push_back(emptyVector);
