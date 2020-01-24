@@ -475,9 +475,12 @@ void Sound::setVolume(float volume)
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	const SOUNDHANDLE handle = getHandle();
+	if (!m_bIsOverlayable)
+	{
+		const SOUNDHANDLE handle = getHandle();
 
-	BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, m_fVolume);
+		BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, m_fVolume);
+	}
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
 
