@@ -20,6 +20,7 @@
 ConVar ui_scrollview_resistance("ui_scrollview_resistance", 5.0f, "how many pixels you have to pull before you start scrolling");
 ConVar ui_scrollview_scrollbarwidth("ui_scrollview_scrollbarwidth", 15.0f);
 ConVar ui_scrollview_kinetic_energy_multiplier("ui_scrollview_kinetic_energy_multiplier", 24.0f, "afterscroll delta multiplier");
+ConVar ui_scrollview_kinetic_approach_time("ui_scrollview_kinetic_approach_time", 0.05f, "approach target afterscroll delta over this duration");
 ConVar ui_scrollview_mousewheel_multiplier("ui_scrollview_mousewheel_multiplier", 3.5f);
 
 CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float ySize, UString name) : CBaseUIElement(xPos, yPos, xSize, ySize, name)
@@ -57,6 +58,7 @@ CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float 
 
 CBaseUIScrollView::~CBaseUIScrollView()
 {
+	clear();
 	SAFE_DELETE(m_container);
 }
 
@@ -132,8 +134,11 @@ void CBaseUIScrollView::update()
 		const Vector2 deltaToAdd = (engine->getMouse()->getPos() - m_vMouseBackup2);
 		//debugLog("+ (%f, %f)\n", deltaToAdd.x, deltaToAdd.y);
 
-		m_vKineticAverage += deltaToAdd;
-		m_vKineticAverage /= 2.0f;
+		//m_vKineticAverage += deltaToAdd;
+		//m_vKineticAverage /= 2.0f;
+		anim->moveLinear(&m_vKineticAverage.x, deltaToAdd.x, ui_scrollview_kinetic_approach_time.getFloat(), true);
+		anim->moveLinear(&m_vKineticAverage.y, deltaToAdd.y, ui_scrollview_kinetic_approach_time.getFloat(), true);
+
 		m_vMouseBackup2 = engine->getMouse()->getPos();
 	}
 
@@ -204,7 +209,7 @@ void CBaseUIScrollView::update()
 
 		// calculate remaining kinetic energy
 		if (!m_bScrollbarScrolling)
-			m_vVelocity = ui_scrollview_kinetic_energy_multiplier.getFloat() * delta * (engine->getFrameTime() != 0.0f ? 1.0f/engine->getFrameTime() : 60.0f)/60.0f + m_vScrollPos;
+			m_vVelocity = ui_scrollview_kinetic_energy_multiplier.getFloat() * delta * (engine->getFrameTime() != 0.0 ? 1.0/engine->getFrameTime() : 60.0)/60.0 + m_vScrollPos;
 		else
 			m_vVelocity.x = m_vVelocity.y = 0;
 
@@ -344,6 +349,9 @@ void CBaseUIScrollView::onChar(KeyboardEvent &e)
 void CBaseUIScrollView::clear()
 {
 	m_container->clear();
+
+	anim->deleteExistingAnimation(&m_vKineticAverage.x);
+	anim->deleteExistingAnimation(&m_vKineticAverage.y);
 
 	anim->deleteExistingAnimation(&m_vScrollPos.y);
 	anim->deleteExistingAnimation(&m_vScrollPos.x);
@@ -607,6 +615,8 @@ void CBaseUIScrollView::onMouseDownOutside()
 void CBaseUIScrollView::onMouseDownInside()
 {
 	m_bBusy = true;
+
+	m_vMouseBackup2 = engine->getMouse()->getPos(); // to avoid spastic movement at scroll start
 }
 
 void CBaseUIScrollView::onMouseUpInside()
@@ -662,6 +672,7 @@ void CBaseUIScrollView::onResized()
 void CBaseUIScrollView::onMoved()
 {
 	m_container->setPos(m_vPos + m_vScrollPos);
+
 	m_vMouseBackup2 = engine->getMouse()->getPos(); // to avoid spastic movement after we are moved
 
 	updateScrollbars();
