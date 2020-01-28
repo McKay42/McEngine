@@ -20,7 +20,7 @@
 ConVar ui_scrollview_resistance("ui_scrollview_resistance", 5.0f, "how many pixels you have to pull before you start scrolling");
 ConVar ui_scrollview_scrollbarwidth("ui_scrollview_scrollbarwidth", 15.0f);
 ConVar ui_scrollview_kinetic_energy_multiplier("ui_scrollview_kinetic_energy_multiplier", 24.0f, "afterscroll delta multiplier");
-ConVar ui_scrollview_kinetic_approach_time("ui_scrollview_kinetic_approach_time", 0.05f, "approach target afterscroll delta over this duration");
+ConVar ui_scrollview_kinetic_approach_time("ui_scrollview_kinetic_approach_time", 0.075f, "approach target afterscroll delta over this duration");
 ConVar ui_scrollview_mousewheel_multiplier("ui_scrollview_mousewheel_multiplier", 3.5f);
 
 CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float ySize, UString name) : CBaseUIElement(xPos, yPos, xSize, ySize, name)
@@ -51,7 +51,7 @@ CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float 
 	m_bBlockScrolling = false;
 
 	m_bScrollResistanceCheck = false;
-	m_iScrollResistance = ui_scrollview_resistance.getInt();
+	m_iScrollResistance = ui_scrollview_resistance.getInt(); // TODO: dpi handling
 
 	m_container = new CBaseUIContainer(xPos, yPos, xSize, ySize, name);
 }
@@ -136,8 +136,8 @@ void CBaseUIScrollView::update()
 
 		//m_vKineticAverage += deltaToAdd;
 		//m_vKineticAverage /= 2.0f;
-		anim->moveLinear(&m_vKineticAverage.x, deltaToAdd.x, ui_scrollview_kinetic_approach_time.getFloat(), true);
-		anim->moveLinear(&m_vKineticAverage.y, deltaToAdd.y, ui_scrollview_kinetic_approach_time.getFloat(), true);
+		anim->moveQuadOut(&m_vKineticAverage.x, deltaToAdd.x, ui_scrollview_kinetic_approach_time.getFloat(), true);
+		anim->moveQuadOut(&m_vKineticAverage.y, deltaToAdd.y, ui_scrollview_kinetic_approach_time.getFloat(), true);
 
 		m_vMouseBackup2 = engine->getMouse()->getPos();
 	}
@@ -159,8 +159,6 @@ void CBaseUIScrollView::update()
 		// if we are above our resistance, try to steal the focus and enable scrolling for us
 		if (m_container->isActive() && diff > m_iScrollResistance && !m_container->isBusy())
 			m_container->stealFocus();
-		//else
-		//	m_vKineticAverage /= 1.1f; // HACKHACK: quickfix
 
 		// handle scrollbar scrolling start
 		if (!m_container->isBusy())
