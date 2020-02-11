@@ -121,7 +121,7 @@ SoundEngine::SoundEngine()
 	// apply default global settings
 	BASS_SetConfig(BASS_CONFIG_BUFFER, 100);
 	BASS_SetConfig(BASS_CONFIG_NET_BUFFER, 500);
-	BASS_SetConfig(BASS_CONFIG_MP3_NOITUNESTAG, 1); // NOTE: only required by osu atm (all beatmaps timed to non-iTunesSMPB offsets on old dlls pre 2015)
+	BASS_SetConfig(BASS_CONFIG_MP3_OLDGAPS, 1); // NOTE: only required by osu atm (all beatmaps timed to non-iTunesSMPB + 529 sample deletion offsets on old dlls pre 2015)
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
