@@ -366,8 +366,10 @@ void Sound::setPosition(double percent)
 	const double lengthInSeconds = BASS_ChannelBytes2Seconds(handle, length);
 
 	// NOTE: abused for play interp
-	if (percent > 0.0 && lengthInSeconds * percent < snd_play_interp_duration.getFloat())
+	if (lengthInSeconds * percent < snd_play_interp_duration.getFloat())
 		m_fLastPlayTime = engine->getTime() - lengthInSeconds * percent;
+	else
+		m_fLastPlayTime = 0.0;
 
 	// HACKHACK: m_bisSpeedAndPitchHackEnabled
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
@@ -432,8 +434,10 @@ void Sound::setPositionMS(unsigned long ms, bool internal)
 	const QWORD position = BASS_ChannelSeconds2Bytes(handle, ms/1000.0);
 
 	// NOTE: abused for play interp
-	if (ms > 0 && (double)ms / 1000.0 < snd_play_interp_duration.getFloat())
-		m_fLastPlayTime = engine->getTime() - (double)ms / 1000.0;
+	if ((double)ms / 1000.0 < snd_play_interp_duration.getFloat())
+		m_fLastPlayTime = engine->getTime() - ((double)ms / 1000.0);
+	else
+		m_fLastPlayTime = 0.0;
 
 	// HACKHACK: m_bisSpeedAndPitchHackEnabled
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
@@ -675,7 +679,7 @@ unsigned long Sound::getPositionMS()
 	// special case: a freshly started channel position jitters, lerp with engine time over a set duration to smooth things over
 	const double interpDuration = snd_play_interp_duration.getFloat();
 	const unsigned long interpDurationMS = interpDuration * 1000;
-	if (interpDuration > 0.0 && positionMS < interpDurationMS*2)
+	if (interpDuration > 0.0 && positionMS < interpDurationMS)
 	{
 		const float speedMultiplier = getSpeed();
 		const double delta = (engine->getTime() - m_fLastPlayTime) * speedMultiplier;
