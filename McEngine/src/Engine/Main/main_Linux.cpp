@@ -22,6 +22,7 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/XI2.h>
 #include <X11/extensions/XInput2.h>
+#include <X11/Xatom.h>
 
 #include "OpenGLHeaders.h"
 
@@ -278,7 +279,6 @@ int main(int argc, char *argv[])
         exit(1);
 	}
 
-
 	// before we do anything, check if XInput is available (for raw mouse input, smooth horizontal & vertical mouse wheel etc.)
 	int xi2firstEvent, xi2error;
 	if (!XQueryExtension(dpy, "XInputExtension", &xi2opcode, &xi2firstEvent, &xi2error))
@@ -294,7 +294,6 @@ int main(int argc, char *argv[])
 		printf("FATAL ERROR: XIQueryVersion() XInput2 not available, server supports only %d.%d!\n\n", ximajor, ximinor);
 		exit(1);
 	}
-
 
 	root = DefaultRootWindow(dpy);
 
@@ -325,6 +324,11 @@ int main(int argc, char *argv[])
 	Atom wm_delete_window = XInternAtom(dpy, "WM_DELETE_WINDOW", false);
 	XSetWMProtocols(dpy, win, &wm_delete_window, 1);
 
+	// hint that compositing should be disabled (disable forced vsync)
+	const unsigned long shouldBypassCompositor = 1;
+	Atom _net_wm_bypass_compositor = XInternAtom(dpy, "_NET_WM_BYPASS_COMPOSITOR", false);
+	XChangeProperty(dpy, win, _net_wm_bypass_compositor, XA_CARDINAL, 32, PropModeReplace, (unsigned char*)&shouldBypassCompositor, 1);
+
 	// make window visible & set title
 	XMapWindow(dpy, win);
 	XStoreName(dpy, win, WINDOW_TITLE);
@@ -348,7 +352,6 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-
 	// set XInput event masks
 	XIEventMask masks[1];
 	unsigned char mask[(XI_LASTEVENT + 7)/8];
@@ -368,7 +371,6 @@ int main(int argc, char *argv[])
 	// and select it on the window
 	XISelectEvents(dpy, DefaultRootWindow(dpy), masks, 1);
 	XFlush(dpy);
-
 
 	// get keyboard focus
 	XSetICFocus(ic);
