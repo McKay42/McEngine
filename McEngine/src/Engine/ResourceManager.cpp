@@ -10,20 +10,9 @@
 #include "Engine.h"
 #include "ConVar.h"
 #include "Timer.h"
+#include "Thread.h"
 
 #ifdef MCENGINE_FEATURE_MULTITHREADING
-
-#ifdef MCENGINE_FEATURE_PTHREADS
-
-#include <pthread.h>
-
-#endif
-
-#ifdef __SWITCH__
-
-#include <switch.h>
-
-#endif
 
 #include <mutex>
 #include "WinMinGW.Mutex.h"
@@ -69,15 +58,7 @@ public:
 #ifdef MCENGINE_FEATURE_MULTITHREADING
 
 	// self
-#ifdef MCENGINE_FEATURE_PTHREADS
-
-	pthread_t thread;
-
-#elif defined(__SWITCH__)
-
-	HorizonThread thread;
-
-#endif
+	McThread *thread;
 
 	// wait lock
 	std::mutex loadingMutex;
@@ -104,8 +85,15 @@ ResourceManager::ResourceManager()
 
 	m_loadingWork.reserve(32);
 
+	// OS specific engine settings/overrides
+	if (env->getOS() == Environment::OS::OS_HORIZON)
+	{
+		rm_numthreads.setValue(1.0f);
+		rm_numthreads.setDefaultFloat(1.0f);
+	}
+
 	// create loader threads
-#ifdef MCENGINE_FEATURE_PTHREADS
+#ifdef MCENGINE_FEATURE_MULTITHREADING
 
 	for (int i=0; i<rm_numthreads.getInt(); i++)
 	{
@@ -116,35 +104,15 @@ ResourceManager::ResourceManager()
 		loaderThread->running = true;
 		loaderThread->loadingWork = &m_loadingWork;
 
-		const int ret = pthread_create(&loaderThread->thread, NULL, _resourceLoaderThread, (void*)loaderThread);
-		if (ret != 0)
+		loaderThread->thread = new McThread(_resourceLoaderThread, (void*)loaderThread);
+		if (!loaderThread->thread->isReady())
 		{
-			engine->showMessageError("ResourceManager Error", UString::format("pthread_create() returned %i!", ret));
-			delete loaderThread;
+			engine->showMessageError("ResourceManager Error", "Couldn't create thread!");
+			SAFE_DELETE(loaderThread->thread);
+			SAFE_DELETE(loaderThread);
 		}
 		else
 			m_threads.push_back(loaderThread);
-	}
-
-#elif defined(__SWITCH__)
-
-	ResourceManagerLoaderThread *loaderThread = new ResourceManagerLoaderThread();
-
-	loaderThread->loadingMutex.lock(); // stop loader thread immediately, wait for work
-	loaderThread->threadIndex = 0;
-	loaderThread->running = true;
-	loaderThread->loadingWork = &m_loadingWork;
-
-	Result rc = threadCreate((Thread*)&(loaderThread->thread), _resourceLoaderThreadVoid, (void*)loaderThread, NULL, 0x1000000, 0x2B, 2);
-	if (R_FAILED(rc))
-	{
-		engine->showMessageError("ResourceManager Error", UString::format("threadCreate() returned %i!", (int)rc));
-		delete loaderThread;
-	}
-	else
-	{
-		threadStart((Thread*)&(loaderThread->thread));
-		m_threads.push_back(loaderThread);
 	}
 
 #endif
@@ -181,24 +149,12 @@ ResourceManager::~ResourceManager()
 			m_threads[i]->loadingMutex.unlock();
 	}
 
-#endif
-
 	// wait for threads to stop
-#ifdef MCENGINE_FEATURE_PTHREADS
-
 	for (int i=0; i<m_threads.size(); i++)
 	{
-		pthread_join(m_threads[i]->thread, NULL);
+		delete m_threads[i]->thread;
 	}
-	m_threads.clear();
 
-#elif defined(__SWITCH__)
-
-	for (int i=0; i<m_threads.size(); i++)
-	{
-		threadWaitForExit((Thread*)&(m_threads[i]->thread));
-		threadClose((Thread*)&(m_threads[i]->thread));
-	}
 	m_threads.clear();
 
 #endif
@@ -779,44 +735,53 @@ void ResourceManager::loadResource(Resource *res, bool load)
 	{
 #if defined(MCENGINE_FEATURE_MULTITHREADING)
 
-		g_resourceManagerMutex.lock();
+		if (rm_numthreads.getInt() > 0)
 		{
-			// TODO: prefer thread which currently doesn't have anything to do (i.e. allow n-1 "permanent" background tasks without blocking)
-
-			// split work evenly/linearly across all threads
-			static size_t threadIndexCounter = 0;
-			const size_t threadIndex = threadIndexCounter;
-
-			// add work to loading thread
-			LOADING_WORK work;
-
-			work.resource = MobileAtomicResource(res);
-			work.threadIndex = MobileAtomicSizeT(threadIndex);
-			work.done = MobileAtomicBool(false);
-
-			threadIndexCounter = (threadIndexCounter + 1) % (std::min(m_threads.size(), (size_t)std::max(rm_numthreads.getInt(), 1)));
-
-			g_resourceManagerLoadingWorkMutex.lock();
+			g_resourceManagerMutex.lock();
 			{
-				m_loadingWork.push_back(work);
+				// TODO: prefer thread which currently doesn't have anything to do (i.e. allow n-1 "permanent" background tasks without blocking)
 
-				int numLoadingWorkForThreadIndex = 0;
-				for (int i=0; i<m_loadingWork.size(); i++)
-				{
-					if (m_loadingWork[i].threadIndex.atomic.load() == threadIndex)
-						numLoadingWorkForThreadIndex++;
-				}
+				// split work evenly/linearly across all threads
+				static size_t threadIndexCounter = 0;
+				const size_t threadIndex = threadIndexCounter;
 
-				// let the loading thread run
-				if (numLoadingWorkForThreadIndex == 1) // only necessary if thread is waiting (otherwise it will already be picked up by the next iteration)
+				// add work to loading thread
+				LOADING_WORK work;
+
+				work.resource = MobileAtomicResource(res);
+				work.threadIndex = MobileAtomicSizeT(threadIndex);
+				work.done = MobileAtomicBool(false);
+
+				threadIndexCounter = (threadIndexCounter + 1) % (std::min(m_threads.size(), (size_t)std::max(rm_numthreads.getInt(), 1)));
+
+				g_resourceManagerLoadingWorkMutex.lock();
 				{
-					if (m_threads.size() > 0)
-						m_threads[threadIndex]->loadingMutex.unlock();
+					m_loadingWork.push_back(work);
+
+					int numLoadingWorkForThreadIndex = 0;
+					for (int i=0; i<m_loadingWork.size(); i++)
+					{
+						if (m_loadingWork[i].threadIndex.atomic.load() == threadIndex)
+							numLoadingWorkForThreadIndex++;
+					}
+
+					// let the loading thread run
+					if (numLoadingWorkForThreadIndex == 1) // only necessary if thread is waiting (otherwise it will already be picked up by the next iteration)
+					{
+						if (m_threads.size() > 0)
+							m_threads[threadIndex]->loadingMutex.unlock();
+					}
 				}
+				g_resourceManagerLoadingWorkMutex.unlock();
 			}
-			g_resourceManagerLoadingWorkMutex.unlock();
+			g_resourceManagerMutex.unlock();
 		}
-		g_resourceManagerMutex.unlock();
+		else
+		{
+			// load normally (threading disabled)
+			res->loadAsync();
+			res->load();
+		}
 
 #else
 
