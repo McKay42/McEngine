@@ -108,6 +108,7 @@ private:
 	ID3D11RenderTargetView *m_frameBuffer;
 
 	// renderer
+	bool m_bIsFullscreen;
 	Vector2 m_vResolution;
 
 	ID3D11RasterizerState *m_rasterizerState;
