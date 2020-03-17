@@ -603,11 +603,13 @@ void Sound::setLoop(bool loop)
 {
 	if (!m_bReady) return;
 
+	m_bIsLooped = loop;
+
 #ifdef MCENGINE_FEATURE_SOUND
 
 	const SOUNDHANDLE handle = getHandle();
 
-	BASS_ChannelFlags(handle, loop ? BASS_SAMPLE_LOOP : 0, BASS_SAMPLE_LOOP);
+	BASS_ChannelFlags(handle, m_bIsLooped ? BASS_SAMPLE_LOOP : 0, BASS_SAMPLE_LOOP);
 
 #endif
 }

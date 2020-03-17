@@ -124,6 +124,7 @@ SoundEngine::SoundEngine()
 	BASS_SetConfig(BASS_CONFIG_NET_BUFFER, 500);
 	//BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, 10); // NOTE: only used by osu atm, but not tested enough for offset problems
 	BASS_SetConfig(BASS_CONFIG_MP3_OLDGAPS, 1); // NOTE: only used by osu atm (all beatmaps timed to non-iTunesSMPB + 529 sample deletion offsets on old dlls pre 2015)
+	BASS_SetConfig(BASS_CONFIG_DEV_NONSTOP, 1); // NOTE: only used by osu atm (avoids lag/jitter in BASS_ChannelGetPosition() shortly after a BASS_ChannelPlay() after loading/silence)
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
@@ -608,6 +609,10 @@ bool SoundEngine::play(Sound *snd, float pan)
 		}
 		else
 		{
+			// special case: looped sounds are not supported here, so do not let them kill other channels
+			if (snd->isLooped())
+				return false;
+
 			int channel = (snd->isStream() ? (Mix_PlayMusic((Mix_Music*)snd->getMixChunkOrMixMusic(), 1)) : Mix_PlayChannel(-1, (Mix_Chunk*)snd->getMixChunkOrMixMusic(), 0));
 
 			// allow overriding (oldest channel gets reused)
@@ -718,7 +723,7 @@ void SoundEngine::pause(Sound *snd)
 
 	if (snd->isStream())
 		Mix_PauseMusic();
-	else
+	else if (!snd->isLooped()) // special case: looped sounds are not supported here, so do not let them kill other channels
 		Mix_Pause(snd->getHandle());
 
 #endif
@@ -750,7 +755,7 @@ void SoundEngine::stop(Sound *snd)
 
 	if (snd->isStream())
 		Mix_HaltMusic();
-	else
+	else if (!snd->isLooped()) // special case: looped sounds are not supported here, so do not let them kill other channels
 		Mix_HaltChannel(snd->getHandle());
 
 #endif
