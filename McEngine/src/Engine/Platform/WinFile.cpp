@@ -57,9 +57,9 @@ WinFile::WinFile(UString filePath, File::TYPE type)
 			debugLog("File Error: FileSize is < 0\n");
 			return;
 		}
-		else if (m_iFileSize > 1024*1024*200) // 200 MB sanity check
+		else if (m_iFileSize > 1024*1024*File::size_max->getInt()) // size sanity check
 		{
-			debugLog("File Error: FileSize is > 200 MB!!!\n");
+			debugLog("File Error: FileSize is > %i MB!!!\n", File::size_max->getInt());
 			return;
 		}
 	}
