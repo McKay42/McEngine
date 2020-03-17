@@ -39,6 +39,8 @@ DWORD CALLBACK soundFXCallbackProc(HSTREAM handle, void *buffer, DWORD length, v
 ConVar debug_snd("debug_snd", false);
 
 ConVar snd_speed_compensate_pitch("snd_speed_compensate_pitch", true, "automatically keep pitch constant if speed changes");
+ConVar snd_play_interp_duration("snd_play_interp_duration", 0.75f, "smooth over freshly started channel position jitter with engine time over this duration in seconds");
+ConVar snd_play_interp_ratio("snd_play_interp_ratio", 0.50f, "percentage of snd_play_interp_duration to use 100% engine time over audio time (some devices report 0 for very long)");
 
 Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan) : Resource(filepath)
 {
@@ -361,6 +363,14 @@ void Sound::setPosition(double percent)
 
 	const QWORD length = BASS_ChannelGetLength(handle, BASS_POS_BYTE);
 
+	const double lengthInSeconds = BASS_ChannelBytes2Seconds(handle, length);
+
+	// NOTE: abused for play interp
+	if (lengthInSeconds * percent < snd_play_interp_duration.getFloat())
+		m_fLastPlayTime = engine->getTime() - lengthInSeconds * percent;
+	else
+		m_fLastPlayTime = 0.0;
+
 	// HACKHACK: m_bisSpeedAndPitchHackEnabled
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
 	{
@@ -422,6 +432,12 @@ void Sound::setPositionMS(unsigned long ms, bool internal)
 	const SOUNDHANDLE handle = getHandle();
 
 	const QWORD position = BASS_ChannelSeconds2Bytes(handle, ms/1000.0);
+
+	// NOTE: abused for play interp
+	if ((double)ms / 1000.0 < snd_play_interp_duration.getFloat())
+		m_fLastPlayTime = engine->getTime() - ((double)ms / 1000.0);
+	else
+		m_fLastPlayTime = 0.0;
 
 	// HACKHACK: m_bisSpeedAndPitchHackEnabled
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
@@ -587,11 +603,13 @@ void Sound::setLoop(bool loop)
 {
 	if (!m_bReady) return;
 
+	m_bIsLooped = loop;
+
 #ifdef MCENGINE_FEATURE_SOUND
 
 	const SOUNDHANDLE handle = getHandle();
 
-	BASS_ChannelFlags(handle, loop ? BASS_SAMPLE_LOOP : 0, BASS_SAMPLE_LOOP);
+	BASS_ChannelFlags(handle, m_bIsLooped ? BASS_SAMPLE_LOOP : 0, BASS_SAMPLE_LOOP);
 
 #endif
 }
@@ -604,14 +622,17 @@ float Sound::getPosition()
 
 	const SOUNDHANDLE handle = (m_HCHANNELBACKUP != 0 ? m_HCHANNELBACKUP : getHandle());
 
-	const QWORD length = BASS_ChannelGetLength(handle, BASS_POS_BYTE);
-	const QWORD position = BASS_ChannelGetPosition(handle, BASS_POS_BYTE);
+	const QWORD lengthBytes = BASS_ChannelGetLength(handle, BASS_POS_BYTE);
+	const QWORD positionBytes = BASS_ChannelGetPosition(handle, BASS_POS_BYTE);
 
 	// HACKHACK: m_bisSpeedAndPitchHackEnabled
+	float position = 0.0;
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
-		return (float)((double)(position + m_soundProcUserData->offset) / (double)(length));
+		position = (float)((double)(positionBytes + m_soundProcUserData->offset) / (double)(lengthBytes));
 	else
-		return (float)((double)(position) / (double)(length));
+		position = (float)((double)(positionBytes) / (double)(lengthBytes));
+
+	return position;
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER) && defined(SDL_MIXER_X)
 
@@ -647,14 +668,31 @@ unsigned long Sound::getPositionMS()
 	const double positionInMilliSeconds = positionInSeconds * 1000.0;
 
 	// HACKHACK: m_bisSpeedAndPitchHackEnabled
+	unsigned long positionMS = 0;
 	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
 	{
 		const double offsetInSeconds = BASS_ChannelBytes2Seconds(handle, m_soundProcUserData->offset);
 		const double offsetInMilliSeconds = offsetInSeconds * 1000.0;
-		return static_cast<unsigned long>(positionInMilliSeconds + offsetInMilliSeconds);
+		positionMS = static_cast<unsigned long>(positionInMilliSeconds + offsetInMilliSeconds);
 	}
 	else
-		return static_cast<unsigned long>(positionInMilliSeconds);
+		positionMS = static_cast<unsigned long>(positionInMilliSeconds);
+
+	// special case: a freshly started channel position jitters, lerp with engine time over a set duration to smooth things over
+	const double interpDuration = snd_play_interp_duration.getFloat();
+	const unsigned long interpDurationMS = interpDuration * 1000;
+	if (interpDuration > 0.0 && positionMS < interpDurationMS)
+	{
+		const float speedMultiplier = getSpeed();
+		const double delta = (engine->getTime() - m_fLastPlayTime) * speedMultiplier;
+		if (m_fLastPlayTime > 0.0 && delta < interpDuration && isPlaying())
+		{
+			const double lerpPercent = clamp<double>(((delta / interpDuration) - snd_play_interp_ratio.getFloat()) / (1.0 - snd_play_interp_ratio.getFloat()), 0.0, 1.0);
+			return static_cast<unsigned long>(lerp<double>(delta * 1000.0, (double)positionMS, lerpPercent));
+		}
+	}
+
+	return positionMS;
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER) && defined(SDL_MIXER_X)
 

@@ -17,6 +17,7 @@ class File
 {
 public:
 	static ConVar *debug;
+	static ConVar *size_max;
 
 	enum class TYPE
 	{

@@ -53,8 +53,9 @@ DWORD CALLBACK OutputWasapiProc(void *buffer, DWORD length, void *user)
 #endif
 
 ConVar snd_output_device("snd_output_device", "Default");
+ConVar win_snd_fallback_dsound("win_snd_fallback_dsound", false, "use DirectSound instead of WASAPI");
 
-ConVar snd_chunk_size("snd_chunk_size", 256);
+ConVar snd_chunk_size("snd_chunk_size", 256, "only used in horizon builds with sdl mixer audio");
 
 ConVar snd_restrict_play_frame("snd_restrict_play_frame", true, "only allow one new channel per frame for overlayable sounds (prevents lag and earrape)");
 ConVar snd_change_check_interval("snd_change_check_interval", 0.0f, "check for output device changes every this many seconds. 0 = disabled (default)");
@@ -121,7 +122,9 @@ SoundEngine::SoundEngine()
 	// apply default global settings
 	BASS_SetConfig(BASS_CONFIG_BUFFER, 100);
 	BASS_SetConfig(BASS_CONFIG_NET_BUFFER, 500);
-	BASS_SetConfig(BASS_CONFIG_MP3_OLDGAPS, 1); // NOTE: only required by osu atm (all beatmaps timed to non-iTunesSMPB + 529 sample deletion offsets on old dlls pre 2015)
+	//BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, 10); // NOTE: only used by osu atm, but not tested enough for offset problems
+	BASS_SetConfig(BASS_CONFIG_MP3_OLDGAPS, 1); // NOTE: only used by osu atm (all beatmaps timed to non-iTunesSMPB + 529 sample deletion offsets on old dlls pre 2015)
+	BASS_SetConfig(BASS_CONFIG_DEV_NONSTOP, 1); // NOTE: only used by osu atm (avoids lag/jitter in BASS_ChannelGetPosition() shortly after a BASS_ChannelPlay() after loading/silence)
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
@@ -130,7 +133,7 @@ SoundEngine::SoundEngine()
 
 #else
 
-	BASS_SetConfig(BASS_CONFIG_UPDATEPERIOD, 10);
+	BASS_SetConfig(BASS_CONFIG_UPDATEPERIOD, 10); // NOTE: only used by osu atm (new osu uses 5 instead of 10, but not tested enough for offset problems)
 	BASS_SetConfig(BASS_CONFIG_UPDATETHREADS, 1);
 
 #endif
@@ -293,7 +296,7 @@ void SoundEngine::updateOutputDevices(bool handleOutputDeviceChanges, bool print
 		// sanity
 		if (d > 42)
 		{
-			debugLog("WARNING: SoundEngine::updateOutputDevices() found too many devices ...");
+			debugLog("WARNING: SoundEngine::updateOutputDevices() found too many devices ...\n");
 			break;
 		}
 	}
@@ -303,7 +306,7 @@ void SoundEngine::updateOutputDevices(bool handleOutputDeviceChanges, bool print
 
 bool SoundEngine::initializeOutputDevice(int id)
 {
-	debugLog("SoundEngine: initializeOutputDevice( %i ) ...\n", id);
+	debugLog("SoundEngine: initializeOutputDevice( %i, fallback = %i ) ...\n", id, (int)win_snd_fallback_dsound.getBool());
 
 	m_iCurrentOutputDevice = id;
 
@@ -318,9 +321,22 @@ bool SoundEngine::initializeOutputDevice(int id)
 
 #endif
 
+	// dynamic runtime flags
+	unsigned int runtimeFlags = 0;
+
+#ifdef MCENGINE_FEATURE_BASS_WASAPI
+
+	runtimeFlags = BASS_DEVICE_NOSPEAKER;
+
+#else
+
+	runtimeFlags = (win_snd_fallback_dsound.getBool() ? BASS_DEVICE_DSOUND : BASS_DEVICE_NOSPEAKER);
+
+#endif
+
 	// init
 	const int freq = 44100;
-	const unsigned int flags = /*BASS_DEVICE_3D | BASS_DEVICE_LATENCY | */0;
+	const unsigned int flags = /*BASS_DEVICE_3D | BASS_DEVICE_LATENCY | */ runtimeFlags;
 	bool ret = false;
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
@@ -345,8 +361,33 @@ bool SoundEngine::initializeOutputDevice(int id)
 	if (!ret)
 	{
 		m_bReady = false;
-		engine->showMessageError("Sound Error", UString::format("BASS_Init() failed (%i)!", BASS_ErrorGetCode()));
-		return false;
+
+#ifndef MCENGINE_FEATURE_BASS_WASAPI
+
+		// try again with dsound fallback, once
+		if (!win_snd_fallback_dsound.getBool())
+		{
+			debugLog("Sound Error: BASS_Init() failed (%i)!\n", BASS_ErrorGetCode());
+			debugLog("Trying to fall back to DirectSound ...\n");
+
+			win_snd_fallback_dsound.setValue(1.0f);
+
+			const bool didFallbackSucceed = initializeOutputDevice(id);
+
+			if (!didFallbackSucceed)
+			{
+				// we're fucked, reset and fail
+				win_snd_fallback_dsound.setValue(0.0f);
+			}
+
+			return didFallbackSucceed;
+		}
+		else
+#endif
+		{
+			engine->showMessageError("Sound Error", UString::format("BASS_Init() failed (%i)!", BASS_ErrorGetCode()));
+			return false;
+		}
 	}
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
@@ -568,6 +609,10 @@ bool SoundEngine::play(Sound *snd, float pan)
 		}
 		else
 		{
+			// special case: looped sounds are not supported here, so do not let them kill other channels
+			if (snd->isLooped())
+				return false;
+
 			int channel = (snd->isStream() ? (Mix_PlayMusic((Mix_Music*)snd->getMixChunkOrMixMusic(), 1)) : Mix_PlayChannel(-1, (Mix_Chunk*)snd->getMixChunkOrMixMusic(), 0));
 
 			// allow overriding (oldest channel gets reused)
@@ -678,7 +723,7 @@ void SoundEngine::pause(Sound *snd)
 
 	if (snd->isStream())
 		Mix_PauseMusic();
-	else
+	else if (!snd->isLooped()) // special case: looped sounds are not supported here, so do not let them kill other channels
 		Mix_Pause(snd->getHandle());
 
 #endif
@@ -710,7 +755,7 @@ void SoundEngine::stop(Sound *snd)
 
 	if (snd->isStream())
 		Mix_HaltMusic();
-	else
+	else if (!snd->isLooped()) // special case: looped sounds are not supported here, so do not let them kill other channels
 		Mix_HaltChannel(snd->getHandle());
 
 #endif

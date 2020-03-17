@@ -34,6 +34,7 @@ DirectX11Interface::DirectX11Interface(HWND hwnd, bool minimalistContext) : Null
 	m_frameBuffer = NULL;
 
 	// renderer
+	m_bIsFullscreen = false;
 	m_vResolution = engine->getScreenSize(); // initial viewport size = window size
 	m_rasterizerState = NULL;
 	m_depthStencilState = NULL;
@@ -50,6 +51,9 @@ DirectX11Interface::~DirectX11Interface()
 {
 	if (!m_bMinimalistContext)
 	{
+		if (m_swapChain != NULL)
+			m_swapChain->SetFullscreenState(FALSE, NULL);
+
 		SAFE_DELETE(m_shaderTexturedGeneric);
 
 		if (m_vertexBuffer != NULL)
@@ -142,6 +146,18 @@ void DirectX11Interface::init()
 	{
 		m_bReady = true;
 		return;
+	}
+
+	// disable hardcoded DirectX ALT + ENTER fullscreen toggle functionality (this is instead handled by the engine internally)
+	{
+		IDXGIFactory1 *pFactory = NULL;
+		if (SUCCEEDED(m_swapChain->GetParent(__uuidof(IDXGIFactory1), (void **)&pFactory)))
+		{
+			pFactory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_ALT_ENTER);
+			pFactory->Release();
+		}
+		else
+			engine->showMessageError("DirectX Error", "Couldn't GetParent()!");
 	}
 
 	// default rasterizer settings
@@ -332,10 +348,24 @@ void DirectX11Interface::endScene()
 	}
 
 	m_swapChain->Present(m_bVSync ? 1 : 0, 0);
+
+	// handle fullscreen state changes (1)
+	// lazy ensure fullscreen state is always restored, especially when switching between applications
+	if (engine->hasFocus())
+	{
+		WINBOOL isActuallyFullscreen;
+		if (SUCCEEDED(m_swapChain->GetFullscreenState(&isActuallyFullscreen, NULL)))
+		{
+			if (env->isFullscreen() && m_bIsFullscreen && !isActuallyFullscreen)
+				m_swapChain->SetFullscreenState(TRUE, NULL);
+		}
+	}
 }
 
 void DirectX11Interface::setColor(Color color)
 {
+	if (m_color == color) return;
+
 	m_color = color;
 	m_shaderTexturedGeneric->setUniform4f("col", COLOR_GET_Af(m_color), COLOR_GET_Rf(m_color), COLOR_GET_Gf(m_color), COLOR_GET_Bf(m_color));
 }
@@ -472,8 +502,7 @@ void DirectX11Interface::drawImage(Image *image)
 		debugLog("WARNING: Tried to draw image with NULL texture!\n");
 		return;
 	}
-	if (!image->isReady())
-		return;
+	if (!image->isReady()) return;
 
 	updateTransform();
 
@@ -496,7 +525,9 @@ void DirectX11Interface::drawImage(Image *image)
 	vao.addTexcoord(1, 0);
 
 	image->bind();
-	drawVAO(&vao);
+	{
+		drawVAO(&vao);
+	}
 	image->unbind();
 
 	if (r_debug_drawimage->getBool())
@@ -508,8 +539,7 @@ void DirectX11Interface::drawImage(Image *image)
 
 void DirectX11Interface::drawString(McFont *font, UString text)
 {
-	if (font == NULL || text.length() < 1 || !font->isReady())
-		return;
+	if (font == NULL || text.length() < 1 || !font->isReady()) return;
 
 	updateTransform();
 
@@ -532,7 +562,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	}
 
 	const std::vector<Vector3> &vertices = vao->getVertices();
-	const std::vector<Vector3> &normals = vao->getNormals();
+	///const std::vector<Vector3> &normals = vao->getNormals();
 	const std::vector<std::vector<Vector2>> &texcoords = vao->getTexcoords();
 	const std::vector<Color> &vcolors = vao->getColors();
 
@@ -767,6 +797,24 @@ void DirectX11Interface::setVSync(bool vsync)
 void DirectX11Interface::onResolutionChange(Vector2 newResolution)
 {
 	m_vResolution = newResolution;
+
+	// handle fullscreen state changes (2)
+	if (m_bIsFullscreen != env->isFullscreen())
+	{
+		m_bIsFullscreen = env->isFullscreen();
+
+		const Vector2 prevWindowPos = env->getWindowPos();
+
+		// NOTE: SetFullscreenState() always generates WM_SIZE, which is very annoying
+		m_swapChain->SetFullscreenState(m_bIsFullscreen, NULL);
+
+		// workaround by forcing another resize to the resolution we actually want
+		if (!m_bIsFullscreen)
+		{
+			env->setWindowSize(newResolution.x, newResolution.y);
+			env->setWindowPos(prevWindowPos.x, prevWindowPos.y);
+		}
+	}
 
 	// rebuild swapchain rendertarget + view
 	HRESULT hr;
