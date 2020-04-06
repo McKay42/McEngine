@@ -54,10 +54,12 @@ The Windows build needs mingw-w64 (i686 with Win32 threads), you can get it here
 
 Project: [https://mingw-w64.org/doku.php/](https://mingw-w64.org/doku.php/)
 
-Installer: [https://sourceforge.net/projects/mingw-w64/](https://sourceforge.net/projects/mingw-w64/)
+Installer: [https://sourceforge.net/projects/mingw-w64/files/mingw-w64/](https://sourceforge.net/projects/mingw-w64/files/mingw-w64/)
 
-__Please use the installer__, since it just works™. The pre-built toolchains on the project page for mingw-w64 are apparently outdated and don't contain all the necessary files for a Windows build, while the installer supports up to g++ 6.3.0.
+__Please use the "online" installer__, since it just works™. The pre-built toolchains on the project page for mingw-w64 are apparently outdated and don't contain all the necessary files for a Windows build, while the installer supports all newest g++ versions.
 Make sure you add the mingw directory to your PATH after the installation is finished. To test if everything works, try to enter the following command in a cmd window: `g++ --version`.
+
+Alternatively and/or additionally, you can also configure the environment inside the eclipse project settings (C/C++ Build > Environment), by setting `MINGW_HOME` (e.g. `C:\mingw32\mingw32`) and `PATH` (e.g. `C:\MinGW\bin;C:\MinGW\msys\1.0\bin;C:\mingw32\mingw32\bin`) accordingly.
 
 
 ## Linux
