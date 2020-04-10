@@ -22,10 +22,10 @@
 ConVar r_drawstring_max_string_length("r_drawstring_max_string_length", 65536, "maximum number of characters per call, sanity/memory buffer limit");
 ConVar r_debug_drawstring_unbind("r_debug_drawstring_unbind", false);
 
-const wchar_t McFont::UNKNOWN_CHAR;
+static void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, TextureAtlas *textureAtlas, bool antialiasing, std::unordered_map<wchar_t, McFont::GLYPH_METRICS> *glyphMetrics);
+static unsigned char *unpackMonoBitmap(FT_Bitmap bitmap);
 
-void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, TextureAtlas *textureAtlas, bool antialiasing, std::unordered_map<wchar_t, McFont::GLYPH_METRICS> *glyphMetrics);
-unsigned char *unpackMonoBitmap(FT_Bitmap bitmap);
+const wchar_t McFont::UNKNOWN_CHAR;
 
 McFont::McFont(UString filepath, int fontSize, bool antialiasing, int fontDPI) : Resource(filepath)
 {
@@ -285,7 +285,7 @@ const bool McFont::hasGlyph(wchar_t ch) const
 
 // helper functions
 
-void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, TextureAtlas *textureAtlas, bool antialiasing, std::unordered_map<wchar_t, McFont::GLYPH_METRICS> *glyphMetrics)
+static void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, TextureAtlas *textureAtlas, bool antialiasing, std::unordered_map<wchar_t, McFont::GLYPH_METRICS> *glyphMetrics)
 {
 	// load current glyph
 	if (FT_Load_Glyph(face, FT_Get_Char_Index(face, ch), antialiasing ? FT_LOAD_TARGET_NORMAL : FT_LOAD_TARGET_MONO))
@@ -374,7 +374,7 @@ void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, T
 	FT_Done_Glyph(glyph);
 }
 
-unsigned char *unpackMonoBitmap(FT_Bitmap bitmap)
+static unsigned char *unpackMonoBitmap(FT_Bitmap bitmap)
 {
 	unsigned char *result;
 	int y, byte_index, num_bits_done, rowstart, bits, bit_index;
