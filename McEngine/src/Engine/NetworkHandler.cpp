@@ -21,30 +21,27 @@
 #define MC_PROTOCOL_VERSION 1
 #define MC_PROTOCOL_TIMEOUT 10000
 
-void DUMMY_ARGS_CONNECT(UString args) {;}
-void DUMMY_DISCONNECT() {;}
-
 ConVar _name_("name", "McKay");
 
 #ifdef MCENGINE_FEATURE_NETWORKING
 
-ConVar _connect_("connect", DUMMY_ARGS_CONNECT);
+ConVar _connect_("connect");
 ConVar connect_duration("connect_duration", 5.0f, "Time in seconds to wait for a response from the server when trying to connect");
-ConVar _disconnect_("disconnect", DUMMY_DISCONNECT);
+ConVar _disconnect_("disconnect");
 ConVar disconnect_duration("disconnect_duration", 3.0f, "Time in seconds to wait for a gentle disconnect before dropping the connection");
 
-ConVar _host_("host", DUMMY_DISCONNECT);
-ConVar _stop_("stop", DUMMY_DISCONNECT);
+ConVar _host_("host");
+ConVar _stop_("stop");
 ConVar host_port("host_port", 7777.0f);
 ConVar host_max_clients("host_max_clients", 16.0f);
-ConVar _status_("status", DUMMY_DISCONNECT);
+ConVar _status_("status");
 
 ConVar debug_network("debug_network", false);
 ConVar debug_network_time("debug_network_time", false);
 
 ConVar _name_admin_("name_admin", "ADMIN");
-ConVar _say_("say", DUMMY_ARGS_CONNECT);
-ConVar _kick_("kick", DUMMY_ARGS_CONNECT);
+ConVar _say_("say");
+ConVar _kick_("kick");
 
 ConVar cl_cmdrate("cl_cmdrate", 66.0f, "How many client update packets are sent to the server per second");
 ConVar cl_updaterate("cl_updaterate", 66.0f, "How many snapshots/updates/deltas are requested from the server per second");
