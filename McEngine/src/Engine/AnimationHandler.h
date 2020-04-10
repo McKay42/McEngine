@@ -43,8 +43,8 @@ public:
 
 	void deleteExistingAnimation(float *base);
 
-	float getRemainingDuration(float *base);
-	bool isAnimating(float *base);
+	float getRemainingDuration(float *base) const;
+	bool isAnimating(float *base) const;
 
 private:
 	enum class ANIMATION_TYPE
