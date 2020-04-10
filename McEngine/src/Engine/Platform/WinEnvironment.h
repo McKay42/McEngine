@@ -140,8 +140,8 @@ private:
 	bool m_bCursorClipped;
 	McRect m_cursorClip;
 	bool m_bIsCursorInsideWindow;
+	bool m_bHasCursorTypeChanged;
 	HCURSOR m_mouseCursor;
-	HCURSOR m_mouseCursorArrow;
 	CURSORTYPE m_cursorType;
 
 	// custom

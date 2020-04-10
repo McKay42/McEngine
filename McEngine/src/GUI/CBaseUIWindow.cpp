@@ -356,49 +356,49 @@ void CBaseUIWindow::udpateResizeAndMoveLogic(bool captureMouse)
 		{
 			if (captureMouse)
 				m_iResizeType = 1;
-			engine->getMouse()->setCursorType(CURSOR_SIZE_VH);
+			engine->getMouse()->setCursorType(CURSORTYPE::CURSOR_SIZE_VH);
 		}
 		else if (resizeBottomLeft.contains(m_vMousePosBackup))
 		{
 			if (captureMouse)
 				m_iResizeType = 3;
-			engine->getMouse()->setCursorType(CURSOR_SIZE_HV);
+			engine->getMouse()->setCursorType(CURSORTYPE::CURSOR_SIZE_HV);
 		}
 		else if (resizeBottomRight.contains(m_vMousePosBackup))
 		{
 			if (captureMouse)
 				m_iResizeType = 5;
-			engine->getMouse()->setCursorType(CURSOR_SIZE_VH);
+			engine->getMouse()->setCursorType(CURSORTYPE::CURSOR_SIZE_VH);
 		}
 		else if (resizeTopRight.contains(m_vMousePosBackup))
 		{
 			if (captureMouse)
 				m_iResizeType = 7;
-			engine->getMouse()->setCursorType(CURSOR_SIZE_HV);
+			engine->getMouse()->setCursorType(CURSORTYPE::CURSOR_SIZE_HV);
 		}
 		else if (resizeLeft.contains(m_vMousePosBackup))
 		{
 			if (captureMouse)
 				m_iResizeType = 2;
-			engine->getMouse()->setCursorType(CURSOR_SIZE_H);
+			engine->getMouse()->setCursorType(CURSORTYPE::CURSOR_SIZE_H);
 		}
 		else if (resizeRight.contains(m_vMousePosBackup))
 		{
 			if (captureMouse)
 				m_iResizeType = 6;
-			engine->getMouse()->setCursorType(CURSOR_SIZE_H);
+			engine->getMouse()->setCursorType(CURSORTYPE::CURSOR_SIZE_H);
 		}
 		else if (resizeBottom.contains(m_vMousePosBackup))
 		{
 			if (captureMouse)
 				m_iResizeType = 4;
-			engine->getMouse()->setCursorType(CURSOR_SIZE_V);
+			engine->getMouse()->setCursorType(CURSORTYPE::CURSOR_SIZE_V);
 		}
 		else if (resizeTop.contains(m_vMousePosBackup))
 		{
 			if (captureMouse)
 				m_iResizeType = 8;
-			engine->getMouse()->setCursorType(CURSOR_SIZE_V);
+			engine->getMouse()->setCursorType(CURSORTYPE::CURSOR_SIZE_V);
 		}
 	}
 
