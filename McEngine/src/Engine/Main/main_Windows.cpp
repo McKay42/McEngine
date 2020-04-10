@@ -487,6 +487,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				break; // if not, let DefWindowProc do its thing
 			*/
 
+			// avoid cursor flicker when using non-normal cursor set by engine
+			if (g_engine != NULL && g_engine->getEnvironment()->getCursor() != CURSORTYPE::CURSOR_NORMAL)
+				return TRUE;
+
 			break;
 
 #ifdef MCENGINE_WINDOWS_TOUCH_SUPPORT
