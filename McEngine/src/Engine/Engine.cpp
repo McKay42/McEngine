@@ -1,11 +1,10 @@
-//================ Copyright (c) 2015, PG, All rights reserved. =================//
+//================ Copyright (c) 2012, PG, All rights reserved. =================//
 //
 // Purpose:		core
 //
 // $NoKeywords: $engine
 //===============================================================================//
 
-#include "NetworkHandler.h" // must be up here
 #include "Engine.h"
 
 #include <stdio.h>
@@ -17,23 +16,26 @@
 
 #endif
 
-#include "DiscordInterface.h"
 #include "SteamworksInterface.h"
 #include "SquirrelInterface.h"
+#include "AnimationHandler.h"
+#include "DiscordInterface.h"
 #include "OpenCLInterface.h"
 #include "OpenVRInterface.h"
 #include "VulkanInterface.h"
-#include "SoundEngine.h"
 #include "ResourceManager.h"
-#include "AnimationHandler.h"
+#include "NetworkHandler.h"
 #include "XInputGamepad.h"
+#include "SoundEngine.h"
 #include "ContextMenu.h"
-#include "Mouse.h"
 #include "Keyboard.h"
-#include "Timer.h"
+#include "Profiler.h"
 #include "ConVar.h"
+#include "Mouse.h"
+#include "Timer.h"
 
 #include "CBaseUIContainer.h"
+
 #include "Console.h"
 #include "ConsoleBox.h"
 
@@ -64,11 +66,10 @@ ConVar debug_engine("debug_engine", false);
 ConVar minimize_on_focus_lost_if_fullscreen("minimize_on_focus_lost_if_fullscreen", true);
 ConVar minimize_on_focus_lost_if_borderless_windowed_fullscreen("minimize_on_focus_lost_if_borderless_windowed_fullscreen", false);
 ConVar _win_realtimestylus("win_realtimestylus", false, "if compiled on Windows, enables native RealTimeStylus support for tablet clicks");
-ConVar *win_realtimestylus = &_win_realtimestylus;
 ConVar _win_processpriority("win_processpriority", 0, "if compiled on Windows, sets the main process priority (0 = normal, 1 = high)");
-ConVar *win_processpriority = &_win_processpriority;
 ConVar _win_disable_windows_key("win_disable_windows_key", false, "if compiled on Windows, set to 0/1 to disable/enable all windows keys via low level keyboard hook");
-ConVar *win_disable_windows_key = &_win_disable_windows_key;
+
+ConVar *win_realtimestylus = &_win_realtimestylus; // extern
 
 Engine *engine = NULL;
 Environment *env = NULL;
@@ -246,11 +247,13 @@ void Engine::loadApp()
 	missingTexture->load();
 
 	// create engine gui
-	m_guiContainer = new CBaseUIContainer(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "engine");
+	m_guiContainer = new CBaseUIContainer(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "");
 	m_consoleBox = new ConsoleBox();
 	m_guiContainer->addBaseUIElement(m_consoleBox);
 
 	debugLog("\nEngine: Loading app ...\n");
+
+
 
 	//*****************//
 	//	Load App here  //
@@ -303,8 +306,7 @@ void Engine::onPaint()
 
 void Engine::onUpdate()
 {
-	if (m_bBlackout || (m_bIsMinimized && !(m_networkHandler->isClient() || m_networkHandler->isServer())))
-		return;
+	if (m_bBlackout || (m_bIsMinimized && !(m_networkHandler->isClient() || m_networkHandler->isServer()))) return;
 
 	// update time
 	m_timer->update();
@@ -524,9 +526,9 @@ void Engine::onKeyboardKeyDown(KEYCODE keyCode)
 	}
 
 	// handle ALT+ENTER fullscreen toggle
-	if (engine->getKeyboard()->isAltDown() && keyCode == KEY_ENTER)
+	if (m_keyboard->isAltDown() && keyCode == KEY_ENTER)
 	{
-		engine->toggleFullscreen();
+		toggleFullscreen();
 		return;
 	}
 
@@ -635,6 +637,14 @@ void Engine::removeGamepad(Gamepad *gamepad)
 	}
 }
 
+void Engine::requestResolutionChange(Vector2 newResolution)
+{
+	if (newResolution == m_vNewScreenSize) return;
+
+	m_vNewScreenSize = newResolution;
+	m_bResolutionChange = true;
+}
+
 void Engine::setFrameTime(double delta)
 {
 	// NOTE: clamp to between 10000 fps and 1 fps, very small/big timesteps could cause problems
@@ -662,8 +672,8 @@ void Engine::debugLog(const char *fmt, va_list args)
 
 	// write to engine console
 	{
-		char *buffer = new char[numChars+1]; // +1 for null termination later
-		vsnprintf(buffer, numChars+1, fmt, ap2); // "The generated string has a length of at most n-1, leaving space for the additional terminating null character."
+		char *buffer = new char[numChars + 1]; // +1 for null termination later
+		vsnprintf(buffer, numChars + 1, fmt, ap2); // "The generated string has a length of at most n-1, leaving space for the additional terminating null character."
 		buffer[numChars] = '\0'; // null terminate
 
 		UString actualBuffer = UString(buffer);
@@ -695,8 +705,8 @@ void Engine::debugLog(Color color, const char *fmt, va_list args)
 
 	// write to engine console
 	{
-		char *buffer = new char[numChars+1]; // +1 for null termination later
-		vsnprintf(buffer, numChars+1, fmt, ap2); // "The generated string has a length of at most n-1, leaving space for the additional terminating null character."
+		char *buffer = new char[numChars + 1]; // +1 for null termination later
+		vsnprintf(buffer, numChars + 1, fmt, ap2); // "The generated string has a length of at most n-1, leaving space for the additional terminating null character."
 		buffer[numChars] = '\0'; // null terminate
 
 		UString actualBuffer = UString(buffer);
@@ -768,8 +778,7 @@ void _windowed(UString args)
 {
 	env->disableFullscreen();
 
-	if (args.length() < 7)
-		return;
+	if (args.length() < 7) return;
 
 	std::vector<UString> resolution = args.split("x");
 	if (resolution.size() != 2)
