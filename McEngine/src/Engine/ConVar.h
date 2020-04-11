@@ -10,11 +10,6 @@
 
 #include "cbase.h"
 
-// raw callbacks
-typedef void (*ConVarCallback)(void);
-typedef void (*ConVarChangeCallback)(UString oldValue, UString newValue);
-typedef void (*ConVarCallbackArgs)(UString args);
-
 class ConVar
 {
 public:
@@ -26,12 +21,17 @@ public:
 		CONVAR_TYPE_STRING
 	};
 
-public:
+	// raw callbacks
+	typedef void (*ConVarCallback)(void);
+	typedef void (*ConVarChangeCallback)(UString oldValue, UString newValue);
+	typedef void (*ConVarCallbackArgs)(UString args);
+
 	// delegate callbacks
 	typedef fastdelegate::FastDelegate0<> NativeConVarCallback;
 	typedef fastdelegate::FastDelegate1<UString> NativeConVarCallbackArgs;
 	typedef fastdelegate::FastDelegate2<UString, UString> NativeConVarChangeCallback;
 
+public:
 	ConVar(UString name);
 
 	ConVar(UString name, ConVarCallback callback);
