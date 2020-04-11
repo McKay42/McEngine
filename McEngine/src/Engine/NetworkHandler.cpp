@@ -1289,35 +1289,41 @@ NetworkHandler::CLIENT_PEER *NetworkHandler::getClientPeerById(uint32_t id)
 
 #endif
 
-int NetworkHandler::getPing()
+int NetworkHandler::getPing() const
 {
 #ifdef MCENGINE_FEATURE_NETWORKING
 
 	return m_clientPeer != NULL ? (m_clientPeer->roundTripTime) : 0;
 
 #else
+
 	return -1;
+
 #endif
 }
 
-bool NetworkHandler::isClient()
+bool NetworkHandler::isClient() const
 {
 #ifdef MCENGINE_FEATURE_NETWORKING
 
 	return m_client != NULL && m_clientPeer != NULL;
 
 #else
+
 	return false;
+
 #endif
 }
 
-bool NetworkHandler::isServer()
+bool NetworkHandler::isServer() const
 {
 #ifdef MCENGINE_FEATURE_NETWORKING
 
 	return m_server != NULL;
 
 #else
+
 	return false;
+
 #endif
 }

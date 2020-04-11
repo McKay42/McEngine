@@ -19,6 +19,13 @@
 class NetworkHandler
 {
 public:
+	struct EXTENSION_PACKET
+	{
+		uint32_t size;
+		std::shared_ptr<void> data;
+	};
+
+public:
 	NetworkHandler();
 	~NetworkHandler();
 
@@ -26,30 +33,23 @@ public:
 	UString httpGet(UString url, long timeout = 5, long connectTimeout = 5);
 	std::string httpDownload(UString url, long timeout = 60, long connectTimeout = 5);
 
-
 	// client/server stuff
-	struct EXTENSION_PACKET
-	{
-		uint32_t size;
-		std::shared_ptr<void> data;
-	};
+	typedef fastdelegate::FastDelegate0<> NetworkLocalServerStartedListener;					// called when we successfully start the server
+	typedef fastdelegate::FastDelegate0<> NetworkLocalServerStoppedListener;					// called when the host stops
 
-	typedef fastdelegate::FastDelegate0<> NetworkLocalServerStartedListener;									// called when we successfully start the server
-	typedef fastdelegate::FastDelegate0<> NetworkLocalServerStoppedListener;									// called when the host stops
+	typedef fastdelegate::FastDelegate0<> NetworkClientDisconnectedFromServerListener;			// called when the connection is stopped, (e.g. if the host is stopped, or you disconnect)
+	typedef fastdelegate::FastDelegate0<> NetworkClientConnectedToServerListener;				// called when a connection has been established (if the client has successfully connected)
 
-	typedef fastdelegate::FastDelegate0<> NetworkClientDisconnectedFromServerListener;						// called when the connection is stopped, (e.g. if the host is stopped, or you disconnect)
-	typedef fastdelegate::FastDelegate0<> NetworkClientConnectedToServerListener;								// called when a connection has been established (if the client has successfully connected)
+	typedef fastdelegate::FastDelegate0<EXTENSION_PACKET> NetworkClientSendInfoListener;		// allows clients to send custom information to the server, independent of the NetworkHandler
+	typedef fastdelegate::FastDelegate0<EXTENSION_PACKET> NetworkServerSendInfoListener;		// allows the server to send custom information to the client, independent of the NetworkHandler
 
-	typedef fastdelegate::FastDelegate0<EXTENSION_PACKET> NetworkClientSendInfoListener;						// allows clients to send custom information to the server, independent of the NetworkHandler
-	typedef fastdelegate::FastDelegate0<EXTENSION_PACKET> NetworkServerSendInfoListener;						// allows the server to send custom information to the client, independent of the NetworkHandler
+	// returning false on either one of these will terminate the connection:
+	typedef fastdelegate::FastDelegate1<void *, bool> NetworkClientReceiveServerInfoListener;	// called with the data of the EXTENSION_PACKET (if used) upon receiving the server info packet
+	typedef fastdelegate::FastDelegate1<void *, bool> NetworkServerReceiveClientInfoListener;	// called with the data of the EXTENSION_PACKET (if used) upon receiving a client info packet
 
-	typedef fastdelegate::FastDelegate1<void *, bool> NetworkClientReceiveServerInfoListener;					// called with the data of the EXTENSION_PACKET (if used) upon receiving the server info packet
-	typedef fastdelegate::FastDelegate1<void *, bool> NetworkServerReceiveClientInfoListener;					// called with the data of the EXTENSION_PACKET (if used) upon receiving a client info packet
-																								// returning false on either one of these will terminate the connection
-
-	typedef fastdelegate::FastDelegate3<uint32_t, void *, uint32_t, bool> NetworkServerReceiveClientPacketListener;			// packets sent through this class' functions will be received here
-	typedef fastdelegate::FastDelegate3<uint32_t, void *, uint32_t, bool> NetworkClientReceiveServerPacketListener;			// packets sent through this class' functions will be received here
-	typedef fastdelegate::FastDelegate3<uint32_t, UString, bool> NetworkServerClientChangeListener;		// called when a client's connection state (or another state of it, like its name or something) changes
+	typedef fastdelegate::FastDelegate3<uint32_t, void *, uint32_t, bool> NetworkServerReceiveClientPacketListener;	// packets sent through this class' functions will be received here
+	typedef fastdelegate::FastDelegate3<uint32_t, void *, uint32_t, bool> NetworkClientReceiveServerPacketListener;	// packets sent through this class' functions will be received here
+	typedef fastdelegate::FastDelegate3<uint32_t, UString, bool> NetworkServerClientChangeListener;					// called when a client's connection state (or another state of it, like its name or something) changes
 
 	void update();
 
@@ -86,11 +86,13 @@ public:
 	void setOnLocalServerStoppedListener(NetworkLocalServerStoppedListener listener) {m_localServerStoppedListener = listener;}
 
 	// getters
-	int getPing();
-	inline uint32_t getLocalClientID() {return m_iLocalClientID;}
-	inline UString getServerAddress() {return m_sServerAddress;}
-	bool isClient();
-	bool isServer();
+	int getPing() const;
+
+	inline uint32_t getLocalClientID() const {return m_iLocalClientID;}
+	inline UString getServerAddress() const {return m_sServerAddress;}
+
+	bool isClient() const;
+	bool isServer() const;
 
 private:
 
@@ -128,7 +130,7 @@ private:
 
 #ifdef MCENGINE_FEATURE_NETWORKING
 
-	void sendServerInfo(uint32_t assignedID, ENetHost *host, ENetPeer *destination);		// server -> client (on a successful connection)
+	void sendServerInfo(uint32_t assignedID, ENetHost *host, ENetPeer *destination);	// server -> client (on a successful connection)
 
 	void singlecastChatMessage(CHAT_PACKET *cp, ENetHost *host, ENetPeer *destination);
 	void singlecastChatMessage(UString username, UString message, ENetHost *host, ENetPeer *destination);
