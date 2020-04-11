@@ -22,7 +22,6 @@ class Image;
 class McFont;
 class Shader;
 class RenderTarget;
-
 class VertexArrayObject;
 
 typedef uint32_t Color;

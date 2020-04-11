@@ -155,7 +155,7 @@ void Graphics::push3DScene(McRect region)
 	// calculate height to fit viewport angle
 	float angle = (180.0f - m_fFov) / 2.0f;
 	float b = (engine->getScreenHeight() / std::sin(deg2rad(m_fFov))) * std::sin(deg2rad(angle));
-	float hc = std::sqrt(std::pow(b,2.0f) - std::pow((engine->getScreenHeight()/2.0f), 2.0f)); // thank mr pythagoras/monstrata
+	float hc = std::sqrt(std::pow(b,2.0f) - std::pow((engine->getScreenHeight()/2.0f), 2.0f));
 
 	// set projection matrix
 	Matrix4 trans2 = Matrix4().translate(-1 + (region.getWidth()) / (float)engine->getScreenWidth() + (region.getX()*2) / (float)engine->getScreenWidth(), 1 - region.getHeight() / (float)engine->getScreenHeight() - (region.getY()*2) / (float)engine->getScreenHeight(), 0);
@@ -185,8 +185,7 @@ void Graphics::pop3DScene()
 
 void Graphics::translate3DScene(float x, float y, float z)
 {
-	if (!m_3dSceneStack.top()) // block if we're not in a 3d scene
-		return;
+	if (!m_3dSceneStack.top()) return; // block if we're not in a 3d scene
 
 	// translate directly
 	m_3dSceneWorldMatrix.translate(x,y,z);
@@ -197,8 +196,7 @@ void Graphics::translate3DScene(float x, float y, float z)
 
 void Graphics::rotate3DScene(float rotx, float roty, float rotz)
 {
-	if (!m_3dSceneStack.top()) // block if we're not in a 3d scene
-		return;
+	if (!m_3dSceneStack.top()) return; // block if we're not in a 3d scene
 
 	// first translate to the center of the 3d region, then rotate, then translate back
 	Matrix4 rot;
