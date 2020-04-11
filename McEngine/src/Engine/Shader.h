@@ -15,6 +15,9 @@ class ConVar;
 class Shader : public Resource
 {
 public:
+	static ConVar *debug_shaders;
+
+public:
 	Shader() : Resource() {;}
 	virtual ~Shader() {;}
 
@@ -33,8 +36,6 @@ public:
 	virtual void setUniformMatrix4fv(UString name, float *v) = 0;
 
 protected:
-	static ConVar *debug_shaders;
-
 	virtual void init() = 0;
 	virtual void initAsync() = 0;
 	virtual void destroy() = 0;
