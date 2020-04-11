@@ -17,13 +17,11 @@ VertexArrayObject::VertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::US
 
 	m_iNumVertices = 0;
 
+	m_iDrawRangeFromIndex = -1;
+	m_iDrawRangeToIndex = -1;
 	m_iDrawPercentNearestMultiple = 0;
 	m_fDrawPercentFromPercent = 0.0f;
 	m_fDrawPercentToPercent = 1.0f;
-}
-
-VertexArrayObject::~VertexArrayObject()
-{
 }
 
 void VertexArrayObject::init()
@@ -52,6 +50,9 @@ void VertexArrayObject::clear()
 	m_normals = std::vector<Vector3>();
 	m_colors = std::vector<Color>();
 
+	m_partialUpdateVertexIndices = std::vector<int>();
+	m_partialUpdateColorIndices = std::vector<int>();
+
 	// NOTE: do NOT set m_iNumVertices to 0!
 }
 
@@ -65,6 +66,9 @@ void VertexArrayObject::empty()
 	m_texcoords.clear();
 	m_normals.clear();
 	m_colors.clear();
+
+	m_partialUpdateVertexIndices.clear();
+	m_partialUpdateColorIndices.clear();
 
 	// NOTE: do NOT set m_iNumVertices to 0!
 }
@@ -114,9 +118,56 @@ void VertexArrayObject::addColor(Color color)
 	m_colors.push_back(color);
 }
 
+void VertexArrayObject::setVertex(int index, Vector2 v)
+{
+	if (index < 0 || index > (m_vertices.size() - 1)) return;
+
+	m_vertices[index].x = v.x;
+	m_vertices[index].y = v.y;
+
+	m_partialUpdateVertexIndices.push_back(index);
+}
+
+void VertexArrayObject::setVertex(int index, Vector3 v)
+{
+	if (index < 0 || index > (m_vertices.size() - 1)) return;
+
+	m_vertices[index].x = v.x;
+	m_vertices[index].y = v.y;
+	m_vertices[index].z = v.z;
+
+	m_partialUpdateVertexIndices.push_back(index);
+}
+
+void VertexArrayObject::setVertex(int index, float x, float y, float z)
+{
+	if (index < 0 || index > (m_vertices.size() - 1)) return;
+
+	m_vertices[index].x = x;
+	m_vertices[index].y = y;
+	m_vertices[index].z = z;
+
+	m_partialUpdateVertexIndices.push_back(index);
+}
+
+void VertexArrayObject::setColor(int index, Color color)
+{
+	if (index < 0 || index > (m_colors.size() - 1)) return;
+
+	m_colors[index] = color;
+
+	m_partialUpdateColorIndices.push_back(index);
+}
+
 void VertexArrayObject::setType(Graphics::PRIMITIVE primitive)
 {
 	m_primitive = primitive;
+}
+
+void VertexArrayObject::setDrawRange(int fromIndex, int toIndex)
+{
+	m_iDrawRangeFromIndex = fromIndex;
+	m_iDrawRangeToIndex = toIndex;
 }
 
 void VertexArrayObject::setDrawPercent(float fromPercent, float toPercent, int nearestMultiple)
@@ -133,17 +184,6 @@ void VertexArrayObject::updateTexcoordArraySize(unsigned int textureUnit)
 		std::vector<Vector2> emptyVector;
 		m_texcoords.push_back(emptyVector);
 	}
-}
-
-// TODO: delet this
-int VertexArrayObject::nearestMultipleOf(int number, int multiple)
-{
-	int result = number + multiple/2;
-
-	if (multiple > 0)
-		result -= result % multiple;
-
-	return result;
 }
 
 int VertexArrayObject::nearestMultipleUp(int number, int multiple)

@@ -17,13 +17,80 @@ OpenGLVertexArrayObject::OpenGLVertexArrayObject(Graphics::PRIMITIVE primitive, 
 {
 	m_iVertexBuffer = 0;
 	m_iTexcoordBuffer = 0;
+	m_iColorBuffer = 0;
 
 	m_iNumTexcoords = 0;
+	m_iNumColors = 0;
 }
 
 void OpenGLVertexArrayObject::init()
 {
-	if (m_vertices.size() < 2) return;
+	if (!m_bAsyncReady || m_vertices.size() < 2) return;
+
+	// handle partial reloads
+
+	if (m_bReady)
+	{
+		// update vertex buffer
+		if (m_partialUpdateVertexIndices.size() > 0)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, m_iVertexBuffer);
+			for (int i=0; i<m_partialUpdateVertexIndices.size(); i++)
+			{
+				const int offsetIndex = m_partialUpdateVertexIndices[i];
+
+				// group by continuous chunks to reduce calls
+				int numContinuousIndices = 1;
+				while ((i + 1) < m_partialUpdateVertexIndices.size())
+				{
+					if ((m_partialUpdateVertexIndices[i + 1] - m_partialUpdateVertexIndices[i]) == 1)
+					{
+						numContinuousIndices++;
+						i++;
+					}
+					else
+						break;
+				}
+
+				glBufferSubData(GL_ARRAY_BUFFER, sizeof(Vector3) * offsetIndex, sizeof(Vector3) * numContinuousIndices, &(m_vertices[offsetIndex]));
+			}
+			m_partialUpdateVertexIndices.clear();
+		}
+
+		// update color buffer
+		if (m_partialUpdateColorIndices.size() > 0)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, m_iColorBuffer);
+			for (int i=0; i<m_partialUpdateColorIndices.size(); i++)
+			{
+				const int offsetIndex = m_partialUpdateColorIndices[i];
+
+				m_colors[offsetIndex] = ARGBtoABGR(m_colors[offsetIndex]);
+
+				// group by continuous chunks to reduce calls
+				int numContinuousIndices = 1;
+				while ((i + 1) < m_partialUpdateColorIndices.size())
+				{
+					if ((m_partialUpdateColorIndices[i + 1] - m_partialUpdateColorIndices[i]) == 1)
+					{
+						numContinuousIndices++;
+						i++;
+
+						m_colors[m_partialUpdateColorIndices[i]] = ARGBtoABGR(m_colors[m_partialUpdateColorIndices[i]]);
+					}
+					else
+						break;
+				}
+
+				glBufferSubData(GL_ARRAY_BUFFER, sizeof(Color) * offsetIndex, sizeof(Color) * numContinuousIndices, &(m_colors[offsetIndex]));
+			}
+			m_partialUpdateColorIndices.clear();
+		}
+	}
+
+	if (m_iVertexBuffer != 0 && (!m_bKeepInSystemMemory || m_bReady)) return; // only fully load if we are not already loaded
+
+	// handle full loads
 
 	// build and fill vertex buffer
 	glGenBuffers(1, &m_iVertexBuffer);
@@ -38,6 +105,21 @@ void OpenGLVertexArrayObject::init()
 		glGenBuffers(1, &m_iTexcoordBuffer);
 		glBindBuffer(GL_ARRAY_BUFFER, m_iTexcoordBuffer);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Vector2) * m_texcoords[0].size(), &(m_texcoords[0][0]), usageToOpenGL(m_usage));
+	}
+
+	// build and fill color buffer
+	if (m_colors.size() > 0)
+	{
+		m_iNumColors = m_colors.size();
+
+		for (int i=0; i<m_colors.size(); i++)
+		{
+			m_colors[i] = ARGBtoABGR(m_colors[i]);
+		}
+
+		glGenBuffers(1, &m_iColorBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, m_iColorBuffer);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Color) * m_colors.size(), &(m_colors[0]), usageToOpenGL(m_usage));
 	}
 
 	// free memory
@@ -62,8 +144,12 @@ void OpenGLVertexArrayObject::destroy()
 	if (m_iTexcoordBuffer > 0)
 		glDeleteBuffers(1, &m_iTexcoordBuffer);
 
+	if (m_iColorBuffer > 0)
+		glDeleteBuffers(1, &m_iColorBuffer);
+
 	m_iVertexBuffer = 0;
 	m_iTexcoordBuffer = 0;
+	m_iColorBuffer = 0;
 }
 
 void OpenGLVertexArrayObject::draw()
@@ -74,11 +160,10 @@ void OpenGLVertexArrayObject::draw()
 		return;
 	}
 
-	const int start = clamp<int>(nearestMultipleUp((int)(m_iNumVertices*m_fDrawPercentFromPercent), m_iDrawPercentNearestMultiple), 0, m_iNumVertices); // HACKHACK: osu sliders
-	const int end = clamp<int>(nearestMultipleDown((int)(m_iNumVertices*m_fDrawPercentToPercent), m_iDrawPercentNearestMultiple), 0, m_iNumVertices); // HACKHACK: osu sliders
+	const int start = clamp<int>(m_iDrawRangeFromIndex > -1 ? m_iDrawRangeFromIndex : nearestMultipleUp((int)(m_iNumVertices*m_fDrawPercentFromPercent), m_iDrawPercentNearestMultiple), 0, m_iNumVertices);
+	const int end = clamp<int>(m_iDrawRangeToIndex > -1 ? m_iDrawRangeToIndex : nearestMultipleDown((int)(m_iNumVertices*m_fDrawPercentToPercent), m_iDrawPercentNearestMultiple), 0, m_iNumVertices);
 
-	if (start > end || std::abs(end-start) == 0)
-		return;
+	if (start > end || std::abs(end - start) == 0) return;
 
 	// set vertices
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -94,10 +179,21 @@ void OpenGLVertexArrayObject::draw()
 		glTexCoordPointer(2, GL_FLOAT, 0, (char*)NULL); // set first texcoord pointer to texcoord buffer
 	}
 
+	// set colors
+	if (m_iNumColors > 0)
+	{
+		glEnableClientState(GL_COLOR_ARRAY);
+		glBindBuffer(GL_ARRAY_BUFFER, m_iColorBuffer);
+		glColorPointer(4, GL_UNSIGNED_BYTE, 0, (char*)NULL); // set color pointer to color buffer
+	}
+
 	// render it
-	glDrawArrays(primitiveToOpenGL(m_primitive), start, end-start);
+	glDrawArrays(primitiveToOpenGL(m_primitive), start, end - start);
 
 	// disable everything
+	if (m_iNumColors > 0)
+		glDisableClientState(GL_COLOR_ARRAY);
+
 	if (m_iNumTexcoords > 0)
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 

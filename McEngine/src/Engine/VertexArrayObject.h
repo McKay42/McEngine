@@ -14,7 +14,7 @@ class VertexArrayObject : public Resource
 {
 public:
 	VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC, bool keepInSystemMemory = false);
-	virtual ~VertexArrayObject();
+	virtual ~VertexArrayObject() {;}
 
 	// TODO: fix the naming schema. clear = empty = just empty the containers, but not necessarily release memory
 	void clear();
@@ -32,8 +32,15 @@ public:
 
 	void addColor(Color color);
 
+	void setVertex(int index, Vector2 v);
+	void setVertex(int index, Vector3 v);
+	void setVertex(int index, float x, float y, float z = 0);
+
+	void setColor(int index, Color color);
+
 	void setType(Graphics::PRIMITIVE primitive);
-	void setDrawPercent(float fromPercent = 0.0f, float toPercent = 1.0f, int nearestMultiple = 0);
+	void setDrawRange(int fromIndex, int toIndex);
+	void setDrawPercent(float fromPercent = 0.0f, float toPercent = 1.0f, int nearestMultiple = 0); // DEPRECATED
 
 	inline Graphics::PRIMITIVE getPrimitive() const {return m_primitive;}
 	inline Graphics::USAGE_TYPE getUsage() const {return m_usage;}
@@ -46,7 +53,6 @@ public:
 	inline unsigned int getNumVertices() const {return m_iNumVertices;}
 
 protected:
-	static int nearestMultipleOf(int number, int multiple);
 	static int nearestMultipleUp(int number, int multiple);
 	static int nearestMultipleDown(int number, int multiple);
 
@@ -67,6 +73,12 @@ protected:
 
 	unsigned int m_iNumVertices;
 
+	std::vector<int> m_partialUpdateVertexIndices;
+	std::vector<int> m_partialUpdateColorIndices;
+
+	// custom
+	int m_iDrawRangeFromIndex;
+	int m_iDrawRangeToIndex;
 	int m_iDrawPercentNearestMultiple;
 	float m_fDrawPercentFromPercent;
 	float m_fDrawPercentToPercent;
