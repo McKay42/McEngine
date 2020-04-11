@@ -18,8 +18,6 @@ public:
 
 	virtual void update() {;}
 	virtual void draw(Graphics *g) {;}
-
-private:
 };
 
 #endif
