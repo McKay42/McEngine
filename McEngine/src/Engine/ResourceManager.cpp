@@ -169,18 +169,6 @@ ResourceManager::~ResourceManager()
 
 void ResourceManager::update()
 {
-#ifdef MCENGINE_FEATURE_MULTITHREADING
-
-	/*
-	if (debug_rm.getBool())
-	{
-		if (m_threads.size() > 0)
-			debugLog("Resource Manager: %i active worker thread(s)\n", m_threads.size());
-	}
-	*/
-
-#endif
-
 	bool reLock = false;
 
 #ifdef MCENGINE_FEATURE_MULTITHREADING
@@ -243,7 +231,7 @@ void ResourceManager::update()
 				reLock = true;
 
 				// check if this was an async destroy, can skip load() if that is the case
-				// TODO: this will probably break stuff, needs in depth testing before use
+				// TODO: this will probably break stuff, needs in depth testing before change, think more about this
 				/*
 				bool isAsyncDestroy = false;
 				for (int a=0; a<m_loadingWorkAsyncDestroy.size(); a++)
@@ -376,7 +364,8 @@ void ResourceManager::destroyResource(Resource *rs)
 		}
 
 		// standard destroy
-		SAFE_DELETE(rs); // implicitly calls release() through the Resource destructor
+		SAFE_DELETE(rs);
+
 		if (isManagedResource)
 			m_vResources.erase(m_vResources.begin() + managedResourceIndex);
 	}
@@ -410,7 +399,7 @@ Image *ResourceManager::loadImage(UString filepath, UString resourceName, bool m
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = existsAndHandle(resourceName);
+		Resource *temp = checkIfExistsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<Image*>(temp);
 	}
@@ -440,7 +429,7 @@ Image *ResourceManager::loadImageAbs(UString absoluteFilepath, UString resourceN
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = existsAndHandle(resourceName);
+		Resource *temp = checkIfExistsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<Image*>(temp);
 	}
@@ -465,7 +454,7 @@ Image *ResourceManager::loadImageAbsUnnamed(UString absoluteFilepath, bool mipma
 
 Image *ResourceManager::createImage(unsigned int width, unsigned int height, bool mipmapped, bool keepInSystemMemory)
 {
-	if (width < 1 || height < 1 || width > 4096 || height > 4096)
+	if (width < 1 || height < 1 || width > 8192 || height > 8192)
 	{
 		engine->showMessageError("Resource Manager Error", UString::format("Invalid parameters in createImage(%i, %i, %i)!\n", width, height, (int)mipmapped));
 		return NULL;
@@ -484,7 +473,7 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, int fo
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = existsAndHandle(resourceName);
+		Resource *temp = checkIfExistsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<McFont*>(temp);
 	}
@@ -504,7 +493,7 @@ McFont *ResourceManager::loadFont(UString filepath, UString resourceName, std::v
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = existsAndHandle(resourceName);
+		Resource *temp = checkIfExistsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<McFont*>(temp);
 	}
@@ -524,7 +513,7 @@ Sound *ResourceManager::loadSound(UString filepath, UString resourceName, bool s
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = existsAndHandle(resourceName);
+		Resource *temp = checkIfExistsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<Sound*>(temp);
 	}
@@ -544,7 +533,7 @@ Sound *ResourceManager::loadSoundAbs(UString filepath, UString resourceName, boo
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = existsAndHandle(resourceName);
+		Resource *temp = checkIfExistsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<Sound*>(temp);
 	}
@@ -563,7 +552,7 @@ Shader *ResourceManager::loadShader(UString vertexShaderFilePath, UString fragme
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = existsAndHandle(resourceName);
+		Resource *temp = checkIfExistsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<Shader*>(temp);
 	}
@@ -595,7 +584,7 @@ Shader *ResourceManager::createShader(UString vertexShader, UString fragmentShad
 	// check if it already exists
 	if (resourceName.length() > 0)
 	{
-		Resource *temp = existsAndHandle(resourceName);
+		Resource *temp = checkIfExistsAndHandle(resourceName);
 		if (temp != NULL)
 			return dynamic_cast<Shader*>(temp);
 	}
@@ -621,7 +610,7 @@ Shader *ResourceManager::createShader(UString vertexShader, UString fragmentShad
 RenderTarget *ResourceManager::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
 {
 	RenderTarget *rt = engine->getGraphics()->createRenderTarget(x, y, width, height, multiSampleType);
-	rt->setName(UString::format("<RT_(%ix%i)>", width, height));
+	rt->setName(UString::format("_RT_%ix%i", width, height));
 
 	loadResource(rt, true);
 
@@ -636,7 +625,7 @@ RenderTarget *ResourceManager::createRenderTarget(int width, int height, Graphic
 TextureAtlas *ResourceManager::createTextureAtlas(int width, int height)
 {
 	TextureAtlas *ta = new TextureAtlas(width, height);
-	ta->setName(UString::format("<TA_(%ix%i)>", width, height));
+	ta->setName(UString::format("_TA_%ix%i", width, height));
 
 	loadResource(ta, false);
 
@@ -645,7 +634,6 @@ TextureAtlas *ResourceManager::createTextureAtlas(int width, int height)
 
 VertexArrayObject *ResourceManager::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
-	// create instance and load it
 	VertexArrayObject *vao = engine->getGraphics()->createVertexArrayObject(primitive, usage, keepInSystemMemory);
 
 	loadResource(vao, false);
@@ -804,7 +792,7 @@ void ResourceManager::doesntExistWarning(UString resourceName) const
 	}
 }
 
-Resource *ResourceManager::existsAndHandle(UString resourceName)
+Resource *ResourceManager::checkIfExistsAndHandle(UString resourceName)
 {
 	for (int i=0; i<m_vResources.size(); i++)
 	{
