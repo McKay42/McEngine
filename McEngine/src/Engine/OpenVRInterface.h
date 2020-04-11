@@ -33,6 +33,8 @@ class CGLRenderModel;
 class OpenVRInterface : public KeyboardListener
 {
 public:
+	typedef fastdelegate::FastDelegate1<Graphics*> DrawCallback;
+
 	struct PLAY_AREA_RECT
 	{
 		Vector3 corners[4];
@@ -59,30 +61,29 @@ public:
 	void resetFakeCameraMovement();
 	void resetFakeCameraMouseCapture();
 
-	typedef fastdelegate::FastDelegate1<Graphics*> DrawCallback;
 	void setDrawCallback(DrawCallback drawCallback) {m_drawCallback = drawCallback;}
 
 	void setControllerColorOverride(Color controllerColor);
 
-	inline UString getTrackingSystemName() {return m_sTrackingSystemName;}
+	inline UString getTrackingSystemName() const {return m_sTrackingSystemName;}
 
-	inline Matrix4 getCurrentModelMatrix() {return m_matCurrentM;}
-	inline Matrix4 getCurrentViewProjectionMatrix() {return m_matCurrentVP;}
-	inline Matrix4 getCurrentModelViewProjectionMatrix() {return m_matCurrentMVP;}
+	inline Matrix4 getCurrentModelMatrix() const {return m_matCurrentM;}
+	inline Matrix4 getCurrentViewProjectionMatrix() const {return m_matCurrentVP;}
+	inline Matrix4 getCurrentModelViewProjectionMatrix() const {return m_matCurrentMVP;}
 
-	inline OpenVRController *getController() {return m_controller;}
-	inline OpenVRController *getLeftController() {return m_controllerLeft;}
-	inline OpenVRController *getRightController() {return m_controllerRight;}
+	inline OpenVRController *getController() const {return m_controller;}
+	inline OpenVRController *getLeftController() const {return m_controllerLeft;}
+	inline OpenVRController *getRightController() const {return m_controllerRight;}
 
-	inline Vector2 getPlayAreaSize() {return m_vPlayAreaSize;}
-	inline PLAY_AREA_RECT getPlayAreaRect() {return m_playAreaRect;}
+	inline Vector2 getPlayAreaSize() const {return m_vPlayAreaSize;}
+	inline PLAY_AREA_RECT getPlayAreaRect() const {return m_playAreaRect;}
 
 	Vector2 getRenderTargetResolution();
 
 	inline bool isReady() const {return m_bReady;}
 	inline bool isKeyboardVisible() const {return m_bIsKeyboardVisible;}
-	bool hasInputFocus();
 
+	bool hasInputFocus();
 	bool isLIVReady();
 
 private:
