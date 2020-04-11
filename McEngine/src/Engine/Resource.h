@@ -10,8 +10,6 @@
 
 #include "cbase.h"
 
-class ResourceManager;
-
 class Resource
 {
 public:
@@ -19,14 +17,14 @@ public:
 	Resource(UString filepath);
 	virtual ~Resource() {;}
 
-	virtual void load();
-	virtual void loadAsync();
-	virtual void release();
-	virtual void reload();
+	void load();
+	void loadAsync();
+	void release();
+	void reload();
 
 	void interruptLoad();
 
-	void setName(UString name){m_sName = name;}
+	void setName(UString name) {m_sName = name;}
 
 	inline UString getName() const {return m_sName;}
 	inline UString getFilePath() const {return m_sFilePath;}
