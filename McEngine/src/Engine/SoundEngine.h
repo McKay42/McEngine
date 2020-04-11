@@ -33,9 +33,8 @@ public:
 	void set3dPosition(Vector3 headPos, Vector3 viewDir, Vector3 viewUp);
 
 	std::vector<UString> getOutputDevices();
+
 	inline UString getOutputDevice() const {return m_sCurrentOutputDevice;}
-	inline int getLatency() const {return m_iLatency;}
-	float getAmplitude(Sound *snd);
 	inline float getVolume() const {return m_fVolume;}
 
 	// ILLEGAL:
@@ -47,14 +46,6 @@ public:
 #endif
 
 private:
-	void updateOutputDevices(bool handleOutputDeviceChanges, bool printInfo);
-	bool initializeOutputDevice(int id = -1);
-
-	bool m_bReady;
-	int m_iLatency;
-
-	float m_fPrevOutputDeviceChangeCheckTime;
-
 	struct OUTPUT_DEVICE
 	{
 		int id;
@@ -62,6 +53,13 @@ private:
 		bool isDefault;
 		UString name;
 	};
+
+	void updateOutputDevices(bool handleOutputDeviceChanges, bool printInfo);
+	bool initializeOutputDevice(int id = -1);
+
+	bool m_bReady;
+
+	float m_fPrevOutputDeviceChangeCheckTime;
 	std::function<void()> m_outputDeviceChangeCallback;
 	std::vector<OUTPUT_DEVICE> m_outputDevices;
 

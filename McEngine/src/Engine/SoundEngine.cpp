@@ -26,7 +26,7 @@
 #include <basswasapi.h>
 #include <bassmix.h>
 
-SOUNDHANDLE g_wasapiOutputMixer = 0;
+Sound::SOUNDHANDLE g_wasapiOutputMixer = 0;
 
 DWORD CALLBACK OutputWasapiProc(void *buffer, DWORD length, void *user)
 {
@@ -99,7 +99,6 @@ void _WIN_SND_WASAPI_EXCLUSIVE_CHANGE(UString oldValue, UString newValue)
 SoundEngine::SoundEngine()
 {
 	m_bReady = false;
-	m_iLatency = -1;
 
 	m_fPrevOutputDeviceChangeCheckTime = 0.0f;
 
@@ -122,7 +121,7 @@ SoundEngine::SoundEngine()
 	// apply default global settings
 	BASS_SetConfig(BASS_CONFIG_BUFFER, 100);
 	BASS_SetConfig(BASS_CONFIG_NET_BUFFER, 500);
-	//BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, 10); // NOTE: only used by osu atm, but not tested enough for offset problems
+	//BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, 10); // NOTE: only used by new osu atm, but not tested enough for offset problems
 	BASS_SetConfig(BASS_CONFIG_MP3_OLDGAPS, 1); // NOTE: only used by osu atm (all beatmaps timed to non-iTunesSMPB + 529 sample deletion offsets on old dlls pre 2015)
 	BASS_SetConfig(BASS_CONFIG_DEV_NONSTOP, 1); // NOTE: only used by osu atm (avoids lag/jitter in BASS_ChannelGetPosition() shortly after a BASS_ChannelPlay() after loading/silence)
 
@@ -336,7 +335,7 @@ bool SoundEngine::initializeOutputDevice(int id)
 
 	// init
 	const int freq = 44100;
-	const unsigned int flags = /*BASS_DEVICE_3D | BASS_DEVICE_LATENCY | */ runtimeFlags;
+	const unsigned int flags = /* BASS_DEVICE_3D | */ runtimeFlags;
 	bool ret = false;
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
@@ -445,13 +444,6 @@ bool SoundEngine::initializeOutputDevice(int id)
 	}
 	debugLog("SoundEngine: Output Device = \"%s\"\n", m_sCurrentOutputDevice.toUtf8());
 
-	/*
-	BASS_INFO info;
-	BASS_GetInfo(&info);
-	m_iLatency = info.minbuf;
-	debugLog("SoundEngine: Minimum Latency = %i ms\n", info.latency); // NOTE: needs BASS_DEVICE_LATENCY in init above, but that adds seconds to the startup time
-	*/
-
 	return true;
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
@@ -482,7 +474,9 @@ bool SoundEngine::initializeOutputDevice(int id)
 	return true;
 
 #else
+
 	return false;
+
 #endif
 }
 
@@ -537,7 +531,7 @@ bool SoundEngine::play(Sound *snd, float pan)
 
 	if (!snd_restrict_play_frame.getBool() || engine->getTime() > snd->getLastPlayTime())
 	{
-		SOUNDHANDLE handle = snd->getHandle();
+		Sound::SOUNDHANDLE handle = snd->getHandle();
 		BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
 
 		if (snd->isStream() && snd->isLooped())
@@ -575,7 +569,7 @@ bool SoundEngine::play(Sound *snd, float pan)
 
 	if (!snd_restrict_play_frame.getBool() || engine->getTime() > snd->getLastPlayTime())
 	{
-		SOUNDHANDLE handle = snd->getHandle();
+		Sound::SOUNDHANDLE handle = snd->getHandle();
 		if (BASS_ChannelIsActive(handle) != BASS_ACTIVE_PLAYING)
 		{
 			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
@@ -654,7 +648,7 @@ bool SoundEngine::play3d(Sound *snd, Vector3 pos)
 
 	if (!snd_restrict_play_frame.getBool() || engine->getTime() > snd->getLastPlayTime())
 	{
-		SOUNDHANDLE handle = snd->getHandle();
+		Sound::SOUNDHANDLE handle = snd->getHandle();
 		if (BASS_ChannelIsActive(handle) != BASS_ACTIVE_PLAYING)
 		{
 			BASS_3DVECTOR bassPos = BASS_3DVECTOR(pos.x, pos.y, pos.z);
@@ -690,7 +684,7 @@ void SoundEngine::pause(Sound *snd)
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
-	SOUNDHANDLE handle = snd->getHandle();
+	Sound::SOUNDHANDLE handle = snd->getHandle();
 
 	if (snd->isStream())
 	{
@@ -735,7 +729,7 @@ void SoundEngine::stop(Sound *snd)
 
 #ifdef MCENGINE_FEATURE_SOUND
 
-	SOUNDHANDLE handle = snd->getHandle();
+	Sound::SOUNDHANDLE handle = snd->getHandle();
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
@@ -746,9 +740,12 @@ void SoundEngine::stop(Sound *snd)
 
 	BASS_ChannelStop(handle);
 	{
-		snd->setPosition(0.0); // HACKHACK: necessary
-		snd->clear();
+		snd->setPosition(0.0);
 		snd->setLastPlayTime(0.0f);
+
+		// allow next play()/getHandle() to reallocate (because BASS_ChannelStop() will free the channel)
+		snd->m_HCHANNEL = 0;
+		snd->m_HCHANNELBACKUP = 0;
 	}
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
@@ -884,22 +881,6 @@ std::vector<UString> SoundEngine::getOutputDevices()
 	}
 
 	return outputDevices;
-}
-
-float SoundEngine::getAmplitude(Sound *snd)
-{
-	if (!m_bReady || snd == NULL || !snd->isReady() || !snd->isPlaying()) return 0.0f;
-
-#ifdef MCENGINE_FEATURE_SOUND
-
-	float fft[128];
-	fft[0] = 0.0f;
-	BASS_ChannelGetData(snd->getHandle(), &fft, BASS_DATA_FFT256);
-	return fft[0];
-
-#else
-	return 0.0f;
-#endif
 }
 
 

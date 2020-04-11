@@ -10,10 +10,15 @@
 
 #include "Resource.h"
 
-typedef unsigned long SOUNDHANDLE;
+class SoundEngine;
 
 class Sound : public Resource
 {
+	friend class SoundEngine;
+
+public:
+	typedef unsigned long SOUNDHANDLE;
+
 public:
 	Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan);
 	virtual ~Sound() {destroy();}
@@ -27,7 +32,6 @@ public:
 	void setPan(float pan);
 	void setLoop(bool loop);
 	void setOverlayable(bool overlayable) {m_bIsOverlayable = overlayable;}
-
 	void setLastPlayTime(double lastPlayTime) {m_fLastPlayTime = lastPlayTime;}
 
 	SOUNDHANDLE getHandle();
@@ -42,21 +46,12 @@ public:
 
 	bool isPlaying();
 	bool isFinished();
+
 	inline bool isStream() const {return m_bStream;}
 	inline bool is3d() const {return m_bIs3d;}
 	inline bool isLooped() const {return m_bIsLooped;}
 
-	void refactor(UString newFilePath);
-
-	// HACKHACK: this is dirty
-	void setEnablePitchAndSpeedShiftingHack(bool enableHack) {m_bisSpeedAndPitchHackEnabled = enableHack;}
-	void clear();
-
-	struct SOUND_PROC_USERDATA
-	{
-		SOUNDHANDLE originalSampleChannel;
-		long long offset;
-	};
+	void rebuild(UString newFilePath);
 
 	// ILLEGAL:
 	void setHandle(SOUNDHANDLE handle) {m_HCHANNEL = handle;}
@@ -71,10 +66,6 @@ private:
 
 	void setPositionMS(unsigned long ms, bool internal);
 
-	SOUND_PROC_USERDATA *m_soundProcUserData;
-
-	float m_fVolume;
-
 	SOUNDHANDLE m_HSTREAM;
 	SOUNDHANDLE m_HSTREAMBACKUP;
 	SOUNDHANDLE m_HCHANNEL;
@@ -86,15 +77,17 @@ private:
 	bool m_bPrescan;
 	bool m_bIsOverlayable;
 
+	float m_fVolume;
 	double m_fLastPlayTime;
 
-	bool m_bisSpeedAndPitchHackEnabled;
-
-	void *m_mixChunkOrMixMusic;
-	unsigned long m_iPrevPosition;
+	// bass wasapi
 	char *m_wasapiSampleBuffer;
 	unsigned long long m_iWasapiSampleBufferSize;
 	std::vector<SOUNDHANDLE> m_danglingWasapiStreams;
+
+	// sdl mixer
+	void *m_mixChunkOrMixMusic;
+	unsigned long m_iPrevPosition;
 };
 
 #endif
