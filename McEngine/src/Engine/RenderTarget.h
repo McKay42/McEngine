@@ -15,6 +15,9 @@ class ConVar;
 class RenderTarget : public Resource
 {
 public:
+	static ConVar *debug_rt;
+
+public:
 	RenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
 	virtual ~RenderTarget() {;}
 
@@ -42,17 +45,15 @@ public:
 	void setClearDepthOnDraw(bool clearDepthOnDraw) {m_bClearDepthOnDraw = clearDepthOnDraw;}
 
 	// get
-	float getWidth() {return m_vSize.x;}
-	float getHeight() {return m_vSize.y;}
+	float getWidth() const {return m_vSize.x;}
+	float getHeight() const {return m_vSize.y;}
 	inline Vector2 getSize() const {return m_vSize;}
 	inline Vector2 getPos() const {return m_vPos;}
 	inline Graphics::MULTISAMPLE_TYPE getMultiSampleType() const {return m_multiSampleType;}
 
-	inline bool isMultiSampled() {return m_multiSampleType != Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X;}
+	inline bool isMultiSampled() const {return m_multiSampleType != Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X;}
 
 protected:
-	static ConVar *debug_rt;
-
 	virtual void init() = 0;
 	virtual void initAsync() = 0;
 	virtual void destroy() = 0;
