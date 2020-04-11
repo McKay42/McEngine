@@ -19,6 +19,16 @@
 class OpenCLInterface
 {
 public:
+	struct OPENCL_DEVICE
+	{
+		UString name;
+		UString vendor;
+		UString version;
+		UString profile;
+		UString extensions;
+	};
+
+public:
 	OpenCLInterface();
 	~OpenCLInterface();
 
@@ -59,20 +69,10 @@ public:
 	void flush();
 	void finish();
 
-	inline int getMaxMemAllocSizeInMB() {return m_iMaxMemAllocSizeInMB;}
-	inline int getGlobalMemSizeInMB() {return m_iGlobalMemSizeInMB;}
+	inline int getMaxMemAllocSizeInMB() const {return m_iMaxMemAllocSizeInMB;}
+	inline int getGlobalMemSizeInMB() const {return m_iGlobalMemSizeInMB;}
 
-
-	struct OPENCL_DEVICE
-	{
-		UString name;
-		UString vendor;
-		UString version;
-		UString profile;
-		UString extensions;
-	};
-
-	std::vector<OPENCL_DEVICE> getDevices() {return m_devices;}
+	const std::vector<OPENCL_DEVICE> &getDevices() const {return m_devices;}
 
 private:
 	std::vector<OPENCL_DEVICE> m_devices;
@@ -278,16 +278,6 @@ void OpenCLInterface::setKernelArg(int kernel, unsigned int argumentNumber, T ar
 		engine->showMessageError("OpenCL Error", UString::format("clSetKernelArg(%i, %i, T [template]) returned %i!\n\n(You can quit the engine by closing the console!)", kernel, argumentNumber, ret));
 
 #endif
-}
-
-
-
-// helper functions
-
-inline size_t shrRoundUp(int group_size, int global_size)
-{
-	int r = global_size % group_size;
-	return r == 0 ? global_size : global_size + group_size - r;
 }
 
 #endif
