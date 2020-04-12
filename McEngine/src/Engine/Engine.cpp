@@ -29,7 +29,6 @@
 #include "SoundEngine.h"
 #include "ContextMenu.h"
 #include "Keyboard.h"
-#include "Profiler.h"
 #include "ConVar.h"
 #include "Mouse.h"
 #include "Timer.h"
