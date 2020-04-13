@@ -8,14 +8,15 @@
 // TODO: refactor the spaghetti parts, this can be done way more elegantly
 
 #include "CBaseUIScrollView.h"
-#include "ResourceManager.h"
 
 #include "Engine.h"
+#include "ResourceManager.h"
 #include "AnimationHandler.h"
-#include "CBaseUIContainer.h"
 #include "Mouse.h"
 #include "Keyboard.h"
 #include "ConVar.h"
+
+#include "CBaseUIContainer.h"
 
 ConVar ui_scrollview_resistance("ui_scrollview_resistance", 5.0f, "how many pixels you have to pull before you start scrolling");
 ConVar ui_scrollview_scrollbarwidth("ui_scrollview_scrollbarwidth", 15.0f);
@@ -47,7 +48,7 @@ CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float 
 	m_bScrollbarIsVerticalScrolling = false;
 
 	m_bAutoScrollingX = m_bAutoScrollingY = false;
-	m_iPrevScrollDeltaY = m_iPrevScrollDeltaX =  0;
+	m_iPrevScrollDeltaX =  0;
 	m_bBlockScrolling = false;
 
 	m_bScrollResistanceCheck = false;
@@ -60,6 +61,26 @@ CBaseUIScrollView::~CBaseUIScrollView()
 {
 	clear();
 	SAFE_DELETE(m_container);
+}
+
+void CBaseUIScrollView::clear()
+{
+	m_container->clear();
+
+	anim->deleteExistingAnimation(&m_vKineticAverage.x);
+	anim->deleteExistingAnimation(&m_vKineticAverage.y);
+
+	anim->deleteExistingAnimation(&m_vScrollPos.y);
+	anim->deleteExistingAnimation(&m_vScrollPos.x);
+
+	anim->deleteExistingAnimation(&m_vVelocity.x);
+	anim->deleteExistingAnimation(&m_vVelocity.y);
+
+	m_vScrollSize.x = m_vScrollSize.y = 0;
+	m_vScrollPos.x = m_vScrollPos.y = 0;
+	m_vVelocity.x = m_vVelocity.y = 0;
+
+	m_container->setPos(m_vPos); // TODO: wtf is this doing here
 }
 
 void CBaseUIScrollView::draw(Graphics *g)
@@ -90,7 +111,7 @@ void CBaseUIScrollView::draw(Graphics *g)
 	{
 		g->pushClipRect(McRect(m_vPos.x + 1, m_vPos.y + 2, m_vSize.x - 1, m_vSize.y - 1));
 	}
-
+	{
 		m_container->draw(g);
 
 		if (m_bDrawScrollbars)
@@ -117,9 +138,11 @@ void CBaseUIScrollView::draw(Graphics *g)
 				//g->fillRoundedRect(m_horizontalScrollbar.getX(), m_horizontalScrollbar.getY(), m_horizontalScrollbar.getWidth(), m_horizontalScrollbar.getHeight(), m_horizontalScrollbar.getHeight()/2);
 			}
 		}
-
+	}
 	if (m_bClipping)
+	{
 		g->popClipRect();
+	}
 }
 
 void CBaseUIScrollView::update()
@@ -134,8 +157,6 @@ void CBaseUIScrollView::update()
 		const Vector2 deltaToAdd = (engine->getMouse()->getPos() - m_vMouseBackup2);
 		//debugLog("+ (%f, %f)\n", deltaToAdd.x, deltaToAdd.y);
 
-		//m_vKineticAverage += deltaToAdd;
-		//m_vKineticAverage /= 2.0f;
 		anim->moveQuadOut(&m_vKineticAverage.x, deltaToAdd.x, ui_scrollview_kinetic_approach_time.getFloat(), true);
 		anim->moveQuadOut(&m_vKineticAverage.y, deltaToAdd.y, ui_scrollview_kinetic_approach_time.getFloat(), true);
 
@@ -222,72 +243,58 @@ void CBaseUIScrollView::update()
 	if (!engine->getKeyboard()->isAltDown() && m_bMouseInside && m_bEnabled)
 	{
 		if (engine->getMouse()->getWheelDeltaVertical() != 0)
-			scrollY(engine->getMouse()->getWheelDeltaVertical()*ui_scrollview_mousewheel_multiplier.getFloat());
+			scrollY(engine->getMouse()->getWheelDeltaVertical() * ui_scrollview_mousewheel_multiplier.getFloat());
 		if (engine->getMouse()->getWheelDeltaHorizontal() != 0)
-			scrollX(-engine->getMouse()->getWheelDeltaHorizontal()*ui_scrollview_mousewheel_multiplier.getFloat());
+			scrollX(-engine->getMouse()->getWheelDeltaHorizontal() * ui_scrollview_mousewheel_multiplier.getFloat());
 	}
 
 	// handle drag scrolling movement
 	if (m_bScrolling && m_bActive)
 	{
 		if (m_bVerticalScrolling)
-			m_vScrollPos.y = m_vScrollPosBackup.y + (engine->getMouse()->getPos().y-m_vMouseBackup.y);
+			m_vScrollPos.y = m_vScrollPosBackup.y + (engine->getMouse()->getPos().y - m_vMouseBackup.y);
 		if (m_bHorizontalScrolling)
-			m_vScrollPos.x = m_vScrollPosBackup.x + (engine->getMouse()->getPos().x-m_vMouseBackup.x);
+			m_vScrollPos.x = m_vScrollPosBackup.x + (engine->getMouse()->getPos().x - m_vMouseBackup.x);
 
 		m_container->setPos(m_vPos + m_vScrollPos);
-
-		// NOTE: moved up
-		/*
-		m_vKineticAverage += (engine->getMouse()->getPos() - m_vMouseBackup2);
-		m_vKineticAverage /= 2.0f;
-		m_vMouseBackup2 = engine->getMouse()->getPos();
-		*/
 	}
 	else // no longer scrolling, smooth the remaining velocity
 	{
 		m_vKineticAverage.zero();
 
 		// rubber banding + kinetic scrolling
+
+		// TODO: fix amount being dependent on fps due to double animation indirection
+
+		// y axis
 		if (!m_bAutoScrollingY && m_bVerticalScrolling)
 		{
 			if (std::round(m_vScrollPos.y) > 1) // rubber banding, top
 			{
 				anim->moveQuadOut(&m_vVelocity.y, 1, 0.05f, 0.0f, true);
 				anim->moveQuadOut(&m_vScrollPos.y, m_vVelocity.y, 0.2f, 0.0f, true);
-
-				///m_vVelocity.y = 0;
-				///anim->moveQuadOut(&m_vScrollPos.y, 1, 0.2f, 0.0f, true);
 			}
-			else if (std::round(std::abs(m_vScrollPos.y)+m_vSize.y) > m_vScrollSize.y && std::round(m_vScrollPos.y) < 1) // rubber banding, bottom
+			else if (std::round(std::abs(m_vScrollPos.y) + m_vSize.y) > m_vScrollSize.y && std::round(m_vScrollPos.y) < 1) // rubber banding, bottom
 			{
 				anim->moveQuadOut(&m_vVelocity.y, (m_vScrollSize.y > m_vSize.y ? -m_vScrollSize.y : 1) + (m_vScrollSize.y > m_vSize.y ? m_vSize.y : 0), 0.05f, 0.0f, true);
 				anim->moveQuadOut(&m_vScrollPos.y, m_vVelocity.y, 0.2f, 0.0f, true);
-
-				///m_vVelocity.y = 0;
-				///anim->moveQuadOut(&m_vScrollPos.y, (m_vScrollSize.y > m_vSize.y ? -m_vScrollSize.y : 1) + (m_vScrollSize.y > m_vSize.y ? m_vSize.y : 0), 0.2f, 0.0f, true);
 			}
 			else if (std::round(m_vVelocity.y) != 0 && std::round(m_vScrollPos.y) != std::round(m_vVelocity.y)) // kinetic scrolling
 				anim->moveQuadOut(&m_vScrollPos.y, m_vVelocity.y, 0.35f, 0.0f, true);
 		}
 
+		// x axis
 		if (!m_bAutoScrollingX && m_bHorizontalScrolling)
 		{
 			if (std::round(m_vScrollPos.x) > 1) // rubber banding, left
 			{
 				anim->moveQuadOut(&m_vVelocity.x, 1, 0.05f, 0.0f, true);
 				anim->moveQuadOut(&m_vScrollPos.x, m_vVelocity.x, 0.2f, 0.0f, true);
-
-				///m_vVelocity.x = 0;
-				///anim->moveQuadOut(&m_vScrollPos.x, 1, 0.2f, 0.0f, true);
 			}
-			else if (std::round(std::abs(m_vScrollPos.x)+m_vSize.x) > m_vScrollSize.x && std::round(m_vScrollPos.x) < 1) // rubber banding, right
+			else if (std::round(std::abs(m_vScrollPos.x) + m_vSize.x) > m_vScrollSize.x && std::round(m_vScrollPos.x) < 1) // rubber banding, right
 			{
 				anim->moveQuadOut(&m_vVelocity.x, (m_vScrollSize.x > m_vSize.x ? -m_vScrollSize.x : 1) + (m_vScrollSize.x > m_vSize.x ? m_vSize.x : 0), 0.05f, 0.0f, true);
 				anim->moveQuadOut(&m_vScrollPos.x, m_vVelocity.x, 0.2f, 0.0f, true);
-
-				///m_vVelocity.x = 0;
-				///anim->moveQuadOut(&m_vScrollPos.x, (m_vScrollSize.x > m_vSize.x ? -m_vScrollSize.x : 1) + (m_vScrollSize.x > m_vSize.x ? m_vSize.x : 0), 0.2f, 0.0f, true);
 			}
 			else if (std::round(m_vVelocity.x) != 0 && std::round(m_vScrollPos.x) != std::round(m_vVelocity.x)) // kinetic scrolling
 				anim->moveQuadOut(&m_vScrollPos.x, m_vVelocity.x, 0.35f, 0.0f, true);
@@ -300,12 +307,12 @@ void CBaseUIScrollView::update()
 		m_vVelocity.x = m_vVelocity.y = 0;
 		if (m_bScrollbarIsVerticalScrolling)
 		{
-			float percent = clamp<float>( (engine->getMouse()->getPos().y - m_vPos.y - m_verticalScrollbar.getWidth() - m_verticalScrollbar.getHeight() - m_vMouseBackup.y - 1) / (m_vSize.y - 2*m_verticalScrollbar.getWidth()), 0.0f, 1.0f );
+			float percent = clamp<float>((engine->getMouse()->getPos().y - m_vPos.y - m_verticalScrollbar.getWidth() - m_verticalScrollbar.getHeight() - m_vMouseBackup.y - 1) / (m_vSize.y - 2*m_verticalScrollbar.getWidth()), 0.0f, 1.0f);
 			scrollToY(-m_vScrollSize.y*percent, false);
 		}
 		else
 		{
-			float percent = clamp<float>( (engine->getMouse()->getPos().x - m_vPos.x - m_horizontalScrollbar.getHeight() - m_horizontalScrollbar.getWidth() - m_vMouseBackup.x - 1) / (m_vSize.x - 2*m_horizontalScrollbar.getHeight()), 0.0f, 1.0f );
+			float percent = clamp<float>((engine->getMouse()->getPos().x - m_vPos.x - m_horizontalScrollbar.getHeight() - m_horizontalScrollbar.getWidth() - m_vMouseBackup.x - 1) / (m_vSize.x - 2*m_horizontalScrollbar.getHeight()), 0.0f, 1.0f);
 			scrollToX(-m_vScrollSize.x*percent, false);
 		}
 	}
@@ -344,58 +351,53 @@ void CBaseUIScrollView::onChar(KeyboardEvent &e)
 	m_container->onChar(e);
 }
 
-void CBaseUIScrollView::clear()
-{
-	m_container->clear();
-
-	anim->deleteExistingAnimation(&m_vKineticAverage.x);
-	anim->deleteExistingAnimation(&m_vKineticAverage.y);
-
-	anim->deleteExistingAnimation(&m_vScrollPos.y);
-	anim->deleteExistingAnimation(&m_vScrollPos.x);
-
-	m_vScrollSize.x = m_vScrollSize.y = 0;
-	m_vScrollPos.x = m_vScrollPos.y = 0;
-	m_vVelocity.x = m_vVelocity.y = 0;
-
-	m_container->setPos(m_vPos);
-}
-
 void CBaseUIScrollView::scrollY(int delta, bool animated)
 {
 	if (!m_bVerticalScrolling || delta == 0 || m_bScrolling || m_vSize.y >= m_vScrollSize.y || m_container->isBusy()) return;
 
-	// stop any movement
-	if (animated)
-		m_vVelocity.y = m_vScrollPos.y;
+	const bool allowOverscrollBounce = true;
 
-	// keep velocity
-	if (m_bAutoScrollingY && animated)
-		delta += (delta > 0 ? ( m_iPrevScrollDeltaY < 0 ? 0 : std::abs(delta - m_iPrevScrollDeltaY) ) : ( m_iPrevScrollDeltaY > 0 ? 0 : -std::abs(delta - m_iPrevScrollDeltaY) ));
+	// keep velocity (partially animated/finished scrolls should not get lost, especially multiple scroll() calls in quick succession)
+	const float remainingVelocity = m_vScrollPos.y - m_vVelocity.y;
+	if (animated && m_bAutoScrollingY)
+		delta -= remainingVelocity;
 
-	// calculate target respecting the boundaries
+	// calculate new target
 	float target = m_vScrollPos.y + delta;
-	if (target > 1)
-		target = 1;
-	if (std::abs(target)+m_vSize.y > m_vScrollSize.y)
-		target = (m_vScrollSize.y > m_vSize.y ? -m_vScrollSize.y : m_vScrollSize.y) + (m_vScrollSize.y > m_vSize.y ? m_vSize.y : 0);
-
 	m_bAutoScrollingY = animated;
-	m_iPrevScrollDeltaY = delta;
 
+	// clamp target
+	{
+		if (target > 1)
+		{
+			if (!allowOverscrollBounce)
+				target = 1;
+
+			m_bAutoScrollingY = !allowOverscrollBounce;
+		}
+
+		if (std::abs(target) + m_vSize.y > m_vScrollSize.y)
+		{
+			if (!allowOverscrollBounce)
+				target = (m_vScrollSize.y > m_vSize.y ? -m_vScrollSize.y : m_vScrollSize.y) + (m_vScrollSize.y > m_vSize.y ? m_vSize.y : 0);
+
+			m_bAutoScrollingY = !allowOverscrollBounce;
+		}
+	}
+
+	// apply target
 	if (animated)
 	{
 		anim->moveQuadOut(&m_vScrollPos.y, target, 0.15f, 0.0f, true);
+
 		m_vVelocity.y = target;
 	}
 	else
 	{
-		const float remainingVelocity = m_vScrollPos.y - m_vVelocity.y;
+		anim->deleteExistingAnimation(&m_vScrollPos.y);
 
 		m_vScrollPos.y = target;
 		m_vVelocity.y = m_vScrollPos.y - remainingVelocity;
-
-		anim->deleteExistingAnimation(&m_vScrollPos.y);
 	}
 }
 
@@ -496,20 +498,17 @@ void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int xOffset, in
 void CBaseUIScrollView::updateClipping()
 {
 	const std::vector<CBaseUIElement*> &elements = m_container->getElements();
-	McRect me = McRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
+	const McRect me = McRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
 
-	//int numVisibleElements = 0;
 	for (int i=0; i<elements.size(); i++)
 	{
 		CBaseUIElement *e = elements[i];
 
-		McRect elementBounds = McRect(e->getPos().x, e->getPos().y, e->getSize().x, e->getSize().y);
+		const McRect elementBounds = McRect(e->getPos().x, e->getPos().y, e->getSize().x, e->getSize().y);
 		if (me.intersects(elementBounds))
 		{
 			if (!e->isVisible())
 				e->setVisible(true);
-
-			//numVisibleElements++;
 		}
 		else if (e->isVisible())
 			e->setVisible(false);
@@ -523,30 +522,30 @@ void CBaseUIScrollView::updateScrollbars()
 	{
 		const float verticalBlockWidth = ui_scrollview_scrollbarwidth.getInt();
 
-		const float rawVerticalPercent = (m_vScrollPos.y > 0 ? -m_vScrollPos.y : std::abs(m_vScrollPos.y))/(m_vScrollSize.y - m_vSize.y);
+		const float rawVerticalPercent = (m_vScrollPos.y > 0 ? -m_vScrollPos.y : std::abs(m_vScrollPos.y)) / (m_vScrollSize.y - m_vSize.y);
 		float overscroll = 1.0f;
 		if (rawVerticalPercent > 1.0f)
-			overscroll = 1.0f - (rawVerticalPercent-1.0f)*0.95f;
+			overscroll = 1.0f - (rawVerticalPercent - 1.0f) * 0.95f;
 		else if (rawVerticalPercent < 0.0f)
-			overscroll = 1.0f - std::abs(rawVerticalPercent)*0.95f;
+			overscroll = 1.0f - std::abs(rawVerticalPercent) * 0.95f;
 
 		const float verticalPercent = clamp<float>(rawVerticalPercent, 0.0f, 1.0f);
 
-		const float verticalHeightPercent = ((m_vSize.y - verticalBlockWidth*2) / m_vScrollSize.y);
-		const float verticalBlockHeight = clamp<float>(std::max(verticalHeightPercent * m_vSize.y, verticalBlockWidth)*overscroll, verticalBlockWidth, m_vSize.y);
+		const float verticalHeightPercent = (m_vSize.y - (verticalBlockWidth * 2)) / m_vScrollSize.y;
+		const float verticalBlockHeight = clamp<float>(std::max(verticalHeightPercent * m_vSize.y, verticalBlockWidth) * overscroll, verticalBlockWidth, m_vSize.y);
 
-		m_verticalScrollbar = McRect(m_vPos.x + m_vSize.x - verticalBlockWidth, m_vPos.y + verticalPercent*(m_vSize.y - verticalBlockWidth*2 - verticalBlockHeight) + verticalBlockWidth + 1, verticalBlockWidth, verticalBlockHeight);
+		m_verticalScrollbar = McRect(m_vPos.x + m_vSize.x - verticalBlockWidth, m_vPos.y + (verticalPercent * (m_vSize.y - (verticalBlockWidth * 2) - verticalBlockHeight) + verticalBlockWidth + 1), verticalBlockWidth, verticalBlockHeight);
 	}
 
 	// update horizontal scrollbar
 	if (m_bHorizontalScrolling && m_vScrollSize.x > m_vSize.x)
 	{
-		const float horizontalPercent = clamp<float>((m_vScrollPos.x > 0 ? -m_vScrollPos.x : std::abs(m_vScrollPos.x))/(m_vScrollSize.x - m_vSize.x), 0.0f, 1.0f);
+		const float horizontalPercent = clamp<float>((m_vScrollPos.x > 0 ? -m_vScrollPos.x : std::abs(m_vScrollPos.x)) / (m_vScrollSize.x - m_vSize.x), 0.0f, 1.0f);
 		const float horizontalBlockWidth = ui_scrollview_scrollbarwidth.getInt();
-		const float horizontalHeightPercent = ((m_vSize.x - horizontalBlockWidth*2) / m_vScrollSize.x);
+		const float horizontalHeightPercent = (m_vSize.x - (horizontalBlockWidth * 2)) / m_vScrollSize.x;
 		const float horizontalBlockHeight = std::max(horizontalHeightPercent * m_vSize.x, horizontalBlockWidth);
 
-		m_horizontalScrollbar = McRect(m_vPos.x + horizontalPercent*(m_vSize.x - horizontalBlockWidth*2 - horizontalBlockHeight) + horizontalBlockWidth + 1, m_vPos.y + m_vSize.y - horizontalBlockWidth, horizontalBlockHeight, horizontalBlockWidth);
+		m_horizontalScrollbar = McRect(m_vPos.x + (horizontalPercent * (m_vSize.x - (horizontalBlockWidth * 2) - horizontalBlockHeight) + horizontalBlockWidth + 1), m_vPos.y + m_vSize.y - horizontalBlockWidth, horizontalBlockHeight, horizontalBlockWidth);
 	}
 }
 
@@ -583,11 +582,6 @@ CBaseUIScrollView *CBaseUIScrollView::setScrollSizeToContent(int border)
 	updateScrollbars();
 
 	return this;
-}
-
-Vector2 CBaseUIScrollView::getVelocity()
-{
-	return (m_vScrollPos - m_vVelocity);
 }
 
 void CBaseUIScrollView::scrollToRight()

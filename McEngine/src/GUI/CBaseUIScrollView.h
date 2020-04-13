@@ -20,6 +20,8 @@ public:
 	CBaseUIScrollView(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
 	virtual ~CBaseUIScrollView();
 
+	void clear();
+
 	ELEMENT_BODY(CBaseUIScrollView)
 
 	virtual void draw(Graphics *g);
@@ -28,8 +30,6 @@ public:
 	virtual void onKeyUp(KeyboardEvent &e);
 	virtual void onKeyDown(KeyboardEvent &e);
 	virtual void onChar(KeyboardEvent &e);
-
-	void clear();
 
 	// scrolling
 	void scrollY(int delta, bool animated = true);
@@ -62,14 +62,13 @@ public:
 	CBaseUIScrollView *setBlockScrolling(bool block) {m_bBlockScrolling = block; return this;} // means: disable scrolling, not scrolling in 'blocks'
 
 	// get
-	inline CBaseUIContainer *getContainer() {return m_container;}
-	inline float getScrollPosY() {return m_vScrollPos.y;}
-	inline float getScrollPosX() {return m_vScrollPos.x;}
-	inline Vector2 const getScrollSize() {return m_vScrollSize;}
-	Vector2 getVelocity();
+	inline CBaseUIContainer *getContainer() const {return m_container;}
+	inline float getScrollPosY() const {return m_vScrollPos.y;}
+	inline float getScrollPosX() const {return m_vScrollPos.x;}
+	inline Vector2 getScrollSize() const {return m_vScrollSize;}
+	inline Vector2 getVelocity() const {return (m_vScrollPos - m_vVelocity);}
 
-	// is
-	inline bool isScrolling() {return m_bScrolling;}
+	inline bool isScrolling() const {return m_bScrolling;}
 	bool isBusy();
 
 	// events
@@ -127,7 +126,7 @@ private:
 
 	bool m_bAutoScrollingX;
 	bool m_bAutoScrollingY;
-	int m_iPrevScrollDeltaX,m_iPrevScrollDeltaY;
+	int m_iPrevScrollDeltaX;
 
 	bool m_bScrollResistanceCheck;
 	int m_iScrollResistance;
