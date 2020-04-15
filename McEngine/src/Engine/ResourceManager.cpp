@@ -17,40 +17,12 @@
 #include <mutex>
 #include "WinMinGW.Mutex.h"
 
-#endif
+static std::mutex g_resourceManagerMutex;				// internal lock for nested async loads
+static std::mutex g_resourceManagerLoadingWorkMutex;	// work vector lock across all threads
 
-
-
-#ifdef MCENGINE_FEATURE_MULTITHREADING
-
-std::mutex g_resourceManagerMutex;				// internal lock for nested async loads
-std::mutex g_resourceManagerLoadingWorkMutex;	// work vector lock across all threads
-
-void *_resourceLoaderThread(void *data);
-void _resourceLoaderThreadVoid(void *data);
+static void *_resourceLoaderThread(void *data);
 
 #endif
-
-
-
-// HACKHACK: do this with env->getOS() or something
-#ifdef __SWITCH__
-
-const char *ResourceManager::PATH_DEFAULT_IMAGES = "romfs:/materials/";
-const char *ResourceManager::PATH_DEFAULT_FONTS = "romfs:/fonts/";
-const char *ResourceManager::PATH_DEFAULT_SOUNDS = "romfs:/sounds/";
-const char *ResourceManager::PATH_DEFAULT_SHADERS = "romfs:/shaders/";
-
-#else
-
-const char *ResourceManager::PATH_DEFAULT_IMAGES = "materials/";
-const char *ResourceManager::PATH_DEFAULT_FONTS = "fonts/";
-const char *ResourceManager::PATH_DEFAULT_SOUNDS = "sounds/";
-const char *ResourceManager::PATH_DEFAULT_SHADERS = "shaders/";
-
-#endif
-
-
 
 class ResourceManagerLoaderThread
 {
@@ -71,13 +43,28 @@ public:
 #endif
 };
 
-
-
 ConVar rm_numthreads("rm_numthreads", 3, "how many parallel resource loader threads are spawned once on startup (!), and subsequently used during runtime");
 ConVar rm_warnings("rm_warnings", false);
 ConVar rm_debug_async_delay("rm_debug_async_delay", 0.0f);
 ConVar rm_interrupt_on_destroy("rm_interrupt_on_destroy", true);
 ConVar debug_rm("debug_rm", false);
+
+// HACKHACK: do this with env->getOS() or something
+#ifdef __SWITCH__
+
+const char *ResourceManager::PATH_DEFAULT_IMAGES = "romfs:/materials/";
+const char *ResourceManager::PATH_DEFAULT_FONTS = "romfs:/fonts/";
+const char *ResourceManager::PATH_DEFAULT_SOUNDS = "romfs:/sounds/";
+const char *ResourceManager::PATH_DEFAULT_SHADERS = "romfs:/shaders/";
+
+#else
+
+const char *ResourceManager::PATH_DEFAULT_IMAGES = "materials/";
+const char *ResourceManager::PATH_DEFAULT_FONTS = "fonts/";
+const char *ResourceManager::PATH_DEFAULT_SOUNDS = "sounds/";
+const char *ResourceManager::PATH_DEFAULT_SHADERS = "shaders/";
+
+#endif
 
 ResourceManager::ResourceManager()
 {
@@ -454,14 +441,13 @@ Image *ResourceManager::loadImageAbsUnnamed(UString absoluteFilepath, bool mipma
 
 Image *ResourceManager::createImage(unsigned int width, unsigned int height, bool mipmapped, bool keepInSystemMemory)
 {
-	if (width < 1 || height < 1 || width > 8192 || height > 8192)
+	if (width > 8192 || height > 8192)
 	{
 		engine->showMessageError("Resource Manager Error", UString::format("Invalid parameters in createImage(%i, %i, %i)!\n", width, height, (int)mipmapped));
 		return NULL;
 	}
 
 	Image *img = engine->getGraphics()->createImage(width, height, mipmapped, keepInSystemMemory);
-	img->setName("<CREATED_IMAGE>");
 
 	loadResource(img, false);
 
@@ -823,7 +809,7 @@ void ResourceManager::resetFlags()
 
 #ifdef MCENGINE_FEATURE_MULTITHREADING
 
-void *_resourceLoaderThread(void *data)
+static void *_resourceLoaderThread(void *data)
 {
 	ResourceManagerLoaderThread *self = (ResourceManagerLoaderThread*)data;
 
@@ -881,11 +867,6 @@ void *_resourceLoaderThread(void *data)
 	}
 
 	return NULL;
-}
-
-void _resourceLoaderThreadVoid(void *data)
-{
-	_resourceLoaderThread(data);
 }
 
 #endif
