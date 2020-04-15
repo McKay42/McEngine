@@ -73,7 +73,7 @@ Image::Image(int width, int height, bool mipmapped, bool keepInSystemMemory) : R
 	m_bMipmapped = mipmapped;
 	m_bKeepInSystemMemory = keepInSystemMemory;
 
-	m_type = Image::TYPE::TYPE_RGB;
+	m_type = Image::TYPE::TYPE_RGBA;
 	m_iNumChannels = 4;
 	m_iWidth = width;
 	m_iHeight = height;
@@ -235,7 +235,7 @@ bool Image::loadRawImage()
 			unsigned int width = 0; // yes, these are here on purpose
 			unsigned int height = 0;
 
-			const unsigned error = lodepng::decode(m_rawImage, width, height, (unsigned char*)data, file.getFileSize());
+			const unsigned error = lodepng::decode(m_rawImage, width, height, (const unsigned char*)data, file.getFileSize());
 
 			m_iWidth = width;
 			m_iHeight = height;
@@ -349,6 +349,34 @@ void Image::setPixel(int x, int y, Color color)
 		m_rawImage[indexBegin + 2] = COLOR_GET_Bi(color);
 	if (m_iNumChannels > 3)
 		m_rawImage[indexBegin + 3] = COLOR_GET_Ai(color);
+}
+
+void Image::setPixels(const char *data, size_t size, TYPE type)
+{
+	if (data == NULL) return;
+
+	// TODO: implement remaining types
+	switch (type)
+	{
+	case TYPE::TYPE_PNG:
+		{
+			unsigned int width = 0; // yes, these are here on purpose
+			unsigned int height = 0;
+
+			const unsigned error = lodepng::decode(m_rawImage, width, height, (const unsigned char*)data, size);
+
+			m_iWidth = width;
+			m_iHeight = height;
+
+			if (error)
+				printf("Image Error: PNG error %i (%s) in file %s\n", error, lodepng_error_text(error), m_sFilePath.toUtf8());
+		}
+		break;
+
+	default:
+		debugLog("Image Error: Format not yet implemented\n");
+		break;
+	}
 }
 
 void Image::setPixels(const std::vector<unsigned char> &pixels)

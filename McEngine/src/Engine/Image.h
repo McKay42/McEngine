@@ -17,7 +17,7 @@ public:
 
 	enum class TYPE
 	{
-		TYPE_RGB,
+		TYPE_RGBA,
 		TYPE_PNG,
 		TYPE_JPG
 	};
@@ -34,6 +34,7 @@ public:
 	virtual void setWrapMode(Graphics::WRAP_MODE wrapMode) = 0;
 
 	void setPixel(int x, int y, Color color);
+	void setPixels(const char *data, size_t size, TYPE type);
 	void setPixels(const std::vector<unsigned char> &pixels);
 
 	Color getPixel(int x, int y) const;
