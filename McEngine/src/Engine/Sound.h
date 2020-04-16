@@ -50,6 +50,7 @@ public:
 	inline bool isStream() const {return m_bStream;}
 	inline bool is3d() const {return m_bIs3d;}
 	inline bool isLooped() const {return m_bIsLooped;}
+	inline bool isOverlayable() const {return m_bIsOverlayable;}
 
 	void rebuild(UString newFilePath);
 

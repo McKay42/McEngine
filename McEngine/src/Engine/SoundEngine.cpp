@@ -525,12 +525,15 @@ bool SoundEngine::play(Sound *snd, float pan)
 
 	pan = clamp<float>(pan, -1.0f, 1.0f);
 
+	const bool allowPlayFrame = !snd->isOverlayable() || !snd_restrict_play_frame.getBool() || engine->getTime() > snd->getLastPlayTime();
+
+	if (!allowPlayFrame)
+		return false;
+
 #ifdef MCENGINE_FEATURE_SOUND
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
-	if (!snd_restrict_play_frame.getBool() || engine->getTime() > snd->getLastPlayTime())
-	{
 		Sound::SOUNDHANDLE handle = snd->getHandle();
 		BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
 
@@ -563,76 +566,71 @@ bool SoundEngine::play(Sound *snd, float pan)
 		snd->setLastPlayTime(engine->getTime());
 
 		return true;
-	}
 
 #else
 
-	if (!snd_restrict_play_frame.getBool() || engine->getTime() > snd->getLastPlayTime())
+	Sound::SOUNDHANDLE handle = snd->getHandle();
+	if (BASS_ChannelIsActive(handle) != BASS_ACTIVE_PLAYING)
 	{
-		Sound::SOUNDHANDLE handle = snd->getHandle();
-		if (BASS_ChannelIsActive(handle) != BASS_ACTIVE_PLAYING)
-		{
-			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
+		BASS_ChannelSetAttribute(handle, BASS_ATTRIB_PAN, pan);
 
-			if (snd->isStream() && snd->isLooped())
-				BASS_ChannelFlags(handle, BASS_SAMPLE_LOOP, BASS_SAMPLE_LOOP);
+		if (snd->isStream() && snd->isLooped())
+			BASS_ChannelFlags(handle, BASS_SAMPLE_LOOP, BASS_SAMPLE_LOOP);
 
-			if (!snd->isStream() && LOWORD(m_iBASSVersion) >= 0x0c00) // BASS_ATTRIB_NORAMP is available >= 2.4.12 - 10/3/2016
-				BASS_ChannelSetAttribute(handle, BASS_ATTRIB_NORAMP, 1.0f); // see https://github.com/ppy/osu-framework/pull/3146
+		if (!snd->isStream() && LOWORD(m_iBASSVersion) >= 0x0c00) // BASS_ATTRIB_NORAMP is available >= 2.4.12 - 10/3/2016
+			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_NORAMP, 1.0f); // see https://github.com/ppy/osu-framework/pull/3146
 
-			const bool ret = BASS_ChannelPlay(handle, FALSE);
-			if (!ret)
-				debugLog("SoundEngine::play() couldn't BASS_ChannelPlay(), errorcode %i\n", BASS_ErrorGetCode());
-			else
-				snd->setLastPlayTime(engine->getTime());
+		bool ret = false;
 
-			return ret;
-		}
+		const bool ret = BASS_ChannelPlay(handle, FALSE);
+		if (!ret)
+			debugLog("SoundEngine::play() couldn't BASS_ChannelPlay(), errorcode %i\n", BASS_ErrorGetCode());
+		else
+			snd->setLastPlayTime(engine->getTime());
+
+		return ret;
 	}
 
 #endif
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
 
-	if (!snd_restrict_play_frame.getBool() || engine->getTime() > snd->getLastPlayTime())
+	if (snd->isStream() && Mix_PlayingMusic() && Mix_PausedMusic())
 	{
-		if (snd->isStream() && Mix_PlayingMusic() && Mix_PausedMusic())
+		Mix_ResumeMusic();
+		return true;
+	}
+	else
+	{
+		// special case: looped sounds are not supported here, so do not let them kill other channels
+		if (snd->isLooped())
+			return false;
+
+		int channel = (snd->isStream() ? (Mix_PlayMusic((Mix_Music*)snd->getMixChunkOrMixMusic(), 1)) : Mix_PlayChannel(-1, (Mix_Chunk*)snd->getMixChunkOrMixMusic(), 0));
+
+		// allow overriding (oldest channel gets reused)
+		if (!snd->isStream() && channel < 0)
 		{
-			Mix_ResumeMusic();
-			return true;
+			const int oldestChannel = Mix_GroupOldest(1);
+			if (oldestChannel > -1)
+			{
+				Mix_HaltChannel(oldestChannel);
+				channel = Mix_PlayChannel(-1, (Mix_Chunk*)snd->getMixChunkOrMixMusic(), 0);
+			}
 		}
+
+		const bool ret = (channel > -1);
+
+		if (!ret)
+			debugLog(snd->isStream() ? "SoundEngine::play() couldn't Mix_PlayMusic(), error on %s!\n" : "SoundEngine::play() couldn't Mix_PlayChannel(), error on %s!\n", snd->getFilePath().toUtf8());
 		else
 		{
-			// special case: looped sounds are not supported here, so do not let them kill other channels
-			if (snd->isLooped())
-				return false;
-
-			int channel = (snd->isStream() ? (Mix_PlayMusic((Mix_Music*)snd->getMixChunkOrMixMusic(), 1)) : Mix_PlayChannel(-1, (Mix_Chunk*)snd->getMixChunkOrMixMusic(), 0));
-
-			// allow overriding (oldest channel gets reused)
-			if (!snd->isStream() && channel < 0)
-			{
-				const int oldestChannel = Mix_GroupOldest(1);
-				if (oldestChannel > -1)
-				{
-					Mix_HaltChannel(oldestChannel);
-					channel = Mix_PlayChannel(-1, (Mix_Chunk*)snd->getMixChunkOrMixMusic(), 0);
-				}
-			}
-
-			const bool ret = (channel > -1);
-
-			if (!ret)
-				debugLog(snd->isStream() ? "SoundEngine::play() couldn't Mix_PlayMusic(), error on %s!\n" : "SoundEngine::play() couldn't Mix_PlayChannel(), error on %s!\n", snd->getFilePath().toUtf8());
-			else
-			{
-				snd->setHandle(channel);
-				snd->setPan(pan);
-				snd->setLastPlayTime(engine->getTime());
-			}
-
-			return ret;
+			snd->setHandle(channel);
+			snd->setPan(pan);
+			snd->setLastPlayTime(engine->getTime());
 		}
+
+		return ret;
 	}
 
 #endif
@@ -710,6 +708,9 @@ void SoundEngine::pause(Sound *snd)
 #else
 
 	BASS_ChannelPause(snd->getHandle());
+	{
+		snd->setLastPlayTime(0.0);
+	}
 
 #endif
 
@@ -741,7 +742,7 @@ void SoundEngine::stop(Sound *snd)
 	BASS_ChannelStop(handle);
 	{
 		snd->setPosition(0.0);
-		snd->setLastPlayTime(0.0f);
+		snd->setLastPlayTime(0.0);
 
 		// allow next play()/getHandle() to reallocate (because BASS_ChannelStop() will free the channel)
 		snd->m_HCHANNEL = 0;
