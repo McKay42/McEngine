@@ -23,6 +23,7 @@ ConVar ui_scrollview_scrollbarwidth("ui_scrollview_scrollbarwidth", 15.0f);
 ConVar ui_scrollview_kinetic_energy_multiplier("ui_scrollview_kinetic_energy_multiplier", 24.0f, "afterscroll delta multiplier");
 ConVar ui_scrollview_kinetic_approach_time("ui_scrollview_kinetic_approach_time", 0.075f, "approach target afterscroll delta over this duration");
 ConVar ui_scrollview_mousewheel_multiplier("ui_scrollview_mousewheel_multiplier", 3.5f);
+ConVar ui_scrollview_mousewheel_overscrollbounce("ui_scrollview_mousewheel_overscrollbounce", true);
 
 CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float ySize, UString name) : CBaseUIElement(xPos, yPos, xSize, ySize, name)
 {
@@ -229,8 +230,6 @@ void CBaseUIScrollView::update()
 		// calculate remaining kinetic energy
 		if (!m_bScrollbarScrolling)
 			m_vVelocity = ui_scrollview_kinetic_energy_multiplier.getFloat() * delta * (engine->getFrameTime() != 0.0 ? 1.0/engine->getFrameTime() : 60.0)/60.0 + m_vScrollPos;
-		else
-			m_vVelocity.x = m_vVelocity.y = 0;
 
 		//debugLog("kinetic = (%f, %f), velocity = (%f, %f), frametime = %f\n", delta.x, delta.y, m_vVelocity.x, m_vVelocity.y, engine->getFrameTime());
 
@@ -239,7 +238,7 @@ void CBaseUIScrollView::update()
 	else
 		m_bScrollResistanceCheck = false;
 
-	// handle mouse wheel
+	// handle mouse wheel scrolling
 	if (!engine->getKeyboard()->isAltDown() && m_bMouseInside && m_bEnabled)
 	{
 		if (engine->getMouse()->getWheelDeltaVertical() != 0)
@@ -248,7 +247,7 @@ void CBaseUIScrollView::update()
 			scrollX(-engine->getMouse()->getWheelDeltaHorizontal() * ui_scrollview_mousewheel_multiplier.getFloat());
 	}
 
-	// handle drag scrolling movement
+	// handle drag scrolling and rubber banding
 	if (m_bScrolling && m_bActive)
 	{
 		if (m_bVerticalScrolling)
@@ -264,7 +263,7 @@ void CBaseUIScrollView::update()
 
 		// rubber banding + kinetic scrolling
 
-		// TODO: fix amount being dependent on fps due to double animation indirection
+		// TODO: fix amount being dependent on fps due to double animation time indirection
 
 		// y axis
 		if (!m_bAutoScrollingY && m_bVerticalScrolling)
@@ -307,12 +306,12 @@ void CBaseUIScrollView::update()
 		m_vVelocity.x = m_vVelocity.y = 0;
 		if (m_bScrollbarIsVerticalScrolling)
 		{
-			float percent = clamp<float>((engine->getMouse()->getPos().y - m_vPos.y - m_verticalScrollbar.getWidth() - m_verticalScrollbar.getHeight() - m_vMouseBackup.y - 1) / (m_vSize.y - 2*m_verticalScrollbar.getWidth()), 0.0f, 1.0f);
+			const float percent = clamp<float>((engine->getMouse()->getPos().y - m_vPos.y - m_verticalScrollbar.getWidth() - m_verticalScrollbar.getHeight() - m_vMouseBackup.y - 1) / (m_vSize.y - 2*m_verticalScrollbar.getWidth()), 0.0f, 1.0f);
 			scrollToY(-m_vScrollSize.y*percent, false);
 		}
 		else
 		{
-			float percent = clamp<float>((engine->getMouse()->getPos().x - m_vPos.x - m_horizontalScrollbar.getHeight() - m_horizontalScrollbar.getWidth() - m_vMouseBackup.x - 1) / (m_vSize.x - 2*m_horizontalScrollbar.getHeight()), 0.0f, 1.0f);
+			const float percent = clamp<float>((engine->getMouse()->getPos().x - m_vPos.x - m_horizontalScrollbar.getHeight() - m_horizontalScrollbar.getWidth() - m_vMouseBackup.x - 1) / (m_vSize.x - 2*m_horizontalScrollbar.getHeight()), 0.0f, 1.0f);
 			scrollToX(-m_vScrollSize.x*percent, false);
 		}
 	}
@@ -355,7 +354,7 @@ void CBaseUIScrollView::scrollY(int delta, bool animated)
 {
 	if (!m_bVerticalScrolling || delta == 0 || m_bScrolling || m_vSize.y >= m_vScrollSize.y || m_container->isBusy()) return;
 
-	const bool allowOverscrollBounce = true;
+	const bool allowOverscrollBounce = ui_scrollview_mousewheel_overscrollbounce.getBool();
 
 	// keep velocity (partially animated/finished scrolls should not get lost, especially multiple scroll() calls in quick succession)
 	const float remainingVelocity = m_vScrollPos.y - m_vVelocity.y;
@@ -385,7 +384,11 @@ void CBaseUIScrollView::scrollY(int delta, bool animated)
 		}
 	}
 
+	// TODO: fix very slow autoscroll when 1 scroll event goes to >= top or >= bottom
+	// TODO: fix overscroll dampening user action when direction flips (while rubber banding)
+
 	// apply target
+	anim->deleteExistingAnimation(&m_vVelocity.y);
 	if (animated)
 	{
 		anim->moveQuadOut(&m_vScrollPos.y, target, 0.15f, 0.0f, true);
@@ -405,7 +408,7 @@ void CBaseUIScrollView::scrollX(int delta, bool animated)
 {
 	if (!m_bHorizontalScrolling || delta == 0 || m_bScrolling || m_vSize.x >= m_vScrollSize.x || m_container->isBusy()) return;
 
-	// TODO: fix this shit with the code from scrollY()
+	// TODO: fix all of this shit with the code from scrollY() above
 
 	// stop any movement
 	if (animated)
@@ -447,11 +450,15 @@ void CBaseUIScrollView::scrollToX(int scrollPosX, bool animated)
 	if (lowerBounds >= upperBounds)
 		lowerBounds = upperBounds;
 
-	float targetX = clamp<float>(scrollPosX, lowerBounds, upperBounds);
+	const float targetX = clamp<float>(scrollPosX, lowerBounds, upperBounds);
+
+	m_vVelocity.x = targetX;
+
+	// NOTE: temporarily disabled non-animated scrolls to improve ui smoothness (scrollbar integer step stutter)
 	//if (animated)
 	{
 		m_bAutoScrollingX = true;
-		m_vVelocity.x = targetX;
+
 		anim->moveQuadOut(&m_vScrollPos.x, targetX, animated ? 0.15f : 0.035f, 0.0f, true);
 	}
 	/*
@@ -469,11 +476,14 @@ void CBaseUIScrollView::scrollToY(int scrollPosY, bool animated)
 	if (lowerBounds >= upperBounds)
 		lowerBounds = upperBounds;
 
-	float targetY = clamp<float>(scrollPosY, lowerBounds, upperBounds);
+	const float targetY = clamp<float>(scrollPosY, lowerBounds, upperBounds);
+
+	m_vVelocity.y = targetY;
+
+	// NOTE: temporarily disabled non-animated scrolls to improve ui smoothness (scrollbar integer step stutter)
 	//if (animated)
 	{
 		m_bAutoScrollingY = true;
-		m_vVelocity.y = targetY;
 		anim->moveQuadOut(&m_vScrollPos.y, targetY, animated ? 0.15f : 0.035f, 0.0f, true);
 	}
 	/*
