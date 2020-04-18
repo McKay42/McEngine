@@ -580,8 +580,6 @@ bool SoundEngine::play(Sound *snd, float pan)
 		if (!snd->isStream() && LOWORD(m_iBASSVersion) >= 0x0c00) // BASS_ATTRIB_NORAMP is available >= 2.4.12 - 10/3/2016
 			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_NORAMP, 1.0f); // see https://github.com/ppy/osu-framework/pull/3146
 
-		bool ret = false;
-
 		const bool ret = BASS_ChannelPlay(handle, FALSE);
 		if (!ret)
 			debugLog("SoundEngine::play() couldn't BASS_ChannelPlay(), errorcode %i\n", BASS_ErrorGetCode());
