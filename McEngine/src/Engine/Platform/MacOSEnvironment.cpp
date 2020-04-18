@@ -62,7 +62,7 @@ void MacOSEnvironment::update()
 		if (m_bCursorReset)
 		{
 			m_bCursorReset = false;
-			setCursor(CURSOR_NORMAL);
+			setCursor(CURSORTYPE::CURSOR_NORMAL);
 		}
 	}
 	m_bCursorRequest = false;
