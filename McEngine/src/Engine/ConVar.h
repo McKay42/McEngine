@@ -10,11 +10,6 @@
 
 #include "cbase.h"
 
-// raw callbacks
-typedef void (*ConVarCallback)(void);
-typedef void (*ConVarChangeCallback)(UString oldValue, UString newValue);
-typedef void (*ConVarCallbackArgs)(UString args);
-
 class ConVar
 {
 public:
@@ -26,12 +21,17 @@ public:
 		CONVAR_TYPE_STRING
 	};
 
-public:
+	// raw callbacks
+	typedef void (*ConVarCallback)(void);
+	typedef void (*ConVarChangeCallback)(UString oldValue, UString newValue);
+	typedef void (*ConVarCallbackArgs)(UString args);
+
 	// delegate callbacks
 	typedef fastdelegate::FastDelegate0<> NativeConVarCallback;
 	typedef fastdelegate::FastDelegate1<UString> NativeConVarCallbackArgs;
 	typedef fastdelegate::FastDelegate2<UString, UString> NativeConVarChangeCallback;
 
+public:
 	ConVar(UString name);
 
 	ConVar(UString name, ConVarCallback callback);
@@ -72,7 +72,7 @@ public:
 	void setCallback(NativeConVarCallbackArgs callback);
 	void setCallback(NativeConVarChangeCallback callback);
 
-	void setHelpString(UString helpString) {m_sHelpString = helpString;}
+	void setHelpString(UString helpString);
 
 	// get
 	inline float getDefaultFloat() const {return m_fDefaultValue.load();}
@@ -88,7 +88,7 @@ public:
 	inline CONVAR_TYPE getType() const {return m_type;}
 
 	inline bool hasValue() const {return m_bHasValue.load();}
-	bool hasCallbackArgs();
+	bool hasCallbackArgs() const;
 
 private:
 	void init();
@@ -127,11 +127,11 @@ public:
 	ConVarHandler();
 	~ConVarHandler();
 
-	std::vector<ConVar*> getConVarArray();
-	int getNumConVars();
+	const std::vector<ConVar*> &getConVarArray() const;
+	int getNumConVars() const;
 
-	ConVar* getConVarByName(UString name, bool warnIfNotFound = true);
-	std::vector<ConVar*> getConVarByLetter(UString letters);
+	ConVar *getConVarByName(UString name, bool warnIfNotFound = true) const;
+	std::vector<ConVar*> getConVarByLetter(UString letters) const;
 
 private:
 	static ConVar *emptyDummyConVar;

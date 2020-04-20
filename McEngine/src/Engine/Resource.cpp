@@ -20,7 +20,8 @@ Resource::Resource(UString filepath)
 		debugLog("Resource Warning: File %s does not exist!\n", filepath.toUtf8());
 		///engine->showMessageError("Resource Error", errorMessage);
 
-		if (env->getOS() == Environment::OS::OS_LINUX) // TODO: probably better to have something like isFileSystemCaseSensitive()
+		// HACKHACK: workaround retry different case variations due to linux fs case sensitivity
+		if (env->getOS() == Environment::OS::OS_LINUX)
 		{
 			// NOTE: this assumes that filepaths in code are always fully lowercase
 			// better than not doing/trying anything though
@@ -116,6 +117,8 @@ void Resource::reload()
 void Resource::release()
 {
 	destroy();
+
+	// NOTE: these are set afterwards on purpose
 	m_bReady = false;
 	m_bAsyncReady = false;
 }

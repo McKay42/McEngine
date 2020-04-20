@@ -22,6 +22,7 @@ AnimationHandler::AnimationHandler()
 AnimationHandler::~AnimationHandler()
 {
 	m_vAnimations.clear();
+
 	anim = NULL;
 }
 
@@ -30,18 +31,18 @@ void AnimationHandler::update()
 	for (int i=0; i<m_vAnimations.size(); i++)
 	{
 		// start animation
-		Animation *anim = &m_vAnimations[i];
-		if (engine->getTime() < anim->m_fStartTime)
+		Animation &animation = m_vAnimations[i];
+		if (engine->getTime() < animation.m_fStartTime)
 			continue;
-		else if (!anim->m_bStarted)
+		else if (!animation.m_bStarted)
 		{
 			// after our delay, take the current value as startValue, then start animating to the target
-			anim->m_fStartValue = *anim->m_fBase;
-			anim->m_bStarted = true;
+			animation.m_fStartValue = *animation.m_fBase;
+			animation.m_bStarted = true;
 		}
 
 		// calculate percentage
-		float percent = clamp<float>((engine->getTime() - anim->m_fStartTime) / (anim->m_fDuration), 0.0f, 1.0f);
+		float percent = clamp<float>((engine->getTime() - animation.m_fStartTime) / (animation.m_fDuration), 0.0f, 1.0f);
 
 		if (debug_anim.getBool())
 			debugLog("animation #%i, percent = %f\n", i, percent);
@@ -49,30 +50,34 @@ void AnimationHandler::update()
 		// check if finished
 		if (percent >= 1.0f)
 		{
-			*anim->m_fBase = anim->m_fTarget;
+			*animation.m_fBase = animation.m_fTarget;
 
 			if (debug_anim.getBool())
-				debugLog("removing animation #%i, dtime = %f\n", i, engine->getTime()-anim->m_fStartTime);
+				debugLog("removing animation #%i, dtime = %f\n", i, engine->getTime() - animation.m_fStartTime);
 
-			m_vAnimations.erase(m_vAnimations.begin()+i);
+			m_vAnimations.erase(m_vAnimations.begin() + i);
 			i--;
+
 			continue;
 		}
 
 		// modify percentage
-		switch (anim->m_animType)
+		switch (animation.m_animType)
 		{
 		case ANIMATION_TYPE::MOVE_SMOOTH_END:
-			percent = clamp<float>(1.0f - std::pow(1.0f - percent, anim->m_fFactor), 0.0f, 1.0f);
-			if ((int)(percent*(anim->m_fTarget - anim->m_fStartValue) + anim->m_fStartValue) == (int)anim->m_fTarget)
+			percent = clamp<float>(1.0f - std::pow(1.0f - percent, animation.m_fFactor), 0.0f, 1.0f);
+			if ((int)(percent*(animation.m_fTarget - animation.m_fStartValue) + animation.m_fStartValue) == (int)animation.m_fTarget)
 				percent = 1.0f;
 			break;
+
 		case ANIMATION_TYPE::MOVE_QUAD_IN:
 			percent = percent*percent;
 			break;
+
 		case ANIMATION_TYPE::MOVE_QUAD_OUT:
 			percent = -percent*(percent - 2.0f);
 			break;
+
 		case ANIMATION_TYPE::MOVE_QUAD_INOUT:
 			if ((percent *= 2.0f) < 1.0f)
 				percent = 0.5f*percent*percent;
@@ -82,16 +87,20 @@ void AnimationHandler::update()
 				percent = -0.5f * ((percent)*(percent - 2.0f) - 1.0f);
 			}
 			break;
+
 		case ANIMATION_TYPE::MOVE_CUBIC_IN:
 			percent = percent*percent*percent;
 			break;
+
 		case ANIMATION_TYPE::MOVE_CUBIC_OUT:
 			percent = percent - 1.0f;
 			percent = percent*percent*percent + 1.0f;
 			break;
+
 		case ANIMATION_TYPE::MOVE_QUART_IN:
 			percent = percent*percent*percent*percent;
 			break;
+
 		case ANIMATION_TYPE::MOVE_QUART_OUT:
 			percent = percent - 1.0f;
 			percent = 1.0f - percent*percent*percent*percent;
@@ -99,7 +108,7 @@ void AnimationHandler::update()
 		}
 
 		// set new value
-		*anim->m_fBase = anim->m_fStartValue + percent*(anim->m_fTarget - anim->m_fStartValue);
+		*animation.m_fBase = animation.m_fStartValue + percent*(animation.m_fTarget - animation.m_fStartValue);
 	}
 
 	if (m_vAnimations.size() > 512)
@@ -155,6 +164,8 @@ void AnimationHandler::moveSmoothEnd(float *base, float target, float duration, 
 
 void AnimationHandler::addAnimation(float *base, float target, float duration, float delay, bool overrideExisting, AnimationHandler::ANIMATION_TYPE type, float smoothFactor)
 {
+	if (base == NULL) return;
+
 	if (overrideExisting)
 		overrideExistingAnimation(base);
 
@@ -183,13 +194,13 @@ void AnimationHandler::deleteExistingAnimation(float *base)
 	{
 		if (m_vAnimations[i].m_fBase == base)
 		{
-			m_vAnimations.erase(m_vAnimations.begin()+i);
+			m_vAnimations.erase(m_vAnimations.begin() + i);
 			i--;
 		}
 	}
 }
 
-float AnimationHandler::getRemainingDuration(float *base)
+float AnimationHandler::getRemainingDuration(float *base) const
 {
 	for (int i=0; i<m_vAnimations.size(); i++)
 	{
@@ -200,13 +211,13 @@ float AnimationHandler::getRemainingDuration(float *base)
 	return 0.0f;
 }
 
-bool AnimationHandler::isAnimating(float *base)
+bool AnimationHandler::isAnimating(float *base) const
 {
 	for (int i=0; i<m_vAnimations.size(); i++)
 	{
 		if (m_vAnimations[i].m_fBase == base)
 			return true;
 	}
+
 	return false;
 }
-

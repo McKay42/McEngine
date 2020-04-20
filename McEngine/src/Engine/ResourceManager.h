@@ -28,6 +28,35 @@ public:
 	static const char *PATH_DEFAULT_SOUNDS;
 	static const char *PATH_DEFAULT_SHADERS;
 
+	template<typename T>
+	struct MobileAtomic
+	{
+		std::atomic<T> atomic;
+
+		MobileAtomic() : atomic(T()) {}
+
+		explicit MobileAtomic(T const &v) : atomic(v) {}
+		explicit MobileAtomic(std::atomic<T> const &a) : atomic(a.load()) {}
+
+		MobileAtomic(MobileAtomic const &other) : atomic(other.atomic.load()) {}
+
+		MobileAtomic &operator = (MobileAtomic const &other)
+		{
+			atomic.store(other.atomic.load());
+			return *this;
+		}
+	};
+	typedef MobileAtomic<bool> MobileAtomicBool;
+	typedef MobileAtomic<size_t> MobileAtomicSizeT;
+	typedef MobileAtomic<Resource*> MobileAtomicResource;
+
+	struct LOADING_WORK
+	{
+		MobileAtomicResource resource;
+		MobileAtomicSizeT threadIndex;
+		MobileAtomicBool done;
+	};
+
 public:
 	ResourceManager();
 	~ResourceManager();
@@ -79,45 +108,15 @@ public:
 	Sound *getSound(UString resourceName) const;
 	Shader *getShader(UString resourceName) const;
 
-	int getNumThreads() const {return m_threads.size();}
-	int getNumResources() const {return m_vResources.size();}
 	inline const std::vector<Resource*> &getResources() const {return m_vResources;}
 
 	bool isLoadingResource(Resource *rs) const;
 
-	template<typename T>
-	struct MobileAtomic
-	{
-		std::atomic<T> atomic;
-
-		MobileAtomic() : atomic(T()) {}
-
-		explicit MobileAtomic(T const &v) : atomic(v) {}
-		explicit MobileAtomic(std::atomic<T> const &a) : atomic(a.load()) {}
-
-		MobileAtomic(MobileAtomic const &other) : atomic(other.atomic.load()) {}
-
-		MobileAtomic &operator = (MobileAtomic const &other)
-		{
-			atomic.store(other.atomic.load());
-			return *this;
-		}
-	};
-	typedef MobileAtomic<bool> MobileAtomicBool;
-	typedef MobileAtomic<size_t> MobileAtomicSizeT;
-	typedef MobileAtomic<Resource*> MobileAtomicResource;
-
-	struct LOADING_WORK
-	{
-		MobileAtomicResource resource;
-		MobileAtomicSizeT threadIndex;
-		MobileAtomicBool done;
-	};
-
 private:
 	void loadResource(Resource *res, bool load);
 	void doesntExistWarning(UString resourceName) const;
-	Resource *existsAndHandle(UString resourceName);
+	Resource *checkIfExistsAndHandle(UString resourceName);
+
 	void resetFlags();
 
 	// content

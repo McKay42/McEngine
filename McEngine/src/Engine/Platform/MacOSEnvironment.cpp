@@ -62,7 +62,7 @@ void MacOSEnvironment::update()
 		if (m_bCursorReset)
 		{
 			m_bCursorReset = false;
-			setCursor(CURSOR_NORMAL);
+			setCursor(CURSORTYPE::CURSOR_NORMAL);
 		}
 	}
 	m_bCursorRequest = false;
@@ -461,7 +461,7 @@ void MacOSEnvironment::setCursor(CURSORTYPE cur)
 	// TODO: finish other cursor types
 	switch (cur)
 	{
-	case CURSOR_TEXT:
+	case CURSORTYPE::CURSOR_TEXT:
 		MacOSWrapper::setCursor(1);
 		break;
 	default:

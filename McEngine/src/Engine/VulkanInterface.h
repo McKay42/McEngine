@@ -26,8 +26,13 @@
 
 #endif
 
+class ConVar;
+
 class VulkanInterface
 {
+public:
+	static ConVar *debug_vulkan;
+
 public:
 	VulkanInterface();
 	~VulkanInterface();

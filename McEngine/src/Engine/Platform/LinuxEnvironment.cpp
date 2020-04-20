@@ -112,7 +112,7 @@ void LinuxEnvironment::update()
 		if (m_bCursorReset)
 		{
 			m_bCursorReset = false;
-			setCursor(CURSOR_NORMAL);
+			setCursor(CURSORTYPE::CURSOR_NORMAL);
 		}
 	}
 	m_bCursorRequest = false;
@@ -751,25 +751,25 @@ void LinuxEnvironment::setCursor(CURSORTYPE cur)
 
 	switch (cur)
 	{
-	case CURSOR_NORMAL:
+	case CURSORTYPE::CURSOR_NORMAL:
 		m_mouseCursor = XCreateFontCursor(m_display, XC_left_ptr);
 		break;
-	case CURSOR_WAIT:
+	case CURSORTYPE::CURSOR_WAIT:
 		m_mouseCursor = XCreateFontCursor(m_display, XC_circle);
 		break;
-	case CURSOR_SIZE_H:
+	case CURSORTYPE::CURSOR_SIZE_H:
 		m_mouseCursor = XCreateFontCursor(m_display, XC_sb_h_double_arrow);
 		break;
-	case CURSOR_SIZE_V:
+	case CURSORTYPE::CURSOR_SIZE_V:
 		m_mouseCursor = XCreateFontCursor(m_display, XC_sb_v_double_arrow);
 		break;
-	case CURSOR_SIZE_HV:
+	case CURSORTYPE::CURSOR_SIZE_HV:
 		m_mouseCursor = XCreateFontCursor(m_display, XC_bottom_left_corner);
 		break;
-	case CURSOR_SIZE_VH:
+	case CURSORTYPE::CURSOR_SIZE_VH:
 		m_mouseCursor = XCreateFontCursor(m_display, XC_bottom_right_corner);
 		break;
-	case CURSOR_TEXT:
+	case CURSORTYPE::CURSOR_TEXT:
 		m_mouseCursor = XCreateFontCursor(m_display, XC_xterm);
 		break;
 	default:

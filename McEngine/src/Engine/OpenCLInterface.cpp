@@ -704,6 +704,7 @@ void OpenCLInterface::releaseBuffer(int buffer)
 }
 
 
+
 //**********************//
 //	OpenCL ConCommands	//
 //**********************//
@@ -712,7 +713,7 @@ void _opencl_listdevices( void )
 {
 	debugLog("OpenCL Devices:\n");
 
-	std::vector<OpenCLInterface::OPENCL_DEVICE> devices = opencl->getDevices();
+	const std::vector<OpenCLInterface::OPENCL_DEVICE> &devices = opencl->getDevices();
 	for (int i=0; i<devices.size(); i++)
 	{
 		debugLog(" - Platform %i:\n", i);

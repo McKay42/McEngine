@@ -18,15 +18,15 @@ Matrix4 Camera::buildMatrixOrtho2D(float left, float right, float bottom, float 
 	const float invY = 1.0f / (top - bottom);
 	const float invZ = 1.0f / (zf - zn);
 
-	return Matrix4((2.0f*invX), 0, 			0,				(-(right + left)*invX),
-				   0, 			(2.0*invY), 0,				(-(top + bottom)*invY),
-				   0,			0,			(-2.0f*invZ),	(-(zf + zn)*invZ),
-				   0,			0,			0,			   	1).transpose();
+	return Matrix4((2.0f * invX),	0, 				0,				(-(right + left) * invX),
+				   0, 				(2.0 * invY),	0,				(-(top + bottom) * invY),
+				   0,				0,				(-2.0f * invZ),	(-(zf + zn) * invZ),
+				   0,				0,				0,			   	1).transpose();
 }
 
 Matrix4 Camera::buildMatrixLookAt(Vector3 eye, Vector3 target, Vector3 up)
 {
-	const Vector3 zAxis = (eye-target).normalize();
+	const Vector3 zAxis = (eye - target).normalize();
 	const Vector3 xAxis = up.cross(zAxis).normalize();
 	const Vector3 yAxis = zAxis.cross(xAxis);
 
@@ -38,80 +38,84 @@ Matrix4 Camera::buildMatrixLookAt(Vector3 eye, Vector3 target, Vector3 up)
 
 Matrix4 Camera::buildMatrixPerspectiveFov(float fovRad, float aspect, float zn, float zf)
 {
-	const float f = 1.0f / std::tan(fovRad/2.0f);
+	const float f = 1.0f / std::tan(fovRad / 2.0f);
 
-	const float q = (zf+zn)/(zn-zf);
-	const float qn = (2*zf*zn)/(zn-zf);
+	const float q = (zf + zn) / (zn - zf);
+	const float qn = (2 * zf * zn) / (zn - zf);
 
-	return Matrix4(f/aspect,0,		0, 		0,
-				   0, 		f, 		0,		0,
-				   0, 		0,		q,		qn,
-				   0,		0,		-1,		0).transpose();
+	return Matrix4(f / aspect,	0,		0, 		0,
+				   0, 			f, 		0,		0,
+				   0, 			0,		q,		qn,
+				   0,			0,		-1,		0).transpose();
 }
 
 Matrix4 Camera::buildMatrixPerspectiveFovVertical(float fovRad, float aspectRatioWidthToHeight, float zn, float zf)
 {
-	const float f = 1.0f / std::tan(fovRad/2.0f);
+	const float f = 1.0f / std::tan(fovRad / 2.0f);
 
-	const float q = (zf+zn)/(zn-zf);
-	const float qn = (2*zf*zn)/(zn-zf);
+	const float q = (zf + zn) / (zn - zf);
+	const float qn = (2 * zf * zn) / (zn - zf);
 
-	return Matrix4(f/aspectRatioWidthToHeight,	0,		0, 		0,
-				   0, 							f, 		0,		0,
-				   0, 							0,		q,		qn,
-				   0,							0,		-1,		0).transpose();
+	return Matrix4(f / aspectRatioWidthToHeight,	0,		0, 		0,
+				   0, 								f, 		0,		0,
+				   0, 								0,		q,		qn,
+				   0,								0,		-1,		0).transpose();
 }
 
 Matrix4 Camera::buildMatrixPerspectiveFovHorizontal(float fovRad, float aspectRatioHeightToWidth, float zn, float zf)
 {
-	const float f = 1.0f / std::tan(fovRad/2.0f);
+	const float f = 1.0f / std::tan(fovRad / 2.0f);
 
-	const float q = (zf+zn)/(zn-zf);
-	const float qn = (2*zf*zn)/(zn-zf);
+	const float q = (zf + zn) / (zn - zf);
+	const float qn = (2 * zf * zn) / (zn - zf);
 
-	return Matrix4(f,	0,							0, 		0,
-				   0, 	f/aspectRatioHeightToWidth, 0,		0,
-				   0, 	0,							q,		qn,
-				   0,	0,							-1,		0).transpose();
+	return Matrix4(f,	0,								0, 		0,
+				   0, 	f / aspectRatioHeightToWidth,	0,		0,
+				   0, 	0,								q,		qn,
+				   0,	0,								-1,		0).transpose();
 }
 
-Quaternion MatrixToQuaternion( Matrix4 &in )
+static Quaternion MatrixToQuaternion(const Matrix4 &in)
 {
-	float trace = in[0] + in[5] + in[10];
+	const float trace = in[0] + in[5] + in[10];
 
 	Quaternion final;
 	if (trace > 0.0f)
 	{
-		float s = 0.5f / std::sqrt(trace + 1.0f);
+		const float s = 0.5f / std::sqrt(trace + 1.0f);
+
 		final.w = 0.25f / s;
-		final.x = ( in[9]- in[6] ) * s;
-		final.y = ( in[2] - in[8] ) * s;
-		final.z = ( in[4] - in[1] ) * s;
+		final.x = (in[9]- in[6]) * s;
+		final.y = (in[2] - in[8]) * s;
+		final.z = (in[4] - in[1]) * s;
 	}
 	else
 	{
-		if ( in[0] > in[5] && in[0] > in[10] )
+		if (in[0] > in[5] && in[0] > in[10])
 		{
-			float s = 2.0f * std::sqrt( 1.0f + in[0] - in[5] - in[10]);
+			const float s = 2.0f * std::sqrt(1.0f + in[0] - in[5] - in[10]);
+
 			final.w = (in[9] - in[6]) / s;
 			final.x = 0.25f * s;
-			final.y = (in[1] + in[4] ) / s;
-			final.z = (in[2] + in[8] ) / s;
+			final.y = (in[1] + in[4]) / s;
+			final.z = (in[2] + in[8]) / s;
 		}
 		else if (in[5] > in[10])
 		{
-			float s = 2.0f * std::sqrt( 1.0f + in[5] - in[0] - in[10]);
-			final.w = (in[2] - in[8] ) / s;
-			final.x = (in[1] + in[4] ) / s;
+			const float s = 2.0f * std::sqrt(1.0f + in[5] - in[0] - in[10]);
+
+			final.w = (in[2] - in[8]) / s;
+			final.x = (in[1] + in[4]) / s;
 			final.y = 0.25f * s;
-			final.z = (in[6] + in[9] ) / s;
+			final.z = (in[6] + in[9]) / s;
 		}
 		else
 		{
-			float s = 2.0f * std::sqrt( 1.0f + in[10] - in[0] - in[5] );
-			final.w = (in[4] - in[1] ) / s;
-			final.x = (in[2] + in[8] ) / s;
-			final.y = (in[6] + in[9] ) / s;
+			const float s = 2.0f * std::sqrt(1.0f + in[10] - in[0] - in[5]);
+
+			final.w = (in[4] - in[1]) / s;
+			final.x = (in[2] + in[8]) / s;
+			final.y = (in[6] + in[9]) / s;
 			final.z = 0.25f * s;
 		}
 	}
@@ -120,22 +124,21 @@ Quaternion MatrixToQuaternion( Matrix4 &in )
 
 	/*
 	float qw = std::sqrt(1 + in[0] + in[5] + in[10]) / 2.0f;
-	float qx = (in[9] - in[6])/( 4 *qw);
-	float qy = (in[2] - in[8])/( 4 *qw);
-	float qz = (in[4] - in[1])/( 4 *qw);
+	float qx = (in[9] - in[6]) / (4 *qw);
+	float qy = (in[2] - in[8]) / (4 *qw);
+	float qz = (in[4] - in[1]) / (4 *qw);
 
-	return Quaternion(qx,qy,qz,qw);
+	return Quaternion(qx, qy, qz, qw);
 	*/
 }
 
-Vector3 Vector3TransformCoord( Vector3 &in, Matrix4 &mat )
+static Vector3 Vector3TransformCoord(const Vector3 &in, const Matrix4 &mat)
 {
-	return mat * in;
+	//return mat * in; // wtf?
 
 	Vector3 out;
-	float norm;
 
-	norm = mat[3]*in.x + mat[7]*in.y + mat[11]*in.z + mat[15];
+	const float norm = mat[3]*in.x + mat[7]*in.y + mat[11]*in.z + mat[15];
 
 	if (norm)
 	{
@@ -145,8 +148,8 @@ Vector3 Vector3TransformCoord( Vector3 &in, Matrix4 &mat )
 	}
 
 	return out;
-
 }
+
 
 
 //*************************//
@@ -168,9 +171,9 @@ Camera::Camera(Vector3 pos, Vector3 viewDir, float fovDeg, CAMERA_TYPE camType)
 	m_fRoll = 0;
 
 	// base axes
-	m_vWorldXAxis = Vector3( 1, 0, 0 );
-	m_vWorldYAxis = Vector3( 0, 1, 0 );
-	m_vWorldZAxis = Vector3( 0, 0, 1 );
+	m_vWorldXAxis = Vector3(1, 0, 0);
+	m_vWorldYAxis = Vector3(0, 1, 0);
+	m_vWorldZAxis = Vector3(0, 0, 1);
 
 	// derived axes
 	m_vXAxis = m_vWorldXAxis;
@@ -180,7 +183,7 @@ Camera::Camera(Vector3 pos, Vector3 viewDir, float fovDeg, CAMERA_TYPE camType)
 	m_vViewRight = m_vWorldXAxis;
 	m_vViewUp = m_vWorldYAxis;
 
-	lookAt(pos+viewDir);
+	lookAt(pos + viewDir);
 }
 
 void Camera::updateVectors()
@@ -224,11 +227,11 @@ void Camera::updateViewFrustum()
 {
 	// TODO: this function is broken due to matrix changes, refactor
 
-	Matrix4 viewMatrix = m_rotation.getMatrix();
+	const Matrix4 viewMatrix = m_rotation.getMatrix();
 
-	Matrix4 projectionMatrix = buildMatrixPerspectiveFov(m_fFov, (float)engine->getScreenWidth()/(float)engine->getScreenHeight(), 0.0f, 1.0f);
+	const Matrix4 projectionMatrix = buildMatrixPerspectiveFov(m_fFov, (float)engine->getScreenWidth() / (float)engine->getScreenHeight(), 0.0f, 1.0f);
 
-	Matrix4 viewProj = (viewMatrix * projectionMatrix);
+	const Matrix4 viewProj = (viewMatrix * projectionMatrix);
 
 	// left plane
     m_viewFrustum[0].a = viewProj[3] + viewProj[0];
@@ -255,9 +258,9 @@ void Camera::updateViewFrustum()
     m_viewFrustum[3].d = viewProj[15] + viewProj[13];
 
 	// normalize planes
-    for ( int i = 0; i < 4; i++ )
+    for (int i=0; i<4; i++)
     {
-    	float norm = std::sqrt(m_viewFrustum[i].a * m_viewFrustum[i].a + m_viewFrustum[i].b * m_viewFrustum[i].b + m_viewFrustum[i].c * m_viewFrustum[i].c);
+    	const float norm = std::sqrt(m_viewFrustum[i].a * m_viewFrustum[i].a + m_viewFrustum[i].b * m_viewFrustum[i].b + m_viewFrustum[i].c * m_viewFrustum[i].c);
     	if (norm)
     	{
     		m_viewFrustum[i].a = m_viewFrustum[i].a / norm;
@@ -306,8 +309,7 @@ void Camera::lookAt(Vector3 target)
 
 void Camera::lookAt(Vector3 eye, Vector3 target)
 {
-	if ((eye-target).length() < 0.001f)
-		return;
+	if ((eye - target).length() < 0.001f) return;
 
 	m_vPos = eye;
 
@@ -328,8 +330,7 @@ void Camera::lookAt(Vector3 eye, Vector3 target)
 
 void Camera::setType(CAMERA_TYPE camType)
 {
-	if (camType == m_camType)
-		return;
+	if (camType == m_camType) return;
 
 	m_camType = camType;
 
@@ -382,19 +383,19 @@ void Camera::setRoll(float rollDeg)
 	updateVectors();
 }
 
-Vector3 Camera::getNextPosition(Vector3 velocity)
+Vector3 Camera::getNextPosition(Vector3 velocity) const
 {
 	return m_vPos + ((m_worldRotation * m_rotation) * velocity);
 }
 
-Vector3 Camera::getProjectedVector(Vector3 point, float screenWidth, float screenHeight, float zn, float zf)
+Vector3 Camera::getProjectedVector(Vector3 point, float screenWidth, float screenHeight, float zn, float zf) const
 {
 	// TODO: fix this shit
 
 	// build matrices
-	Matrix4 worldMatrix = Matrix4().translate(-m_vPos);
-	Matrix4 viewMatrix = m_rotation.getMatrix();
-	Matrix4 projectionMatrix = buildMatrixPerspectiveFov(m_fFov, screenWidth/screenHeight, zn, zf);
+	const Matrix4 worldMatrix = Matrix4().translate(-m_vPos);
+	const Matrix4 viewMatrix = m_rotation.getMatrix();
+	const Matrix4 projectionMatrix = buildMatrixPerspectiveFov(m_fFov, screenWidth / screenHeight, zn, zf);
 
 	// complete matrix
 	Matrix4 worldViewProj = (worldMatrix * viewMatrix * projectionMatrix);
@@ -405,14 +406,14 @@ Vector3 Camera::getProjectedVector(Vector3 point, float screenWidth, float scree
 	// convert projected screen coordinates to real screen coordinates
 	point.x = screenWidth * ((point.x + 1.0f) / 2.0f);
 	point.y = screenHeight * ((point.y + 1.0f) / 2.0f);
-	point.z = zn + point.z * ( zf - zn );
+	point.z = zn + point.z * (zf - zn);
 
 	return point;
 }
 
-Vector3 Camera::getUnProjectedVector(Vector2 point, float screenWidth, float screenHeight, float zn, float zf)
+Vector3 Camera::getUnProjectedVector(Vector2 point, float screenWidth, float screenHeight, float zn, float zf) const
 {
-	Matrix4 projectionMatrix = buildMatrixPerspectiveFov(m_fFov, screenWidth/screenHeight, zn, zf);
+	Matrix4 projectionMatrix = buildMatrixPerspectiveFov(m_fFov, screenWidth / screenHeight, zn, zf);
 
 	// transform pick position from screen space into 3d space
 	Vector4 v;
@@ -421,25 +422,15 @@ Vector3 Camera::getUnProjectedVector(Vector2 point, float screenWidth, float scr
 	v.z = (0.0f - zn) / (zf - zn); // this is very important
 	v.w = 1.0f;
 
-	Matrix4 inverseProjectionMatrix = projectionMatrix.invert();
-	Matrix4 inverseViewMatrix = m_rotation.getMatrix().invert();
+	const Matrix4 inverseProjectionMatrix = projectionMatrix.invert();
+	const Matrix4 inverseViewMatrix = m_rotation.getMatrix().invert();
 
 	v = inverseViewMatrix * inverseProjectionMatrix * v;
 
 	return m_vPos - Vector3(v.x, v.y, v.z);
 }
 
-inline float Camera::planeDotCoord(CAM_PLANE plane, Vector3 point)
-{
-	return ((plane.a) * (point.x) + (plane.b) * (point.y) + (plane.c) * (point.z) + (plane.d));
-}
-
-inline float Camera::planeDotCoord(Vector3 planeNormal, Vector3 planePoint, Vector3 &pv)
-{
-	return planeNormal.dot(pv-planePoint);
-}
-
-bool Camera::isPointVisibleFrustum(Vector3 point)
+bool Camera::isPointVisibleFrustum(Vector3 point) const
 {
 	float epsilon = 0.01f;
 
@@ -461,7 +452,7 @@ bool Camera::isPointVisibleFrustum(Vector3 point)
 	return true;
 }
 
-bool Camera::isPointVisiblePlane(Vector3 point)
+bool Camera::isPointVisiblePlane(Vector3 point) const
 {
 	float epsilon = 0.0f;
 
@@ -469,4 +460,14 @@ bool Camera::isPointVisiblePlane(Vector3 point)
 		return true;
 
 	return false;
+}
+
+float Camera::planeDotCoord(CAM_PLANE plane, Vector3 point)
+{
+	return ((plane.a * point.x) + (plane.b * point.y) + (plane.c * point.z) + plane.d);
+}
+
+float Camera::planeDotCoord(Vector3 planeNormal, Vector3 planePoint, Vector3 &pv)
+{
+	return planeNormal.dot(pv - planePoint);
 }

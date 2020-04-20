@@ -487,6 +487,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				break; // if not, let DefWindowProc do its thing
 			*/
 
+			// avoid cursor flicker when using non-normal cursor set by engine
+			if (g_engine != NULL && g_engine->getEnvironment()->getCursor() != CURSORTYPE::CURSOR_NORMAL)
+				return TRUE;
+
 			break;
 
 #ifdef MCENGINE_WINDOWS_TOUCH_SUPPORT
@@ -563,21 +567,17 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		// raw input handling (only for mouse movement atm)
 		case WM_INPUT:
 			{
-				UINT dwSize;
+				RAWINPUT raw;
+				UINT dwSize = sizeof(raw);
 
-				GetRawInputData((HRAWINPUT)lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
+				GetRawInputData((HRAWINPUT)lParam, RID_INPUT, &raw, &dwSize, sizeof(RAWINPUTHEADER));
 
-				BYTE lpb[dwSize]; // the msdn example uses heap allocation here, but stack should be faster
-
-				if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER)) != dwSize && g_engine != NULL)
-					debugLog("WARNING: GetRawInputData() does not return the correct size!!!\n");
-
-				RAWINPUT *raw = (RAWINPUT*)lpb;
-
-				if (raw->header.dwType == RIM_TYPEMOUSE && g_engine != NULL)
+				if (raw.header.dwType == RIM_TYPEMOUSE)
 				{
-					g_engine->onMouseRawMove(raw->data.mouse.lLastX, raw->data.mouse.lLastY, (raw->data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE), (raw->data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP));
-					return 0;
+					if (g_engine != NULL)
+					{
+						g_engine->onMouseRawMove(raw.data.mouse.lLastX, raw.data.mouse.lLastY, (raw.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE), (raw.data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP));
+					}
 				}
 			}
 			break;
@@ -1023,11 +1023,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     deltaTimer->update();
 
 	// main loop
+	MSG msg;
+	msg.message = WM_NULL;
 	while (g_bRunning)
 	{
 		// handle windows message queue
-		MSG msg;
-		msg.message = WM_NULL;
 		while (PeekMessageW(&msg, NULL, 0U, 0U, PM_REMOVE) != 0)
 		{
 			TranslateMessage(&msg);

@@ -38,7 +38,7 @@ WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance) : Environment()
 	m_hwnd = hwnd;
 	m_hInstance = hinstance;
 
-	m_mouseCursor = m_mouseCursorArrow = LoadCursor(NULL, IDC_ARROW);
+	m_mouseCursor = LoadCursor(NULL, IDC_ARROW);
 	m_bFullScreen = false;
 	m_vWindowSize = getWindowSize();
 	m_bCursorClipped = false;
@@ -67,6 +67,13 @@ WinEnvironment::~WinEnvironment()
 void WinEnvironment::update()
 {
 	m_bIsCursorInsideWindow = McRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight()).contains(getMousePos());
+
+	// auto reset cursor
+	if (!m_bHasCursorTypeChanged)
+	{
+		setCursor(CURSORTYPE::CURSOR_NORMAL);
+	}
+	m_bHasCursorTypeChanged = false;
 }
 
 Graphics *WinEnvironment::createRenderer()
@@ -751,29 +758,33 @@ CURSORTYPE WinEnvironment::getCursor()
 
 void WinEnvironment::setCursor(CURSORTYPE cur)
 {
+	m_bHasCursorTypeChanged = true;
+
+	if (cur == m_cursorType) return;
+
 	m_cursorType = cur;
 
 	switch (cur)
 	{
-	case CURSOR_NORMAL:
+	case CURSORTYPE::CURSOR_NORMAL:
 		m_mouseCursor = LoadCursor(NULL, IDC_ARROW);
 		break;
-	case CURSOR_WAIT:
+	case CURSORTYPE::CURSOR_WAIT:
 		m_mouseCursor = LoadCursor(NULL, IDC_WAIT);
 		break;
-	case CURSOR_SIZE_H:
+	case CURSORTYPE::CURSOR_SIZE_H:
 		m_mouseCursor = LoadCursor(NULL, IDC_SIZEWE);
 		break;
-	case CURSOR_SIZE_V:
+	case CURSORTYPE::CURSOR_SIZE_V:
 		m_mouseCursor = LoadCursor(NULL, IDC_SIZENS);
 		break;
-	case CURSOR_SIZE_HV:
+	case CURSORTYPE::CURSOR_SIZE_HV:
 		m_mouseCursor = LoadCursor(NULL, IDC_SIZENESW);
 		break;
-	case CURSOR_SIZE_VH:
+	case CURSORTYPE::CURSOR_SIZE_VH:
 		m_mouseCursor = LoadCursor(NULL, IDC_SIZENWSE);
 		break;
-	case CURSOR_TEXT:
+	case CURSORTYPE::CURSOR_TEXT:
 		m_mouseCursor = LoadCursor(NULL, IDC_IBEAM);
 		break;
 	default:

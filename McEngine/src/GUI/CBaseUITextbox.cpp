@@ -137,7 +137,7 @@ void CBaseUITextbox::update()
 	if (!m_bEnabled && m_bActive && mleft && !m_bMouseInside)
 		m_bActive = false;
 
-	if (m_bMouseInside && (m_bActive || (!mleft && !mright)) && m_bEnabled)
+	if ((m_bMouseInside || (m_bBusy && (mleft || mright))) && (m_bActive || (!mleft && !mright)) && m_bEnabled)
 		engine->getMouse()->setCursorType(CURSORTYPE::CURSOR_TEXT);
 
 	// update carret
@@ -254,6 +254,7 @@ void CBaseUITextbox::update()
 	if (!mright && m_bContextMouse && isMouseInside())
 	{
 		m_bContextMouse = false;
+		engine->getMouse()->setCursorType(CURSORTYPE::CURSOR_NORMAL);
 		cmenu->begin();
 		{
 			cmenu->addItem("Clear", 5);

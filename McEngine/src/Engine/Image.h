@@ -17,7 +17,7 @@ public:
 
 	enum class TYPE
 	{
-		TYPE_RGB,
+		TYPE_RGBA,
 		TYPE_PNG,
 		TYPE_JPG
 	};
@@ -34,21 +34,18 @@ public:
 	virtual void setWrapMode(Graphics::WRAP_MODE wrapMode) = 0;
 
 	void setPixel(int x, int y, Color color);
-	void setPixels(std::vector<unsigned char> pixels);
-	Color getPixel(int x, int y);
+	void setPixels(const char *data, size_t size, TYPE type);
+	void setPixels(const std::vector<unsigned char> &pixels);
+
+	Color getPixel(int x, int y) const;
 
 	inline Image::TYPE getType() const {return m_type;}
 	inline int getNumChannels() const {return m_iNumChannels;}
 	inline int getWidth() const {return m_iWidth;}
 	inline int getHeight() const {return m_iHeight;}
-	inline Vector2 getSize() {return Vector2(m_iWidth, m_iHeight);}
-
-	inline std::vector<unsigned char> *getRawImage() {return &m_rawImage;}
+	inline Vector2 getSize() const {return Vector2(m_iWidth, m_iHeight);}
 
 	inline bool hasAlphaChannel() const {return m_bHasAlphaChannel;}
-
-	// HACKHACK: TEMP: backwards compatibility for MetroidModelViewer
-	void writeToFile(UString folder);
 
 protected:
 	virtual void init() = 0;
@@ -60,7 +57,7 @@ protected:
 	Image::TYPE m_type;
 
 	int m_iNumChannels;
-	int m_iWidth; // do NOT make these unsigned, it will fuck shit up
+	int m_iWidth;
 	int m_iHeight;
 
 	bool m_bHasAlphaChannel;

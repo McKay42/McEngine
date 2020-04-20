@@ -12,9 +12,11 @@
 
 #include <string.h>
 
-//ConVar vulkan_debug("vulkan_debug", false);
+ConVar _debug_vulkan("debug_vulkan", false);
 
 VulkanInterface *vulkan = NULL;
+
+ConVar *VulkanInterface::debug_vulkan = &_debug_vulkan;
 
 VulkanInterface::VulkanInterface()
 {
@@ -48,7 +50,7 @@ VulkanInterface::VulkanInterface()
 	// instance layers
 	std::vector<const char *> enabledInstanceLayers;
 	/*
-	if (vulkan_debug.getBool())
+	if (_debug_vulkan.getBool())
 		enabledInstanceLayers.push_back("VK_LAYER_LUNARG_standard_validation");
 	*/
 
@@ -252,6 +254,7 @@ VulkanInterface::~VulkanInterface()
 #endif
 
 	m_bReady = false;
+
 	vulkan = NULL; // deref
 }
 

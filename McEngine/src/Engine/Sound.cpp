@@ -30,12 +30,6 @@
 #include "Engine.h"
 #include "SoundEngine.h"
 
-#ifdef MCENGINE_FEATURE_SOUND
-
-DWORD CALLBACK soundFXCallbackProc(HSTREAM handle, void *buffer, DWORD length, void *user);
-
-#endif
-
 ConVar debug_snd("debug_snd", false);
 
 ConVar snd_speed_compensate_pitch("snd_speed_compensate_pitch", true, "automatically keep pitch constant if speed changes");
@@ -44,8 +38,6 @@ ConVar snd_play_interp_ratio("snd_play_interp_ratio", 0.50f, "percentage of snd_
 
 Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan) : Resource(filepath)
 {
-	m_fVolume = 1.0f;
-
 	m_HSTREAM = 0;
 	m_HSTREAMBACKUP = 0;
 	m_HCHANNEL = 0;
@@ -57,16 +49,20 @@ Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan
 	m_bPrescan = prescan;
 	m_bIsOverlayable = false;
 
+	m_fVolume = 1.0f;
 	m_fLastPlayTime = -1.0f;
-
-	m_bisSpeedAndPitchHackEnabled = false;
-	m_soundProcUserData = new SOUND_PROC_USERDATA();
 
 	m_iPrevPosition = 0;
 	m_mixChunkOrMixMusic = NULL;
+
 	m_wasapiSampleBuffer = NULL;
 	m_iWasapiSampleBufferSize = 0;
+
+#ifdef MCENGINE_FEATURE_BASS_WASAPI
+
 	m_danglingWasapiStreams.reserve(32);
+
+#endif
 }
 
 void Sound::init()
@@ -91,7 +87,7 @@ void Sound::init()
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
 
-	m_bReady = m_bAsyncReady;
+	m_bReady = m_bAsyncReady.load();
 
 #endif
 }
@@ -197,7 +193,7 @@ void Sound::initAsync()
 #endif
 }
 
-SOUNDHANDLE Sound::getHandle()
+Sound::SOUNDHANDLE Sound::getHandle()
 {
 #ifdef MCENGINE_FEATURE_SOUND
 
@@ -226,6 +222,7 @@ SOUNDHANDLE Sound::getHandle()
 			}
 
 			m_HCHANNEL = BASS_StreamCreateFile(TRUE, m_wasapiSampleBuffer, 0, m_iWasapiSampleBufferSize, BASS_SAMPLE_FLOAT | BASS_STREAM_DECODE | BASS_UNICODE | (m_bIsLooped ? BASS_SAMPLE_LOOP : 0));
+
 			if (m_HCHANNEL == 0)
 				debugLog("BASS_StreamCreateFile() error %i\n", BASS_ErrorGetCode());
 			else
@@ -259,23 +256,6 @@ SOUNDHANDLE Sound::getHandle()
 		else
 			BASS_ChannelSetAttribute(m_HCHANNEL, BASS_ATTRIB_VOL, m_fVolume);
 
-		// special behaviour for FX HSAMPLES
-		if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
-		{
-			BASS_CHANNELINFO ci;
-			BASS_ChannelGetInfo(m_HCHANNEL, &ci);
-
-			// create a fake stream from the HSAMPLE which was completely loaded from the disk, this fake stream will use the soundFXCallbackProc function to actually get the data from an FX stream
-			m_soundProcUserData->originalSampleChannel = m_HCHANNEL;
-			m_soundProcUserData->offset = 0;
-
-			SOUNDHANDLE fakeStream = BASS_StreamCreate(ci.freq, ci.chans, ci.flags | BASS_STREAM_DECODE, soundFXCallbackProc, m_soundProcUserData);
-			m_HSTREAM = BASS_FX_TempoCreate(fakeStream, 0); // overwrite the stream/sample pointer
-			m_HCHANNEL = m_HSTREAM;
-
-			BASS_ChannelSetAttribute(m_HCHANNEL, BASS_ATTRIB_VOL, m_fVolume);
-		}
-
 		return m_HCHANNEL;
 	}
 
@@ -284,7 +264,9 @@ SOUNDHANDLE Sound::getHandle()
 	return m_HCHANNEL;
 
 #else
+
 	return 0;
+
 #endif
 }
 
@@ -347,8 +329,6 @@ void Sound::destroy()
 	m_mixChunkOrMixMusic = NULL;
 
 #endif
-
-	SAFE_DELETE(m_soundProcUserData);
 }
 
 void Sound::setPosition(double percent)
@@ -371,18 +351,9 @@ void Sound::setPosition(double percent)
 	else
 		m_fLastPlayTime = 0.0;
 
-	// HACKHACK: m_bisSpeedAndPitchHackEnabled
-	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
-	{
-		setPositionMS(0, true);
-		m_soundProcUserData->offset = (QWORD)((double)(length)*percent);
-	}
-	else
-	{
-		const BOOL res = BASS_ChannelSetPosition(handle, (QWORD)((double)(length)*percent), BASS_POS_BYTE);
-		if (!res && debug_snd.getBool())
-			debugLog("Sound::setPosition( %f ) BASS_ChannelSetPosition() error %i on file %s\n", percent, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
-	}
+	const BOOL res = BASS_ChannelSetPosition(handle, (QWORD)((double)(length)*percent), BASS_POS_BYTE);
+	if (!res && debug_snd.getBool())
+		debugLog("Sound::setPosition( %f ) BASS_ChannelSetPosition() error %i on file %s\n", percent, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER) && defined(SDL_MIXER_X)
 
@@ -439,18 +410,9 @@ void Sound::setPositionMS(unsigned long ms, bool internal)
 	else
 		m_fLastPlayTime = 0.0;
 
-	// HACKHACK: m_bisSpeedAndPitchHackEnabled
-	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
-	{
-		BASS_ChannelSetPosition(handle, 0, BASS_POS_BYTE);
-		m_soundProcUserData->offset = position;
-	}
-	else
-	{
-		const BOOL res = BASS_ChannelSetPosition(handle, position, BASS_POS_BYTE);
-		if (!res && !internal && debug_snd.getBool())
-			debugLog("Sound::setPositionMS( %lu ) BASS_ChannelSetPosition() error %i on file %s\n", ms, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
-	}
+	const BOOL res = BASS_ChannelSetPosition(handle, position, BASS_POS_BYTE);
+	if (!res && !internal && debug_snd.getBool())
+		debugLog("Sound::setPositionMS( %lu ) BASS_ChannelSetPosition() error %i on file %s\n", ms, BASS_ErrorGetCode(), m_sFilePath.toUtf8());
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
 
@@ -516,14 +478,6 @@ void Sound::setSpeed(float speed)
 	if (!m_bReady) return;
 
 #ifdef MCENGINE_FEATURE_SOUND
-
-	/*
-	if (!m_bStream)
-	{
-		debugLog("Sound::setSpeed() invalid call, this sound is not a stream!\n");
-		return;
-	}
-	*/
 
 	speed = clamp<float>(speed, 0.05f, 50.0f);
 
@@ -625,12 +579,7 @@ float Sound::getPosition()
 	const QWORD lengthBytes = BASS_ChannelGetLength(handle, BASS_POS_BYTE);
 	const QWORD positionBytes = BASS_ChannelGetPosition(handle, BASS_POS_BYTE);
 
-	// HACKHACK: m_bisSpeedAndPitchHackEnabled
-	float position = 0.0;
-	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
-		position = (float)((double)(positionBytes + m_soundProcUserData->offset) / (double)(lengthBytes));
-	else
-		position = (float)((double)(positionBytes) / (double)(lengthBytes));
+	const float position = (float)((double)(positionBytes) / (double)(lengthBytes));
 
 	return position;
 
@@ -650,7 +599,9 @@ float Sound::getPosition()
 	return 0.0f;
 
 #else
+
 	return 0.0f;
+
 #endif
 }
 
@@ -667,16 +618,7 @@ unsigned long Sound::getPositionMS()
 	const double positionInSeconds = BASS_ChannelBytes2Seconds(handle, position);
 	const double positionInMilliSeconds = positionInSeconds * 1000.0;
 
-	// HACKHACK: m_bisSpeedAndPitchHackEnabled
-	unsigned long positionMS = 0;
-	if (m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable)
-	{
-		const double offsetInSeconds = BASS_ChannelBytes2Seconds(handle, m_soundProcUserData->offset);
-		const double offsetInMilliSeconds = offsetInSeconds * 1000.0;
-		positionMS = static_cast<unsigned long>(positionInMilliSeconds + offsetInMilliSeconds);
-	}
-	else
-		positionMS = static_cast<unsigned long>(positionInMilliSeconds);
+	const unsigned long positionMS = static_cast<unsigned long>(positionInMilliSeconds);
 
 	// special case: a freshly started channel position jitters, lerp with engine time over a set duration to smooth things over
 	const double interpDuration = snd_play_interp_duration.getFloat();
@@ -706,7 +648,9 @@ unsigned long Sound::getPositionMS()
 	return 0;
 
 #else
+
 	return 0;
+
 #endif
 }
 
@@ -737,7 +681,9 @@ unsigned long Sound::getLengthMS()
 	return 0;
 
 #else
+
 	return 0;
+
 #endif
 }
 
@@ -763,7 +709,9 @@ float Sound::getSpeed()
 	return ((speed / 100.0f) + 1.0f);
 
 #else
+
 	return 1.0f;
+
 #endif
 }
 
@@ -789,7 +737,9 @@ float Sound::getPitch()
 	return ((pitch / 60.0f) + 1.0f);
 
 #else
+
 	return 1.0f;
+
 #endif
 }
 
@@ -807,7 +757,9 @@ float Sound::getFrequency()
 	return frequency;
 
 #else
+
 	return 44100.0f;
+
 #endif
 }
 
@@ -853,40 +805,9 @@ bool Sound::isFinished()
 #endif
 }
 
-void Sound::refactor(UString newFilePath)
+void Sound::rebuild(UString newFilePath)
 {
-	// HACKHACK: this refactor function shouldn't exist
 	m_sFilePath = newFilePath;
+
 	reload();
 }
-
-void Sound::clear()
-{
-	// HACKHACK: this function also shouldn't exist
-	//if (!(m_bisSpeedAndPitchHackEnabled && !m_bIsOverlayable))
-	{
-		m_HCHANNEL = 0;
-		m_HCHANNELBACKUP = 0;
-	}
-}
-
-
-
-#ifdef MCENGINE_FEATURE_SOUND
-
-DWORD CALLBACK soundFXCallbackProc(HSTREAM handle, void *buffer, DWORD length, void *user)
-{
-	Sound::SOUND_PROC_USERDATA *userData = (Sound::SOUND_PROC_USERDATA*)user;
-
-	QWORD fakeStreamPosition = BASS_ChannelGetPosition(handle, BASS_POS_BYTE) + userData->offset;
-	BASS_ChannelSetPosition(userData->originalSampleChannel, fakeStreamPosition, BASS_POS_BYTE);
-
-	QWORD actualSampleLength = BASS_ChannelGetLength(userData->originalSampleChannel, BASS_POS_BYTE);
-
-	if (fakeStreamPosition <= actualSampleLength)
-		return BASS_ChannelGetData(userData->originalSampleChannel, buffer, length);
-	else
-		return BASS_STREAMPROC_END;
-}
-
-#endif

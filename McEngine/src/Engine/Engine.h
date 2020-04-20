@@ -1,4 +1,4 @@
-//================ Copyright (c) 2015, PG, All rights reserved. =================//
+//================ Copyright (c) 2012, PG, All rights reserved. =================//
 //
 // Purpose:		core
 //
@@ -107,15 +107,12 @@ public:
 	inline Mouse *getMouse() const {return m_mouse;}
 	inline Keyboard *getKeyboard() const {return m_keyboard;}
 	inline Gamepad *getGamepad() const {return m_gamepad;}
-	inline int getNumMice() {return m_mice.size();}
-	inline int getNumKeyboards() {return m_keyboards.size();}
-	inline int getNumGamepads() {return m_gamepads.size();}
-	inline std::vector<Mouse*> getMice() {return m_mice;}
-	inline std::vector<Keyboard*> getKeyboards() {return m_keyboards;}
-	inline std::vector<Gamepad*> getGamepads() {return m_gamepads;}
+	inline const std::vector<Mouse*> &getMice() const {return m_mice;}
+	inline const std::vector<Keyboard*> &getKeyboards() const {return m_keyboards;}
+	inline const std::vector<Gamepad*> &getGamepads() const {return m_gamepads;}
 
 	// screen
-	void requestResolutionChange(Vector2 newResolution) {if (newResolution != m_vNewScreenSize) {m_vNewScreenSize = newResolution; m_bResolutionChange = true;}}
+	void requestResolutionChange(Vector2 newResolution);
 	inline Vector2 getScreenSize() const {return m_vScreenSize;}
 	inline int getScreenWidth() const {return (int)m_vScreenSize.x;}
 	inline int getScreenHeight() const {return (int)m_vScreenSize.y;}
@@ -127,16 +124,18 @@ public:
 	inline double getTimeRunning() const {return m_dRunTime;}
 	inline double getFrameTime() const {return m_dFrameTime;}
 	inline unsigned long getFrameCount() const {return m_iFrameCount;}
-	UString getArgs() {return m_sArgs;}
+
+	UString getArgs() const {return m_sArgs;}
+
 	inline bool hasFocus() const {return m_bHasFocus;}
 	inline bool isDrawing() const {return m_bDrawing;}
 	inline bool isMinimized() const {return m_bIsMinimized;}
 
 	// debugging/console
-	inline ConsoleBox *getConsoleBox() {return m_consoleBox;}
-	inline Console *getConsole() {return m_console;}
 	void setConsole(Console *console) {m_console = console;}
-	inline CBaseUIContainer *getGUI() {return m_guiContainer;}
+	inline ConsoleBox *getConsoleBox() const {return m_consoleBox;}
+	inline Console *getConsole() const {return m_console;}
+	inline CBaseUIContainer *getGUI() const {return m_guiContainer;}
 
 private:
 	// interfaces
@@ -185,13 +184,14 @@ private:
 	static ConsoleBox *m_consoleBox;
 	static Console *m_console;
 
-	// engine
+	// custom
 	UString m_sArgs;
 	bool m_bBlackout;
 	bool m_bDrawing;
 };
 
 extern Engine *engine;
+
 #define debugLog(format, ...) Engine::debugLog( format , ##__VA_ARGS__ )
 
 #endif

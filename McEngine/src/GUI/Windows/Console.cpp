@@ -29,10 +29,8 @@
 
 #define CONSOLE_BORDER 6
 
-void DUMMY_ARGS_CLEAR() {;}
-
-ConVar console_logging("console_logging", true);
-ConVar _clear("clear", DUMMY_ARGS_CLEAR);
+ConVar _console_logging("console_logging", true);
+ConVar _clear("clear");
 
 std::vector<UString> Console::g_commandQueue;
 
@@ -167,7 +165,7 @@ void Console::processCommand(UString command)
 	}
 
 	// log
-	if (console_logging.getBool())
+	if (_console_logging.getBool())
 	{
 		UString logMessage;
 

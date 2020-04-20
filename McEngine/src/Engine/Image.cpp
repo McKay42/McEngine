@@ -43,7 +43,7 @@ void Image::saveToImage(unsigned char *data, unsigned int width, unsigned int he
 {
 	debugLog("Saving image to %s ...\n", filepath.toUtf8());
 
-	unsigned error = lodepng::encode(filepath.toUtf8(), data, width, height, LodePNGColorType::LCT_RGB, 8);
+	const unsigned error = lodepng::encode(filepath.toUtf8(), data, width, height, LodePNGColorType::LCT_RGB, 8);
 	if (error)
 	{
 		debugLog("PNG error %i on file %s", error, filepath.toUtf8());
@@ -73,7 +73,7 @@ Image::Image(int width, int height, bool mipmapped, bool keepInSystemMemory) : R
 	m_bMipmapped = mipmapped;
 	m_bKeepInSystemMemory = keepInSystemMemory;
 
-	m_type = Image::TYPE::TYPE_RGB;
+	m_type = Image::TYPE::TYPE_RGBA;
 	m_iNumChannels = 4;
 	m_iWidth = width;
 	m_iHeight = height;
@@ -82,7 +82,7 @@ Image::Image(int width, int height, bool mipmapped, bool keepInSystemMemory) : R
 	m_bCreatedImage = true;
 
 	// reserve and fill with pink pixels
-	m_rawImage.resize(m_iWidth*m_iHeight*m_iNumChannels);
+	m_rawImage.resize(m_iWidth * m_iHeight * m_iNumChannels);
 	for (int i=0; i<m_iWidth*m_iHeight; i++)
 	{
 		m_rawImage.push_back(255);
@@ -91,6 +91,7 @@ Image::Image(int width, int height, bool mipmapped, bool keepInSystemMemory) : R
 		m_rawImage.push_back(255);
 	}
 
+	// special case: filled rawimage is always already async ready
 	m_bAsyncReady = true;
 }
 
@@ -141,12 +142,14 @@ bool Image::loadRawImage()
 		bool isJPEG = false;
 		bool isPNG = false;
 		{
-			unsigned char buf[4];
+			const int numBytes = 4;
 
-			buf[0] = (unsigned char)data[0];
-			buf[1] = (unsigned char)data[1];
-			buf[2] = (unsigned char)data[2];
-			buf[3] = (unsigned char)data[3];
+			unsigned char buf[numBytes];
+
+			for (int i=0; i<numBytes; i++)
+			{
+				buf[i] = (unsigned char)data[i];
+			}
 
 			if (buf[0] == 0xff && buf[1] == 0xD8 && buf[2] == 0xff) // 0xFFD8FF
 				isJPEG = true;
@@ -177,9 +180,9 @@ bool Image::loadRawImage()
 
 			jpeg_mem_src(&cinfo, (unsigned char*)data, file.getFileSize());
 #ifdef __APPLE__
-			int headerRes = jpeg_read_header(&cinfo, boolean::TRUE); // NOTE: MACMAC: wtf is this boolean enum here suddenly
+			const int headerRes = jpeg_read_header(&cinfo, boolean::TRUE); // HACKHACK: wtf is this boolean enum here suddenly required?
 #else
-			int headerRes = jpeg_read_header(&cinfo, TRUE);
+			const int headerRes = jpeg_read_header(&cinfo, TRUE);
 #endif
 			if (headerRes != JPEG_HEADER_OK)
 			{
@@ -192,12 +195,12 @@ bool Image::loadRawImage()
 			m_iHeight = cinfo.image_height;
 			m_iNumChannels = cinfo.num_components;
 
-			// TODO: add proper CMYK support, check via cinfo.jpeg_color_space
+			// NOTE: color spaces which require color profiles are not supported (e.g. J_COLOR_SPACE::JCS_YCCK)
 
 			if (m_iNumChannels == 4)
 				m_bHasAlphaChannel = true;
 
-			if (m_iWidth > 4096 || m_iHeight > 4096)
+			if (m_iWidth > 8192 || m_iHeight > 8192)
 			{
 				jpeg_destroy_decompress(&cinfo);
 				printf("Image Error: JPEG image size is too big (%i x %i) in file %s\n", m_iWidth, m_iHeight, m_sFilePath.toUtf8());
@@ -205,15 +208,12 @@ bool Image::loadRawImage()
 			}
 
 			// preallocate
-			m_rawImage.resize(m_iWidth*m_iHeight*m_iNumChannels);
-
-			//int rowStride = m_iWidth * m_iNumChannels;
-			//JSAMPARRAY buffer = (*cinfo.mem->alloc_sarray) ((j_common_ptr) &cinfo, JPOOL_IMAGE, rowStride, 1);
+			m_rawImage.resize(m_iWidth * m_iHeight * m_iNumChannels);
 
 			// extract each scanline of the image
 			jpeg_start_decompress(&cinfo);
 			JSAMPROW j;
-			for (int i=0; i<m_iHeight; ++i)
+			for (int y=0; y<m_iHeight; y++)
 			{
 				if (m_bInterrupted) // cancellation point
 				{
@@ -221,7 +221,7 @@ bool Image::loadRawImage()
 					return false;
 				}
 
-				j = (&m_rawImage[0] + (i * m_iWidth * m_iNumChannels));
+				j = (&m_rawImage[0] + (y * m_iWidth * m_iNumChannels));
 				jpeg_read_scanlines(&cinfo, &j, 1);
 			}
 
@@ -235,7 +235,7 @@ bool Image::loadRawImage()
 			unsigned int width = 0; // yes, these are here on purpose
 			unsigned int height = 0;
 
-			unsigned error = lodepng::decode(m_rawImage, width, height, (unsigned char*)data, file.getFileSize());
+			const unsigned error = lodepng::decode(m_rawImage, width, height, (const unsigned char*)data, file.getFileSize());
 
 			m_iWidth = width;
 			m_iHeight = height;
@@ -257,14 +257,17 @@ bool Image::loadRawImage()
 		return false;
 
 	// error checking
-	if (m_rawImage.size() < m_iWidth*m_iHeight*m_iNumChannels) // sanity check
+
+	// size sanity check
+	if (m_rawImage.size() < (m_iWidth * m_iHeight * m_iNumChannels))
 	{
-		printf("Image Error: Loaded image has only %lu/%i bytes in file %s\n", (unsigned long)m_rawImage.size(), m_iWidth*m_iHeight*m_iNumChannels, m_sFilePath.toUtf8());
+		printf("Image Error: Loaded image has only %lu/%i bytes in file %s\n", (unsigned long)m_rawImage.size(), m_iWidth * m_iHeight * m_iNumChannels, m_sFilePath.toUtf8());
 		//engine->showMessageError("Image Error", UString::format("Loaded image has only %i/%i bytes in file %s", m_rawImage.size(), m_iWidth*m_iHeight*m_iNumChannels, m_sFilePath.toUtf8()));
 		return false;
 	}
 
-	if (m_iNumChannels != 4 && m_iNumChannels != 3 && m_iNumChannels != 1) // another sanity check
+	// supported channels sanity check
+	if (m_iNumChannels != 4 && m_iNumChannels != 3 && m_iNumChannels != 1)
 	{
 		printf("Image Error: Unsupported number of color channels (%i) in file %s", m_iNumChannels, m_sFilePath.toUtf8());
 		//engine->showMessageError("Image Error", UString::format("Unsupported number of color channels (%i) in file %s", m_iNumChannels, m_sFilePath.toUtf8()));
@@ -286,6 +289,9 @@ bool Image::loadRawImage()
 				break;
 			}
 		}
+
+		if (foundNonTransparentPixel)
+			break;
 	}
 	if (!foundNonTransparentPixel)
 	{
@@ -296,25 +302,26 @@ bool Image::loadRawImage()
 	return true;
 }
 
-Color Image::getPixel(int x, int y)
+Color Image::getPixel(int x, int y) const
 {
-	if (m_rawImage.size() < 1 || x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size() - 1)) return 0xffffff00;
+	const int indexBegin = m_iNumChannels * y * m_iWidth + m_iNumChannels * x;
+	const int indexEnd = m_iNumChannels * y * m_iWidth + m_iNumChannels * x + m_iNumChannels;
 
-	// TODO: support for non-4-channel images
+	if (m_rawImage.size() < 1 || x < 0 || y < 0 || indexEnd < 0 || indexEnd > m_rawImage.size()) return 0xffffff00;
 
-	uint32_t r = 255;
-	uint32_t g = 255;
-	uint32_t b = 0;
-	uint32_t a = 255;
+	unsigned char r = 255;
+	unsigned char g = 255;
+	unsigned char b = 0;
+	unsigned char a = 255;
 
-	r = m_rawImage[4 * y * m_iWidth + 4 * x + 0];
+	r = m_rawImage[indexBegin + 0];
 	if (m_iNumChannels > 1)
 	{
-		g = m_rawImage[4 * y * m_iWidth + 4 * x + 1];
-		b = m_rawImage[4 * y * m_iWidth + 4 * x + 2];
+		g = m_rawImage[indexBegin + 1];
+		b = m_rawImage[indexBegin + 2];
 
 		if (m_iNumChannels > 3)
-			a = m_rawImage[4 * y * m_iWidth + 4 * x + 3];
+			a = m_rawImage[indexBegin + 3];
 		else
 			a = 255;
 	}
@@ -330,56 +337,55 @@ Color Image::getPixel(int x, int y)
 
 void Image::setPixel(int x, int y, Color color)
 {
-	if (m_rawImage.size() < 1 || x < 0 || y < 0 || (4 * y * m_iWidth + 4 * x + 3) > (m_rawImage.size() - 1)) return;
+	const int indexBegin = m_iNumChannels * y * m_iWidth + m_iNumChannels * x;
+	const int indexEnd = m_iNumChannels * y * m_iWidth + m_iNumChannels * x + m_iNumChannels;
 
-	// TODO: support for non-4-channel images
+	if (m_rawImage.size() < 1 || x < 0 || y < 0 || indexEnd < 0 || indexEnd > m_rawImage.size()) return;
 
-	m_rawImage[4 * y * m_iWidth + 4 * x + 0] = COLOR_GET_Ri(color);
-	m_rawImage[4 * y * m_iWidth + 4 * x + 1] = COLOR_GET_Gi(color);
-	m_rawImage[4 * y * m_iWidth + 4 * x + 2] = COLOR_GET_Bi(color);
-	m_rawImage[4 * y * m_iWidth + 4 * x + 3] = COLOR_GET_Ai(color);
+	m_rawImage[indexBegin + 0] = COLOR_GET_Ri(color);
+	if (m_iNumChannels > 1)
+		m_rawImage[indexBegin + 1] = COLOR_GET_Gi(color);
+	if (m_iNumChannels > 2)
+		m_rawImage[indexBegin + 2] = COLOR_GET_Bi(color);
+	if (m_iNumChannels > 3)
+		m_rawImage[indexBegin + 3] = COLOR_GET_Ai(color);
 }
 
-void Image::setPixels(std::vector<unsigned char> pixels)
+void Image::setPixels(const char *data, size_t size, TYPE type)
 {
-	if (pixels.size() < m_iWidth*m_iHeight*m_iNumChannels)
+	if (data == NULL) return;
+
+	// TODO: implement remaining types
+	switch (type)
 	{
-		debugLog("Image::setPixels() error, supplied array is too small!\n");
+	case TYPE::TYPE_PNG:
+		{
+			unsigned int width = 0; // yes, these are here on purpose
+			unsigned int height = 0;
+
+			const unsigned error = lodepng::decode(m_rawImage, width, height, (const unsigned char*)data, size);
+
+			m_iWidth = width;
+			m_iHeight = height;
+
+			if (error)
+				printf("Image Error: PNG error %i (%s) in file %s\n", error, lodepng_error_text(error), m_sFilePath.toUtf8());
+		}
+		break;
+
+	default:
+		debugLog("Image Error: Format not yet implemented\n");
+		break;
+	}
+}
+
+void Image::setPixels(const std::vector<unsigned char> &pixels)
+{
+	if (pixels.size() < (m_iWidth * m_iHeight * m_iNumChannels))
+	{
+		debugLog("Image Error: setPixels() supplied array is too small!\n");
 		return;
 	}
 
 	m_rawImage = pixels;
-}
-
-void Image::writeToFile(UString folder)
-{
-	if (!m_bReady || !m_bCreatedImage) return;
-	if (m_iWidth <= 0 || m_iHeight <= 0 || m_rawImage.size() == 0 || m_rawImage.size() < 4 || m_rawImage.size() % 4 != 0) return;
-
-	folder.append(m_sName);
-	folder.append(".png");
-
-	// NOTE: for metroid model viewer only!!!
-	// switch from inverse alpha
-	/*
-	std::vector<unsigned char> tempRGBAraw;
-	tempRGBAraw.reserve(m_rawImage.size());
-	for (int i=0; i<m_rawImage.size(); i+=4)
-	{
-		tempRGBAraw.push_back(m_rawImage[i]);			// R
-		tempRGBAraw.push_back(m_rawImage[i+1]);			// G
-		tempRGBAraw.push_back(m_rawImage[i+2]);			// B
-		tempRGBAraw.push_back(255 - m_rawImage[i+3]);	// A
-	}
-	*/
-
-	unsigned error = lodepng::encode(folder.toUtf8(), (const unsigned char*)(&m_rawImage[0]), m_iWidth, m_iHeight);
-	if (error)
-	{
-		debugLog("PNG error %i on file %s", error, folder.toUtf8());
-		UString errorMessage = UString::format("PNG error %i on file ", error);
-		errorMessage.append(folder);
-		engine->showMessageError(errorMessage, lodepng_error_text(error));
-		return;
-	}
 }

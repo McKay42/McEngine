@@ -65,6 +65,9 @@ public:
 	unsigned long toUnsignedLong() const;
 	unsigned long long toUnsignedLongLong() const;
 
+	void lowerCase();
+	void upperCase();
+
 	// operators
 	wchar_t operator [] (int index) const;
 	UString &operator = (const UString &ustr);

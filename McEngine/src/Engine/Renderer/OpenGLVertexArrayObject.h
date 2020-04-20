@@ -28,10 +28,14 @@ private:
 	virtual void initAsync();
 	virtual void destroy();
 
+	static inline Color ARGBtoABGR(Color color) {return ((color & 0xff000000) >> 0) | ((color & 0x00ff0000) >> 16) | ((color & 0x0000ff00) << 0) | ((color & 0x000000ff) << 16);}
+
 	unsigned int m_iVertexBuffer;
 	unsigned int m_iTexcoordBuffer;
+	unsigned int m_iColorBuffer;
 
 	unsigned int m_iNumTexcoords;
+	unsigned int m_iNumColors;
 };
 
 #endif

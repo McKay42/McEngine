@@ -10,18 +10,34 @@
 
 
 
-std::vector<ConVar*> &getGlobalConVarArray()
+static std::vector<ConVar*> &_getGlobalConVarArray()
 {
-	static std::vector<ConVar*> g_vConVarArray; // (singleton)
-	return g_vConVarArray;
+	static std::vector<ConVar*> g_vConVars; // (singleton)
+	return g_vConVars;
 }
 
-void addConVar(ConVar *c)
+static std::unordered_map<std::string, ConVar*> &_getGlobalConVarMap()
 {
-	if (getGlobalConVarArray().size() < 1)
-		getGlobalConVarArray().reserve(1024);
+	static std::unordered_map<std::string, ConVar*> g_vConVarMap; // (singleton)
+	return g_vConVarMap;
+}
 
-	getGlobalConVarArray().push_back(c);
+static void _addConVar(ConVar *c)
+{
+	if (_getGlobalConVarArray().size() < 1)
+		_getGlobalConVarArray().reserve(1024);
+
+	_getGlobalConVarArray().push_back(c);
+	_getGlobalConVarMap()[std::string(c->getName().toUtf8(), c->getName().length())] = c;
+}
+
+static ConVar *_getConVar(const UString &name)
+{
+	const auto result = _getGlobalConVarMap().find(std::string(name.toUtf8(), name.length()));
+	if (result != _getGlobalConVarMap().end())
+		return result->second;
+	else
+		return NULL;
 }
 
 
@@ -102,123 +118,123 @@ void ConVar::init(UString name, UString defaultValue, UString helpString, ConVar
 ConVar::ConVar(UString name)
 {
 	init(name);
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, ConVarCallback callback)
 {
 	init(name, callback);
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, ConVarCallbackArgs callbackARGS)
 {
 	init(name, callbackARGS);
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, float fDefaultValue)
 {
 	init(name, fDefaultValue, "", NULL);
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, float fDefaultValue, ConVarChangeCallback callback)
 {
 	init(name, fDefaultValue, "", callback);
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, float fDefaultValue, UString helpString)
 {
 	init(name, fDefaultValue, helpString, NULL);
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, float fDefaultValue, UString helpString, ConVarChangeCallback callback)
 {
 	init(name, fDefaultValue, helpString, callback);
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, int iDefaultValue)
 {
 	init(name, (float)iDefaultValue, "", NULL);
 	m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, int iDefaultValue, ConVarChangeCallback callback)
 {
 	init(name, (float)iDefaultValue, "", callback);
 	m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, int iDefaultValue, UString helpString)
 {
 	init(name, (float)iDefaultValue, helpString, NULL);
 	m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, int iDefaultValue, UString helpString, ConVarChangeCallback callback)
 {
 	init(name, (float)iDefaultValue, helpString, callback);
 	m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, bool bDefaultValue)
 {
 	init(name, bDefaultValue ? 1.0f : 0.0f, "", NULL);
 	m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, bool bDefaultValue, ConVarChangeCallback callback)
 {
 	init(name, bDefaultValue ? 1.0f : 0.0f, "", callback);
 	m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, bool bDefaultValue, UString helpString)
 {
 	init(name, bDefaultValue ? 1.0f : 0.0f, helpString, NULL);
 	m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, bool bDefaultValue, UString helpString, ConVarChangeCallback callback)
 {
 	init(name, bDefaultValue ? 1.0f : 0.0f, helpString, callback);
 	m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, const char *sDefaultValue)
 {
 	init(name, UString(sDefaultValue), "", NULL);
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, const char *sDefaultValue, UString helpString)
 {
 	init(name, UString(sDefaultValue), helpString, NULL);
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, const char *sDefaultValue, ConVarChangeCallback callback)
 {
 	init(name, UString(sDefaultValue), "", callback);
-	addConVar(this);
+	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, const char *sDefaultValue, UString helpString, ConVarChangeCallback callback)
 {
 	init(name, UString(sDefaultValue), helpString, callback);
-	addConVar(this);
+	_addConVar(this);
 }
 
 void ConVar::exec()
@@ -250,8 +266,11 @@ void ConVar::setValue(float value)
 	const float oldValue = m_fValue.load();
 
 	// then set the new value
-	m_fValue = value;
-	m_sValue = UString::format("%g", m_fValue.load());
+	const UString newStringValue = UString::format("%g", value);
+	{
+		m_fValue = value;
+		m_sValue = newStringValue;
+	}
 
 	// handle callbacks
 	{
@@ -260,10 +279,10 @@ void ConVar::setValue(float value)
 
 		// possible change callback
 		if (m_changecallback != NULL)
-			m_changecallback(UString::format("%g", oldValue), UString::format("%g", value));
+			m_changecallback(UString::format("%g", oldValue), newStringValue);
 
 		// possible arg callback
-		execArgs(UString::format("%g", value));
+		execArgs(newStringValue);
 	}
 }
 
@@ -272,21 +291,26 @@ void ConVar::setValue(UString sValue)
 	// backup previous value
 	const UString oldValue = m_sValue;
 
-	// possible void callback
-	exec();
-
 	// then set the new value
-	m_sValue = sValue;
+	{
+		m_sValue = sValue;
 
-	if (sValue.length() > 0)
-		m_fValue = sValue.toFloat();
+		if (sValue.length() > 0)
+			m_fValue = sValue.toFloat();
+	}
 
-	// possible change callback
-	if (m_changecallback != NULL)
-		m_changecallback(oldValue, sValue);
+	// handle callbacks
+	{
+		// possible void callback
+		exec();
 
-	// possible arg callback
-	execArgs(sValue);
+		// possible change callback
+		if (m_changecallback != NULL)
+			m_changecallback(oldValue, sValue);
+
+		// possible arg callback
+		execArgs(sValue);
+	}
 }
 
 void ConVar::setCallback(NativeConVarCallback callback)
@@ -304,9 +328,14 @@ void ConVar::setCallback(NativeConVarChangeCallback callback)
 	m_changecallback = callback;
 }
 
-bool ConVar::hasCallbackArgs()
+void ConVar::setHelpString(UString helpString)
 {
-	return (m_callbackfuncargs != NULL || m_changecallback != NULL);
+	m_sHelpString = helpString;
+}
+
+bool ConVar::hasCallbackArgs() const
+{
+	return (m_callbackfuncargs || m_changecallback);
 }
 
 
@@ -323,6 +352,7 @@ ConVarHandler *convar = new ConVarHandler();
 
 ConVarHandler::ConVarHandler()
 {
+	convar = this;
 }
 
 ConVarHandler::~ConVarHandler()
@@ -330,28 +360,21 @@ ConVarHandler::~ConVarHandler()
 	convar = NULL;
 }
 
-std::vector<ConVar*> ConVarHandler::getConVarArray()
+const std::vector<ConVar*> &ConVarHandler::getConVarArray() const
 {
-	std::vector<ConVar*> convars;
-	for (int i=0; i<getGlobalConVarArray().size(); i++)
-	{
-		convars.push_back((getGlobalConVarArray()[i]));
-	}
-	return convars;
+	return _getGlobalConVarArray();
 }
 
-int ConVarHandler::getNumConVars()
+int ConVarHandler::getNumConVars() const
 {
-	return getGlobalConVarArray().size();
+	return _getGlobalConVarArray().size();
 }
 
-ConVar *ConVarHandler::getConVarByName(UString name, bool warnIfNotFound)
+ConVar *ConVarHandler::getConVarByName(UString name, bool warnIfNotFound) const
 {
-	for (int i=0; i<getGlobalConVarArray().size(); i++)
-	{
-		if (getGlobalConVarArray()[i]->getName() == name)
-			return (getGlobalConVarArray()[i]);
-	}
+	ConVar *found = _getConVar(name);
+	if (found != NULL)
+		return found;
 
 	if (warnIfNotFound)
 	{
@@ -368,20 +391,22 @@ ConVar *ConVarHandler::getConVarByName(UString name, bool warnIfNotFound)
 		return emptyDummyConVar;
 }
 
-std::vector<ConVar*> ConVarHandler::getConVarByLetter(UString letters)
+std::vector<ConVar*> ConVarHandler::getConVarByLetter(UString letters) const
 {
-	std::vector<ConVar*> temp;
+	std::vector<ConVar*> matchingConVars;
 
 	if (letters.length() < 1)
-		return temp;
+		return matchingConVars;
 
-	for (int i=0; i<getGlobalConVarArray().size(); i++)
+	const std::vector<ConVar*> &convars = getConVarArray();
+
+	for (int i=0; i<convars.size(); i++)
 	{
-		if (getGlobalConVarArray()[i]->getName().find(letters, 0, letters.length()) == 0)
-			temp.push_back((getGlobalConVarArray()[i]));
+		if (convars[i]->getName().find(letters, 0, letters.length()) == 0)
+			matchingConVars.push_back(convars[i]);
 	}
 
-	return temp;
+	return matchingConVars;
 }
 
 
@@ -390,7 +415,7 @@ std::vector<ConVar*> ConVarHandler::getConVarByLetter(UString letters)
 //	ConVarHandler ConCommands  //
 //*****************************//
 
-void _find(UString args)
+static void _find(UString args)
 {
 	if (args.length() < 1)
 	{
@@ -398,17 +423,17 @@ void _find(UString args)
 		return;
 	}
 
-	std::vector<ConVar*> temp;
+	const std::vector<ConVar*> &convars = convar->getConVarArray();
 
-	std::vector<ConVar*> convars = convar->getConVarArray();
+	std::vector<ConVar*> matchingConVars;
 	for (int i=0; i<convars.size(); i++)
 	{
 		UString curcvar = convars[i]->getName();
 		if (curcvar.find(args, 0, curcvar.length()) != -1)
-			temp.push_back(convars[i]);
+			matchingConVars.push_back(convars[i]);
 	}
 
-	if (temp.size() < 1)
+	if (matchingConVars.size() < 1)
 	{
 		UString thelog = "No commands found containing \"";
 		thelog.append(args);
@@ -418,22 +443,23 @@ void _find(UString args)
 	}
 
 	debugLog("----------------------------------------------\n");
-	UString thelog = "[ find : ";
-	thelog.append(args);
-	thelog.append(" ]\n");
-	debugLog("%s", thelog.toUtf8());
-
-	for (int i=0; i<temp.size(); i++)
 	{
-		UString tstring = temp[i]->getName();
-		tstring.append("\n");
-		debugLog("%s", tstring.toUtf8());
-	}
+		UString thelog = "[ find : ";
+		thelog.append(args);
+		thelog.append(" ]\n");
+		debugLog("%s", thelog.toUtf8());
 
+		for (int i=0; i<matchingConVars.size(); i++)
+		{
+			UString tstring = matchingConVars[i]->getName();
+			tstring.append("\n");
+			debugLog("%s", tstring.toUtf8());
+		}
+	}
 	debugLog("----------------------------------------------\n");
 }
 
-void _help(UString args)
+static void _help(UString args)
 {
 	if (args.length() < 1)
 	{
@@ -486,33 +512,31 @@ void _help(UString args)
 	debugLog("%s", thelog.toUtf8());
 }
 
-void _listcommands(void)
+static void _listcommands(void)
 {
-	std::vector<ConVar*> temp;
-
 	debugLog("----------------------------------------------\n");
-
-	std::vector<ConVar*> convars = convar->getConVarArray();
-	for (int i=0; i<convars.size(); i++)
 	{
-		UString tstring = convars[i]->getName();
-
-		if (convars[i]->hasValue())
+		const std::vector<ConVar*> &convars = convar->getConVarArray();
+		for (int i=0; i<convars.size(); i++)
 		{
-			tstring.append(UString::format(" = %s ( def. \"%s\" )", convars[i]->getString().toUtf8(), convars[i]->getDefaultString().toUtf8()));
+			UString tstring = convars[i]->getName();
+
+			if (convars[i]->hasValue())
+			{
+				tstring.append(UString::format(" = %s ( def. \"%s\" )", convars[i]->getString().toUtf8(), convars[i]->getDefaultString().toUtf8()));
+			}
+
+			if (convars[i]->getHelpstring().length() > 0)
+			{
+				tstring.append(" - ");
+				tstring.append(convars[i]->getHelpstring());
+			}
+
+			tstring.append("\n");
+
+			debugLog("%s", tstring.toUtf8());
 		}
-
-		if (convars[i]->getHelpstring().length() > 0)
-		{
-			tstring.append(" - ");
-			tstring.append(convars[i]->getHelpstring());
-		}
-
-		tstring.append("\n");
-
-		debugLog("%s", tstring.toUtf8());
 	}
-
 	debugLog("----------------------------------------------\n");
 }
 

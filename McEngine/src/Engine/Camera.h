@@ -51,7 +51,7 @@ public:
 	// get
 	inline CAMERA_TYPE getType() const {return m_camType;}
 	inline Vector3 getPos() const {return m_vPos;}
-	Vector3 getNextPosition(Vector3 velocity);
+	Vector3 getNextPosition(Vector3 velocity) const;
 
 	inline float getFov() const {return rad2deg(m_fFov);}
 	inline float getFovRad() const {return m_fFov;}
@@ -69,27 +69,27 @@ public:
 	inline float getYaw() const {return m_fYaw;}
 	inline float getRoll() const {return m_fRoll;}
 
-	inline Quaternion getRotation() {return m_rotation;}
+	inline Quaternion getRotation() const {return m_rotation;}
 
-	Vector3 getProjectedVector(Vector3 point, float screenWidth, float screenHeight, float zn = 0.1f, float zf = 1.0f);
-	Vector3 getUnProjectedVector(Vector2 point, float screenWidth, float screenHeight, float zn = 0.1f, float zf = 1.0f);
+	Vector3 getProjectedVector(Vector3 point, float screenWidth, float screenHeight, float zn = 0.1f, float zf = 1.0f) const;
+	Vector3 getUnProjectedVector(Vector2 point, float screenWidth, float screenHeight, float zn = 0.1f, float zf = 1.0f) const;
 
-	bool isPointVisibleFrustum(Vector3 point); // within our viewing frustum
-	bool isPointVisiblePlane(Vector3 point); // just in front of the camera plane
+	bool isPointVisibleFrustum(Vector3 point) const; // within our viewing frustum
+	bool isPointVisiblePlane(Vector3 point) const; // just in front of the camera plane
 
 private:
-	void updateVectors();
-	void updateViewFrustum();
-
-	void lookAt(Vector3 eye, Vector3 target);
-
 	struct CAM_PLANE
 	{
 		float a,b,c,d;
 	};
-	CAM_PLANE m_viewFrustum[4];
-	inline float planeDotCoord(CAM_PLANE plane, Vector3 point);
-	inline float planeDotCoord(Vector3 planeNormal, Vector3 planePoint, Vector3 &pv);
+
+	static float planeDotCoord(CAM_PLANE plane, Vector3 point);
+	static float planeDotCoord(Vector3 planeNormal, Vector3 planePoint, Vector3 &pv);
+
+	void updateVectors();
+	void updateViewFrustum();
+
+	void lookAt(Vector3 eye, Vector3 target);
 
 	// vars
 	CAMERA_TYPE m_camType;
@@ -120,6 +120,9 @@ private:
 	Vector3 m_vViewDir;
 	Vector3 m_vViewRight;
 	Vector3 m_vViewUp;
+
+	// custom
+	CAM_PLANE m_viewFrustum[4];
 };
 
 #endif

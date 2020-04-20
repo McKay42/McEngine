@@ -25,6 +25,7 @@ public:
 
 	typedef void *(*START_ROUTINE)(void*);
 
+public:
 	McThread(START_ROUTINE start_routine, void *arg);
 	virtual ~McThread();
 
