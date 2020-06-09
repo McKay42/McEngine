@@ -462,13 +462,15 @@ UString SteamworksInterface::getWorkshopItemInstallInfo(uint64_t publishedFileId
 
 	const uint32_t stringBufferSize = k_cchFilenameMax + 1;
 
-	uint64_t sizeOnDisk = 0;
+	uint64 sizeOnDisk = 0; // NOTE: steam's uint64!
 	uint32_t lastUpdated = 0;
 
 	char stringBuffer[stringBufferSize];
 	memset(stringBuffer, '\0', stringBufferSize);
 
-	if (SteamUGC()->GetItemInstallInfo(publishedFileId, &sizeOnDisk, stringBuffer, (stringBufferSize - 1), &lastUpdated))
+	PublishedFileId_t publishedFileId_t = publishedFileId;
+
+	if (SteamUGC()->GetItemInstallInfo(publishedFileId_t, &sizeOnDisk, stringBuffer, (stringBufferSize - 1), &lastUpdated))
 		return UString(stringBuffer);
 
 #endif
@@ -484,6 +486,13 @@ std::vector<SteamworksInterface::WorkshopItemDetails> SteamworksInterface::getWo
 
 	if (!m_bReady || publishedFileIds.size() < 1) return results;
 
+	std::vector<PublishedFileId_t> publishedFileId_ts;
+	publishedFileId_ts.reserve(publishedFileIds.size());
+	for (int i=0; i<publishedFileIds.size(); i++)
+	{
+		publishedFileId_ts.push_back(publishedFileIds[i]);
+	}
+
 	const uint32_t numPagesToRequest = (publishedFileIds.size() / kNumUGCResultsPerPage) + 1;
 	for (uint32_t p=0; p<numPagesToRequest; p++)
 	{
@@ -493,7 +502,7 @@ std::vector<SteamworksInterface::WorkshopItemDetails> SteamworksInterface::getWo
 		if (requestDataSize < 1)
 			break;
 
-		const UGCQueryHandle_t handle = SteamUGC()->CreateQueryUGCDetailsRequest((uint64_t*)&publishedFileIds[requestDataOffset], requestDataSize);
+		const UGCQueryHandle_t handle = SteamUGC()->CreateQueryUGCDetailsRequest(&publishedFileId_ts[requestDataOffset], requestDataSize);
 		{
 			if (handle != k_UGCQueryHandleInvalid)
 			{
@@ -587,7 +596,9 @@ void SteamworksInterface::startWorkshopItemPlaytimeTracking(uint64_t publishedFi
 
 	if (!m_bReady) return;
 
-	SteamUGC()->StartPlaytimeTracking(&publishedFileId, 1);
+	PublishedFileId_t publishedFileId_t = publishedFileId;
+
+	SteamUGC()->StartPlaytimeTracking(&publishedFileId_t, 1);
 
 #endif
 }
@@ -598,7 +609,9 @@ void SteamworksInterface::stopWorkshopItemPlaytimeTracking(uint64_t publishedFil
 
 	if (!m_bReady) return;
 
-	SteamUGC()->StopPlaytimeTracking(&publishedFileId, 1);
+	PublishedFileId_t publishedFileId_t = publishedFileId;
+
+	SteamUGC()->StopPlaytimeTracking(&publishedFileId_t, 1);
 
 #endif
 }
