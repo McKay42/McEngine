@@ -5,21 +5,74 @@
 // $NoKeywords: $snd
 //===============================================================================//
 
+// TODO: async audio implementation still needs changes in Sound class playing-state handling
+// TODO: async audio thread needs proper delay timing
+// TODO: finish dynamic audio device updating, but can only do async due to potential lag, disabled by default
+
 #include "SoundEngine.h"
 
 #include "Engine.h"
 #include "ConVar.h"
+#include "Thread.h"
 #include "Environment.h"
 #include "WinEnvironment.h"
 #include "HorizonSDLEnvironment.h"
 
 #include "Sound.h"
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+#include <mutex>
+#include "WinMinGW.Mutex.h"
+
+#endif
+
+
+
+class SoundEngineThread
+{
+public:
+	struct CHANNEL_PLAY_WORK
+	{
+		Sound *sound;
+		Sound::SOUNDHANDLE handle;
+	};
+
+public:
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+	// self
+	McThread *thread;
+
+	std::mutex workingMutex; // work vector lock
+
+	std::atomic<bool> running;
+
+#ifdef MCENGINE_FEATURE_SOUND
+
+	std::vector<CHANNEL_PLAY_WORK> channelPlayWork;
+
+#endif
+
+#endif
+};
+
+
+
 #ifdef MCENGINE_FEATURE_SOUND
 
 #include <bass.h>
 
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+void *_soundEngineThread(void *data);
+
 #endif
+
+#endif
+
+
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
@@ -52,6 +105,8 @@ DWORD CALLBACK OutputWasapiProc(void *buffer, DWORD length, void *user)
 
 #endif
 
+
+
 ConVar snd_output_device("snd_output_device", "Default");
 ConVar win_snd_fallback_dsound("win_snd_fallback_dsound", false, "use DirectSound instead of WASAPI");
 
@@ -60,15 +115,21 @@ ConVar snd_chunk_size("snd_chunk_size", 256, "only used in horizon builds with s
 ConVar snd_restrict_play_frame("snd_restrict_play_frame", true, "only allow one new channel per frame for overlayable sounds (prevents lag and earrape)");
 ConVar snd_change_check_interval("snd_change_check_interval", 0.0f, "check for output device changes every this many seconds. 0 = disabled (default)");
 
+///ConVar snd_async("snd_async", true, "play sounds on separate thread (e.g. removes BASS_ChannelPlay() ~0.3 ms blocking delay from main thread)");
+
+
+
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
 void _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE(UString oldValue, UString newValue);
 void _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE(UString oldValue, UString newValue);
 void _WIN_SND_WASAPI_EXCLUSIVE_CHANGE(UString oldValue, UString newValue);
+
 ConVar win_snd_wasapi_buffer_size("win_snd_wasapi_buffer_size", 0.011f, "buffer size/length in seconds (e.g. 0.011 = 11 ms), directly responsible for audio delay and crackling", _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE);
 ConVar win_snd_wasapi_period_size("win_snd_wasapi_period_size", 0.0f, "interval between OutputWasapiProc calls in seconds (e.g. 0.016 = 16 ms) (0 = use default)", _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE);
 ConVar win_snd_wasapi_exclusive("win_snd_wasapi_exclusive", true, "whether to use exclusive device mode to further reduce latency", _WIN_SND_WASAPI_EXCLUSIVE_CHANGE);
 ConVar win_snd_wasapi_shared_volume_affects_device("win_snd_wasapi_shared_volume_affects_device", false, "if in shared mode, whether to affect device volume globally or use separate session volume (default)");
+
 void _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE(UString oldValue, UString newValue)
 {
 	const int oldValueMS = std::round(oldValue.toFloat()*1000.0f);
@@ -77,6 +138,7 @@ void _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE(UString oldValue, UString newValue)
 	if (oldValueMS != newValueMS)
 		engine->getSound()->setOutputDeviceForce(engine->getSound()->getOutputDevice()); // force restart
 }
+
 void _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE(UString oldValue, UString newValue)
 {
 	const int oldValueMS = std::round(oldValue.toFloat()*1000.0f);
@@ -85,6 +147,7 @@ void _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE(UString oldValue, UString newValue)
 	if (oldValueMS != newValueMS)
 		engine->getSound()->setOutputDeviceForce(engine->getSound()->getOutputDevice()); // force restart
 }
+
 void _WIN_SND_WASAPI_EXCLUSIVE_CHANGE(UString oldValue, UString newValue)
 {
 	const bool oldValueBool = oldValue.toInt();
@@ -95,6 +158,8 @@ void _WIN_SND_WASAPI_EXCLUSIVE_CHANGE(UString oldValue, UString newValue)
 }
 
 #endif
+
+
 
 SoundEngine::SoundEngine()
 {
@@ -107,6 +172,17 @@ SoundEngine::SoundEngine()
 	m_fVolume = 1.0f;
 
 #ifdef MCENGINE_FEATURE_SOUND
+
+	// create audio thread
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+	m_thread = NULL;
+
+	///m_thread = new SoundEngineThread();
+	///m_thread->running = true;
+	///m_thread->thread = new Thread(_soundEngineThread, (void*)m_thread);
+
+#endif
 
 	// lib version check
 	m_iBASSVersion = BASS_GetVersion();
@@ -204,9 +280,12 @@ void SoundEngine::updateOutputDevices(bool handleOutputDeviceChanges, bool print
 {
 #ifdef MCENGINE_FEATURE_SOUND
 
-	int currentOutputDeviceBASSIndex = BASS_GetDevice();
+	///int currentOutputDeviceBASSIndex = BASS_GetDevice();
 
-	bool outputDeviceChange = false;
+	///bool outputDeviceChange = false;
+
+	const bool allowNoSoundDevice = true;
+	const int sanityLimit = 42;
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
@@ -238,7 +317,7 @@ void SoundEngine::updateOutputDevices(bool handleOutputDeviceChanges, bool print
 			numDevices++;
 		}
 
-		if (d > 0) // the first device doesn't count ("No sound") ~ Default in array
+		if (d > 0 || allowNoSoundDevice) // the first device doesn't count ("No sound") ~ Default in array
 		{
 			OUTPUT_DEVICE soundDevice;
 			soundDevice.id = d;
@@ -288,12 +367,12 @@ void SoundEngine::updateOutputDevices(bool handleOutputDeviceChanges, bool print
 			}
 			*/
 
-			if ((d+1) > m_outputDevices.size()) // only add new devices
+			if ((d+1 + (allowNoSoundDevice ? 1 : 0)) > m_outputDevices.size()) // only add new devices
 				m_outputDevices.push_back(soundDevice);
 		}
 
 		// sanity
-		if (d > 42)
+		if (d > sanityLimit)
 		{
 			debugLog("WARNING: SoundEngine::updateOutputDevices() found too many devices ...\n");
 			break;
@@ -434,7 +513,7 @@ bool SoundEngine::initializeOutputDevice(int id)
 
 	m_bReady = true;
 
-	for (int i=0; i<m_outputDevices.size(); i++)
+	for (size_t i=0; i<m_outputDevices.size(); i++)
 	{
 		if (m_outputDevices[i].id == id)
 		{
@@ -483,6 +562,19 @@ bool SoundEngine::initializeOutputDevice(int id)
 SoundEngine::~SoundEngine()
 {
 #ifdef MCENGINE_FEATURE_SOUND
+
+	// let the thread exit and wait for it to stop
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+	if (m_thread != NULL)
+	{
+		m_thread->running = false;
+
+		SAFE_DELETE(m_thread->thread);
+		SAFE_DELETE(m_thread);
+	}
+
+#endif
 
 	// and free it
 	if (m_bReady)
@@ -543,7 +635,7 @@ bool SoundEngine::play(Sound *snd, float pan)
 		if (!snd->isStream() && LOWORD(m_iBASSVersion) >= 0x0c00) // BASS_ATTRIB_NORAMP is available >= 2.4.12 - 10/3/2016
 			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_NORAMP, 1.0f); // see https://github.com/ppy/osu-framework/pull/3146
 
-		// HACKHACK: temp
+		// HACKHACK: force add to output mixer
 		if (handle != 0)
 		{
 			if (BASS_Mixer_ChannelGetMixer(handle) == 0)
@@ -580,10 +672,47 @@ bool SoundEngine::play(Sound *snd, float pan)
 		if (!snd->isStream() && LOWORD(m_iBASSVersion) >= 0x0c00) // BASS_ATTRIB_NORAMP is available >= 2.4.12 - 10/3/2016
 			BASS_ChannelSetAttribute(handle, BASS_ATTRIB_NORAMP, 1.0f); // see https://github.com/ppy/osu-framework/pull/3146
 
-		const bool ret = BASS_ChannelPlay(handle, FALSE);
+		bool ret = false;
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+		/*
+		if (snd_async.getBool() && m_thread != NULL)
+		{
+			ret = true;
+
+			///snd->setIsWaiting(true);
+			{
+				SoundEngineThread::CHANNEL_PLAY_WORK channelPlayWork;
+
+				channelPlayWork.sound = snd;
+				channelPlayWork.handle = handle;
+
+				// add work
+				m_thread->workingMutex.lock();
+				{
+					m_thread->channelPlayWork.push_back(channelPlayWork);
+				}
+				m_thread->workingMutex.unlock();
+			}
+		}
+		else
+		*/
+		{
+			ret = BASS_ChannelPlay(handle, FALSE);
+			if (!ret)
+				debugLog("SoundEngine::play() couldn't BASS_ChannelPlay(), errorcode %i\n", BASS_ErrorGetCode());
+		}
+
+#else
+
+		ret = BASS_ChannelPlay(handle, FALSE);
 		if (!ret)
 			debugLog("SoundEngine::play() couldn't BASS_ChannelPlay(), errorcode %i\n", BASS_ErrorGetCode());
-		else
+
+#endif
+
+		if (ret)
 			snd->setLastPlayTime(engine->getTime());
 
 		return ret;
@@ -600,7 +729,7 @@ bool SoundEngine::play(Sound *snd, float pan)
 	}
 	else
 	{
-		// special case: looped sounds are not supported here, so do not let them kill other channels
+		// special case: looped sounds are not supported for sdl/mixer, so do not let them kill other channels
 		if (snd->isLooped())
 			return false;
 
@@ -716,7 +845,7 @@ void SoundEngine::pause(Sound *snd)
 
 	if (snd->isStream())
 		Mix_PauseMusic();
-	else if (!snd->isLooped()) // special case: looped sounds are not supported here, so do not let them kill other channels
+	else if (!snd->isLooped()) // special case: looped sounds are not supported for sdl/mixer, so do not let them kill other channels
 		Mix_Pause(snd->getHandle());
 
 #endif
@@ -766,7 +895,7 @@ void SoundEngine::setOutputDevice(UString outputDeviceName)
 {
 #ifdef MCENGINE_FEATURE_SOUND
 
-	for (int i=0; i<m_outputDevices.size(); i++)
+	for (size_t i=0; i<m_outputDevices.size(); i++)
 	{
 		if (m_outputDevices[i].name == outputDeviceName)
 		{
@@ -797,7 +926,7 @@ void SoundEngine::setOutputDeviceForce(UString outputDeviceName)
 {
 #ifdef MCENGINE_FEATURE_SOUND
 
-	for (int i=0; i<m_outputDevices.size(); i++)
+	for (size_t i=0; i<m_outputDevices.size(); i++)
 	{
 		if (m_outputDevices[i].name == outputDeviceName)
 		{
@@ -873,7 +1002,7 @@ std::vector<UString> SoundEngine::getOutputDevices()
 {
 	std::vector<UString> outputDevices;
 
-	for (int i=0; i<m_outputDevices.size(); i++)
+	for (size_t i=0; i<m_outputDevices.size(); i++)
 	{
 		if (m_outputDevices[i].enabled)
 			outputDevices.push_back(m_outputDevices[i].name);
@@ -881,6 +1010,54 @@ std::vector<UString> SoundEngine::getOutputDevices()
 
 	return outputDevices;
 }
+
+
+
+#ifdef MCENGINE_FEATURE_SOUND
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+void *_soundEngineThread(void *data)
+{
+	SoundEngineThread *self = (SoundEngineThread*)data;
+
+	std::vector<SoundEngineThread::CHANNEL_PLAY_WORK> channelPlayWork;
+
+	while (self->running.load())
+	{
+		// quickly check if there is work to do (this can potentially cause engine lag!)
+		self->workingMutex.lock();
+		{
+			for (size_t i=0; i<self->channelPlayWork.size(); i++)
+			{
+				channelPlayWork.push_back(self->channelPlayWork[i]);
+			}
+			self->channelPlayWork.clear();
+		}
+		self->workingMutex.unlock();
+
+		// if we have work
+		if (channelPlayWork.size() > 0)
+		{
+			for (size_t i=0; i<channelPlayWork.size(); i++)
+			{
+				if (!BASS_ChannelPlay(channelPlayWork[i].handle, FALSE))
+					debugLog("SoundEngine::play() couldn't BASS_ChannelPlay(), errorcode %i\n", BASS_ErrorGetCode());
+
+				///channelPlayWork[i].sound->setIsWaiting(false);
+			}
+			channelPlayWork.clear();
+		}
+		else
+			env->sleep(1000); // 1000 Hz idle
+	}
+
+	return NULL;
+}
+
+#endif
+
+#endif
 
 
 

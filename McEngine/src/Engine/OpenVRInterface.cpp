@@ -2397,7 +2397,7 @@ void OpenVRInterface::loadLIVCalibration()
 				std::vector<UString> tokens = line.split("=");
 				if (tokens.size() > 1)
 				{
-					for (int i=0; i<tokens.size(); i++)
+					for (size_t i=0; i<tokens.size(); i++)
 					{
 						tokens[i] = tokens[i].trim();
 					}

@@ -46,7 +46,7 @@ McFont::McFont(UString filepath, std::vector<wchar_t> characters, int fontSize, 
 
 void McFont::constructor(std::vector<wchar_t> characters, int fontSize, bool antialiasing, int fontDPI)
 {
-	for (int i=0; i<characters.size(); i++)
+	for (size_t i=0; i<characters.size(); i++)
 	{
 		addGlyph(characters[i]);
 	}
@@ -106,7 +106,7 @@ void McFont::init()
 	m_textureAtlas = engine->getResourceManager()->createTextureAtlas(atlasSize, atlasSize);
 
 	// now render all glyphs into the atlas
-	for (int i=0; i<m_vGlyphs.size(); i++)
+	for (size_t i=0; i<m_vGlyphs.size(); i++)
 	{
 		renderFTGlyphToTextureAtlas(library, face, m_vGlyphs[i], m_textureAtlas, m_bAntialiasing, &m_vGlyphMetrics);
 	}

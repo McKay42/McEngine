@@ -12,6 +12,8 @@
 
 class Sound;
 
+class SoundEngineThread;
+
 class SoundEngine
 {
 public:
@@ -78,6 +80,12 @@ private:
 #ifdef MCENGINE_FEATURE_SOUND
 
 	uint32_t m_iBASSVersion;
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+	SoundEngineThread *m_thread;
+
+#endif
 
 #endif
 };

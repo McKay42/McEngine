@@ -387,7 +387,7 @@ void NetworkHandler::status()
 		enet_address_get_host_ip(&m_server->receivedAddress, host_attr, 255);
 
 		debugLog("udp/ip: %s:%i\n", host_attr, host_port.getInt());
-		for (int c=0; c<m_vConnectedClients.size(); c++)
+		for (size_t c=0; c<m_vConnectedClients.size(); c++)
 		{
 			debugLog("# %ls %i", m_vConnectedClients[c].name.wc_str(), m_vConnectedClients[c].peer->roundTripTime);
 		}
@@ -445,7 +445,7 @@ void NetworkHandler::update()
 		// handle client timeouts and kicked players
 		if (m_vConnectedClients.size() > 0)
 		{
-			for (int c=0; c<m_vConnectedClients.size(); c++)
+			for (size_t c=0; c<m_vConnectedClients.size(); c++)
 			{
 				// standard timeout (force remove)
 				if ((m_server->serviceTime - m_vConnectedClients[c].peer->lastReceiveTime) > MC_PROTOCOL_TIMEOUT)
@@ -775,7 +775,7 @@ void NetworkHandler::onServerEvent(ENetEvent e)
 						memcpy(((char*)&wrappedPacket) + wrapperSize, unwrappedPacket, (e.packet->dataLength - unWrapperSize));
 						int size = sizeof(CLIENT_BROADCAST_WRAPPER) + e.packet->dataLength - unWrapperSize;
 
-						for (int c=0; c<m_vConnectedClients.size(); c++)
+						for (size_t c=0; c<m_vConnectedClients.size(); c++)
 						{
 							// update id
 							wrap.id = m_vConnectedClients[c].id;
@@ -848,7 +848,7 @@ void NetworkHandler::onServerEvent(ENetEvent e)
 		}
 
 		// remove the peer from the list
-		for (int i=0; i<m_vConnectedClients.size(); i++)
+		for (size_t i=0; i<m_vConnectedClients.size(); i++)
 		{
 			if (m_vConnectedClients[i].peer == e.peer)
 			{
@@ -1024,7 +1024,7 @@ void NetworkHandler::singlecastChatMessage(UString username, UString message, EN
 
 void NetworkHandler::broadcastChatMessage(CHAT_PACKET *cp, ENetHost *host, ENetPeer *origin)
 {
-	for (int c=0; c<m_vConnectedClients.size(); c++)
+	for (size_t c=0; c<m_vConnectedClients.size(); c++)
 	{
 		if (m_vConnectedClients[c].peer != origin)
 			singlecastChatMessage(cp, host, m_vConnectedClients[c].peer);
@@ -1033,7 +1033,7 @@ void NetworkHandler::broadcastChatMessage(CHAT_PACKET *cp, ENetHost *host, ENetP
 
 void NetworkHandler::broadcastChatMessage(UString username, UString message, ENetHost *host, ENetPeer *origin)
 {
-	for (int c=0; c<m_vConnectedClients.size(); c++)
+	for (size_t c=0; c<m_vConnectedClients.size(); c++)
 	{
 		if (m_vConnectedClients[c].peer != origin)
 			singlecastChatMessage(username, message, host, m_vConnectedClients[c].peer);
@@ -1064,7 +1064,7 @@ void NetworkHandler::broadcast(void *data, uint32_t size, bool reliable)
 		memcpy(((char*)&wrappedPacket) + wrapperSize, data, size);
 		size += wrapperSize;
 
-		for (int c=0; c<m_vConnectedClients.size(); c++)
+		for (size_t c=0; c<m_vConnectedClients.size(); c++)
 		{
 			// update id
 			wrap.id = m_vConnectedClients[c].id;
@@ -1227,7 +1227,7 @@ void NetworkHandler::kick(UString username)
 		return;
 	}
 
-	for (int c=0; c<m_vConnectedClients.size(); c++)
+	for (size_t c=0; c<m_vConnectedClients.size(); c++)
 	{
 		if (m_vConnectedClients[c].name == username)
 		{
@@ -1269,7 +1269,7 @@ void NetworkHandler::chatLog(UString username, UString message)
 
 NetworkHandler::CLIENT_PEER *NetworkHandler::getClientPeerByPeer(ENetPeer *peer)
 {
-	for (int c=0; c<m_vConnectedClients.size(); c++)
+	for (size_t c=0; c<m_vConnectedClients.size(); c++)
 	{
 		if (m_vConnectedClients[c].peer == peer)
 			return (&m_vConnectedClients[c]);
@@ -1279,7 +1279,7 @@ NetworkHandler::CLIENT_PEER *NetworkHandler::getClientPeerByPeer(ENetPeer *peer)
 
 NetworkHandler::CLIENT_PEER *NetworkHandler::getClientPeerById(uint32_t id)
 {
-	for (int c=0; c<m_vConnectedClients.size(); c++)
+	for (size_t c=0; c<m_vConnectedClients.size(); c++)
 	{
 		if (m_vConnectedClients[c].id == id)
 			return (&m_vConnectedClients[c]);

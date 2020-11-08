@@ -28,7 +28,7 @@ AnimationHandler::~AnimationHandler()
 
 void AnimationHandler::update()
 {
-	for (int i=0; i<m_vAnimations.size(); i++)
+	for (size_t i=0; i<m_vAnimations.size(); i++)
 	{
 		// start animation
 		Animation &animation = m_vAnimations[i];
@@ -190,7 +190,7 @@ void AnimationHandler::overrideExistingAnimation(float *base)
 
 void AnimationHandler::deleteExistingAnimation(float *base)
 {
-	for (int i=0; i<m_vAnimations.size(); i++)
+	for (size_t i=0; i<m_vAnimations.size(); i++)
 	{
 		if (m_vAnimations[i].m_fBase == base)
 		{
@@ -202,7 +202,7 @@ void AnimationHandler::deleteExistingAnimation(float *base)
 
 float AnimationHandler::getRemainingDuration(float *base) const
 {
-	for (int i=0; i<m_vAnimations.size(); i++)
+	for (size_t i=0; i<m_vAnimations.size(); i++)
 	{
 		if (m_vAnimations[i].m_fBase == base)
 			return std::max(0.0f, (m_vAnimations[i].m_fStartTime + m_vAnimations[i].m_fDuration) - (float)engine->getTime());
@@ -213,7 +213,7 @@ float AnimationHandler::getRemainingDuration(float *base) const
 
 bool AnimationHandler::isAnimating(float *base) const
 {
-	for (int i=0; i<m_vAnimations.size(); i++)
+	for (size_t i=0; i<m_vAnimations.size(); i++)
 	{
 		if (m_vAnimations[i].m_fBase == base)
 			return true;

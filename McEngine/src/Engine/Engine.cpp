@@ -167,8 +167,12 @@ Engine::~Engine()
 	if (m_console != NULL)
 		showMessageErrorFatal("Engine Error", "m_console not set to NULL before shutdown!");
 
-	debugLog("Engine: Freeing console box...\n");
-	SAFE_DELETE(m_consoleBox);
+	debugLog("Engine: Freeing engine GUI...\n");
+	{
+		m_console = NULL;
+		m_consoleBox = NULL;
+	}
+	SAFE_DELETE(m_guiContainer);
 
 	debugLog("Engine: Freeing resource manager...\n");
 	SAFE_DELETE(m_resourceManager);
@@ -201,7 +205,7 @@ Engine::~Engine()
 	SAFE_DELETE(m_discord);
 
 	debugLog("Engine: Freeing input devices...\n");
-	for (int i=0; i<m_inputDevices.size(); i++)
+	for (size_t i=0; i<m_inputDevices.size(); i++)
 	{
 		delete m_inputDevices[i];
 	}
@@ -285,7 +289,7 @@ void Engine::onPaint()
 			m_guiContainer->draw(m_graphics);
 
 		// debug input devices
-		for (int i=0; i<m_inputDevices.size(); i++)
+		for (size_t i=0; i<m_inputDevices.size(); i++)
 		{
 			m_inputDevices[i]->draw(m_graphics);
 		}
@@ -321,7 +325,7 @@ void Engine::onUpdate()
 	}
 
 	// update input devices
-	for (int i=0; i<m_inputDevices.size(); i++)
+	for (size_t i=0; i<m_inputDevices.size(); i++)
 	{
 		m_inputDevices[i]->update();
 	}
@@ -339,7 +343,7 @@ void Engine::onUpdate()
 	// TODO: this is shit
 	if (Console::g_commandQueue.size() > 0)
 	{
-		for (int i=0; i<Console::g_commandQueue.size(); i++)
+		for (size_t i=0; i<Console::g_commandQueue.size(); i++)
 		{
 			Console::processCommand(Console::g_commandQueue[i]);
 		}
@@ -375,7 +379,7 @@ void Engine::onFocusLost()
 	if (debug_engine.getBool())
 		debugLog("Engine: lost focus\n");
 
-	for (int i=0; i<m_keyboards.size(); i++)
+	for (size_t i=0; i<m_keyboards.size(); i++)
 	{
 		m_keyboards[i]->reset();
 	}
@@ -531,6 +535,14 @@ void Engine::onKeyboardKeyDown(KEYCODE keyCode)
 		return;
 	}
 
+	// handle CTRL+F11 profiler toggle
+	if (m_keyboard->isControlDown() && keyCode == KEY_F11)
+	{
+		ConVar *vprof = convar->getConVarByName("vprof");
+		vprof->setValue(vprof->getBool() ? 0.0f : 1.0f);
+		return;
+	}
+
 	m_keyboard->onKeyDown(keyCode);
 }
 
@@ -626,7 +638,7 @@ void Engine::removeGamepad(Gamepad *gamepad)
 		return;
 	}
 
-	for (int i=0; i<m_gamepads.size(); i++)
+	for (size_t i=0; i<m_gamepads.size(); i++)
 	{
 		if (m_gamepads[i] == gamepad)
 		{

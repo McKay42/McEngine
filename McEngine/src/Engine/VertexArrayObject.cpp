@@ -42,7 +42,7 @@ void VertexArrayObject::destroy()
 void VertexArrayObject::clear()
 {
 	m_vertices = std::vector<Vector3>();
-	for (int i=0; i<m_texcoords.size(); i++)
+	for (size_t i=0; i<m_texcoords.size(); i++)
 	{
 		m_texcoords[i] = std::vector<Vector2>();
 	}
@@ -59,7 +59,7 @@ void VertexArrayObject::clear()
 void VertexArrayObject::empty()
 {
 	m_vertices.clear();
-	for (int i=0; i<m_texcoords.size(); i++)
+	for (size_t i=0; i<m_texcoords.size(); i++)
 	{
 		m_texcoords[i].clear();
 	}
