@@ -45,6 +45,7 @@ public:
 	// modifiers
 	void collapseEscapes();
 	void append(const UString &str);
+	void append(wchar_t ch);
 	void insert(int offset, const UString &str);
 	void insert(int offset, wchar_t ch);
 	void erase(int offset, int count);
