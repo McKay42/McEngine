@@ -882,7 +882,7 @@ UString LinuxEnvironment::readWindowProperty(Window window, Atom prop, Atom fmt 
 		{
 			// very inefficient, but whatever
 			std::string temp;
-			for (int i=0; i<nitems; i++)
+			for (size_t i=0; i<nitems; i++)
 			{
 				temp += clipData[i];
 			}
@@ -892,7 +892,7 @@ UString LinuxEnvironment::readWindowProperty(Window window, Atom prop, Atom fmt 
 		{
 			// very inefficient, but whatever
 			std::string temp;
-			for (int i=0; i<nitems; i++)
+			for (size_t i=0; i<nitems; i++)
 			{
 				temp += clipData[i];
 			}
