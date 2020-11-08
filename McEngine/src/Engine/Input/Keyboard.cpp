@@ -33,7 +33,7 @@ void Keyboard::addListener(KeyboardListener *keyboardListener, bool insertOnTop)
 
 void Keyboard::removeListener(KeyboardListener *keyboardListener)
 {
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		if (m_listeners[i] == keyboardListener)
 		{
@@ -71,7 +71,7 @@ void Keyboard::onKeyDown(KEYCODE keyCode)
 
 	KeyboardEvent e(keyCode);
 
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onKeyDown(e);
 		if (e.isConsumed())
@@ -99,7 +99,7 @@ void Keyboard::onKeyUp(KEYCODE keyCode)
 
 	KeyboardEvent e(keyCode);
 
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onKeyUp(e);
 		if (e.isConsumed())
@@ -111,7 +111,7 @@ void Keyboard::onChar(KEYCODE charCode)
 {
 	KeyboardEvent e(charCode);
 
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onChar(e);
 		if (e.isConsumed())
