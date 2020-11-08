@@ -41,6 +41,8 @@ public:
 	void onLeftChange(bool down);
 	void onMiddleChange(bool down);
 	void onRightChange(bool down);
+	void onButton4Change(bool down);
+	void onButton5Change(bool down);
 
 	void onWheelVertical(int delta);
 	void onWheelHorizontal(int delta);
