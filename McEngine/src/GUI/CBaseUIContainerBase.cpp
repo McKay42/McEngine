@@ -20,7 +20,7 @@ CBaseUIContainerBase::~CBaseUIContainerBase()
 
 void CBaseUIContainerBase::empty()
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 		m_vElements[i]->setParent(nullptr);
 
 	m_vElements = std::vector<std::shared_ptr<CBaseUIElement>>();
@@ -62,7 +62,7 @@ CBaseUIContainerBase *CBaseUIContainerBase::insertElement(CBaseUIElement *elemen
 
 	if (element == nullptr || index == nullptr) return this;
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i].get() == index)
 		{
@@ -88,7 +88,7 @@ CBaseUIContainerBase *CBaseUIContainerBase::insertElement(CBaseUIElement *elemen
 {
 	if (element == nullptr || index == NULL || index.get() == nullptr) return this;
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i] == index)
 		{
@@ -112,7 +112,7 @@ CBaseUIContainerBase *CBaseUIContainerBase::insertElement(std::shared_ptr<CBaseU
 {
 	if (element == NULL || element.get() == nullptr || index == NULL) return this;
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i].get() == index)
 		{
@@ -136,7 +136,7 @@ CBaseUIContainerBase *CBaseUIContainerBase::insertElement(std::shared_ptr<CBaseU
 
 	if (element == NULL || index == NULL || element.get() == nullptr || index.get()==nullptr) return this;
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i] == index)
 		{
@@ -157,7 +157,7 @@ CBaseUIContainerBase *CBaseUIContainerBase::insertElement(std::shared_ptr<CBaseU
 
 void CBaseUIContainerBase::removeElement(CBaseUIElement *element)
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i].get() == element)
 		{
@@ -173,7 +173,7 @@ void CBaseUIContainerBase::removeElement(CBaseUIElement *element)
 
 void CBaseUIContainerBase::removeElement(std::shared_ptr<CBaseUIElement> element)
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i] == element)
 		{
@@ -189,7 +189,7 @@ void CBaseUIContainerBase::removeElement(std::shared_ptr<CBaseUIElement> element
 
 CBaseUIElement *CBaseUIContainerBase::getElementByName(UString name, bool searchNestedContainers)
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i]->getName() == name)
 			return m_vElements[i].get();
@@ -209,7 +209,7 @@ CBaseUIElement *CBaseUIContainerBase::getElementByName(UString name, bool search
 
 std::shared_ptr<CBaseUIElement> CBaseUIContainerBase::getElementSharedByName(UString name, bool searchNestedContainers)
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i]->getName() == name)
 			return m_vElements[i];
@@ -234,7 +234,7 @@ void CBaseUIContainerBase::draw(Graphics *g)
 	if (m_bClipping)
 		g->pushClipRect(McRect(m_vPos.x+1,m_vPos.y+1,m_vSize.x-1,m_vSize.y));
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		m_vElements[i]->draw(g);
 	}
@@ -247,6 +247,6 @@ void CBaseUIContainerBase::update()
 {
 	if (!m_bVisible) return;
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 		m_vElements[i]->update();
 }

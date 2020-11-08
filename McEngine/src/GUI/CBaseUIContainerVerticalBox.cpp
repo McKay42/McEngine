@@ -46,7 +46,7 @@ void CBaseUIContainerVerticalBox::updateLayout()
 
 	float posStorage = m_vPos.y;
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (!m_bHeightOverride && !m_bScaleByHeightOnly)
 		{
@@ -81,7 +81,7 @@ void CBaseUIContainerVerticalBox::onMoved()
 
 	float posStorage = m_vPos.y;
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (!m_bHeightOverride && !m_bScaleByHeightOnly)
 		{
@@ -111,7 +111,7 @@ void CBaseUIContainerVerticalBox::onResized()
 
 	float posStorage = m_vPos.y;
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (!m_bHeightOverride && !m_bScaleByHeightOnly)
 		{

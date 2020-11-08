@@ -495,7 +495,7 @@ void CBaseUIScrollView::scrollToY(int scrollPosY, bool animated)
 void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int xOffset, int yOffset)
 {
 	const std::vector<CBaseUIElement*> &elements = m_container->getElements();
-	for (int i=0; i<elements.size(); i++)
+	for (size_t i=0; i<elements.size(); i++)
 	{
 		if (elements[i] == element)
 		{
@@ -510,7 +510,7 @@ void CBaseUIScrollView::updateClipping()
 	const std::vector<CBaseUIElement*> &elements = m_container->getElements();
 	const McRect me = McRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
 
-	for (int i=0; i<elements.size(); i++)
+	for (size_t i=0; i<elements.size(); i++)
 	{
 		CBaseUIElement *e = elements[i];
 
@@ -564,7 +564,7 @@ CBaseUIScrollView *CBaseUIScrollView::setScrollSizeToContent(int border)
 	m_vScrollSize.zero();
 
 	const std::vector<CBaseUIElement*> &elements = m_container->getElements();
-	for (int i=0; i<elements.size(); i++)
+	for (size_t i=0; i<elements.size(); i++)
 	{
 		const CBaseUIElement *e = elements[i];
 

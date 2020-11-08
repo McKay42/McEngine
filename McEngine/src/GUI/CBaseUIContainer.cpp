@@ -19,7 +19,7 @@ CBaseUIContainer::~CBaseUIContainer()
 
 void CBaseUIContainer::clear()
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		delete m_vElements[i];
 	}
@@ -82,7 +82,7 @@ CBaseUIContainer *CBaseUIContainer::insertBaseUIElement(CBaseUIElement *element,
 
 	element->setRelPos(element->getPos().x, element->getPos().y);
 	element->setPos(m_vPos + element->getRelPos());
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i] == index)
 		{
@@ -102,7 +102,7 @@ CBaseUIContainer *CBaseUIContainer::insertBaseUIElementBack(CBaseUIElement *elem
 
 	element->setRelPos(element->getPos().x, element->getPos().y);
 	element->setPos(m_vPos + element->getRelPos());
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i] == index)
 		{
@@ -118,7 +118,7 @@ CBaseUIContainer *CBaseUIContainer::insertBaseUIElementBack(CBaseUIElement *elem
 
 CBaseUIContainer *CBaseUIContainer::removeBaseUIElement(CBaseUIElement *element)
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i] == element)
 		{
@@ -134,7 +134,7 @@ CBaseUIContainer *CBaseUIContainer::removeBaseUIElement(CBaseUIElement *element)
 
 CBaseUIContainer *CBaseUIContainer::deleteBaseUIElement(CBaseUIElement *element)
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i] == element)
 		{
@@ -151,7 +151,7 @@ CBaseUIContainer *CBaseUIContainer::deleteBaseUIElement(CBaseUIElement *element)
 
 CBaseUIElement *CBaseUIContainer::getBaseUIElement(UString name)
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i]->getName() == name)
 			return m_vElements[i];
@@ -164,7 +164,7 @@ void CBaseUIContainer::draw(Graphics *g)
 {
 	if (!m_bVisible) return;
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (!m_vElements[i]->isDrawnManually())
 			m_vElements[i]->draw(g);
@@ -185,7 +185,7 @@ void CBaseUIContainer::update()
 	CBaseUIElement::update();
 	if (!m_bVisible) return;
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		m_vElements[i]->update();
 	}
@@ -193,7 +193,7 @@ void CBaseUIContainer::update()
 
 void CBaseUIContainer::update_pos()
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (!m_vElements[i]->isPositionedManually())
 			m_vElements[i]->setPos(m_vPos + m_vElements[i]->getRelPos());
@@ -208,7 +208,7 @@ void CBaseUIContainer::update_pos(CBaseUIElement *element)
 
 void CBaseUIContainer::onKeyUp(KeyboardEvent &e)
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i]->isVisible())
 			m_vElements[i]->onKeyUp(e);
@@ -216,7 +216,7 @@ void CBaseUIContainer::onKeyUp(KeyboardEvent &e)
 }
 void CBaseUIContainer::onKeyDown(KeyboardEvent &e)
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i]->isVisible())
 			m_vElements[i]->onKeyDown(e);
@@ -225,7 +225,7 @@ void CBaseUIContainer::onKeyDown(KeyboardEvent &e)
 
 void CBaseUIContainer::onChar(KeyboardEvent &e)
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i]->isVisible())
 			m_vElements[i]->onChar(e);
@@ -234,7 +234,7 @@ void CBaseUIContainer::onChar(KeyboardEvent &e)
 
 void CBaseUIContainer::onFocusStolen()
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		m_vElements[i]->stealFocus();
 	}
@@ -242,7 +242,7 @@ void CBaseUIContainer::onFocusStolen()
 
 void CBaseUIContainer::onEnabled()
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		m_vElements[i]->setEnabled(true);
 	}
@@ -250,7 +250,7 @@ void CBaseUIContainer::onEnabled()
 
 void CBaseUIContainer::onDisabled()
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		m_vElements[i]->setEnabled(false);
 	}
@@ -266,7 +266,7 @@ bool CBaseUIContainer::isBusy()
 	if (!m_bVisible)
 		return false;
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i]->isBusy())
 			return true;
@@ -280,7 +280,7 @@ bool CBaseUIContainer::isActive()
 	if (!m_bVisible)
 		return false;
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (m_vElements[i]->isActive())
 			return true;

@@ -124,7 +124,7 @@ void Console::processCommand(UString command)
 	if (command.find(";") != -1 && command.find("echo") == -1)
 	{
 		std::vector<UString> commands = command.split(";");
-		for (int i=0; i<commands.size(); i++)
+		for (size_t i=0; i<commands.size(); i++)
 		{
 			processCommand(commands[i]);
 		}
@@ -135,7 +135,7 @@ void Console::processCommand(UString command)
 	std::vector<UString> tokens = command.split(" ");
 	UString commandName;
 	UString commandValue;
-	for (int i=0; i<tokens.size(); i++)
+	for (size_t i=0; i<tokens.size(); i++)
 	{
 		if (i == 0)
 			commandName = tokens[i];
@@ -236,7 +236,7 @@ void Console::execConfigFile(UString filename)
 	}
 
 	// process the collected commands
-	for (int i=0; i<cmds.size(); i++)
+	for (size_t i=0; i<cmds.size(); i++)
 	{
 		processCommand(cmds[i]);
 	}

@@ -126,7 +126,7 @@ void ConsoleBox::draw(Graphics *g)
 			{
 				g->scale(logScale, logScale);
 				g->translate(2 * logScale + shadowOffset, -m_fLogYPos + shadowOffset);
-				for (int i=0; i<m_log.size(); i++)
+				for (size_t i=0; i<m_log.size(); i++)
 				{
 					g->translate(0, (int)((m_logFont->getHeight() + (i == 0 ? 0 : 2) + 1) * logScale));
 					g->drawString(m_logFont, m_log[i]);
@@ -142,7 +142,7 @@ void ConsoleBox::draw(Graphics *g)
 			{
 				g->scale(logScale, logScale);
 				g->translate(2 * logScale, -m_fLogYPos);
-				for (int i=0; i<m_log.size(); i++)
+				for (size_t i=0; i<m_log.size(); i++)
 				{
 					g->translate(0, (int)((m_logFont->getHeight() + (i == 0 ? 0 : 2) + 1) * logScale));
 					g->drawString(m_logFont, m_log[i]);
@@ -328,7 +328,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 				m_textbox->setCursorPosRight();
 				m_suggestion->scrollToElement(m_vSuggestionButtons[m_iSelectedSuggestion]);
 
-				for (int i=0; i<m_vSuggestionButtons.size(); i++)
+				for (size_t i=0; i<m_vSuggestionButtons.size(); i++)
 				{
 					if (i == m_iSelectedSuggestion)
 					{
@@ -361,7 +361,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 				m_textbox->setCursorPosRight();
 				m_suggestion->scrollToElement(m_vSuggestionButtons[m_iSelectedSuggestion]);
 
-				for (int i=0; i<m_vSuggestionButtons.size(); i++)
+				for (size_t i=0; i<m_vSuggestionButtons.size(); i++)
 				{
 					if (i == m_iSelectedSuggestion)
 					{
@@ -425,7 +425,7 @@ void ConsoleBox::onChar(KeyboardEvent &e)
 		clearSuggestions();
 
 		std::vector<ConVar*> suggestions = convar->getConVarByLetter(m_textbox->getText());
-		for (int i=0; i<suggestions.size(); i++)
+		for (size_t i=0; i<suggestions.size(); i++)
 		{
 			UString suggestionText = suggestions[i]->getName();
 
