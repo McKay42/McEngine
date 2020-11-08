@@ -303,25 +303,25 @@ void OpenGL3Interface::fillRoundedRect(int x, int y, int width, int height, int 
 	glDisable(GL_TEXTURE_2D);
 	glBegin(GL_POLYGON);
 
-		for(i=PI; i<=(1.5*PI); i+=factor)
+		for (i=PI; i<=(1.5*PI); i+=factor)
 		{
 			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // top left
 		}
 
 		xOffset = x + width - radius;
-		for(i=(1.5*PI); i<=(2*PI); i+=factor)
+		for (i=(1.5*PI); i<=(2*PI); i+=factor)
 		{
 			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // top right
 		}
 
 		yOffset = y + height - radius;
-		for(i=0; i<=(0.5*PI); i+=factor)
+		for (i=0; i<=(0.5*PI); i+=factor)
 		{
 			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // bottom right
 		}
 
 		xOffset = x + radius;
-		for(i=(0.5*PI); i<=PI; i+=factor)
+		for (i=(0.5*PI); i<=PI; i+=factor)
 		{
 			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // bottom left
 		}
@@ -476,7 +476,7 @@ void OpenGL3Interface::drawVAO(VertexArrayObject *vao)
 	std::vector<Vector4> colors;
 	std::vector<Vector4> finalColors;
 
-	for (int i=0; i<vcolors.size(); i++)
+	for (size_t i=0; i<vcolors.size(); i++)
 	{
 		Vector4 color = Vector4(COLOR_GET_Rf(vcolors[i]), COLOR_GET_Gf(vcolors[i]), COLOR_GET_Bf(vcolors[i]), COLOR_GET_Af(vcolors[i]));
 		colors.push_back(color);
@@ -488,7 +488,7 @@ void OpenGL3Interface::drawVAO(VertexArrayObject *vao)
 	if (primitive == Graphics::PRIMITIVE::PRIMITIVE_QUADS)
 	{
 		finalVertices.clear();
-		for (int t=0; t<finalTexcoords.size(); t++)
+		for (size_t t=0; t<finalTexcoords.size(); t++)
 		{
 			finalTexcoords[t].clear();
 		}
@@ -497,13 +497,13 @@ void OpenGL3Interface::drawVAO(VertexArrayObject *vao)
 
 		if (vertices.size() > 3)
 		{
-			for (int i=0; i<vertices.size(); i+=4)
+			for (size_t i=0; i<vertices.size(); i+=4)
 			{
 				finalVertices.push_back(vertices[i + 0]);
 				finalVertices.push_back(vertices[i + 1]);
 				finalVertices.push_back(vertices[i + 2]);
 
-				for (int t=0; t<texcoords.size(); t++)
+				for (size_t t=0; t<texcoords.size(); t++)
 				{
 					finalTexcoords[t].push_back(texcoords[t][i + 0]);
 					finalTexcoords[t].push_back(texcoords[t][i + 1]);
@@ -521,7 +521,7 @@ void OpenGL3Interface::drawVAO(VertexArrayObject *vao)
 				finalVertices.push_back(vertices[i + 2]);
 				finalVertices.push_back(vertices[i + 3]);
 
-				for (int t=0; t<texcoords.size(); t++)
+				for (size_t t=0; t<texcoords.size(); t++)
 				{
 					finalTexcoords[t].push_back(texcoords[t][i + 0]);
 					finalTexcoords[t].push_back(texcoords[t][i + 2]);

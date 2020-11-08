@@ -457,12 +457,12 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao)
 	const std::vector<Color> &colors = vao->getColors();
 
 	glBegin(primitiveToOpenGL(vao->getPrimitive()));
-	for (int i=0; i<vertices.size(); i++)
+	for (size_t i=0; i<vertices.size(); i++)
 	{
 		if (i < colors.size())
 			setColor(colors[i]);
 
-		for (int t=0; t<texcoords.size(); t++)
+		for (size_t t=0; t<texcoords.size(); t++)
 		{
 			if (i < texcoords[t].size())
 				glMultiTexCoord2f(GL_TEXTURE0 + t, texcoords[t][i].x, texcoords[t][i].y);

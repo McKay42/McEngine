@@ -214,25 +214,25 @@ void SWGraphicsInterface::fillRoundedRect(int x, int y, int width, int height, i
 	glDisable(GL_TEXTURE_2D);
 	glBegin(GL_POLYGON);
 
-		for(i=PI; i<=(1.5*PI); i+=factor)
+		for (i=PI; i<=(1.5*PI); i+=factor)
 		{
 			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // top left
 		}
 
 		xOffset = x + width - radius;
-		for(i=(1.5*PI); i<=(2*PI); i+=factor)
+		for (i=(1.5*PI); i<=(2*PI); i+=factor)
 		{
 			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // top right
 		}
 
 		yOffset = y + height - radius;
-		for(i=0; i<=(0.5*PI); i+=factor)
+		for (i=0; i<=(0.5*PI); i+=factor)
 		{
 			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // bottom right
 		}
 
 		xOffset = x + radius;
-		for(i=(0.5*PI); i<=PI; i+=factor)
+		for (i=(0.5*PI); i<=PI; i+=factor)
 		{
 			glVertex2d(radius* std::cos(i) + xOffset, radius * std::sin(i) + yOffset); // bottom left
 		}
@@ -325,12 +325,12 @@ void SWGraphicsInterface::drawVAO(VertexArrayObject *vao)
 		type = GL_QUADS;
 
 	glBegin(type);
-	for (int i=0; i<vertices.size(); i++)
+	for (size_t i=0; i<vertices.size(); i++)
 	{
 		if (i < colors.size())
 			setColor(colors[i]);
 
-		for (int t=0; t<texcoords.size(); t++)
+		for (size_t t=0; t<texcoords.size(); t++)
 		{
 			if (i < texcoords[t].size())
 				glMultiTexCoord2f(GL_TEXTURE0 + t, texcoords[t][i].x, texcoords[t][i].y);

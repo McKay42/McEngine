@@ -35,7 +35,7 @@ void OpenGLVertexArrayObject::init()
 		if (m_partialUpdateVertexIndices.size() > 0)
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, m_iVertexBuffer);
-			for (int i=0; i<m_partialUpdateVertexIndices.size(); i++)
+			for (size_t i=0; i<m_partialUpdateVertexIndices.size(); i++)
 			{
 				const int offsetIndex = m_partialUpdateVertexIndices[i];
 
@@ -61,7 +61,7 @@ void OpenGLVertexArrayObject::init()
 		if (m_partialUpdateColorIndices.size() > 0)
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, m_iColorBuffer);
-			for (int i=0; i<m_partialUpdateColorIndices.size(); i++)
+			for (size_t i=0; i<m_partialUpdateColorIndices.size(); i++)
 			{
 				const int offsetIndex = m_partialUpdateColorIndices[i];
 
@@ -112,7 +112,7 @@ void OpenGLVertexArrayObject::init()
 	{
 		m_iNumColors = m_colors.size();
 
-		for (int i=0; i<m_colors.size(); i++)
+		for (size_t i=0; i<m_colors.size(); i++)
 		{
 			m_colors[i] = ARGBtoABGR(m_colors[i]);
 		}
