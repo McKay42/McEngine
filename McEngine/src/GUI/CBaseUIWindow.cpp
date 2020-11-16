@@ -459,7 +459,7 @@ CBaseUIWindow *CBaseUIWindow::setSizeToContent(int horizontalBorderSize, int ver
 
 	Vector2 newSize = Vector2(horizontalBorderSize, verticalBorderSize);
 
-	for (int i=0; i<elements.size(); i++)
+	for (size_t i=0; i<elements.size(); i++)
 	{
 		const CBaseUIElement *el = elements[i];
 

@@ -47,7 +47,7 @@ void GaussianBlurKernel::build()
 	}
 
 	// now set the real values
-	for(int i=0; i<center; i++)
+	for (int i=0; i<center; i++)
     {
         result = exp( -(i*i)/(double)(2 * _sigma*_sigma) ) / sigmaRoot;
         m_kernel[center+i] = m_kernel[center-i] = (float)result;
@@ -57,7 +57,7 @@ void GaussianBlurKernel::build()
     }
 
 	// normalize kernel
-	for(int i=0; i<center; i++)
+	for (int i=0; i<center; i++)
 	{
 		m_kernel[center+i] = m_kernel[center-i] /= (float)sum;
 	}

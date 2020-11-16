@@ -168,6 +168,16 @@ void FrameworkTest::onRightChange(bool down)
 	debugLog("FrameworkTest::onRightChange(%i)\n", (int)down);
 }
 
+void FrameworkTest::onButton4Change(bool down)
+{
+	debugLog("FrameworkTest::onButton4Change(%i)\n", (int)down);
+}
+
+void FrameworkTest::onButton5Change(bool down)
+{
+	debugLog("FrameworkTest::onButton5Change(%i)\n", (int)down);
+}
+
 void FrameworkTest::onWheelVertical(int delta)
 {
 	debugLog("FrameworkTest::onWheelVertical(%i)\n", delta);

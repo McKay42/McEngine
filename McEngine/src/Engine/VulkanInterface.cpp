@@ -70,7 +70,7 @@ VulkanInterface::VulkanInterface()
 	std::vector<VkLayerProperties> availableLayers(layerCount);
 	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 	debugLog("Vulkan: Found %i available layers:\n", layerCount);
-	for (int i=0; i<availableLayers.size(); i++)
+	for (size_t i=0; i<availableLayers.size(); i++)
 	{
 		debugLog("Vulkan: Layer %i = %s v%i (%s)\n", i, availableLayers[i].description, availableLayers[i].implementationVersion, availableLayers[i].layerName);
 	}

@@ -259,7 +259,7 @@ void SquirrelInterface::callHook(UString hookName)
 			pushRoot(); //'this' (function environment object)
 			{
 				// args
-				for (int i=0; i<m_hookArgs.size(); i++)
+				for (size_t i=0; i<m_hookArgs.size(); i++)
 				{
 					switch (m_hookArgs[i].type)
 					{

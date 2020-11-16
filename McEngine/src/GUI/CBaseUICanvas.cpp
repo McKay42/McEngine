@@ -36,7 +36,7 @@ void CBaseUICanvas::updateLayout()
 	if (m_parent != nullptr)
 		m_parent->updateLayout();
 
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (!m_vElements[i]->isScaledByHeightOnly())
 			m_vElements[i]->setSizeAbsolute(m_vElements[i]->getRelSize() * m_vSize);
@@ -59,7 +59,7 @@ void CBaseUICanvas::updateElement(CBaseUIElement *element)
 
 void CBaseUICanvas::onMoved()
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (!m_vElements[i]->isScaledByHeightOnly())
 			m_vElements[i]->setSizeAbsolute(m_vElements[i]->getRelSize() * m_vSize);
@@ -72,7 +72,7 @@ void CBaseUICanvas::onMoved()
 
 void CBaseUICanvas::onResized()
 {
-	for (int i=0; i<m_vElements.size(); i++)
+	for (size_t i=0; i<m_vElements.size(); i++)
 	{
 		if (!m_vElements[i]->isScaledByHeightOnly())
 			m_vElements[i]->setSizeAbsolute(m_vElements[i]->getRelSize() * m_vSize);

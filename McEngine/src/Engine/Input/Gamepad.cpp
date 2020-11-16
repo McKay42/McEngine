@@ -31,7 +31,7 @@ void Gamepad::addListener(GamepadListener *gamepadListener, bool insertOnTop)
 
 void Gamepad::removeListener(GamepadListener *gamepadListener)
 {
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		if (m_listeners[i] == gamepadListener)
 		{
@@ -43,7 +43,7 @@ void Gamepad::removeListener(GamepadListener *gamepadListener)
 
 void Gamepad::onButtonDown(GAMEPADBUTTON b)
 {
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onButtonDown(b);
 	}
@@ -51,7 +51,7 @@ void Gamepad::onButtonDown(GAMEPADBUTTON b)
 
 void Gamepad::onButtonUp(GAMEPADBUTTON b)
 {
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onButtonUp(b);
 	}
@@ -59,7 +59,7 @@ void Gamepad::onButtonUp(GAMEPADBUTTON b)
 
 void Gamepad::onConnected()
 {
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onConnected();
 	}
@@ -67,7 +67,7 @@ void Gamepad::onConnected()
 
 void Gamepad::onDisconnected()
 {
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onDisconnected();
 	}

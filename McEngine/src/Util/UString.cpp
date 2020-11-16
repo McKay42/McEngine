@@ -355,6 +355,31 @@ void UString::append(const UString &str)
 	updateUtf8();
 }
 
+void UString::append(wchar_t ch)
+{
+	// calculate new size
+	const int newSize = mLength + 1;
+
+	// allocate new data buffer
+	wchar_t *newUnicode = new wchar_t[newSize+1]; // +1 for null termination later
+
+	// copy existing data
+	if (mLength > 0)
+		memcpy(newUnicode, mUnicode, mLength*sizeof(wchar_t));
+
+	// copy appended data and null terminate
+	newUnicode[mLength] = ch;
+	newUnicode[mLength + 1] = '\0';
+
+	// replace the old values with the new
+	deleteUnicode();
+	mUnicode = newUnicode;
+	mLength = newSize;
+
+	// reencode to utf8
+	updateUtf8();
+}
+
 void UString::insert(int offset, const UString &str)
 {
 	if (str.mLength == 0) return;

@@ -672,7 +672,7 @@ int WinEnvironment::getMonitor()
 {
 	const McRect desktopRect = getDesktopRect();
 
-	for (int i=0; i<m_vMonitors.size(); i++)
+	for (size_t i=0; i<m_vMonitors.size(); i++)
 	{
 		if (((int)m_vMonitors[i].getX()) == ((int)desktopRect.getX()) && ((int)m_vMonitors[i].getY()) == ((int)desktopRect.getY()))
 			return i;

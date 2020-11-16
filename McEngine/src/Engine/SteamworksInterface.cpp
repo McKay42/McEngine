@@ -300,7 +300,7 @@ bool SteamworksInterface::setWorkshopItemTags(std::vector<UString> tags)
 
 	const char *ppStrings[tags.size()];
 
-	for (int i=0; i<tags.size(); i++)
+	for (size_t i=0; i<tags.size(); i++)
 	{
 		ppStrings[i] = tags[i].toUtf8();
 	}
@@ -488,7 +488,7 @@ std::vector<SteamworksInterface::WorkshopItemDetails> SteamworksInterface::getWo
 
 	std::vector<PublishedFileId_t> publishedFileId_ts;
 	publishedFileId_ts.reserve(publishedFileIds.size());
-	for (int i=0; i<publishedFileIds.size(); i++)
+	for (size_t i=0; i<publishedFileIds.size(); i++)
 	{
 		publishedFileId_ts.push_back(publishedFileIds[i]);
 	}

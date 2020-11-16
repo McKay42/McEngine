@@ -113,17 +113,17 @@ ResourceManager::~ResourceManager()
 	// let all loader threads exit
 #ifdef MCENGINE_FEATURE_MULTITHREADING
 
-	for (int i=0; i<m_threads.size(); i++)
+	for (size_t i=0; i<m_threads.size(); i++)
 	{
 		m_threads[i]->running = false;
 	}
 
-	for (int i=0; i<m_threads.size(); i++)
+	for (size_t i=0; i<m_threads.size(); i++)
 	{
 		const size_t threadIndex = m_threads[i]->threadIndex.load();
 
 		bool hasLoadingWork = false;
-		for (int w=0; w<m_loadingWork.size(); w++)
+		for (size_t w=0; w<m_loadingWork.size(); w++)
 		{
 			if (m_loadingWork[w].threadIndex.atomic.load() == threadIndex)
 			{
@@ -137,7 +137,7 @@ ResourceManager::~ResourceManager()
 	}
 
 	// wait for threads to stop
-	for (int i=0; i<m_threads.size(); i++)
+	for (size_t i=0; i<m_threads.size(); i++)
 	{
 		delete m_threads[i]->thread;
 	}
@@ -147,7 +147,7 @@ ResourceManager::~ResourceManager()
 #endif
 
 	// cleanup leftovers (can only do that after loader threads have exited) (2)
-	for (int i=0; i<m_loadingWorkAsyncDestroy.size(); i++)
+	for (size_t i=0; i<m_loadingWorkAsyncDestroy.size(); i++)
 	{
 		delete m_loadingWorkAsyncDestroy[i];
 	}
@@ -165,7 +165,7 @@ void ResourceManager::update()
 #endif
 	{
 		// handle load finish (and synchronous init())
-		for (int i=0; i<m_loadingWork.size(); i++)
+		for (size_t i=0; i<m_loadingWork.size(); i++)
 		{
 			if (m_loadingWork[i].done.atomic.load())
 			{
@@ -198,7 +198,7 @@ void ResourceManager::update()
 
 				// stop this worker thread if everything has been loaded
 				int numLoadingWorkForThreadIndex = 0;
-				for (int w=0; w<m_loadingWork.size(); w++)
+				for (size_t w=0; w<m_loadingWork.size(); w++)
 				{
 					if (m_loadingWork[w].threadIndex.atomic.load() == threadIndex)
 						numLoadingWorkForThreadIndex++;
@@ -221,7 +221,7 @@ void ResourceManager::update()
 				// TODO: this will probably break stuff, needs in depth testing before change, think more about this
 				/*
 				bool isAsyncDestroy = false;
-				for (int a=0; a<m_loadingWorkAsyncDestroy.size(); a++)
+				for (size_t a=0; a<m_loadingWorkAsyncDestroy.size(); a++)
 				{
 					if (m_loadingWorkAsyncDestroy[a] == rs)
 					{
@@ -253,10 +253,10 @@ void ResourceManager::update()
 #endif
 
 		// handle async destroy
-		for (int i=0; i<m_loadingWorkAsyncDestroy.size(); i++)
+		for (size_t i=0; i<m_loadingWorkAsyncDestroy.size(); i++)
 		{
 			bool canBeDestroyed = true;
-			for (int w=0; w<m_loadingWork.size(); w++)
+			for (size_t w=0; w<m_loadingWork.size(); w++)
 			{
 				if (m_loadingWork[w].resource.atomic.load() == m_loadingWorkAsyncDestroy[i])
 				{
@@ -315,7 +315,7 @@ void ResourceManager::destroyResource(Resource *rs)
 	{
 		bool isManagedResource = false;
 		int managedResourceIndex = -1;
-		for (int i=0; i<m_vResources.size(); i++)
+		for (size_t i=0; i<m_vResources.size(); i++)
 		{
 			if (m_vResources[i] == rs)
 			{
@@ -326,7 +326,7 @@ void ResourceManager::destroyResource(Resource *rs)
 		}
 
 		// handle async destroy
-		for (int w=0; w<m_loadingWork.size(); w++)
+		for (size_t w=0; w<m_loadingWork.size(); w++)
 		{
 			if (m_loadingWork[w].resource.atomic.load() == rs)
 			{
@@ -365,7 +365,7 @@ void ResourceManager::destroyResource(Resource *rs)
 
 void ResourceManager::reloadResources()
 {
-	for (int i=0; i<m_vResources.size(); i++)
+	for (size_t i=0; i<m_vResources.size(); i++)
 	{
 		m_vResources[i]->reload();
 	}
@@ -629,7 +629,7 @@ VertexArrayObject *ResourceManager::createVertexArrayObject(Graphics::PRIMITIVE 
 
 Image *ResourceManager::getImage(UString resourceName) const
 {
-	for (int i=0; i<m_vResources.size(); i++)
+	for (size_t i=0; i<m_vResources.size(); i++)
 	{
 		if (m_vResources[i]->getName() == resourceName)
 			return dynamic_cast<Image*>(m_vResources[i]);
@@ -641,7 +641,7 @@ Image *ResourceManager::getImage(UString resourceName) const
 
 McFont *ResourceManager::getFont(UString resourceName) const
 {
-	for (int i=0; i<m_vResources.size(); i++)
+	for (size_t i=0; i<m_vResources.size(); i++)
 	{
 		if (m_vResources[i]->getName() == resourceName)
 			return dynamic_cast<McFont*>(m_vResources[i]);
@@ -653,7 +653,7 @@ McFont *ResourceManager::getFont(UString resourceName) const
 
 Sound *ResourceManager::getSound(UString resourceName) const
 {
-	for (int i=0; i<m_vResources.size(); i++)
+	for (size_t i=0; i<m_vResources.size(); i++)
 	{
 		if (m_vResources[i]->getName() == resourceName)
 			return dynamic_cast<Sound*>(m_vResources[i]);
@@ -665,7 +665,7 @@ Sound *ResourceManager::getSound(UString resourceName) const
 
 Shader *ResourceManager::getShader(UString resourceName) const
 {
-	for (int i=0; i<m_vResources.size(); i++)
+	for (size_t i=0; i<m_vResources.size(); i++)
 	{
 		if (m_vResources[i]->getName() == resourceName)
 			return dynamic_cast<Shader*>(m_vResources[i]);
@@ -677,7 +677,7 @@ Shader *ResourceManager::getShader(UString resourceName) const
 
 bool ResourceManager::isLoadingResource(Resource *rs) const
 {
-	for (int i=0; i<m_loadingWork.size(); i++)
+	for (size_t i=0; i<m_loadingWork.size(); i++)
 	{
 		if (m_loadingWork[i].resource.atomic.load() == rs)
 			return true;
@@ -733,7 +733,7 @@ void ResourceManager::loadResource(Resource *res, bool load)
 					m_loadingWork.push_back(work);
 
 					int numLoadingWorkForThreadIndex = 0;
-					for (int i=0; i<m_loadingWork.size(); i++)
+					for (size_t i=0; i<m_loadingWork.size(); i++)
 					{
 						if (m_loadingWork[i].threadIndex.atomic.load() == threadIndex)
 							numLoadingWorkForThreadIndex++;
@@ -780,7 +780,7 @@ void ResourceManager::doesntExistWarning(UString resourceName) const
 
 Resource *ResourceManager::checkIfExistsAndHandle(UString resourceName)
 {
-	for (int i=0; i<m_vResources.size(); i++)
+	for (size_t i=0; i<m_vResources.size(); i++)
 	{
 		if (m_vResources[i]->getName() == resourceName)
 		{

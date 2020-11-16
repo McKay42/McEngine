@@ -30,6 +30,7 @@ class SteamworksInterface;
 class DiscordInterface;
 
 class CBaseUIContainer;
+class VisualProfiler;
 class ConsoleBox;
 class Console;
 
@@ -133,6 +134,7 @@ public:
 
 	// debugging/console
 	void setConsole(Console *console) {m_console = console;}
+	inline VisualProfiler *getVisualProfiler() const {return m_visualProfiler;}
 	inline ConsoleBox *getConsoleBox() const {return m_consoleBox;}
 	inline Console *getConsole() const {return m_console;}
 	inline CBaseUIContainer *getGUI() const {return m_guiContainer;}
@@ -181,6 +183,7 @@ private:
 
 	// engine gui, mostly for debugging
 	CBaseUIContainer *m_guiContainer;
+	VisualProfiler *m_visualProfiler;
 	static ConsoleBox *m_consoleBox;
 	static Console *m_console;
 

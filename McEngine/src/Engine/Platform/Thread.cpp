@@ -11,10 +11,6 @@
 
 #include "HorizonThread.h"
 
-ConVar debug_thread("debug_thread", false);
-
-ConVar *McThread::debug = &debug_thread;
-
 #ifdef MCENGINE_FEATURE_MULTITHREADING
 
 #ifdef MCENGINE_FEATURE_PTHREADS
@@ -61,6 +57,10 @@ private:
 #endif
 
 #endif
+
+ConVar debug_thread("debug_thread", false);
+
+ConVar *McThread::debug = &debug_thread;
 
 McThread::McThread(START_ROUTINE start_routine, void *arg)
 {

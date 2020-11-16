@@ -13,11 +13,14 @@
 #include "ResourceManager.h"
 
 ConVar debug_mouse("debug_mouse", false);
+
 ConVar mouse_sensitivity("mouse_sensitivity", 1.0f);
 ConVar mouse_raw_input("mouse_raw_input", false);
 ConVar mouse_raw_input_absolute_to_window("mouse_raw_input_absolute_to_window", false);
-ConVar mouse_fakelag("mouse_fakelag", 0.000f);
+ConVar mouse_fakelag("mouse_fakelag", 0.000f, "delay all mouse movement by this many seconds (e.g. 0.1 = 100 ms delay)");
+
 ConVar tablet_sensitivity_ignore("tablet_sensitivity_ignore", false);
+
 ConVar win_ink_workaround("win_ink_workaround", false);
 
 Mouse::Mouse() : InputDevice()
@@ -153,7 +156,8 @@ void Mouse::update()
 					rawRangeY = env->getNativeScreenSize().y;
 				}
 
-				if (mouse_raw_input_absolute_to_window.getBool())
+				// NOTE: mouse_raw_input_absolute_to_window only applies if raw input is enabled in general
+				if (mouse_raw_input.getBool() && mouse_raw_input_absolute_to_window.getBool())
 				{
 					const Vector2 scaledOffset = m_vOffset;
 					const Vector2 scaledEngineScreenSize = engine->getScreenSize() + 2*scaledOffset;
@@ -271,7 +275,7 @@ void Mouse::addListener(MouseListener *mouseListener, bool insertOnTop)
 
 void Mouse::removeListener(MouseListener *mouseListener)
 {
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		if (m_listeners[i] == mouseListener)
 		{
@@ -310,7 +314,7 @@ void Mouse::setPosXY(float x, float y)
 		m_fakelagBuffer.push_back(p);
 
 		float engineTime = engine->getTime();
-		for (int i=0; i<m_fakelagBuffer.size(); i++)
+		for (size_t i=0; i<m_fakelagBuffer.size(); i++)
 		{
 			if (engineTime >= m_fakelagBuffer[i].time)
 			{
@@ -347,7 +351,7 @@ void Mouse::onWheelVertical(int delta)
 {
 	m_iWheelDeltaVerticalActual += delta;
 
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onWheelVertical(delta);
 	}
@@ -357,7 +361,7 @@ void Mouse::onWheelHorizontal(int delta)
 {
 	m_iWheelDeltaHorizontalActual += delta;
 
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onWheelHorizontal(delta);
 	}
@@ -367,7 +371,7 @@ void Mouse::onLeftChange(bool leftDown)
 {
 	m_bMouseLeftDown = leftDown;
 
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onLeftChange(m_bMouseLeftDown);
 	}
@@ -377,7 +381,7 @@ void Mouse::onMiddleChange(bool middleDown)
 {
 	m_bMouseMiddleDown = middleDown;
 
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onMiddleChange(m_bMouseMiddleDown);
 	}
@@ -387,7 +391,7 @@ void Mouse::onRightChange(bool rightDown)
 {
 	m_bMouseRightDown = rightDown;
 
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onRightChange(m_bMouseRightDown);
 	}
@@ -397,7 +401,7 @@ void Mouse::onButton4Change(bool button4down)
 {
 	m_bMouse4Down = button4down;
 
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onButton4Change(m_bMouse4Down);
 	}
@@ -407,7 +411,7 @@ void Mouse::onButton5Change(bool button5down)
 {
 	m_bMouse5Down = button5down;
 
-	for (int i=0; i<m_listeners.size(); i++)
+	for (size_t i=0; i<m_listeners.size(); i++)
 	{
 		m_listeners[i]->onButton5Change(m_bMouse5Down);
 	}

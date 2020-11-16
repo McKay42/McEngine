@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "Engine.h"
+#include "Profiler.h"
 #include "ConVar.h"
 #include "Timer.h"
 
@@ -396,6 +397,8 @@ int main(int argc, char *argv[])
     // main loop
 	while (g_bRunning)
 	{
+		VPROF_MAIN();
+
 		// handle window message queue
 		while (XPending(dpy))
 		{

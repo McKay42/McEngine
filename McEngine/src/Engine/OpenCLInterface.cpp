@@ -65,7 +65,7 @@ OpenCLInterface::OpenCLInterface()
 	// go through all platforms
 	int bestDeviceIndex = 0;
 	bool foundBestDevice = false;
-	for (int i=0; i<numPlatforms; i++)
+	for (size_t i=0; i<numPlatforms; i++)
 	{
 		OPENCL_DEVICE dev;
 		dev.name = "ERROR";
@@ -272,7 +272,7 @@ void OpenCLInterface::cleanup()
 	}
 
 	// release memory objects
-	for (int i=0; i<m_vBuffers.size(); i++)
+	for (size_t i=0; i<m_vBuffers.size(); i++)
 	{
 		if (m_vBuffers[i] != NULL)
 		{
@@ -288,7 +288,7 @@ void OpenCLInterface::cleanup()
 	m_vBufferIndex.swap(m_vBufferIndex);
 
 	// release kernels
-	for (int i=0; i<m_vKernels.size(); i++)
+	for (size_t i=0; i<m_vKernels.size(); i++)
 	{
 		ret = clReleaseKernel(m_vKernels[i]);
 		debugLog("OpenCL: clReleaseKernel(m_vKernels[%i]) returned %i!\n", i, ret);
@@ -299,7 +299,7 @@ void OpenCLInterface::cleanup()
 	m_vKernels.swap(m_vKernels);
 
 	// release programs
-	for (int i=0; i<m_vPrograms.size(); i++)
+	for (size_t i=0; i<m_vPrograms.size(); i++)
 	{
 		ret = clReleaseProgram(m_vPrograms[i]);
 		debugLog("OpenCL: clReleaseProgram(m_vPrograms[%i]) returned %i!\n", i, ret);
@@ -714,7 +714,7 @@ void _opencl_listdevices( void )
 	debugLog("OpenCL Devices:\n");
 
 	const std::vector<OpenCLInterface::OPENCL_DEVICE> &devices = opencl->getDevices();
-	for (int i=0; i<devices.size(); i++)
+	for (size_t i=0; i<devices.size(); i++)
 	{
 		debugLog(" - Platform %i:\n", i);
 		debugLog("      Name = %s\n", devices[i].name.toUtf8());

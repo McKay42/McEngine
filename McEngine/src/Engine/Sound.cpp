@@ -30,11 +30,15 @@
 #include "Engine.h"
 #include "SoundEngine.h"
 
+
+
 ConVar debug_snd("debug_snd", false);
 
 ConVar snd_speed_compensate_pitch("snd_speed_compensate_pitch", true, "automatically keep pitch constant if speed changes");
 ConVar snd_play_interp_duration("snd_play_interp_duration", 0.75f, "smooth over freshly started channel position jitter with engine time over this duration in seconds");
 ConVar snd_play_interp_ratio("snd_play_interp_ratio", 0.50f, "percentage of snd_play_interp_duration to use 100% engine time over audio time (some devices report 0 for very long)");
+
+
 
 Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan) : Resource(filepath)
 {
@@ -210,7 +214,7 @@ Sound::SOUNDHANDLE Sound::getHandle()
 		// HACKHACK: wasapi stream objects can't be reused
 		if (m_HCHANNEL == 0 || m_bIsOverlayable)
 		{
-			for (int i=0; i<m_danglingWasapiStreams.size(); i++)
+			for (size_t i=0; i<m_danglingWasapiStreams.size(); i++)
 			{
 				if (BASS_ChannelIsActive(m_danglingWasapiStreams[i]) != BASS_ACTIVE_PLAYING)
 				{
@@ -509,7 +513,7 @@ void Sound::setPitch(float pitch)
 
 	const SOUNDHANDLE handle = getHandle();
 
-	BASS_ChannelSetAttribute(handle, BASS_ATTRIB_TEMPO_PITCH, (pitch-1.0f)*60.0f);
+	BASS_ChannelSetAttribute(handle, BASS_ATTRIB_TEMPO_PITCH, (pitch - 1.0f)*60.0f);
 
 #endif
 }
@@ -545,7 +549,7 @@ void Sound::setPan(float pan)
 
 	if (!m_bStream)
 	{
-		const float rangeHalfLimit = 96.0f; // trying to match BASS
+		const float rangeHalfLimit = 96.0f; // NOTE: trying to match BASS behavior
 		const int left = (int)lerp<float>(rangeHalfLimit/2.0f, 254.0f - rangeHalfLimit/2.0f, 1.0f - ((pan + 1.0f) / 2.0f));
 		Mix_SetPanning(getHandle(), left, 254 - left);
 	}

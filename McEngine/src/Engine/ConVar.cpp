@@ -400,7 +400,7 @@ std::vector<ConVar*> ConVarHandler::getConVarByLetter(UString letters) const
 
 	const std::vector<ConVar*> &convars = getConVarArray();
 
-	for (int i=0; i<convars.size(); i++)
+	for (size_t i=0; i<convars.size(); i++)
 	{
 		if (convars[i]->getName().find(letters, 0, letters.length()) == 0)
 			matchingConVars.push_back(convars[i]);
@@ -426,7 +426,7 @@ static void _find(UString args)
 	const std::vector<ConVar*> &convars = convar->getConVarArray();
 
 	std::vector<ConVar*> matchingConVars;
-	for (int i=0; i<convars.size(); i++)
+	for (size_t i=0; i<convars.size(); i++)
 	{
 		UString curcvar = convars[i]->getName();
 		if (curcvar.find(args, 0, curcvar.length()) != -1)
@@ -449,7 +449,7 @@ static void _find(UString args)
 		thelog.append(" ]\n");
 		debugLog("%s", thelog.toUtf8());
 
-		for (int i=0; i<matchingConVars.size(); i++)
+		for (size_t i=0; i<matchingConVars.size(); i++)
 		{
 			UString tstring = matchingConVars[i]->getName();
 			tstring.append("\n");
@@ -480,7 +480,7 @@ static void _help(UString args)
 
 	// use closest match
 	int index = 0;
-	for (int i=0; i<matches.size(); i++)
+	for (size_t i=0; i<matches.size(); i++)
 	{
 		if (matches[i]->getName() == args)
 		{
@@ -517,7 +517,7 @@ static void _listcommands(void)
 	debugLog("----------------------------------------------\n");
 	{
 		const std::vector<ConVar*> &convars = convar->getConVarArray();
-		for (int i=0; i<convars.size(); i++)
+		for (size_t i=0; i<convars.size(); i++)
 		{
 			UString tstring = convars[i]->getName();
 

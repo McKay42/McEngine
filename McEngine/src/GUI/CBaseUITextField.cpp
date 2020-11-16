@@ -82,7 +82,7 @@ void CBaseUITextField::TextObject::draw(Graphics *g)
 		g->pushTransform();
 		g->translate(m_vPos.x+border, m_vPos.y + m_fStringHeight + border);
 
-			for (int i=0; i<words.size(); i++)
+			for (size_t i=0; i<words.size(); i++)
 			{
 				float curWordWidth = m_font->getStringWidth(words[i]);
 
@@ -135,7 +135,7 @@ void CBaseUITextField::TextObject::onResized()
 	int oldSizeX = -1;
 	int oldSizeY = -1;
 
-	for (int i=0; i<words.size(); i++)
+	for (size_t i=0; i<words.size(); i++)
 	{
 		float curWordWidth = m_font->getStringWidth(words[i]);
 

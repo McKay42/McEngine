@@ -2,7 +2,7 @@
 //
 // Purpose:		sound wrapper, either streamed or preloaded
 //
-// $NoKeywords: $snd $os
+// $NoKeywords: $snd
 //===============================================================================//
 
 #ifndef SOUND_H

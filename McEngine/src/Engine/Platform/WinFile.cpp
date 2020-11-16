@@ -95,6 +95,8 @@ WinFile::~WinFile()
 	if (m_handle != NULL)
 		CloseHandle(m_handle);
 
+	m_handle = NULL;
+
 	if (m_fullBuffer != NULL)
 	{
 		delete[] m_fullBuffer;
@@ -211,7 +213,7 @@ UString WinFile::readLine()
 		// line detection loop
 		unsigned int lineBufferIndex = 0;
 		memset(lineBuffer, '\0', bufferSize); // two zero chars at the end should actually be enough, but whatever
-		for (int i=m_iLineIndex; (i < bufferSize) && ((i+m_iLineBufferReadIndexOffset) < m_iRead) && (lineBufferIndex < bufferSize); i++)
+		for (size_t i=m_iLineIndex; (i < bufferSize) && ((i+m_iLineBufferReadIndexOffset) < m_iRead) && (lineBufferIndex < bufferSize); i++)
 		{
 			const unsigned char c = ((unsigned char*)m_buffer)[i+m_iLineBufferReadIndexOffset];
 
@@ -261,7 +263,7 @@ const char *WinFile::readFile()
 	if (File::debug->getBool())
 		debugLog("WinFile::readFile() on %s\n", m_sFilePath.toUtf8());
 
-	if (checkReadForFullBuffer())
+	if (checkReadForFullBuffer() || m_bEOF)
 		return m_fullBuffer;
 	else
 		return NULL;

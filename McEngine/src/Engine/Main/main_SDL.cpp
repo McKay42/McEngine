@@ -19,6 +19,7 @@
 #include "SDL.h"
 
 #include "Engine.h"
+#include "Profiler.h"
 #include "Timer.h"
 #include "Mouse.h"
 #include "ConVar.h"
@@ -174,6 +175,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 	SDL_Event e;
 	while (g_bRunning)
 	{
+		VPROF_MAIN();
 
 		// HACKHACK: switch hack (mouse/keyboard)
 #ifdef __SWITCH__
@@ -569,6 +571,8 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 	return 0;
 }
+
+
 
 int mainSDL(int argc, char *argv[])
 {

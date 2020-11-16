@@ -89,6 +89,9 @@ private:
 	std::ofstream m_ofstream;
 	std::string m_sBuffer;
 	size_t m_iFileSize;
+
+	// full reader
+	std::vector<char> m_fullBuffer;
 };
 
 #endif

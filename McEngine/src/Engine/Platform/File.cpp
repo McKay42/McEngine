@@ -184,12 +184,13 @@ const char *StdFile::readFile()
 	if (File::debug->getBool())
 		debugLog("StdFile::readFile() on %s\n", m_sFilePath.toUtf8());
 
+	if (m_fullBuffer.size() > 0)
+		return &m_fullBuffer[0];
+
 	if (!m_bReady || !canRead()) return NULL;
 
-	m_sBuffer.reserve(m_iFileSize);
-	m_sBuffer.assign((std::istreambuf_iterator<char>(m_ifstream)), std::istreambuf_iterator<char>());
-
-	return m_sBuffer.c_str();
+	m_fullBuffer.resize(m_iFileSize);
+	return (m_ifstream.read(m_fullBuffer.data(), m_iFileSize) ? &m_fullBuffer[0] : NULL);
 }
 
 size_t StdFile::getFileSize() const

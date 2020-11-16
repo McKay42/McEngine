@@ -42,8 +42,6 @@ public:
 
 	CBaseUIElement *getBaseUIElement(UString name);
 
-	inline std::vector<CBaseUIElement*> getAllBaseUIElements() {return m_vElements;} // DEPRECATED
-	inline std::vector<CBaseUIElement*> *getAllBaseUIElementsPointer() {return &m_vElements;} // DEPRECATED
 	inline const std::vector<CBaseUIElement*> &getElements() const {return m_vElements;}
 
 	virtual void onMoved() {update_pos();}
