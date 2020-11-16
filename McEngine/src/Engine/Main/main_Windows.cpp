@@ -73,6 +73,7 @@ PGPI g_GetPointerInfo = (PGPI)GetProcAddress(GetModuleHandle(TEXT("user32.dll"))
 #include <tchar.h>
 
 #include "Engine.h"
+#include "Profiler.h"
 #include "ConVar.h"
 #include "Timer.h"
 #include "Mouse.h"
@@ -91,6 +92,7 @@ PGPI g_GetPointerInfo = (PGPI)GetProcAddress(GetModuleHandle(TEXT("user32.dll"))
 
 #define WINDOW_WIDTH_MIN 100
 #define WINDOW_HEIGHT_MIN 100
+
 
 
 #define WM_MOUSEHWHEEL 0x020E
@@ -520,7 +522,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				if (pointerInfo.pointerFlags & POINTER_FLAG_DOWN)
 				{
 					bool contains = false;
-					for (int i=0; i<g_vTouches.size(); i++)
+					for (size_t i=0; i<g_vTouches.size(); i++)
 					{
 						if (g_vTouches[i] == id)
 						{
@@ -542,7 +544,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 				else if (pointerInfo.pointerFlags & POINTER_FLAG_UP)
 				{
-					for (int i=0; i<g_vTouches.size(); i++)
+					for (size_t i=0; i<g_vTouches.size(); i++)
 					{
 						if (g_vTouches[i] == id)
 						{
@@ -775,6 +777,136 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	// NOTE: add -mwindows to linker options to disable console window if compiling with Eclipse
 
+	// IPC URL protocol handler (1)
+/*
+	const size_t sharedMemorySize = sizeof(char) * 4096;
+
+#pragma pack(1)
+
+	enum class IPC_STATE : uint8_t
+	{
+		IDLE,
+		MESSAGE
+	};
+
+	enum class IPC_MESSAGE_TYPE : uint8_t
+	{
+		URL
+	};
+
+	struct IPCState
+	{
+		IPC_STATE state;
+		IPC_MESSAGE_TYPE type;
+	};
+
+#pragma pack()
+
+	HANDLE ipcMappedFile = NULL;
+	LPVOID ipcSharedMemory = NULL;
+	{
+		const char *sharedMemoryName = "Local\\McEngine";
+
+		// check for other running instance
+		ipcMappedFile = OpenFileMapping(FILE_MAP_READ | FILE_MAP_WRITE, FALSE, sharedMemoryName);
+
+		// if we are the first instance
+		bool slave = true;
+		if (ipcMappedFile == NULL)
+		{
+			slave = false;
+			ipcMappedFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sharedMemorySize, sharedMemoryName);
+		}
+
+		if (ipcMappedFile != NULL)
+		{
+			ipcSharedMemory = MapViewOfFile(ipcMappedFile, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, sharedMemorySize);
+
+			if (ipcSharedMemory != NULL)
+			{
+				if (slave)
+				{
+					if (strncmp(lpCmdLine, "mcengine://", 11) == 0)
+					{
+						if (((IPCState*)ipcSharedMemory)->state == IPC_STATE::IDLE)
+						{
+							const size_t bytesToCopy = std::min(strlen(lpCmdLine), sharedMemorySize - sizeof(IPCState) - 2) + 1;
+
+							//printf("Copying %u bytes\n", bytesToCopy);
+
+							CopyMemory(((char*)ipcSharedMemory) + sizeof(IPCState), lpCmdLine, bytesToCopy);
+
+							IPCState ipcState;
+
+							ipcState.state = IPC_STATE::MESSAGE;
+							ipcState.type = IPC_MESSAGE_TYPE::URL;
+
+							CopyMemory(ipcSharedMemory, &ipcState, sizeof(IPCState));
+						}
+
+						UnmapViewOfFile(ipcSharedMemory);
+						CloseHandle(ipcMappedFile);
+
+						return 0; // we are done here, shutdown slave
+					}
+				}
+				else
+				{
+					IPCState ipcState;
+
+					ipcState.state = IPC_STATE::IDLE;
+
+					CopyMemory(ipcSharedMemory, &ipcState, sizeof(IPCState));
+				}
+			}
+			else
+				printf("IPC ERROR: Couldn't MapViewOfFile()!\n");
+		}
+		else
+			printf("IPC ERROR: Couldn't OpenFileMapping() or CreateFileMapping()!\n");
+	}
+*/
+
+
+
+/*
+	// TEMP: register URL protocol handler in registry
+	// TODO: this needs admin elevation, otherwise just silently fails, very annoying for usability
+	{
+		wchar_t fullPathToExe[MAX_PATH];
+		GetModuleFileNameW(NULL, fullPathToExe, MAX_PATH);
+
+		UString fullPathString = UString(fullPathToExe);
+
+		UString defaultIconString = UString(fullPathString.wc_str()); // copy
+		defaultIconString.insert(0, L'"');
+		defaultIconString.append("\",1");
+
+		UString shellOpenCommandString = UString(fullPathString.wc_str()); // copy
+		shellOpenCommandString.insert(0, L'"');
+		shellOpenCommandString.append("\" \"%1\"");
+
+		HKEY hkey;
+		if (RegCreateKeyW(HKEY_CLASSES_ROOT, L"mcengine", &hkey) == ERROR_SUCCESS)
+		{
+			RegSetValueW(hkey, NULL, REG_SZ, L"mcengine url handler", 0);
+			RegSetValueExW(hkey, L"URL Protocol", 0, REG_SZ, NULL, 0);
+
+			HKEY defaultIcon;
+			RegCreateKeyW(hkey, L"DefaultIcon", &defaultIcon);
+			RegSetValueW(defaultIcon, NULL, REG_SZ, defaultIconString.wc_str(), 0);
+
+			HKEY command;
+			RegCreateKeyW(hkey, L"shell\\open\\command", &command);
+			RegSetValueW(command, NULL, REG_SZ, shellOpenCommandString.wc_str(), 0);
+		}
+		else
+			printf("REG ERROR: Couldn't RegCreateKeyW()!\n");
+	}
+*/
+
+
+
 	// disable IME text input
 	{
 		typedef BOOL (WINAPI *pfnImmDisableIME)(DWORD);
@@ -825,7 +957,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wc.hbrBackground = (HBRUSH)CreateSolidBrush(0x00000000);
     wc.lpszMenuName  = NULL;
 	wc.lpszClassName = WINDOW_TITLE;
-    //wc.hIconSm       = LoadIcon(hInstance, MAKEINTRESOURCE(1)); // load icon named "1" in /Main/WinIcon.rc file, must link to WinIcon.o which was created with windres
+    //wc.hIconSm       = LoadIcon(hInstance, MAKEINTRESOURCE(1)); // NOTE: load icon named "1" in /Main/WinIcon.rc file, must link to WinIcon.o which was created with windres.exe
     wc.hIconSm       = LoadIcon(NULL, IDI_APPLICATION);
 
 	// register window class
@@ -1027,11 +1159,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	msg.message = WM_NULL;
 	while (g_bRunning)
 	{
+		VPROF_MAIN();
+
 		// handle windows message queue
-		while (PeekMessageW(&msg, NULL, 0U, 0U, PM_REMOVE) != 0)
 		{
-			TranslateMessage(&msg);
-			DispatchMessageW(&msg);
+			VPROF_BUDGET("Windows", VPROF_BUDGETGROUP_WNDPROC);
+
+			while (PeekMessageW(&msg, NULL, 0U, 0U, PM_REMOVE) != 0)
+			{
+				TranslateMessage(&msg);
+				DispatchMessageW(&msg);
+			}
 		}
 
 		// HACKHACK: focus bug workaround (3), see above
@@ -1049,6 +1187,31 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				}
 			}
 		}
+
+		// IPC (2)
+/*
+		if (ipcSharedMemory != NULL && ((IPCState*)ipcSharedMemory)->state == IPC_STATE::MESSAGE)
+		{
+			g_engine->debugLog("IPC: Received message @ %f\n", g_engine->getTime());
+
+			switch (((IPCState*)ipcSharedMemory)->type)
+			{
+			case IPC_MESSAGE_TYPE::URL:
+				char *content = (((char*)ipcSharedMemory) + sizeof(IPCState));
+				const size_t length = std::min(strlen(content), sharedMemorySize - sizeof(IPCState) - 2);
+				const UString ustring = UString(content, length);
+
+				g_engine->debugLog("IPC: Received URL %s\n", ustring.toUtf8());
+
+				if (ustring.find("mcengine://") == 0)
+					Console::processCommand(ustring.substr(11));
+
+				break;
+			}
+
+			((IPCState*)ipcSharedMemory)->state = IPC_STATE::IDLE;
+		}
+*/
 
 		// update
 		{
@@ -1070,38 +1233,42 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		// delay the next frame
-		frameTimer->update();
-		const bool inBackground = g_bMinimized || !g_bHasFocus;
-		if (!fps_unlimited.getBool() || inBackground)
 		{
-			double delayStart = frameTimer->getElapsedTime();
-			double delayTime;
-			if (inBackground)
-				delayTime = (1.0 / (double)fps_max_background.getFloat()) - frameTimer->getDelta();
-			else
-				delayTime = (1.0 / (double)fps_max.getFloat()) - frameTimer->getDelta();
+			VPROF_BUDGET("FPSLimiter", VPROF_BUDGETGROUP_SLEEP);
 
-			const bool didSleep = delayTime > 0.0;
-			while (delayTime > 0.0)
+			frameTimer->update();
+			const bool inBackground = g_bMinimized || !g_bHasFocus;
+			if (!fps_unlimited.getBool() || inBackground)
 			{
-				if (inBackground) // real waiting (very inaccurate, but very good for little background cpu utilization)
-					Sleep((int)((1.0f / fps_max_background.getFloat())*1000.0f));
-				else // more or less "busy" waiting, but giving away the rest of the timeslice at least
+				double delayStart = frameTimer->getElapsedTime();
+				double delayTime;
+				if (inBackground)
+					delayTime = (1.0 / (double)fps_max_background.getFloat()) - frameTimer->getDelta();
+				else
+					delayTime = (1.0 / (double)fps_max.getFloat()) - frameTimer->getDelta();
+
+				const bool didSleep = delayTime > 0.0;
+				while (delayTime > 0.0)
+				{
+					if (inBackground) // real waiting (very inaccurate, but very good for little background cpu utilization)
+						Sleep((int)((1.0f / fps_max_background.getFloat())*1000.0f));
+					else // more or less "busy" waiting, but giving away the rest of the timeslice at least
+						Sleep(0); // yes, there is a zero in there
+
+					// decrease the delayTime by the time we spent in this loop
+					// if the loop is executed more than once, note how delayStart now gets the value of the previous iteration from getElapsedTime()
+					// this works because the elapsed time is only updated in update(). now we can easily calculate the time the Sleep() took and subtract it from the delayTime
+					delayStart = frameTimer->getElapsedTime();
+					frameTimer->update();
+					delayTime -= (frameTimer->getElapsedTime() - delayStart);
+				}
+
+				if (!didSleep && fps_max_yield.getBool())
 					Sleep(0); // yes, there is a zero in there
-
-				// decrease the delayTime by the time we spent in this loop
-				// if the loop is executed more than once, note how delayStart now gets the value of the previous iteration from getElapsedTime()
-				// this works because the elapsed time is only updated in update(). now we can easily calculate the time the Sleep() took and subtract it from the delayTime
-				delayStart = frameTimer->getElapsedTime();
-				frameTimer->update();
-				delayTime -= (frameTimer->getElapsedTime() - delayStart);
 			}
-
-			if (!didSleep && fps_max_yield.getBool())
+			else if (fps_unlimited_yield.getBool())
 				Sleep(0); // yes, there is a zero in there
 		}
-		else if (fps_unlimited_yield.getBool())
-			Sleep(0); // yes, there is a zero in there
 	}
 
     // uninitialize RealTimeStylus (COM)
@@ -1121,6 +1288,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	// finally, destroy the window
 	DestroyWindow(hwnd);
+
+	// IPC (3)
+/*
+	{
+		if (ipcSharedMemory != NULL)
+			UnmapViewOfFile(ipcSharedMemory);
+
+		if (ipcMappedFile != NULL)
+			CloseHandle(ipcMappedFile);
+	}
+*/
 
 	// handle potential restart
 	if (isRestartScheduled)

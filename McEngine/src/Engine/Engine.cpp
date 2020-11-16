@@ -29,6 +29,7 @@
 #include "SoundEngine.h"
 #include "ContextMenu.h"
 #include "Keyboard.h"
+#include "Profiler.h"
 #include "ConVar.h"
 #include "Mouse.h"
 #include "Timer.h"
@@ -37,6 +38,7 @@
 
 #include "Console.h"
 #include "ConsoleBox.h"
+#include "VisualProfiler.h"
 
 
 
@@ -85,6 +87,7 @@ Engine::Engine(Environment *environment, const char *args)
 
 	m_graphics = NULL;
 	m_guiContainer = NULL;
+	m_visualProfiler = NULL;
 	m_app = NULL;
 
 	// disable output buffering (else we get multithreading issues due to blocking)
@@ -252,6 +255,8 @@ void Engine::loadApp()
 	// create engine gui
 	m_guiContainer = new CBaseUIContainer(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "");
 	m_consoleBox = new ConsoleBox();
+	m_visualProfiler = new VisualProfiler();
+	m_guiContainer->addBaseUIElement(m_visualProfiler);
 	m_guiContainer->addBaseUIElement(m_consoleBox);
 
 	debugLog("\nEngine: Loading app ...\n");
@@ -276,32 +281,44 @@ void Engine::loadApp()
 
 void Engine::onPaint()
 {
+	VPROF_BUDGET("Engine::onPaint", VPROF_BUDGETGROUP_DRAW);
 	if (m_bBlackout || m_bIsMinimized) return;
 
 	m_bDrawing = true;
-
-	m_graphics->beginScene();
-
-		if (m_app != NULL)
-			m_app->draw(m_graphics);
-
-		if (m_guiContainer != NULL)
-			m_guiContainer->draw(m_graphics);
-
-		// debug input devices
-		for (size_t i=0; i<m_inputDevices.size(); i++)
+	{
 		{
-			m_inputDevices[i]->draw(m_graphics);
+			VPROF_BUDGET("Graphics::beginScene", VPROF_BUDGETGROUP_SWAPBUFFERS);
+			m_graphics->beginScene();
 		}
-
-		if (epilepsy.getBool())
 		{
-			m_graphics->setColor(COLOR(255, rand()%256, rand()%256, rand()%256));
-			m_graphics->fillRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight());
+			if (m_app != NULL)
+			{
+				VPROF_BUDGET("App::draw", VPROF_BUDGETGROUP_DRAW);
+				m_app->draw(m_graphics);
+			}
+
+
+
+			if (m_guiContainer != NULL)
+				m_guiContainer->draw(m_graphics);
+
+			// debug input devices
+			for (size_t i=0; i<m_inputDevices.size(); i++)
+			{
+				m_inputDevices[i]->draw(m_graphics);
+			}
+
+			if (epilepsy.getBool())
+			{
+				m_graphics->setColor(COLOR(255, rand()%256, rand()%256, rand()%256));
+				m_graphics->fillRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight());
+			}
 		}
-
-	m_graphics->endScene();
-
+		{
+			VPROF_BUDGET("Graphics::endScene", VPROF_BUDGETGROUP_SWAPBUFFERS);
+			m_graphics->endScene();
+		}
+	}
 	m_bDrawing = false;
 
 	m_iFrameCount++;
@@ -309,6 +326,7 @@ void Engine::onPaint()
 
 void Engine::onUpdate()
 {
+	VPROF_BUDGET("Engine::onUpdate", VPROF_BUDGETGROUP_UPDATE);
 	if (m_bBlackout || (m_bIsMinimized && !(m_networkHandler->isClient() || m_networkHandler->isServer()))) return;
 
 	// update time
@@ -331,9 +349,21 @@ void Engine::onUpdate()
 	}
 
 	m_openVR->update(); // (this also handles its input devices)
-	m_animationHandler->update();
-	m_sound->update();
-	m_resourceManager->update();
+
+	{
+		VPROF_BUDGET("AnimationHandler::update", VPROF_BUDGETGROUP_UPDATE);
+		m_animationHandler->update();
+	}
+
+	{
+		VPROF_BUDGET("SoundEngine::update", VPROF_BUDGETGROUP_UPDATE);
+		m_sound->update();
+	}
+
+	{
+		VPROF_BUDGET("ResourceManager::update", VPROF_BUDGETGROUP_UPDATE);
+		m_resourceManager->update();
+	}
 
 	// update gui
 	if (m_guiContainer != NULL)
@@ -351,14 +381,23 @@ void Engine::onUpdate()
 	}
 
 	// update networking
-	m_networkHandler->update();
+	{
+		VPROF_BUDGET("NetworkHandler::update", VPROF_BUDGETGROUP_UPDATE);
+		m_networkHandler->update();
+	}
 
 	// update app
 	if (m_app != NULL)
+	{
+		VPROF_BUDGET("App::update", VPROF_BUDGETGROUP_UPDATE);
 		m_app->update();
+	}
 
 	// update environment
-	m_environment->update();
+	{
+		VPROF_BUDGET("Environment::update", VPROF_BUDGETGROUP_UPDATE);
+		m_environment->update();
+	}
 }
 
 void Engine::onFocusGained()
