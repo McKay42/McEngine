@@ -234,13 +234,11 @@ int UString::findChar(const UString &str, int start, bool respectEscapeChars) co
 
 int UString::find(const UString &str, int start) const
 {
-	int lastPossibleMatch = mLength - str.mLength;
+	const int lastPossibleMatch = mLength - str.mLength;
 	for (int i=start; i<=lastPossibleMatch; i++)
 	{
 		if (memcmp(&(mUnicode[i]), str.mUnicode, str.mLength * sizeof(*mUnicode)) == 0)
-		{
 			return i;
-		}
 	}
 
 	return -1;
@@ -248,13 +246,11 @@ int UString::find(const UString &str, int start) const
 
 int UString::find(const UString &str, int start, int end) const
 {
-	int lastPossibleMatch = mLength - str.mLength;
+	const int lastPossibleMatch = mLength - str.mLength;
 	for (int i=start; i<=lastPossibleMatch && i<end; i++)
 	{
 		if (memcmp(&(mUnicode[i]), str.mUnicode, str.mLength * sizeof(*mUnicode)) == 0)
-		{
 			return i;
-		}
 	}
 
 	return -1;
@@ -266,9 +262,7 @@ int UString::findLast(const UString &str, int start) const
 	for (int i=start; i<mLength; i++)
 	{
 		if (memcmp(&(mUnicode[i]), str.mUnicode, str.mLength * sizeof(*mUnicode)) == 0)
-		{
 			lastI = i;
-		}
 	}
 
 	return lastI;
@@ -280,12 +274,52 @@ int UString::findLast(const UString &str, int start, int end) const
 	for (int i=start; i<mLength && i<end; i++)
 	{
 		if (memcmp(&(mUnicode[i]), str.mUnicode, str.mLength * sizeof(*mUnicode)) == 0)
-		{
 			lastI = i;
-		}
 	}
 
 	return lastI;
+}
+
+int UString::findIgnoreCase(const UString &str, int start) const
+{
+	const int lastPossibleMatch = mLength - str.mLength;
+	for (int i=start; i<=lastPossibleMatch; i++)
+	{
+		bool equal = true;
+		for (int c=0; c<str.mLength; c++)
+		{
+			if ((std::towlower(mUnicode[i + c]) - std::towlower(str.mUnicode[c])) != 0)
+			{
+				equal = false;
+				break;
+			}
+		}
+		if (equal)
+			return i;
+	}
+
+	return -1;
+}
+
+int UString::findIgnoreCase(const UString &str, int start, int end) const
+{
+	const int lastPossibleMatch = mLength - str.mLength;
+	for (int i=start; i<=lastPossibleMatch && i<end; i++)
+	{
+		bool equal = true;
+		for (int c=0; c<str.mLength; c++)
+		{
+			if ((std::towlower(mUnicode[i + c]) - std::towlower(str.mUnicode[c])) != 0)
+			{
+				equal = false;
+				break;
+			}
+		}
+		if (equal)
+			return i;
+	}
+
+	return -1;
 }
 
 void UString::collapseEscapes()
@@ -703,6 +737,37 @@ bool UString::operator < (const UString &ustr) const
 	{
 		if (mUnicode[i] != ustr.mUnicode[i])
 			return mUnicode[i] < ustr.mUnicode[i];
+	}
+
+	if (mLength == ustr.mLength) return false;
+
+	return mLength < ustr.mLength;
+}
+
+bool UString::equalsIgnoreCase(const UString &ustr) const
+{
+	if (mLength != ustr.mLength) return false;
+
+	if (isUnicodeNull() && ustr.isUnicodeNull())
+		return true;
+	else if (isUnicodeNull() || ustr.isUnicodeNull())
+		return false;
+
+	for (int i=0; i<mLength; i++)
+	{
+		if (std::towlower(mUnicode[i]) != std::towlower(ustr.mUnicode[i]))
+			return false;
+	}
+
+	return true;
+}
+
+bool UString::lessThanIgnoreCase(const UString &ustr) const
+{
+	for (int i=0; i<mLength && i<ustr.mLength; i++)
+	{
+		if (std::towlower(mUnicode[i]) != std::towlower(ustr.mUnicode[i]))
+			return std::towlower(mUnicode[i]) < std::towlower(ustr.mUnicode[i]);
 	}
 
 	if (mLength == ustr.mLength) return false;
