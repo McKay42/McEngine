@@ -314,15 +314,15 @@ void VisualProfiler::update()
 			group.id = i;
 
 			// hardcoded colors for some groups
-			if (stricmp(group.name, VPROF_BUDGETGROUP_SLEEP) == 0)
+			if (strcmp(group.name, VPROF_BUDGETGROUP_SLEEP) == 0)
 				group.color = 0xff5555bb;
-			else if (stricmp(group.name, VPROF_BUDGETGROUP_WNDPROC) == 0)
+			else if (strcmp(group.name, VPROF_BUDGETGROUP_WNDPROC) == 0)
 				group.color = 0xffffff00;
-			else if (stricmp(group.name, VPROF_BUDGETGROUP_UPDATE) == 0)
+			else if (strcmp(group.name, VPROF_BUDGETGROUP_UPDATE) == 0)
 				group.color = 0xff00bb00;
-			else if (stricmp(group.name, VPROF_BUDGETGROUP_DRAW) == 0)
+			else if (strcmp(group.name, VPROF_BUDGETGROUP_DRAW) == 0)
 				group.color = 0xffbf6500;
-			else if (stricmp(group.name, VPROF_BUDGETGROUP_SWAPBUFFERS) == 0)
+			else if (strcmp(group.name, VPROF_BUDGETGROUP_SWAPBUFFERS) == 0)
 				group.color = 0xffff0000;
 			else
 				group.color = 0xffffffff; // default to white
