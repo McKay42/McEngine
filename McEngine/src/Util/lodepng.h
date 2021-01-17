@@ -1,3 +1,12 @@
+
+
+
+//
+// MCKAY: modified lodepng_decoder_settings_init() to ignore_crc = 1 by default
+//
+
+
+
 /*
 LodePNG version 20200306
 

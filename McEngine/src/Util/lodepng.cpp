@@ -4998,7 +4998,7 @@ void lodepng_decoder_settings_init(LodePNGDecoderSettings* settings) {
   settings->read_text_chunks = 1;
   settings->remember_unknown_chunks = 0;
 #endif /*LODEPNG_COMPILE_ANCILLARY_CHUNKS*/
-  settings->ignore_crc = 0;
+  settings->ignore_crc = 1; // MCKAY: changed to 1 to match 2016 library version behavior
   settings->ignore_critical = 0;
   settings->ignore_end = 0;
   lodepng_decompress_settings_init(&settings->zlibsettings);
