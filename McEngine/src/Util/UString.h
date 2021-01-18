@@ -5,8 +5,6 @@
 // $NoKeywords: $ustring $string
 //====================================================================================//
 
-// TODO: this needs a lot more standard functionality
-
 #ifndef USTRING_H
 #define USTRING_H
 
@@ -42,6 +40,9 @@ public:
 	int findLast(const UString &str, int start = 0) const;
 	int findLast(const UString &str, int start, int end) const;
 
+	int findIgnoreCase(const UString &str, int start = 0) const;
+	int findIgnoreCase(const UString &str, int start, int end) const;
+
 	// modifiers
 	void collapseEscapes();
 	void append(const UString &str);
@@ -76,6 +77,9 @@ public:
 	bool operator == (const UString &ustr) const;
 	bool operator != (const UString &ustr) const;
 	bool operator < (const UString &ustr) const;
+
+	bool equalsIgnoreCase(const UString &ustr) const;
+	bool lessThanIgnoreCase(const UString &ustr) const;
 
 private:
 	static int decode(const char *utf8, wchar_t *unicode);

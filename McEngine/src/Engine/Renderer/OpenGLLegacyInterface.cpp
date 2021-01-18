@@ -444,6 +444,10 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao)
 
 	updateTransform();
 
+	// HACKHACK: disable texturing for special primitives
+	if (vao->getPrimitive() == Graphics::PRIMITIVE::PRIMITIVE_LINES || vao->getPrimitive() == Graphics::PRIMITIVE::PRIMITIVE_LINE_STRIP)
+		glDisable(GL_TEXTURE_2D);
+
 	// if baked, then we can directly draw the buffer
 	if (vao->isReady())
 	{

@@ -84,7 +84,7 @@ int ProfilerProfile::groupNameToID(const char *group)
 
 	for (int i=0; i<m_iNumGroups; i++)
 	{
-		if (m_groups[i].name != NULL && group != NULL && stricmp(m_groups[i].name, group) == 0)
+		if (m_groups[i].name != NULL && group != NULL && strcmp(m_groups[i].name, group) == 0)
 			return i;
 	}
 
