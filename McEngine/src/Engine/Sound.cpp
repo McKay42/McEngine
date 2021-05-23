@@ -56,6 +56,8 @@ Sound::Sound(UString filepath, bool stream, bool threeD, bool loop, bool prescan
 	m_fVolume = 1.0f;
 	m_fLastPlayTime = -1.0f;
 
+	m_fActualSpeedForDisabledPitchCompensation = 1.0f;
+
 	m_iPrevPosition = 0;
 	m_mixChunkOrMixMusic = NULL;
 
@@ -74,6 +76,9 @@ void Sound::init()
 	if (m_sFilePath.length() < 2 || !m_bAsyncReady) return;
 
 #ifdef MCENGINE_FEATURE_SOUND
+
+	// HACKHACK: re-set some values to their defaults (only necessary because of the existence of rebuild())
+	m_fActualSpeedForDisabledPitchCompensation = 1.0f;
 
 	// error checking
 	if (m_HSTREAM == 0 && m_iWasapiSampleBufferSize < 1)
@@ -492,6 +497,8 @@ void Sound::setSpeed(float speed)
 
 	BASS_ChannelSetAttribute(handle, (snd_speed_compensate_pitch.getBool() ? BASS_ATTRIB_TEMPO : BASS_ATTRIB_TEMPO_FREQ), (snd_speed_compensate_pitch.getBool() ? (speed-1.0f)*100.0f : speed*originalFreq));
 
+	m_fActualSpeedForDisabledPitchCompensation = speed; // NOTE: currently only used for correctly returning getSpeed() if snd_speed_compensate_pitch is disabled
+
 #endif
 }
 
@@ -704,6 +711,9 @@ float Sound::getSpeed()
 		return 0.0f;
 	}
 	*/
+
+	if (!snd_speed_compensate_pitch.getBool())
+		return m_fActualSpeedForDisabledPitchCompensation; // NOTE: special case, disabled pitch compensation means bass will return 1.0x always, since the playback frequency is the only thing being actually modified.
 
 	const SOUNDHANDLE handle = getHandle();
 
