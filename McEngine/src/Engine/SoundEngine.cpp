@@ -583,7 +583,8 @@ SoundEngine::~SoundEngine()
 
 #ifdef MCENGINE_FEATURE_BASS_WASAPI
 
-		BASS_WASAPI_Free();
+		// NOTE: commented, because for some reason this now crashes in dllunload on Windows 10? this cleanup is irrelevant anyway since it only happens on shutdown
+		//BASS_WASAPI_Free();
 
 #endif
 
