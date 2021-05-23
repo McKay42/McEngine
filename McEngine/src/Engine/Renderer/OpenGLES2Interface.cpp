@@ -580,6 +580,25 @@ void OpenGLES2Interface::setBlending(bool enabled)
 		glDisable(GL_BLEND);
 }
 
+void OpenGLES2Interface::setBlendMode(BLEND_MODE blendMode)
+{
+	switch (blendMode)
+	{
+	case BLEND_MODE::BLEND_MODE_ALPHA:
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+	case BLEND_MODE::BLEND_MODE_ADDITIVE:
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+		break;
+	case BLEND_MODE::BLEND_MODE_PREMUL_ALPHA:
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+	case BLEND_MODE::BLEND_MODE_PREMUL_COLOR:
+		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+	}
+}
+
 void OpenGLES2Interface::setDepthBuffer(bool enabled)
 {
 	if (enabled)

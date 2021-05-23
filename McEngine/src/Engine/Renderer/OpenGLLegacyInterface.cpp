@@ -59,6 +59,7 @@ void OpenGLLegacyInterface::init()
 		debugLog("glewInit() Error: %s\n", glewGetErrorString(err));
 		engine->showMessageErrorFatal("OpenGL Error", "Couldn't glewInit()!\nThe engine will exit now.");
 		engine->shutdown();
+		return;
 	}
 
 	// check GL version again
@@ -559,6 +560,25 @@ void OpenGLLegacyInterface::setBlending(bool enabled)
 		glEnable(GL_BLEND);
 	else
 		glDisable(GL_BLEND);
+}
+
+void OpenGLLegacyInterface::setBlendMode(BLEND_MODE blendMode)
+{
+	switch (blendMode)
+	{
+	case BLEND_MODE::BLEND_MODE_ALPHA:
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+	case BLEND_MODE::BLEND_MODE_ADDITIVE:
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+		break;
+	case BLEND_MODE::BLEND_MODE_PREMUL_ALPHA:
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+	case BLEND_MODE::BLEND_MODE_PREMUL_COLOR:
+		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+	}
 }
 
 void OpenGLLegacyInterface::setDepthBuffer(bool enabled)

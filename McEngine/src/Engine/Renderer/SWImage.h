@@ -27,6 +27,8 @@ private:
 	void init();
 	void initAsync();
 	void destroy();
+
+	unsigned int m_iTextureUnitBackup;
 };
 
 #endif
