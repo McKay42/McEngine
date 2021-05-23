@@ -17,7 +17,7 @@
 
 class DirectX11Shader;
 
-class DirectX11Interface : public NullGraphicsInterface /*Graphics*/
+class DirectX11Interface : public NullGraphicsInterface
 {
 public:
 	DirectX11Interface(HWND hwnd, bool minimalistContext = false);
@@ -27,12 +27,16 @@ public:
 	virtual void beginScene();
 	virtual void endScene();
 
+	// depth buffer
+	virtual void clearDepthBuffer();
+
 	// color
 	virtual void setColor(Color color);
 	virtual void setAlpha(float alpha);
 
 	// 2d primitive drawing
 	virtual void drawPixel(int x, int y);
+	virtual void drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type, const void *pixels);
 	virtual void drawLine(int x1, int y1, int x2, int y2);
 	virtual void drawLine(Vector2 pos1, Vector2 pos2);
 	virtual void drawRect(int x, int y, int width, int height);
@@ -56,9 +60,12 @@ public:
 	virtual void pushClipRect(McRect clipRect);
 	virtual void popClipRect();
 
+	// TODO: stencil buffer
+
 	// renderer settings
 	virtual void setClipping(bool enabled);
 	virtual void setBlending(bool enabled);
+	virtual void setBlendMode(BLEND_MODE blendMode);
 	virtual void setDepthBuffer(bool enabled);
 	virtual void setCulling(bool culling);
 	virtual void setAntialiasing(bool aa);
@@ -67,6 +74,11 @@ public:
 	// renderer actions
 	virtual void flush();
 	virtual std::vector<unsigned char> getScreenshot();
+
+	// renderer info
+	virtual Vector2 getResolution() const {return m_vResolution;}
+
+	// TODO: other getters
 
 	// device settings
 	virtual void setVSync(bool vsync);
@@ -80,6 +92,7 @@ public:
 	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
 	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
+	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory);
 
 	// ILLEGAL:
 	inline bool isReady() const {return m_bReady;}
@@ -106,6 +119,8 @@ private:
 	ID3D11DeviceContext *m_deviceContext;
 	IDXGISwapChain *m_swapChain;
 	ID3D11RenderTargetView *m_frameBuffer;
+	ID3D11Texture2D *m_frameBufferDepthStencilTexture;
+	ID3D11DepthStencilView *m_frameBufferDepthStencilView;
 
 	// renderer
 	bool m_bIsFullscreen;
