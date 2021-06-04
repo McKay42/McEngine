@@ -14,6 +14,7 @@ class McRect
 {
 public:
 	McRect(float x = 0, float y = 0, float width = 0, float height = 0, bool isCentered = false);
+	McRect(Vector2 pos, Vector2 size, bool isCentered = false);
 
 	void set(float x, float y, float width, float height, bool isCentered = false);
 
@@ -21,6 +22,9 @@ public:
 	McRect intersect(const McRect &rect) const;
 	bool intersects(const McRect &rect) const;
 	McRect Union(const McRect &rect) const;
+
+	inline Vector2 getPos() const {return Vector2(m_fMinX, m_fMinY);}
+	inline Vector2 getSize() const {return Vector2(m_fMaxX - m_fMinX, m_fMaxY - m_fMinY);}
 
 	inline float getX() const {return m_fMinX;}
 	inline float getY() const {return m_fMinY;}

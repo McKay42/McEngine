@@ -63,6 +63,7 @@ public:
 	// renderer settings
 	virtual void setClipping(bool enabled);
 	virtual void setBlending(bool enabled);
+	virtual void setBlendMode(BLEND_MODE blendMode);
 	virtual void setDepthBuffer(bool enabled);
 	virtual void setCulling(bool culling);
 	virtual void setWireframe(bool enabled);

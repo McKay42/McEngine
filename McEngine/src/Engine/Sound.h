@@ -81,6 +81,9 @@ private:
 	float m_fVolume;
 	double m_fLastPlayTime;
 
+	// bass custom
+	float m_fActualSpeedForDisabledPitchCompensation;
+
 	// bass wasapi
 	char *m_wasapiSampleBuffer;
 	unsigned long long m_iWasapiSampleBufferSize;

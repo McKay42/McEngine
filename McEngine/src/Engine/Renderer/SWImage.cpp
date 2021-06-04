@@ -11,19 +11,20 @@
 #include "Environment.h"
 #include "Engine.h"
 
+#include "SWGraphicsInterface.h"
+
 SWImage::SWImage(UString filepath, bool mipmapped, bool keepInSystemMemory) : Image(filepath, mipmapped, keepInSystemMemory)
 {
-	// TODO:
+	m_iTextureUnitBackup = 0;
 }
 
 SWImage::SWImage(int width, int height, bool mipmapped, bool keepInSystemMemory) : Image(width, height, mipmapped, keepInSystemMemory)
 {
-	// TODO:
+	m_iTextureUnitBackup = 0;
 }
 
 void SWImage::init()
 {
-	// TODO:
 	if (m_bAsyncReady)
 		m_bReady = true;
 }
@@ -38,17 +39,17 @@ void SWImage::initAsync()
 
 void SWImage::destroy()
 {
-	// TODO:
+	m_rawImage = std::vector<unsigned char>();
 }
 
 void SWImage::bind(unsigned int textureUnit)
 {
-	// TODO:
+	((SWGraphicsInterface*)engine->getGraphics())->bindTexture(this, textureUnit);
 }
 
 void SWImage::unbind()
 {
-	// TODO:
+	((SWGraphicsInterface*)engine->getGraphics())->bindTexture(NULL, m_iTextureUnitBackup);
 }
 
 void SWImage::setFilterMode(Graphics::FILTER_MODE filterMode)

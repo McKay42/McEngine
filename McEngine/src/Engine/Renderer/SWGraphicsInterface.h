@@ -15,7 +15,10 @@ class SWGraphicsInterface : public Graphics
 public:
 	struct PIXEL
 	{
-		unsigned char b,g,r,a;
+		unsigned char b;
+		unsigned char g;
+		unsigned char r;
+		unsigned char a;
 	};
 
 public:
@@ -68,6 +71,7 @@ public:
 	// renderer settings
 	virtual void setClipping(bool enabled);
 	virtual void setBlending(bool enabled);
+	virtual void setBlendMode(BLEND_MODE blendMode);
 	virtual void setDepthBuffer(bool enabled);
 	virtual void setCulling(bool culling);
 	virtual void setAntialiasing(bool aa);
@@ -96,6 +100,9 @@ public:
 	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
 	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory);
 
+	// ILLEGAL:
+	void bindTexture(Image *image, unsigned int textureUnit);
+
 protected:
 	void init();
 
@@ -122,6 +129,9 @@ private:
 	// matrices
 	Matrix4 m_worldMatrix;
 	Matrix4 m_projectionMatrix;
+
+	// texturing
+	Image *m_boundTexture;
 };
 
 #endif

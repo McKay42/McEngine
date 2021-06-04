@@ -209,6 +209,10 @@ void VulkanGraphicsInterface::setBlending(bool enabled)
 {
 }
 
+void VulkanGraphicsInterface::setBlendMode(BLEND_MODE blendMode)
+{
+}
+
 void VulkanGraphicsInterface::setDepthBuffer(bool enabled)
 {
 }

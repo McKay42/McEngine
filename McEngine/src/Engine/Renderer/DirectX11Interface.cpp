@@ -5,6 +5,8 @@
 // $NoKeywords: $dx11i
 //===============================================================================//
 
+// TODO: fix resolution changes not working, general fullscreen/windowed switching bullshit
+
 #include "DirectX11Interface.h"
 
 #ifdef MCENGINE_FEATURE_DIRECTX
@@ -21,6 +23,8 @@
 
 #include "d3dx9math.h" // is there no modern version of this?
 
+#define MCENGINE_D3D11_CREATE_DEVICE_DEBUG
+
 DirectX11Interface::DirectX11Interface(HWND hwnd, bool minimalistContext) : NullGraphicsInterface()
 {
 	m_bReady = false;
@@ -32,6 +36,8 @@ DirectX11Interface::DirectX11Interface(HWND hwnd, bool minimalistContext) : Null
 	m_deviceContext = NULL;
 	m_swapChain = NULL;
 	m_frameBuffer = NULL;
+	m_frameBufferDepthStencilTexture = NULL;
+	m_frameBufferDepthStencilView = NULL;
 
 	// renderer
 	m_bIsFullscreen = false;
@@ -67,6 +73,12 @@ DirectX11Interface::~DirectX11Interface()
 
 		if (m_frameBuffer != NULL)
 			m_frameBuffer->Release();
+
+		if (m_frameBufferDepthStencilView != NULL)
+			m_frameBufferDepthStencilView->Release();
+
+		if (m_frameBufferDepthStencilTexture != NULL)
+			m_frameBufferDepthStencilTexture->Release();
 	}
 
 	if (m_device != NULL)
@@ -78,52 +90,60 @@ DirectX11Interface::~DirectX11Interface()
 
 void DirectX11Interface::init()
 {
-    // flags
-    UINT createDeviceFlags = 0;
-    createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED /*D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG*/;
+	// flags
+	UINT createDeviceFlags = 0;
+	createDeviceFlags = D3D11_CREATE_DEVICE_FLAG::D3D11_CREATE_DEVICE_SINGLETHREADED;
+
+#ifdef MCENGINE_D3D11_CREATE_DEVICE_DEBUG
+
+	createDeviceFlags |= D3D11_CREATE_DEVICE_FLAG::D3D11_CREATE_DEVICE_DEBUG;
+
+#endif
 
 	// feature levels
-    D3D_FEATURE_LEVEL featureLevels[] =
-    {
-        D3D_FEATURE_LEVEL_11_0,
-        D3D_FEATURE_LEVEL_10_1,
-        D3D_FEATURE_LEVEL_10_0,
-    };
-    UINT numFeatureLevels = _countof(featureLevels);
-    D3D_FEATURE_LEVEL featureLevelOut;
-
-    // TODO: proper fullscreen and automatic desktop mode detection
+	D3D_FEATURE_LEVEL featureLevels[] =
+	{
+		D3D_FEATURE_LEVEL_11_0,
+		D3D_FEATURE_LEVEL_10_1,
+		D3D_FEATURE_LEVEL_10_0,
+	};
+	const UINT numFeatureLevels = _countof(featureLevels);
 
 	// backbuffer descriptor
 	DXGI_MODE_DESC swapChainBufferDesc;
 	ZeroMemory(&swapChainBufferDesc, sizeof(DXGI_MODE_DESC));
-	swapChainBufferDesc.Width = (UINT)m_vResolution.x; // TODO:!!!
-	swapChainBufferDesc.Height = (UINT)m_vResolution.y; // TODO:!!!
-	swapChainBufferDesc.RefreshRate.Numerator = 144; // TODO:!!!
-	swapChainBufferDesc.RefreshRate.Denominator = 1;
-	swapChainBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapChainBufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	swapChainBufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	{
+		swapChainBufferDesc.Width = (UINT)m_vResolution.x;
+		swapChainBufferDesc.Height = (UINT)m_vResolution.y;
+		swapChainBufferDesc.RefreshRate.Numerator = 0; // TODO: use currently active refresh rate? (maybe 0 doesn't do what I think it does)
+		swapChainBufferDesc.RefreshRate.Denominator = 1;
+		swapChainBufferDesc.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM; // NOTE: DXGI_FORMAT_R8G8B8A8_UNORM has the broadest compatibility range
+		swapChainBufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER::DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+		swapChainBufferDesc.Scaling = DXGI_MODE_SCALING::DXGI_MODE_SCALING_UNSPECIFIED;
+	}
 
 	// swapchain descriptor
 	DXGI_SWAP_CHAIN_DESC swapChainDesc;
 	ZeroMemory(&swapChainDesc, sizeof(DXGI_SWAP_CHAIN_DESC));
-	swapChainDesc.BufferDesc = swapChainBufferDesc;
-	swapChainDesc.SampleDesc.Count = 1;
-	swapChainDesc.SampleDesc.Quality = 0;
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.BufferCount = 1;
-	swapChainDesc.OutputWindow = m_hwnd;
-	swapChainDesc.Windowed = TRUE;
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-	swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG::DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+	{
+		swapChainDesc.BufferDesc = swapChainBufferDesc;
+		swapChainDesc.SampleDesc.Count = 1;
+		swapChainDesc.SampleDesc.Quality = 0;
+		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		swapChainDesc.BufferCount = 1;
+		swapChainDesc.OutputWindow = m_hwnd;
+		swapChainDesc.Windowed = TRUE;
+		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD;
+		swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG::DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+	}
 
 	// create device + context + swapchain
 	HRESULT hr;
+	D3D_FEATURE_LEVEL featureLevelOut;
 	if (m_bMinimalistContext)
-		hr = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevels, numFeatureLevels, D3D11_SDK_VERSION, &m_device, &featureLevelOut, &m_deviceContext);
+		hr = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE::D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevels, numFeatureLevels, D3D11_SDK_VERSION, &m_device, &featureLevelOut, &m_deviceContext);
 	else
-		hr = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevels, numFeatureLevels, D3D11_SDK_VERSION, &swapChainDesc, &m_swapChain, &m_device, &featureLevelOut, &m_deviceContext);
+		hr = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE::D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevels, numFeatureLevels, D3D11_SDK_VERSION, &swapChainDesc, &m_swapChain, &m_device, &featureLevelOut, &m_deviceContext);
 
 	if (FAILED(hr))
 	{
@@ -149,11 +169,13 @@ void DirectX11Interface::init()
 	}
 
 	// disable hardcoded DirectX ALT + ENTER fullscreen toggle functionality (this is instead handled by the engine internally)
+	// disable dxgi interfering with mode changes and WndProc (again, handled by the engine internally)
 	{
 		IDXGIFactory1 *pFactory = NULL;
 		if (SUCCEEDED(m_swapChain->GetParent(__uuidof(IDXGIFactory1), (void **)&pFactory)))
 		{
 			pFactory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_ALT_ENTER);
+			pFactory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_WINDOW_CHANGES);
 			pFactory->Release();
 		}
 		else
@@ -161,64 +183,68 @@ void DirectX11Interface::init()
 	}
 
 	// default rasterizer settings
-	m_rasterizerDesc.FillMode = D3D11_FILL_MODE::D3D11_FILL_SOLID;
-	m_rasterizerDesc.CullMode = D3D11_CULL_MODE::D3D11_CULL_NONE;
-	m_rasterizerDesc.FrontCounterClockwise = FALSE;
-	m_rasterizerDesc.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
-	m_rasterizerDesc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
-	m_rasterizerDesc.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-	m_rasterizerDesc.DepthClipEnable = TRUE; // z clipping, not depth buffer!
-	m_rasterizerDesc.ScissorEnable = FALSE;
-	m_rasterizerDesc.MultisampleEnable = FALSE;
-	m_rasterizerDesc.AntialiasedLineEnable = FALSE;
-
+	{
+		m_rasterizerDesc.FillMode = D3D11_FILL_MODE::D3D11_FILL_SOLID;
+		m_rasterizerDesc.CullMode = D3D11_CULL_MODE::D3D11_CULL_NONE;
+		m_rasterizerDesc.FrontCounterClockwise = FALSE;
+		m_rasterizerDesc.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
+		m_rasterizerDesc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
+		m_rasterizerDesc.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+		m_rasterizerDesc.DepthClipEnable = TRUE; // (clipping, not depth buffer!)
+		m_rasterizerDesc.ScissorEnable = FALSE;
+		m_rasterizerDesc.MultisampleEnable = FALSE;
+		m_rasterizerDesc.AntialiasedLineEnable = FALSE;
+	}
 	m_device->CreateRasterizerState(&m_rasterizerDesc, &m_rasterizerState);
 	m_deviceContext->RSSetState(m_rasterizerState);
 
 	// default depthStencil settings
-	m_depthStencilDesc.DepthEnable = FALSE;
-	m_depthStencilDesc.StencilEnable = FALSE;
-	m_depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK::D3D11_DEPTH_WRITE_MASK_ZERO;
-	m_depthStencilDesc.DepthFunc = D3D11_COMPARISON_FUNC::D3D11_COMPARISON_LESS;
-	m_depthStencilDesc.StencilReadMask = 0;		// see OMSetDepthStencilState()
-	m_depthStencilDesc.StencilWriteMask = 0;	// see OMSetDepthStencilState()
+	{
+		m_depthStencilDesc.DepthEnable = FALSE;
+		m_depthStencilDesc.StencilEnable = FALSE;
+		m_depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK::D3D11_DEPTH_WRITE_MASK_ZERO;
+		m_depthStencilDesc.DepthFunc = D3D11_COMPARISON_FUNC::D3D11_COMPARISON_LESS;
+		m_depthStencilDesc.StencilReadMask = 0;		// see OMSetDepthStencilState()
+		m_depthStencilDesc.StencilWriteMask = 0;	// see OMSetDepthStencilState()
 
-	// TODO: correct default settings for stencil stuff here
-	D3D11_DEPTH_STENCILOP_DESC depthStencilFrontFaceOpDesc;
-	depthStencilFrontFaceOpDesc.StencilFailOp = D3D11_STENCIL_OP::D3D11_STENCIL_OP_ZERO;
-	depthStencilFrontFaceOpDesc.StencilDepthFailOp = D3D11_STENCIL_OP::D3D11_STENCIL_OP_ZERO;
-	depthStencilFrontFaceOpDesc.StencilPassOp = D3D11_STENCIL_OP::D3D11_STENCIL_OP_ZERO;
-	depthStencilFrontFaceOpDesc.StencilFunc = D3D11_COMPARISON_FUNC::D3D11_COMPARISON_ALWAYS;
-	m_depthStencilDesc.FrontFace = depthStencilFrontFaceOpDesc;
+		// stencil front
+		D3D11_DEPTH_STENCILOP_DESC depthStencilFrontFaceOpDesc;
+		depthStencilFrontFaceOpDesc.StencilFailOp = D3D11_STENCIL_OP::D3D11_STENCIL_OP_ZERO;
+		depthStencilFrontFaceOpDesc.StencilDepthFailOp = D3D11_STENCIL_OP::D3D11_STENCIL_OP_ZERO;
+		depthStencilFrontFaceOpDesc.StencilPassOp = D3D11_STENCIL_OP::D3D11_STENCIL_OP_ZERO;
+		depthStencilFrontFaceOpDesc.StencilFunc = D3D11_COMPARISON_FUNC::D3D11_COMPARISON_ALWAYS;
+		m_depthStencilDesc.FrontFace = depthStencilFrontFaceOpDesc;
 
-	D3D11_DEPTH_STENCILOP_DESC depthStencilBackFaceOpDesc;
-	depthStencilBackFaceOpDesc.StencilFailOp = D3D11_STENCIL_OP::D3D11_STENCIL_OP_ZERO;
-	depthStencilBackFaceOpDesc.StencilDepthFailOp = D3D11_STENCIL_OP::D3D11_STENCIL_OP_ZERO;
-	depthStencilBackFaceOpDesc.StencilPassOp = D3D11_STENCIL_OP::D3D11_STENCIL_OP_ZERO;
-	depthStencilBackFaceOpDesc.StencilFunc = D3D11_COMPARISON_FUNC::D3D11_COMPARISON_ALWAYS;
-	m_depthStencilDesc.BackFace = depthStencilBackFaceOpDesc;
-
+		// stencil back
+		D3D11_DEPTH_STENCILOP_DESC depthStencilBackFaceOpDesc;
+		depthStencilBackFaceOpDesc.StencilFailOp = D3D11_STENCIL_OP::D3D11_STENCIL_OP_ZERO;
+		depthStencilBackFaceOpDesc.StencilDepthFailOp = D3D11_STENCIL_OP::D3D11_STENCIL_OP_ZERO;
+		depthStencilBackFaceOpDesc.StencilPassOp = D3D11_STENCIL_OP::D3D11_STENCIL_OP_ZERO;
+		depthStencilBackFaceOpDesc.StencilFunc = D3D11_COMPARISON_FUNC::D3D11_COMPARISON_ALWAYS;
+		m_depthStencilDesc.BackFace = depthStencilBackFaceOpDesc;
+	}
 	m_device->CreateDepthStencilState(&m_depthStencilDesc, &m_depthStencilState);
 	m_deviceContext->OMSetDepthStencilState(m_depthStencilState, 0); // for 0 see StencilReadMask, StencilWriteMask
 
 	// default blending settings
-	ZeroMemory(&m_blendDesc, sizeof(D3D11_BLEND_DESC));
-	m_blendDesc.AlphaToCoverageEnable = FALSE;
-	m_blendDesc.IndependentBlendEnable = FALSE;
+	{
+		ZeroMemory(&m_blendDesc, sizeof(D3D11_BLEND_DESC));
+		m_blendDesc.AlphaToCoverageEnable = FALSE;
+		m_blendDesc.IndependentBlendEnable = FALSE;
 
-	m_blendDesc.RenderTarget[0].BlendEnable = true;
-	m_blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE::D3D11_COLOR_WRITE_ENABLE_ALL;
+		m_blendDesc.RenderTarget[0].BlendEnable = true;
+		m_blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE::D3D11_COLOR_WRITE_ENABLE_ALL;
 
-	m_blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND::D3D11_BLEND_SRC_ALPHA;
-	m_blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND::D3D11_BLEND_INV_SRC_ALPHA;
-	m_blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD;
+		m_blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND::D3D11_BLEND_SRC_ALPHA;
+		m_blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND::D3D11_BLEND_INV_SRC_ALPHA;
+		m_blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD;
 
-	m_blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND::D3D11_BLEND_SRC_ALPHA;
-	m_blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND::D3D11_BLEND_INV_SRC_ALPHA;
-	m_blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD;
-
+		m_blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND::D3D11_BLEND_SRC_ALPHA;
+		m_blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND::D3D11_BLEND_INV_SRC_ALPHA;
+		m_blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD;
+	}
 	m_device->CreateBlendState(&m_blendDesc, &m_blendState);
-	m_deviceContext->OMSetBlendState(m_blendState, NULL, 0xffffffff);
+	m_deviceContext->OMSetBlendState(m_blendState, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
 	// create default shader
 	UString vertexShader =
@@ -250,13 +276,13 @@ void DirectX11Interface::init()
 		"VS_OUTPUT vsmain(in VS_INPUT In)\n"
 		"{\n"
 		"	VS_OUTPUT Out;"
+		"	In.pos.w = 1.0f;\n"
 		"	Out.pos = mul(In.pos, mvp);\n"
 		"	Out.col = In.col;\n"
 		"	Out.misc = misc;\n"
 		"	Out.tex = In.tex;\n"
 		"	return Out;\n"
 		"}\n";
-
 
 	UString pixelShader =
 		"Texture2D tex2D;\n"
@@ -300,13 +326,14 @@ void DirectX11Interface::init()
 
 	// dynamic vertexbuffer
 	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	bufferDesc.ByteWidth = sizeof(SimpleVertex) * 512;
-	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	bufferDesc.MiscFlags = 0;
-	bufferDesc.StructureByteStride = 0;
-
+	{
+		bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+		bufferDesc.ByteWidth = sizeof(SimpleVertex) * 16384; // TODO: hardcoded shit
+		bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		bufferDesc.MiscFlags = 0;
+		bufferDesc.StructureByteStride = 0;
+	}
 	if (FAILED(m_device->CreateBuffer(&bufferDesc, NULL, &m_vertexBuffer)))
 		engine->showMessageError("DirectX Error", "Couldn't CreateBuffer()!");
 
@@ -329,7 +356,10 @@ void DirectX11Interface::beginScene()
 
 	// clear
 	D3DXCOLOR clearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	m_deviceContext->ClearRenderTargetView(m_frameBuffer, clearColor);
+	if (m_frameBuffer != NULL)
+		m_deviceContext->ClearRenderTargetView(m_frameBuffer, clearColor);
+	if (m_frameBufferDepthStencilView != NULL)
+		m_deviceContext->ClearDepthStencilView(m_frameBufferDepthStencilView, D3D11_CLEAR_FLAG::D3D11_CLEAR_DEPTH | D3D11_CLEAR_FLAG::D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	// enable default shader
 	m_shaderTexturedGeneric->enable();
@@ -351,6 +381,7 @@ void DirectX11Interface::endScene()
 
 	// handle fullscreen state changes (1)
 	// lazy ensure fullscreen state is always restored, especially when switching between applications
+	/*
 	if (engine->hasFocus())
 	{
 		WINBOOL isActuallyFullscreen;
@@ -360,6 +391,43 @@ void DirectX11Interface::endScene()
 				m_swapChain->SetFullscreenState(TRUE, NULL);
 		}
 	}
+	*/
+
+	// aka checkErrors()
+#ifdef MCENGINE_D3D11_CREATE_DEVICE_DEBUG
+	{
+		ID3D11InfoQueue *debugInfoQueue;
+		if (SUCCEEDED(m_device->QueryInterface(__uuidof(ID3D11InfoQueue), (void **)&debugInfoQueue)))
+		{
+			UINT64 message_count = debugInfoQueue->GetNumStoredMessages();
+
+			for (UINT64 i=0; i<message_count; i++)
+			{
+				SIZE_T message_size = 0;
+				debugInfoQueue->GetMessage(i, NULL, &message_size);
+
+				D3D11_MESSAGE *message = (D3D11_MESSAGE*)malloc(message_size + 1);
+				memset((void*)message, '\0', message_size + 1);
+				if (SUCCEEDED(debugInfoQueue->GetMessage(i, message, &message_size)))
+					printf("DirectX11Debug: %s\n", message->pDescription);
+				else
+					debugLog("DirectX Error: Couldn't debugInfoQueue->GetMessage()\n");
+
+				free(message);
+			}
+
+			debugInfoQueue->ClearStoredMessages();
+		}
+		else
+			debugLog("DirectX Error: Couldn't m_device->QueryInterface( ID3D11InfoQueue )\n");
+	}
+#endif
+}
+
+void DirectX11Interface::clearDepthBuffer()
+{
+	if (m_frameBufferDepthStencilView != NULL)
+		m_deviceContext->ClearDepthStencilView(m_frameBufferDepthStencilView, D3D11_CLEAR_FLAG::D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
 void DirectX11Interface::setColor(Color color)
@@ -374,6 +442,7 @@ void DirectX11Interface::setAlpha(float alpha)
 {
 	m_color &= 0x00ffffff;
 	m_color |= ((int)(255.0f * alpha)) << 24;
+
 	setColor(m_color);
 }
 
@@ -383,7 +452,53 @@ void DirectX11Interface::drawPixel(int x, int y)
 
 	m_shaderTexturedGeneric->setUniform1f("misc", 0.0f); // disable texturing
 
-	// TODO: no points primitive
+	// build directx vertices
+	m_vertices.clear();
+	{
+		SimpleVertex v;
+		{
+			v.pos.x = x;
+			v.pos.y = y;
+			v.pos.z = 0.0f;
+
+			v.col = Vector4(COLOR_GET_Rf(m_color), COLOR_GET_Gf(m_color), COLOR_GET_Bf(m_color), COLOR_GET_Af(m_color));
+
+			v.tex.x = 0.0f;
+			v.tex.y = 0.0f;
+		}
+		m_vertices.push_back(v);
+	}
+
+	// upload everything to gpu
+	{
+		D3D11_MAPPED_SUBRESOURCE mappedResource;
+		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+		if (SUCCEEDED(m_deviceContext->Map(m_vertexBuffer, 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+		{
+			memcpy(mappedResource.pData, &m_vertices[0], std::min(sizeof(SimpleVertex) * 16384, sizeof(SimpleVertex) * m_vertices.size())); // TODO: hardcoded shit
+			m_deviceContext->Unmap(m_vertexBuffer, 0);
+		}
+		else
+		{
+			debugLog("DirectX Error: Couldn't Map() vertexbuffer!\n");
+			return;
+		}
+	}
+
+	// draw it
+	{
+		const UINT stride = sizeof(SimpleVertex);
+		const UINT offset = 0;
+
+		m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
+		m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+		m_deviceContext->Draw(m_vertices.size(), 0);
+	}
+}
+
+void DirectX11Interface::drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type, const void *pixels)
+{
+	// TODO: implement
 }
 
 void DirectX11Interface::drawLine(int x1, int y1, int x2, int y2)
@@ -392,9 +507,13 @@ void DirectX11Interface::drawLine(int x1, int y1, int x2, int y2)
 
 	m_shaderTexturedGeneric->setUniform1f("misc", 0.0f); // disable texturing
 
-	VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_LINES);
-	vao.addVertex(x1 + 0.5f, y1 + 0.5f);
-	vao.addVertex(x2 + 0.5f, y2 + 0.5f);
+	static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_LINES);
+	{
+		vao.empty();
+
+		vao.addVertex(x1 + 0.5f, y1 + 0.5f);
+		vao.addVertex(x2 + 0.5f, y2 + 0.5f);
+	}
 	drawVAO(&vao);
 }
 
@@ -429,11 +548,15 @@ void DirectX11Interface::fillRect(int x, int y, int width, int height)
 
 	m_shaderTexturedGeneric->setUniform1f("misc", 0.0f); // disable texturing
 
-	VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
-	vao.addVertex(x, y);
-	vao.addVertex(x, y + height);
-	vao.addVertex(x + width, y + height);
-	vao.addVertex(x + width, y);
+	static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+	{
+		vao.empty();
+
+		vao.addVertex(x, y);
+		vao.addVertex(x, y + height);
+		vao.addVertex(x + width, y + height);
+		vao.addVertex(x + width, y);
+	}
 	drawVAO(&vao);
 }
 
@@ -443,15 +566,19 @@ void DirectX11Interface::fillGradient(int x, int y, int width, int height, Color
 
 	m_shaderTexturedGeneric->setUniform1f("misc", 0.0f); // disable texturing
 
-	VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
-	vao.addVertex(x, y);
-	vao.addColor(topLeftColor);
-	vao.addVertex(x + width, y);
-	vao.addColor(topRightColor);
-	vao.addVertex(x + width, y + height);
-	vao.addColor(bottomRightColor);
-	vao.addVertex(x, y + height);
-	vao.addColor(bottomLeftColor);
+	static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+	{
+		vao.empty();
+
+		vao.addVertex(x, y);
+		vao.addColor(topLeftColor);
+		vao.addVertex(x + width, y);
+		vao.addColor(topRightColor);
+		vao.addVertex(x + width, y + height);
+		vao.addColor(bottomRightColor);
+		vao.addVertex(x, y + height);
+		vao.addColor(bottomLeftColor);
+	}
 	drawVAO(&vao);
 }
 
@@ -461,15 +588,19 @@ void DirectX11Interface::drawQuad(int x, int y, int width, int height)
 
 	m_shaderTexturedGeneric->setUniform1f("misc", 1.0f); // enable texturing
 
-	VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
-	vao.addVertex(x, y);
-	vao.addTexcoord(0, 0);
-	vao.addVertex(x, y + height);
-	vao.addTexcoord(0, 1);
-	vao.addVertex(x + width, y + height);
-	vao.addTexcoord(1, 1);
-	vao.addVertex(x + width, y);
-	vao.addTexcoord(1, 0);
+	static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+	{
+		vao.empty();
+
+		vao.addVertex(x, y);
+		vao.addTexcoord(0, 0);
+		vao.addVertex(x, y + height);
+		vao.addTexcoord(0, 1);
+		vao.addVertex(x + width, y + height);
+		vao.addTexcoord(1, 1);
+		vao.addVertex(x + width, y);
+		vao.addTexcoord(1, 0);
+	}
 	drawVAO(&vao);
 }
 
@@ -479,19 +610,23 @@ void DirectX11Interface::drawQuad(Vector2 topLeft, Vector2 topRight, Vector2 bot
 
 	m_shaderTexturedGeneric->setUniform1f("misc", 1.0f); // enable texturing
 
-	VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
-	vao.addVertex(topLeft.x, topLeft.y);
-	vao.addColor(topLeftColor);
-	vao.addTexcoord(0, 0);
-	vao.addVertex(bottomLeft.x, bottomLeft.y);
-	vao.addColor(bottomLeftColor);
-	vao.addTexcoord(0, 1);
-	vao.addVertex(bottomRight.x, bottomRight.y);
-	vao.addColor(bottomRightColor);
-	vao.addTexcoord(1, 1);
-	vao.addVertex(topRight.x, topRight.y);
-	vao.addColor(topRightColor);
-	vao.addTexcoord(1, 0);
+	static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+	{
+		vao.empty();
+
+		vao.addVertex(topLeft.x, topLeft.y);
+		vao.addColor(topLeftColor);
+		vao.addTexcoord(0, 0);
+		vao.addVertex(bottomLeft.x, bottomLeft.y);
+		vao.addColor(bottomLeftColor);
+		vao.addTexcoord(0, 1);
+		vao.addVertex(bottomRight.x, bottomRight.y);
+		vao.addColor(bottomRightColor);
+		vao.addTexcoord(1, 1);
+		vao.addVertex(topRight.x, topRight.y);
+		vao.addColor(topRightColor);
+		vao.addTexcoord(1, 0);
+	}
 	drawVAO(&vao);
 }
 
@@ -514,15 +649,19 @@ void DirectX11Interface::drawImage(Image *image)
 	float x = -width/2;
 	float y = -height/2;
 
-	VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
-	vao.addVertex(x, y);
-	vao.addTexcoord(0, 0);
-	vao.addVertex(x, y + height);
-	vao.addTexcoord(0, 1);
-	vao.addVertex(x + width, y + height);
-	vao.addTexcoord(1, 1);
-	vao.addVertex(x + width, y);
-	vao.addTexcoord(1, 0);
+	static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+	{
+		vao.empty();
+
+		vao.addVertex(x, y);
+		vao.addTexcoord(0, 0);
+		vao.addVertex(x, y + height);
+		vao.addTexcoord(0, 1);
+		vao.addVertex(x + width, y + height);
+		vao.addTexcoord(1, 1);
+		vao.addVertex(x + width, y);
+		vao.addTexcoord(1, 0);
+	}
 
 	image->bind();
 	{
@@ -557,7 +696,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	// if baked, then we can directly draw the buffer
 	if (vao->isReady())
 	{
-		// TODO:!!!
+		// TODO: baked vao drawing support
 		return;
 	}
 
@@ -568,7 +707,10 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 
 	if (vertices.size() < 2) return;
 
+	// TODO: optimize this piece of shit
+
 	// no support for quads, because fuck you
+	// no support for triangle fans, because fuck youuu
 	// rewrite all quads into triangles
 	std::vector<Vector3> finalVertices = vertices;
 	std::vector<std::vector<Vector2>> finalTexcoords = texcoords;
@@ -636,6 +778,41 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 			}
 		}
 	}
+	else if (primitive == Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN)
+	{
+		finalVertices.clear();
+		for (size_t t=0; t<finalTexcoords.size(); t++)
+		{
+			finalTexcoords[t].clear();
+		}
+		finalColors.clear();
+		primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES;
+
+		if (vertices.size() > 2)
+		{
+			for (size_t i=2; i<vertices.size(); i++)
+			{
+				finalVertices.push_back(vertices[0]);
+
+				finalVertices.push_back(vertices[i]);
+				finalVertices.push_back(vertices[i - 1]);
+
+				for (size_t t=0; t<texcoords.size(); t++)
+				{
+					finalTexcoords[t].push_back(texcoords[t][0]);
+					finalTexcoords[t].push_back(texcoords[t][i]);
+					finalTexcoords[t].push_back(texcoords[t][i - 1]);
+				}
+
+				if (colors.size() > 0)
+				{
+					finalColors.push_back(colors[clamp<int>(0, 0, maxColorIndex)]);
+					finalColors.push_back(colors[clamp<int>(i, 0, maxColorIndex)]);
+					finalColors.push_back(colors[clamp<int>(i - 1, 0, maxColorIndex)]);
+				}
+			}
+		}
+	}
 
 	// build directx vertices
 	m_vertices.clear();
@@ -662,41 +839,46 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	}
 
 	// upload everything to gpu
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-	if (SUCCEEDED(m_deviceContext->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 	{
-		memcpy(mappedResource.pData, &m_vertices[0], std::min(sizeof(SimpleVertex) * 512, sizeof(SimpleVertex) * m_vertices.size()));
-		m_deviceContext->Unmap(m_vertexBuffer, 0);
-	}
-	else
-	{
-		debugLog("DirectX Error: Couldn't Map() vertexbuffer!\n");
-		return;
+		D3D11_MAPPED_SUBRESOURCE mappedResource;
+		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+		if (SUCCEEDED(m_deviceContext->Map(m_vertexBuffer, 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+		{
+			memcpy(mappedResource.pData, &m_vertices[0], std::min(sizeof(SimpleVertex) * 16384, sizeof(SimpleVertex) * m_vertices.size())); // TODO: hardcoded shit
+			m_deviceContext->Unmap(m_vertexBuffer, 0);
+		}
+		else
+		{
+			debugLog("DirectX Error: Couldn't Map() vertexbuffer!\n");
+			return;
+		}
 	}
 
 	// draw it
-	const UINT stride = sizeof(SimpleVertex);
-	const UINT offset = 0;
+	{
+		const UINT stride = sizeof(SimpleVertex);
+		const UINT offset = 0;
 
-	m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
-	m_deviceContext->IASetPrimitiveTopology((D3D_PRIMITIVE_TOPOLOGY)primitiveToDirectX(primitive));
-	m_deviceContext->Draw(m_vertices.size(), 0);
+		m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
+		m_deviceContext->IASetPrimitiveTopology((D3D_PRIMITIVE_TOPOLOGY)primitiveToDirectX(primitive));
+		m_deviceContext->Draw(m_vertices.size(), 0);
+	}
 }
 
 void DirectX11Interface::setClipRect(McRect clipRect)
 {
 	if (r_debug_disable_cliprect->getBool()) return;
-	//if (m_bIs3DScene) return; // HACKHACK:TODO:
+	//if (m_bIs3DScene) return; // HACKHACK: TODO:
 
 	setClipping(true);
 
 	D3D11_RECT rect;
-	rect.left = clipRect.getMinX();
-	rect.top = clipRect.getMinY() - 1;
-	rect.right = clipRect.getMaxX();
-	rect.bottom = clipRect.getMaxY() - 1;
-
+	{
+		rect.left = clipRect.getMinX();
+		rect.top = clipRect.getMinY() - 1;
+		rect.right = clipRect.getMaxX();
+		rect.bottom = clipRect.getMaxY() - 1;
+	}
 	m_deviceContext->RSSetScissorRects(1, &rect);
 }
 
@@ -729,7 +911,7 @@ void DirectX11Interface::setClipping(bool enabled)
 	}
 
 	m_rasterizerState->Release();
-	m_rasterizerDesc.ScissorEnable = enabled ? TRUE : FALSE;
+	m_rasterizerDesc.ScissorEnable = (enabled ? TRUE : FALSE);
 	m_device->CreateRasterizerState(&m_rasterizerDesc, &m_rasterizerState);
 	m_deviceContext->RSSetState(m_rasterizerState);
 }
@@ -737,16 +919,75 @@ void DirectX11Interface::setClipping(bool enabled)
 void DirectX11Interface::setBlending(bool enabled)
 {
 	m_blendState->Release();
-	m_blendDesc.RenderTarget[0].BlendEnable = enabled ? TRUE : FALSE;
+	m_blendDesc.RenderTarget[0].BlendEnable = (enabled ? TRUE : FALSE);
 	m_device->CreateBlendState(&m_blendDesc, &m_blendState);
-	m_deviceContext->OMSetBlendState(m_blendState, NULL, 0xffffffff);
+	m_deviceContext->OMSetBlendState(m_blendState, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+}
+
+void DirectX11Interface::setBlendMode(BLEND_MODE blendMode)
+{
+	m_blendState->Release();
+	{
+		switch (blendMode)
+		{
+		case BLEND_MODE::BLEND_MODE_ALPHA:
+			{
+				m_blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND::D3D11_BLEND_SRC_ALPHA;
+				m_blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND::D3D11_BLEND_INV_SRC_ALPHA;
+				m_blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD;
+
+				m_blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND::D3D11_BLEND_SRC_ALPHA;
+				m_blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND::D3D11_BLEND_INV_SRC_ALPHA;
+				m_blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD;
+			}
+			break;
+
+		case BLEND_MODE::BLEND_MODE_ADDITIVE:
+			{
+				m_blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND::D3D11_BLEND_SRC_ALPHA;
+				m_blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND::D3D11_BLEND_ONE;
+				m_blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD;
+
+				m_blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND::D3D11_BLEND_SRC_ALPHA;
+				m_blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND::D3D11_BLEND_ONE;
+				m_blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD;
+			}
+			break;
+
+		case BLEND_MODE::BLEND_MODE_PREMUL_ALPHA:
+			{
+				m_blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND::D3D11_BLEND_SRC_ALPHA;
+				m_blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND::D3D11_BLEND_INV_SRC_ALPHA;
+				m_blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD;
+
+				m_blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND::D3D11_BLEND_ONE;
+				m_blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND::D3D11_BLEND_INV_SRC_ALPHA;
+				m_blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD;
+			}
+			break;
+
+		case BLEND_MODE::BLEND_MODE_PREMUL_COLOR:
+			{
+				m_blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND::D3D11_BLEND_ONE;
+				m_blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND::D3D11_BLEND_INV_SRC_ALPHA;
+				m_blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD;
+
+				m_blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND::D3D11_BLEND_ONE;
+				m_blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND::D3D11_BLEND_INV_SRC_ALPHA;
+				m_blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD;
+			}
+			break;
+		}
+	}
+	m_device->CreateBlendState(&m_blendDesc, &m_blendState);
+	m_deviceContext->OMSetBlendState(m_blendState, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
 void DirectX11Interface::setDepthBuffer(bool enabled)
 {
 	m_depthStencilState->Release();
-	m_depthStencilDesc.DepthEnable = enabled ? TRUE : FALSE;
-	m_depthStencilDesc.DepthWriteMask = enabled ? D3D11_DEPTH_WRITE_MASK::D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK::D3D11_DEPTH_WRITE_MASK_ZERO;
+	m_depthStencilDesc.DepthEnable = (enabled ? TRUE : FALSE);
+	m_depthStencilDesc.DepthWriteMask = (enabled ? D3D11_DEPTH_WRITE_MASK::D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK::D3D11_DEPTH_WRITE_MASK_ZERO);
 	m_device->CreateDepthStencilState(&m_depthStencilDesc, &m_depthStencilState);
 	m_deviceContext->OMSetDepthStencilState(m_depthStencilState, 0); // for 0 see StencilReadMask, StencilWriteMask
 }
@@ -754,7 +995,7 @@ void DirectX11Interface::setDepthBuffer(bool enabled)
 void DirectX11Interface::setCulling(bool culling)
 {
 	m_rasterizerState->Release();
-	m_rasterizerDesc.CullMode = culling ? D3D11_CULL_MODE::D3D11_CULL_BACK : D3D11_CULL_MODE::D3D11_CULL_NONE;
+	m_rasterizerDesc.CullMode = (culling ? D3D11_CULL_MODE::D3D11_CULL_BACK : D3D11_CULL_MODE::D3D11_CULL_NONE);
 	m_device->CreateRasterizerState(&m_rasterizerDesc, &m_rasterizerState);
 	m_deviceContext->RSSetState(m_rasterizerState);
 }
@@ -762,7 +1003,7 @@ void DirectX11Interface::setCulling(bool culling)
 void DirectX11Interface::setAntialiasing(bool aa)
 {
 	m_rasterizerState->Release();
-	m_rasterizerDesc.MultisampleEnable = aa ? TRUE : FALSE;
+	m_rasterizerDesc.MultisampleEnable = (aa ? TRUE : FALSE);
 	m_device->CreateRasterizerState(&m_rasterizerDesc, &m_rasterizerState);
 	m_deviceContext->RSSetState(m_rasterizerState);
 }
@@ -770,7 +1011,7 @@ void DirectX11Interface::setAntialiasing(bool aa)
 void DirectX11Interface::setWireframe(bool enabled)
 {
 	m_rasterizerState->Release();
-	m_rasterizerDesc.FillMode = enabled ? D3D11_FILL_MODE::D3D11_FILL_WIREFRAME : D3D11_FILL_MODE::D3D11_FILL_SOLID;
+	m_rasterizerDesc.FillMode = (enabled ? D3D11_FILL_MODE::D3D11_FILL_WIREFRAME : D3D11_FILL_MODE::D3D11_FILL_SOLID);
 	m_device->CreateRasterizerState(&m_rasterizerDesc, &m_rasterizerState);
 	m_deviceContext->RSSetState(m_rasterizerState);
 }
@@ -784,7 +1025,7 @@ std::vector<unsigned char> DirectX11Interface::getScreenshot()
 {
 	std::vector<unsigned char> result;
 
-	// TODO: screenshots
+	// TODO: screenshot support
 
 	return result;
 }
@@ -798,7 +1039,12 @@ void DirectX11Interface::onResolutionChange(Vector2 newResolution)
 {
 	m_vResolution = newResolution;
 
+	// TODO: when minimized and getting -> (0, 0) and onResolutionChanged(2, 2), then don't actually change the backbuffer size? seems wasteful. but could cause more bugs if fixed?
+
+	// TODO: engine->showMessageError() and others will break this entirely if they happen while fullscreen, fix that
+
 	// handle fullscreen state changes (2)
+	/*
 	if (m_bIsFullscreen != env->isFullscreen())
 	{
 		m_bIsFullscreen = env->isFullscreen();
@@ -815,24 +1061,69 @@ void DirectX11Interface::onResolutionChange(Vector2 newResolution)
 			env->setWindowPos(prevWindowPos.x, prevWindowPos.y);
 		}
 	}
+	*/
+
+	// TODO: second attempt at handling fullscreen switching
+	{
+		WINBOOL isActuallyFullscreen;
+		if (SUCCEEDED(m_swapChain->GetFullscreenState(&isActuallyFullscreen, NULL)))
+		{
+			m_bIsFullscreen = env->isFullscreen();
+
+			// TODO: this is buggy. the client area is not respected, so when constantly switching between windowed/fullscreen the window will keep moving down right
+			const Vector2 prevWindowPos = env->getWindowPos();
+
+			// NOTE: SetFullscreenState() always generates WM_SIZE, which is very annoying
+			bool fullscreenDidChange = false;
+			if (m_bIsFullscreen != (bool)isActuallyFullscreen)
+			{
+				fullscreenDidChange = true;
+				m_swapChain->SetFullscreenState((WINBOOL)m_bIsFullscreen, NULL);
+			}
+
+			// workaround by forcing another resize to the resolution we actually want
+			if (!m_bIsFullscreen && fullscreenDidChange)
+			{
+				env->setWindowSize(newResolution.x, newResolution.y);
+				env->setWindowPos(prevWindowPos.x, prevWindowPos.y);
+			}
+		}
+	}
 
 	// rebuild swapchain rendertarget + view
 	HRESULT hr;
 
 	// unset + release
-	m_deviceContext->OMSetRenderTargets(0, NULL, NULL);
-	if (m_frameBuffer != NULL)
-		m_frameBuffer->Release();
-
-	// resize
-	hr = m_swapChain->ResizeBuffers(0, (UINT)newResolution.x, (UINT)newResolution.y, DXGI_FORMAT_UNKNOWN, 0); // this preserves the existing format
-	if (FAILED(hr))
 	{
-		debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't ResizeBuffers(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
-		///return;
+		m_deviceContext->OMSetRenderTargets(0, NULL, NULL);
+
+		if (m_frameBuffer != NULL)
+		{
+			m_frameBuffer->Release();
+			m_frameBuffer = NULL;
+		}
+
+		if (m_frameBufferDepthStencilView != NULL)
+		{
+			m_frameBufferDepthStencilView->Release();
+			m_frameBufferDepthStencilView = NULL;
+		}
+
+		if (m_frameBufferDepthStencilTexture != NULL)
+		{
+			m_frameBufferDepthStencilTexture->Release();
+			m_frameBufferDepthStencilTexture = NULL;
+		}
 	}
 
-	// rebuild
+	// resize
+	// NOTE: when in fullscreen mode, use 0 as width/height (because they were set internally by SetFullscreenState())
+	// NOTE: DXGI_FORMAT_UNKNOWN preserves the existing format
+	hr = m_swapChain->ResizeBuffers(0, (m_bIsFullscreen ? 0 : (UINT)newResolution.x), (m_bIsFullscreen ? 0 : (UINT)newResolution.y), DXGI_FORMAT::DXGI_FORMAT_UNKNOWN, /*DXGI_SWAP_CHAIN_FLAG::DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH*/0);
+	if (FAILED(hr))
+		debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't ResizeBuffers(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+
+	// get new (automatically generated) backbuffer
 	ID3D11Texture2D *backBuffer;
 	hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
 	if (FAILED(hr))
@@ -841,26 +1132,82 @@ void DirectX11Interface::onResolutionChange(Vector2 newResolution)
 		return;
 	}
 
+	// read actual new width/height of backbuffer
+	{
+		D3D11_TEXTURE2D_DESC backBufferTextureDesc;
+		backBuffer->GetDesc(&backBufferTextureDesc);
+
+		// NOTE: force overwrite local resolution (even though it was just set at the start of onResolutionChange() here)
+		m_vResolution.x = (float)backBufferTextureDesc.Width;
+		m_vResolution.y = (float)backBufferTextureDesc.Height;
+	}
+
+	// and create new framebuffer from it
 	hr = m_device->CreateRenderTargetView(backBuffer, NULL, &m_frameBuffer);
+	backBuffer->Release(); // TODO: why is this here again? do we even really have to release that?
 	if (FAILED(hr))
 	{
 		debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateRenderTargetView(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
-		backBuffer->Release();
+		m_frameBuffer = NULL;
 		return;
 	}
-	backBuffer->Release();
 
-	m_deviceContext->OMSetRenderTargets(1, &m_frameBuffer, NULL);
+	// add new depth buffer
+	{
+		D3D11_TEXTURE2D_DESC depthStencilTextureDesc;
+		{
+			depthStencilTextureDesc.ArraySize = 1;
+			depthStencilTextureDesc.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_DEPTH_STENCIL;
+			depthStencilTextureDesc.CPUAccessFlags = 0;
+			depthStencilTextureDesc.Format = DXGI_FORMAT::DXGI_FORMAT_D24_UNORM_S8_UINT;
+			depthStencilTextureDesc.MipLevels = 1;
+			depthStencilTextureDesc.MiscFlags = 0;
+			depthStencilTextureDesc.SampleDesc.Count = 1;
+			depthStencilTextureDesc.SampleDesc.Quality = 0;
+			depthStencilTextureDesc.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT;
+			depthStencilTextureDesc.Width = (UINT)m_vResolution.x;
+			depthStencilTextureDesc.Height = (UINT)m_vResolution.y;
+		}
+
+		hr = m_device->CreateTexture2D(&depthStencilTextureDesc, NULL, &m_frameBufferDepthStencilTexture);
+		if (FAILED(hr))
+		{
+			debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateTexture2D(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+			m_frameBufferDepthStencilTexture = NULL;
+		}
+		else
+		{
+			D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+			{
+				depthStencilViewDesc.Format = depthStencilTextureDesc.Format;
+				depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION::D3D11_DSV_DIMENSION_TEXTURE2D;
+				depthStencilViewDesc.Flags = 0;
+				depthStencilViewDesc.Texture2D.MipSlice = 0;
+			}
+
+			hr = m_device->CreateDepthStencilView(m_frameBufferDepthStencilTexture, &depthStencilViewDesc, &m_frameBufferDepthStencilView);
+			if (FAILED(hr))
+			{
+				debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateDepthStencilView(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+				m_frameBufferDepthStencilView = NULL;
+			}
+		}
+	}
+
+	// use new framebuffer
+	m_deviceContext->OMSetRenderTargets(1, &m_frameBuffer, m_frameBufferDepthStencilView);
 
 	// rebuild viewport
 	D3D11_VIEWPORT viewport;
 	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
-	viewport.TopLeftX = 0;
-	viewport.TopLeftY = 0;
-	viewport.Width = m_vResolution.x;
-	viewport.Height = m_vResolution.y;
-	viewport.MinDepth = 0.0f;
-	viewport.MaxDepth = 1.0f;
+	{
+		viewport.TopLeftX = 0;
+		viewport.TopLeftY = 0;
+		viewport.Width = m_vResolution.x;
+		viewport.Height = m_vResolution.y;
+		viewport.MinDepth = 0.0f; // NOTE: between 0 and 1
+		viewport.MaxDepth = 1.0f; // NOTE: between 0 and 1
+	}
 	m_deviceContext->RSSetViewports(1, &viewport);
 }
 
@@ -889,6 +1236,13 @@ Shader *DirectX11Interface::createShaderFromSource(UString vertexShader, UString
 	return new DirectX11Shader(vertexShader, fragmentShader, true);
 }
 
+VertexArrayObject *DirectX11Interface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
+{
+	// TODO: implement DirectX11VertexArrayObject
+
+	return new VertexArrayObject(primitive, usage, keepInSystemMemory);
+}
+
 void DirectX11Interface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)
 {
 	m_projectionMatrix = projectionMatrix;
@@ -903,20 +1257,20 @@ int DirectX11Interface::primitiveToDirectX(Graphics::PRIMITIVE primitive)
 	switch (primitive)
 	{
 	case Graphics::PRIMITIVE::PRIMITIVE_LINES:
-		return D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
+		return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
 	case Graphics::PRIMITIVE::PRIMITIVE_LINE_STRIP:
-		return D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
+		return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
 	case Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES:
-		return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	case Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN:	// not available!
-		return D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
+		return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	case Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN:	// NOTE: not available! -------------------
+		return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
 	case Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_STRIP:
-		return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
-	case Graphics::PRIMITIVE::PRIMITIVE_QUADS:			// not available!
-		return D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
+		return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+	case Graphics::PRIMITIVE::PRIMITIVE_QUADS:			// NOTE: not available! -------------------
+		return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
 	}
 
-	return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 }
 
 #endif

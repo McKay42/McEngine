@@ -74,6 +74,14 @@ public:
 		FILTER_MODE_MIPMAP
 	};
 
+	enum class BLEND_MODE
+	{
+		BLEND_MODE_ALPHA,			// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) (default)
+		BLEND_MODE_ADDITIVE,		// glBlendFunc(GL_SRC_ALPHA, GL_ONE)
+		BLEND_MODE_PREMUL_ALPHA,	// glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
+		BLEND_MODE_PREMUL_COLOR,	// glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
+	};
+
 public:
 	Graphics();
 	virtual ~Graphics() {}
@@ -124,6 +132,7 @@ public:
 	// renderer settings
 	virtual void setClipping(bool enabled) = 0;
 	virtual void setBlending(bool enabled) = 0;
+	virtual void setBlendMode(BLEND_MODE blendMode) = 0;
 	virtual void setDepthBuffer(bool enabled) = 0;
 	virtual void setCulling(bool enabled) = 0;
 	virtual void setVSync(bool enabled) = 0;

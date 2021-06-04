@@ -18,6 +18,7 @@ DirectX11Image::DirectX11Image(UString filepath, bool mipmapped, bool keepInSyst
 {
 	m_texture = NULL;
 	m_shaderResourceView = NULL;
+	m_samplerState = NULL;
 
 	m_iTextureUnitBackup = 0;
 	m_prevShaderResourceView = NULL;
@@ -30,6 +31,7 @@ DirectX11Image::DirectX11Image(int width, int height, bool mipmapped, bool keepI
 {
 	m_texture = NULL;
 	m_shaderResourceView = NULL;
+	m_samplerState = NULL;
 
 	m_iTextureUnitBackup = 0;
 	m_prevShaderResourceView = NULL;
@@ -104,6 +106,32 @@ void DirectX11Image::init()
 			engine->showMessageError("Image Error", UString::format("DirectX Image error, couldn't CreateShaderResourceView(%ld, %x, %x) on file %s", hr, hr, MAKE_DXGI_HRESULT(hr), m_sFilePath.toUtf8()));
 			return;
 		}
+	}
+
+	// create sampler
+	{
+		ZeroMemory(&m_samplerDesc, sizeof(m_samplerDesc));
+
+		m_samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		m_samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+		m_samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+		m_samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+		m_samplerDesc.MinLOD = -D3D11_FLOAT32_MAX;
+		m_samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+		m_samplerDesc.MipLODBias = 0.0f;
+		m_samplerDesc.MaxAnisotropy = 1.0f;
+		m_samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		m_samplerDesc.BorderColor[0] = 1.0f;
+		m_samplerDesc.BorderColor[1] = 1.0f;
+		m_samplerDesc.BorderColor[2] = 1.0f;
+		m_samplerDesc.BorderColor[3] = 1.0f;
+	}
+	createOrUpdateSampler();
+	if (m_samplerState == NULL)
+	{
+		debugLog("DirectX Image Error: Couldn't CreateSamplerState() on file %s!\n");
+		engine->showMessageError("Image Error", UString::format("Couldn't CreateSamplerState() on file %s!", m_sFilePath.toUtf8()));
+		return;
 	}
 
 	m_bReady = true;
@@ -189,6 +217,8 @@ void DirectX11Image::bind(unsigned int textureUnit)
 
 	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShaderResources(textureUnit, 1, &m_shaderResourceView);
 
+	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetSamplers(textureUnit, 1, &m_samplerState);
+
 	// HACKHACK: TEMP:
 	((DirectX11Interface*)engine->getGraphics())->getShaderGeneric()->setUniform1f("misc", 1.0f); // enable texturing
 }
@@ -200,16 +230,60 @@ void DirectX11Image::unbind()
 	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShaderResources(m_iTextureUnitBackup, 1, &m_prevShaderResourceView); // restore
 }
 
+void DirectX11Image::createOrUpdateSampler()
+{
+	if (m_samplerState != NULL)
+	{
+		m_samplerState->Release();
+		m_samplerState = NULL;
+	}
+
+	((DirectX11Interface*)engine->getGraphics())->getDevice()->CreateSamplerState(&m_samplerDesc, &m_samplerState);
+}
+
 void DirectX11Image::setFilterMode(Graphics::FILTER_MODE filterMode)
 {
 	if (!m_bReady) return;
-	// TODO:
+
+	// TODO: where does D3D11_FILTER_TYPE come into play?
+
+	switch (filterMode)
+	{
+	case Graphics::FILTER_MODE::FILTER_MODE_NONE:
+		// TODO: fix with D3D11_FILTER_TYPE or something
+		m_samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+		break;
+	case Graphics::FILTER_MODE::FILTER_MODE_LINEAR:
+		m_samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		break;
+	case Graphics::FILTER_MODE::FILTER_MODE_MIPMAP:
+		// TODO: the name "FILTER_MODE_MIPMAP" is actually bad, should probably be FILTER_MODE_ANISOTROPIC? (i.e. GL_LINEAR_MIPMAP_LINEAR min should be default)
+		m_samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		break;
+	}
+
+	createOrUpdateSampler();
 }
 
 void DirectX11Image::setWrapMode(Graphics::WRAP_MODE wrapMode)
 {
 	if (!m_bReady) return;
-	// TODO:
+
+	switch (wrapMode)
+	{
+	case Graphics::WRAP_MODE::WRAP_MODE_CLAMP:
+		m_samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+		m_samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+		m_samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+		break;
+	case Graphics::WRAP_MODE::WRAP_MODE_REPEAT:
+		m_samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		m_samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		m_samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		break;
+	}
+
+	createOrUpdateSampler();
 }
 
 #endif

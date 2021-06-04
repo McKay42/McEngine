@@ -211,7 +211,9 @@ void DirectX11RenderTarget::drawRect(Graphics *g, int x, int y, int width, int h
 	{
 		g->setColor(m_color);
 
-		VertexArrayObject vao;
+		static VertexArrayObject vao;
+
+		vao.empty();
 
 		vao.addTexcoord(texCoordWidth0, texCoordHeight1);
 		vao.addVertex(x, y);

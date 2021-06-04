@@ -17,7 +17,6 @@
 #include "SWRenderTarget.h"
 #include "SWShader.h"
 
-
 SWGraphicsInterface::SWGraphicsInterface() : Graphics()
 {
 	// renderer
@@ -29,6 +28,9 @@ SWGraphicsInterface::SWGraphicsInterface() : Graphics()
 	m_color = 0xffffffff;
 	m_fClearZ = 1;
 	m_fZ = 1;
+
+	// texturing
+	m_boundTexture = NULL;
 }
 
 void SWGraphicsInterface::init()
@@ -98,10 +100,7 @@ void SWGraphicsInterface::drawPixels(int x, int y, int width, int height, Graphi
 
 void SWGraphicsInterface::drawPixel(int x, int y)
 {
-	updateTransform();
-
-	if (x < 0 || x > m_vResolution.x-1 || y < 0 || y > m_vResolution.y-1)
-		return;
+	if (x < 0 || x > m_vResolution.x-1 || y < 0 || y > m_vResolution.y-1) return;
 
 	const int index = x + (int)(y*m_vResolution.x);
 
@@ -119,6 +118,8 @@ void SWGraphicsInterface::drawPixel(int x, int y)
 
 void SWGraphicsInterface::drawLine(int x1, int y1, int x2, int y2)
 {
+	updateTransform();
+
 	// Bresenham's line algorithm
 	const bool steep = (std::abs(y2 - y1) > std::abs(x2 - x1));
 	if (steep)
@@ -145,9 +146,15 @@ void SWGraphicsInterface::drawLine(int x1, int y1, int x2, int y2)
 	for (int x=x1; x<maxX; x++)
 	{
 		if (steep)
-			drawPixel(y, x); // implicitly calls updateTransform()
+		{
+			Vector4 texel = m_worldMatrix * Vector4(y, x, 0, 1);
+			drawPixel(texel.x, texel.y);
+		}
 		else
-			drawPixel(x, y);
+		{
+			Vector4 texel = m_worldMatrix * Vector4(x, y, 0, 1);
+			drawPixel(texel.x, texel.y);
+		}
 
 		error -= dy;
 		if (error < 0)
@@ -188,11 +195,12 @@ void SWGraphicsInterface::fillRect(int x, int y, int width, int height)
 	updateTransform();
 
 	// TODO: make this faster
-	for (int xx=0; xx<width; xx++)
+	for (int yy=0; yy<height; yy++)
 	{
-		for (int yy=0; yy<height; yy++)
+		for (int xx=0; xx<width; xx++)
 		{
-			drawPixel(x + xx, y + yy);
+			Vector4 texel = m_worldMatrix * Vector4(x + xx, y + yy, 0, 1);
+			drawPixel(texel.x, texel.y);
 		}
 	}
 }
@@ -276,23 +284,30 @@ void SWGraphicsInterface::drawImage(Image *image)
 	float width = image->getWidth();
 	float height = image->getHeight();
 
-	float x = -width/2;
-	float y = -height/2;
+	float xPos = -width/2;
+	float yPos = -height/2;
 
-	// TODO:
-	Vector4 start = m_worldMatrix * Vector4(x,y,0,1);
-	Vector4 size = (m_worldMatrix * Vector4(x+width,y+height,0,1)) - start;
-	drawRect(start.x, start.y, size.x, size.y);
+	for (float y=0; y<height; y++)
+	{
+		for (float x=0; x<width; x++)
+		{
+			setColor(image->getPixel(x, y));
+
+			Vector4 texel = m_worldMatrix * Vector4(xPos + x, yPos + y, 0, 1);
+
+			drawPixel(texel.x, texel.y);
+		}
+	}
+
+	///drawRect(start.x, start.y, size.x, size.y);
 
 	image->unbind();
 
-	/*
-	if (r_debug_drawimage.getBool())
+	if (r_debug_drawimage->getBool())
 	{
 		setColor(0xbbff00ff);
-		drawRect(x, y, width, height);
+		drawRect(xPos, yPos, width, height);
 	}
-	*/
 }
 
 void SWGraphicsInterface::drawString(McFont *font, UString text)
@@ -418,6 +433,11 @@ void SWGraphicsInterface::setBlending(bool enabled)
 	// TODO:
 }
 
+void SWGraphicsInterface::setBlendMode(BLEND_MODE blendMode)
+{
+	// TODO:
+}
+
 void SWGraphicsInterface::setDepthBuffer(bool enabled)
 {
 	// TODO:
@@ -440,7 +460,7 @@ void SWGraphicsInterface::setWireframe(bool enabled)
 
 void SWGraphicsInterface::flush()
 {
-	// TODO:
+	// (nothing)
 }
 
 std::vector<unsigned char> SWGraphicsInterface::getScreenshot()
@@ -501,19 +521,22 @@ void SWGraphicsInterface::onResolutionChange(Vector2 newResolution)
 	m_vResolution = newResolution;
 
 	// rebuild viewport
-	if (m_backBuffer != NULL)
-		delete[] m_backBuffer;
-	m_backBuffer = new PIXEL[(int)(m_vResolution.x*m_vResolution.y)];
+	{
+		if (m_backBuffer != NULL)
+			delete[] m_backBuffer;
+
+		m_backBuffer = new PIXEL[(int)(m_vResolution.x*m_vResolution.y)];
+	}
 }
 
 Image *SWGraphicsInterface::createImage(UString filePath, bool mipmapped, bool keepInSystemMemory)
 {
-	return new SWImage(filePath, mipmapped, keepInSystemMemory);
+	return new SWImage(filePath, mipmapped, true); // NOTE: always keep in system memory
 }
 
 Image *SWGraphicsInterface::createImage(int width, int height, bool mipmapped, bool keepInSystemMemory)
 {
-	return new SWImage(width, height, mipmapped, keepInSystemMemory);
+	return new SWImage(width, height, mipmapped, true); // NOTE: always keep in system memory
 }
 
 RenderTarget *SWGraphicsInterface::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
@@ -533,7 +556,13 @@ Shader *SWGraphicsInterface::createShaderFromSource(UString vertexShader, UStrin
 
 VertexArrayObject *SWGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
-	return new VertexArrayObject(primitive, usage, keepInSystemMemory);
+	return new VertexArrayObject(primitive, usage, true); // NOTE: always keep in system memory
+}
+
+void SWGraphicsInterface::bindTexture(Image *image, unsigned int textureUnit)
+{
+	// TODO: support for multiple texture units
+	m_boundTexture = image;
 }
 
 void SWGraphicsInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)
