@@ -5,7 +5,10 @@
 // $NoKeywords: $
 //===============================================================================//
 
-// TODO: rewrite this clusterfuck
+// TODO: support SHIFT + LEFT/RIGHT selection adjustments
+// TODO: support CTRL + LEFT/RIGHT word caret jumping (to next space)
+// TODO: support both SHIFT + CTRL + LEFT/RIGHT selection word jumping
+// TODO: make scrolling anims fps independent
 
 #include "CBaseUITextbox.h"
 
@@ -15,9 +18,10 @@
 #include "Cursors.h"
 #include "ContextMenu.h"
 #include "ResourceManager.h"
+#include "ConVar.h"
 
-#define LINE_BLINKTIME 0.5
-#define TEXTADDX_BASE 3
+ConVar ui_textbox_caret_blink_time("ui_textbox_caret_blink_time", 0.5f);
+ConVar ui_textbox_text_offset_x("ui_textbox_text_offset_x", 3);
 
 CBaseUITextbox::CBaseUITextbox(float xPos, float yPos, float xSize, float ySize, UString name) : CBaseUIElement(xPos, yPos, xSize, ySize, name)
 {
@@ -34,7 +38,7 @@ CBaseUITextbox::CBaseUITextbox(float xPos, float yPos, float xSize, float ySize,
 	m_bDrawBackground = true;
 
 	m_iTextJustification = 0;
-	m_iTextAddX = TEXTADDX_BASE;
+	m_iTextAddX = ui_textbox_text_offset_x.getInt();
 	m_iTextAddY = 0;
 	m_fTextScrollAddX = 0;
 	m_iSelectX = 0;
@@ -81,6 +85,7 @@ void CBaseUITextbox::draw(Graphics *g)
 	}
 
 	// draw text
+
 	if (m_font == NULL) return;
 
 	g->pushClipRect(McRect(m_vPos.x + 1, m_vPos.y + 1, m_vSize.x - 1, m_vSize.y));
@@ -88,9 +93,10 @@ void CBaseUITextbox::draw(Graphics *g)
 		// draw selection box
 		if (hasSelectedText())
 		{
+			const int xpos1 = m_vPos.x + m_iTextAddX + m_iCaretX + m_fTextScrollAddX;
+			const int xpos2 = m_vPos.x + m_iSelectX + m_iTextAddX + m_fTextScrollAddX;
+
 			g->setColor(0xff56bcff);
-			int xpos1 = m_vPos.x + m_iTextAddX + m_iCaretX + m_fTextScrollAddX;
-			int xpos2 = m_vPos.x + m_iSelectX + m_iTextAddX + m_fTextScrollAddX;
 			if (xpos1 > xpos2)
 				g->fillRect(xpos2, m_vPos.y + 1, xpos1 - xpos2 + 2, m_vSize.y - 1);
 			else
@@ -100,14 +106,14 @@ void CBaseUITextbox::draw(Graphics *g)
 		// draw caret
 		if (m_bActive && m_bLine)
 		{
-			g->setColor(m_caretColor);
 			const int caretWidth = std::round((float)m_iCaretWidth * dpiScale);
 			const int height = std::round(m_vSize.y - 2*3 * dpiScale);
 			const float yadd = std::round(height / 2.0f);
+
+			g->setColor(m_caretColor);
 			g->fillRect((int)(m_vPos.x + m_iTextAddX + m_iCaretX + m_fTextScrollAddX), (int)(m_vPos.y + m_vSize.y/2.0f - yadd), caretWidth, height);
 		}
 
-		// draw text
 		drawText(g);
 	}
 	g->popClipRect();
@@ -140,43 +146,49 @@ void CBaseUITextbox::update()
 	if ((m_bMouseInside || (m_bBusy && (mleft || mright))) && (m_bActive || (!mleft && !mright)) && m_bEnabled)
 		engine->getMouse()->setCursorType(CURSORTYPE::CURSOR_TEXT);
 
-	// update carret
-	if ((engine->getTime() - m_fLinetime) >= LINE_BLINKTIME && !m_bLine && m_bActive)
+	// update caret blinking
 	{
-		m_bLine = true;
-		m_fLinetime = engine->getTime();
-	}
+		if (!m_bActive)
+		{
+			m_bLine = true;
+			m_fLinetime = engine->getTime();
+		}
+		else
+		{
+			if ((engine->getTime() - m_fLinetime) >= ui_textbox_caret_blink_time.getFloat() && !m_bLine)
+			{
+				m_bLine = true;
+				m_fLinetime = engine->getTime();
+			}
 
-	if ((engine->getTime() - m_fLinetime) >= LINE_BLINKTIME && m_bLine && m_bActive)
-	{
-		m_bLine = false;
-		m_fLinetime = engine->getTime();
-	}
-
-	if (!m_bActive && !m_bActive)
-	{
-		m_bLine = true;
-		m_fLinetime = engine->getTime();
+			if ((engine->getTime() - m_fLinetime) >= ui_textbox_caret_blink_time.getFloat() && m_bLine)
+			{
+				m_bLine = false;
+				m_fLinetime = engine->getTime();
+			}
+		}
 	}
 
 	// handle mouse input
-	if (!m_bMouseInside && mleft && !m_bActive)
-		m_bBlockMouse = true;
-
-	if (m_bMouseInside && (mleft || mright) && m_bActive)
 	{
-		m_bCatchMouse = true;
-		tickCaret();
+		if (!m_bMouseInside && mleft && !m_bActive)
+			m_bBlockMouse = true;
 
-		if (mright)
-			m_bContextMouse = true;
-	}
+		if (m_bMouseInside && (mleft || mright) && m_bActive)
+		{
+			m_bCatchMouse = true;
+			tickCaret();
 
-	if (!mleft)
-	{
-		m_bCatchMouse = false;
-		m_bBlockMouse = false;
-		m_bSelectCheck = false;
+			if (mright)
+				m_bContextMouse = true;
+		}
+
+		if (!mleft)
+		{
+			m_bCatchMouse = false;
+			m_bBlockMouse = false;
+			m_bSelectCheck = false;
+		}
 	}
 
 	// handle selecting and scrolling
@@ -195,18 +207,18 @@ void CBaseUITextbox::update()
 				{
 					const int scrollspeed = mouseX < 0 ? std::abs(mouseX)/2 + 1 : 3;
 
-					// TODO:
-					m_fTextScrollAddX = clamp<int>(m_fTextScrollAddX + scrollspeed, 0, m_fTextWidth - m_vSize.x + TEXTADDX_BASE*2);
-					///animation->moveSmoothEnd(&m_fTextScrollAddX, clampi(m_fTextScrollAddX+scrollspeed, 0, m_fTextWidth-m_vSize.x+TEXTADDX_BASE*2), 1);
+					// TODO: animations which don't suck for usability
+					m_fTextScrollAddX = clamp<int>(m_fTextScrollAddX + scrollspeed, 0, m_fTextWidth - m_vSize.x + ui_textbox_text_offset_x.getInt()*2);
+					///animation->moveSmoothEnd(&m_fTextScrollAddX, clampi(m_fTextScrollAddX+scrollspeed, 0, m_fTextWidth-m_vSize.x+ui_textbox_text_offset_x.getInt()*2), 1);
 				}
 
 				if (mouseX > m_vSize.x*0.85f)
 				{
 					const int scrollspeed = mouseX > m_vSize.x ? std::abs(mouseX - m_vSize.x)/2 + 1 : 1;
 
-					// TODO:
-					m_fTextScrollAddX = clamp<int>(m_fTextScrollAddX - scrollspeed, 0, m_fTextWidth - m_vSize.x + TEXTADDX_BASE*2);
-					///animation->moveSmoothEnd(&m_fTextScrollAddX, clampi(m_fTextScrollAddX-scrollspeed, 0, m_fTextWidth-m_vSize.x+TEXTADDX_BASE*2), 1);
+					// TODO: animations which don't suck for usability
+					m_fTextScrollAddX = clamp<int>(m_fTextScrollAddX - scrollspeed, 0, m_fTextWidth - m_vSize.x + ui_textbox_text_offset_x.getInt()*2);
+					///animation->moveSmoothEnd(&m_fTextScrollAddX, clampi(m_fTextScrollAddX-scrollspeed, 0, m_fTextWidth-m_vSize.x+ui_textbox_text_offset_x.getInt()*2), 1);
 				}
 			}
 
@@ -235,7 +247,7 @@ void CBaseUITextbox::update()
 		}
 		else
 		{
-			if (m_iSelectStart-m_iSelectEnd == 0)
+			if (!hasSelectedText())
 			{
 				for (int i=0; i<=m_sText.length(); i++)
 				{
@@ -261,7 +273,7 @@ void CBaseUITextbox::update()
 			cmenu->addSeparator();
 			cmenu->addItem("Paste", 4);
 
-			if ((m_iSelectStart - m_iSelectEnd) != 0)
+			if (hasSelectedText())
 			{
 				cmenu->addItem("Copy", 3);
 				cmenu->addItem("Cut", 2);
@@ -274,22 +286,26 @@ void CBaseUITextbox::update()
 		switch (item)
 		{
 		case 5: // clear
-			this->clear();
+			clear();
 			break;
+
 		case 4: // paste
 			handleDeleteSelectedText();
 			insertTextFromClipboard();
 			break;
-		case 3:
+
+		case 3: // copy
 			//envDebugLog("selected copy text: %s\n",getSelectedText().toUtf8());
 			env->setClipBoardText(getSelectedText());
 			break;
-		case 2:
+
+		case 2: // cut
 			env->setClipBoardText(getSelectedText());
 			handleDeleteSelectedText();
 			//envDebugLog("selected cut text: %s\n",getSelectedText().toUtf8());
 			break;
-		case 1:
+
+		case 1: // delete
 			handleDeleteSelectedText();
 			break;
 		}
@@ -319,12 +335,15 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e)
 		}
 		tickCaret();
 		break;
-	case KEY_RETURN:	
+
+	case KEY_RETURN:
 		m_bHitenter = true;
 		break;
+
 	case KEY_ESCAPE:
 		m_bActive = false;
 		break;
+
 	case KEY_BACKSPACE:
 		if (m_sText.length() > 0)
 		{
@@ -362,44 +381,89 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e)
 		}
 		tickCaret();
 		break;
+
 	case KEY_LEFT:
-		m_iCaretPosition = clamp<int>(m_iCaretPosition - 1, 0, m_sText.length());
-		tickCaret();
-		handleCaretKeyboardMove();
-		updateCaretX();
+		{
+			const bool hadSelectedText = hasSelectedText();
+			const int prevSelectPos = std::min(m_iSelectStart, m_iSelectEnd);
+
+			deselectText();
+
+			if (!hadSelectedText)
+				m_iCaretPosition = clamp<int>(m_iCaretPosition - 1, 0, m_sText.length());
+			else
+				m_iCaretPosition = clamp<int>(prevSelectPos, 0, m_sText.length());
+
+			tickCaret();
+			handleCaretKeyboardMove();
+			updateCaretX();
+		}
 		break;
+
 	case KEY_RIGHT:
-		m_iCaretPosition = clamp<int>(m_iCaretPosition + 1, 0, m_sText.length());
-		tickCaret();
-		handleCaretKeyboardMove();
-		updateCaretX();
+		{
+			const bool hadSelectedText = hasSelectedText();
+			const int prevSelectPos = std::max(m_iSelectStart, m_iSelectEnd);
+
+			deselectText();
+
+			if (!hadSelectedText)
+				m_iCaretPosition = clamp<int>(m_iCaretPosition + 1, 0, m_sText.length());
+			else
+				m_iCaretPosition = clamp<int>(prevSelectPos, 0, m_sText.length());
+
+			tickCaret();
+			handleCaretKeyboardMove();
+			updateCaretX();
+		}
 		break;
+
 	case KEY_C:
 		if (engine->getKeyboard()->isControlDown())
 			env->setClipBoardText(getSelectedText());
 		break;
+
 	case KEY_V:
 		if (engine->getKeyboard()->isControlDown())
 			insertTextFromClipboard();
 		break;
+
 	case KEY_A:
 		if (engine->getKeyboard()->isControlDown())
 		{
 			// HACKHACK: make proper setSelectedText() function
 			m_iSelectStart = 0;
 			m_iSelectEnd = m_sText.length();
+
 			m_iCaretPosition = m_iSelectEnd;
 			m_iSelectX = m_font->getStringWidth(m_sText);
 			m_iCaretX = 0;
-			m_fTextScrollAddX = m_fTextWidth < m_vSize.x ? 0 : m_fTextWidth - m_vSize.x + TEXTADDX_BASE*2;
+			m_fTextScrollAddX = m_fTextWidth < m_vSize.x ? 0 : m_fTextWidth - m_vSize.x + ui_textbox_text_offset_x.getInt()*2;
 		}
 		break;
+
 	case KEY_X:
 		if (engine->getKeyboard()->isControlDown() && hasSelectedText())
 		{
 			env->setClipBoardText(getSelectedText());
 			handleDeleteSelectedText();
 		}
+		break;
+
+	case KEY_HOME:
+		deselectText();
+		m_iCaretPosition = 0;
+		tickCaret();
+		handleCaretKeyboardMove();
+		updateCaretX();
+		break;
+
+	case KEY_END:
+		deselectText();
+		m_iCaretPosition = m_sText.length();
+		tickCaret();
+		handleCaretKeyboardMove();
+		updateCaretX();
 		break;
 	}
 }
@@ -411,19 +475,21 @@ void CBaseUITextbox::onChar(KeyboardEvent &e)
 	e.consume();
 
 	// ignore any control characters, we only want text
+	// funny story: Windows 10 still has this bug even today, where when editing the name of any shortcut/folder on the desktop, hitting CTRL + BACKSPACE will insert an invalid character
 	if (e.getCharCode() < 32 || (engine->getKeyboard()->isControlDown() && !engine->getKeyboard()->isAltDown())) return;
 
-	// delete selected text
+	// delete any potentially selected text
 	handleDeleteSelectedText();
 
 	// add the pressed letter to the text
-	KEYCODE charCode = e.getCharCode();
-	///debugLog("charCode = %i\n", charCode);
-	UString stringChar = "";
-	stringChar.insert(0, charCode);
-	m_sText.insert(m_iCaretPosition, stringChar);
-	m_iCaretPosition++;
-	setText(m_sText);
+	{
+		const KEYCODE charCode = e.getCharCode();
+
+		m_sText.insert(m_iCaretPosition, (wchar_t)charCode);
+		m_iCaretPosition++;
+
+		setText(m_sText);
+	}
 
 	tickCaret();
 }
@@ -432,9 +498,9 @@ void CBaseUITextbox::handleCaretKeyboardMove()
 {
 	const int caretPosition = m_iTextAddX + m_font->getStringWidth(m_sText.substr(0, m_iCaretPosition)) + m_fTextScrollAddX;
 	if (caretPosition < 0)
-		m_fTextScrollAddX += std::abs(caretPosition) + TEXTADDX_BASE;
-	else if (caretPosition > (m_vSize.x - TEXTADDX_BASE))
-		m_fTextScrollAddX -= std::abs(caretPosition-m_vSize.x) + TEXTADDX_BASE;
+		m_fTextScrollAddX += std::abs(caretPosition) + ui_textbox_text_offset_x.getInt();
+	else if (caretPosition > (m_vSize.x - ui_textbox_text_offset_x.getInt()))
+		m_fTextScrollAddX -= std::abs(caretPosition-m_vSize.x) + ui_textbox_text_offset_x.getInt();
 }
 
 void CBaseUITextbox::handleCaretKeyboardDelete()
@@ -442,8 +508,8 @@ void CBaseUITextbox::handleCaretKeyboardDelete()
 	if (m_fTextWidth > m_vSize.x)
 	{
 		const int caretPosition = m_iTextAddX + m_font->getStringWidth(m_sText.substr(0, m_iCaretPosition)) + m_fTextScrollAddX;
-		if (caretPosition < (m_vSize.x - TEXTADDX_BASE))
-			m_fTextScrollAddX += std::abs(m_vSize.x - TEXTADDX_BASE - caretPosition);
+		if (caretPosition < (m_vSize.x - ui_textbox_text_offset_x.getInt()))
+			m_fTextScrollAddX += std::abs(m_vSize.x - ui_textbox_text_offset_x.getInt() - caretPosition);
 	}
 }
 
@@ -464,9 +530,23 @@ bool CBaseUITextbox::hitEnter()
 		return false;
 }
 
-bool CBaseUITextbox::hasSelectedText()
+bool CBaseUITextbox::hasSelectedText() const
 {
 	return ((m_iSelectStart - m_iSelectEnd) != 0);
+}
+
+void CBaseUITextbox::clear()
+{
+	deselectText();
+	setText("");
+}
+
+CBaseUITextbox *CBaseUITextbox::setFont(McFont *font)
+{
+	m_font = font;
+	setText(m_sText);
+
+	return this;
 }
 
 CBaseUITextbox *CBaseUITextbox::setText(UString text)
@@ -479,29 +559,30 @@ CBaseUITextbox *CBaseUITextbox::setText(UString text)
 	switch(m_iTextJustification)
 	{
 	case 0: // left
-		m_iTextAddX = TEXTADDX_BASE;
+		m_iTextAddX = ui_textbox_text_offset_x.getInt();
 		break;
+
 	case 1: // middle
 		m_iTextAddX = -(m_fTextWidth-m_vSize.x)/2.0f;
-		m_iTextAddX = m_iTextAddX > 0 ? m_iTextAddX : TEXTADDX_BASE;
+		m_iTextAddX = m_iTextAddX > 0 ? m_iTextAddX : ui_textbox_text_offset_x.getInt();
 		break;
+
 	case 2: // right
-		m_iTextAddX = (m_vSize.x - m_fTextWidth) - TEXTADDX_BASE;
-		m_iTextAddX = m_iTextAddX > 0 ? m_iTextAddX : TEXTADDX_BASE;
+		m_iTextAddX = (m_vSize.x - m_fTextWidth) - ui_textbox_text_offset_x.getInt();
+		m_iTextAddX = m_iTextAddX > 0 ? m_iTextAddX : ui_textbox_text_offset_x.getInt();
 		break;
 	}
 
 	// handle over-text
 	if (m_fTextWidth > m_vSize.x)
 	{
-		m_iTextAddX -= m_fTextWidth - m_vSize.x + TEXTADDX_BASE*2;
+		m_iTextAddX -= m_fTextWidth - m_vSize.x + ui_textbox_text_offset_x.getInt()*2;
 		handleCaretKeyboardMove();
 	}
 	else
 		m_fTextScrollAddX = 0;
 
-	// force stop animation, it will fuck shit up
-	// TODO:
+	// TODO: force stop animation, it will fuck shit up
 	///animation->moveSmoothEnd(&m_fTextScrollAddX, m_fTextScrollAddX, 0.1f);
 
 	// center vertically
@@ -513,20 +594,13 @@ CBaseUITextbox *CBaseUITextbox::setText(UString text)
 	return this;
 }
 
-CBaseUITextbox *CBaseUITextbox::setFont(McFont *font)
-{
-	m_font = font;
-	setText(m_sText);
-
-	return this;
-}
-
 void CBaseUITextbox::setCursorPosRight()
 {
 	m_iCaretPosition = m_sText.length();
-	updateCaretX();
-	tickCaret();
-
+	{
+		updateCaretX();
+		tickCaret();
+	}
 	m_fTextScrollAddX = 0;
 }
 
@@ -537,21 +611,20 @@ void CBaseUITextbox::updateCaretX()
 
 void CBaseUITextbox::handleDeleteSelectedText()
 {
-	if (!hasSelectedText())
-		return;
+	if (!hasSelectedText()) return;
 
-	const int len = m_iSelectStart < m_iSelectEnd ? m_iSelectEnd - m_iSelectStart : m_iSelectStart - m_iSelectEnd;
-	m_sText.erase(m_iSelectStart < m_iSelectEnd ? m_iSelectStart : m_iSelectEnd, len);
+	const int selectedTextLength = (m_iSelectStart < m_iSelectEnd ? m_iSelectEnd - m_iSelectStart : m_iSelectStart - m_iSelectEnd);
+	m_sText.erase(m_iSelectStart < m_iSelectEnd ? m_iSelectStart : m_iSelectEnd, selectedTextLength);
 
 	if (m_iSelectEnd > m_iSelectStart)
-		m_iCaretPosition -= len;
+		m_iCaretPosition -= selectedTextLength;
 
 	setText(m_sText);
 
 	// scroll back if empty white space
 	updateTextPos();
 
-	m_iSelectStart = m_iSelectEnd = 0;
+	deselectText();
 
 	setText(m_sText);
 }
@@ -571,9 +644,10 @@ void CBaseUITextbox::insertTextFromClipboard()
 	if (clipstring.length() > 0)
 	{
 		handleDeleteSelectedText();
-
-		m_sText.insert(m_iCaretPosition, clipstring);
-		m_iCaretPosition = m_iCaretPosition + clipstring.length();
+		{
+			m_sText.insert(m_iCaretPosition, clipstring);
+			m_iCaretPosition = m_iCaretPosition + clipstring.length();
+		}
 		setText(m_sText);
 	}
 }
@@ -582,52 +656,70 @@ void CBaseUITextbox::updateTextPos()
 {
 	if (m_iTextJustification == 0)
 	{
-		if ((m_iTextAddX + m_fTextScrollAddX) > TEXTADDX_BASE)
+		if ((m_iTextAddX + m_fTextScrollAddX) > ui_textbox_text_offset_x.getInt())
 		{
-			if ((m_iSelectStart - m_iSelectEnd != 0) && m_iCaretPosition == 0)
+			if (hasSelectedText() && m_iCaretPosition == 0)
 			{
-				// TODO:
-				m_fTextScrollAddX = TEXTADDX_BASE - m_iTextAddX;
-				///animation->moveSmoothEnd(&m_fTextScrollAddX, TEXTADDX_BASE - m_iTextAddX, 1);
+				// TODO: animations? don't like it as it is
+				m_fTextScrollAddX = ui_textbox_text_offset_x.getInt() - m_iTextAddX;
+				///animation->moveSmoothEnd(&m_fTextScrollAddX, ui_textbox_text_offset_x.getInt() - m_iTextAddX, 1);
 			}
 			else
-				m_fTextScrollAddX = TEXTADDX_BASE - m_iTextAddX;
+				m_fTextScrollAddX = ui_textbox_text_offset_x.getInt() - m_iTextAddX;
 		}
 	}
 }
 
+void CBaseUITextbox::deselectText()
+{
+	m_iSelectStart = 0;
+	m_iSelectEnd = 0;
+}
+
 UString CBaseUITextbox::getSelectedText()
 {
-	const int len = m_iSelectStart < m_iSelectEnd ? m_iSelectEnd - m_iSelectStart : m_iSelectStart - m_iSelectEnd;
+	const int selectedTextLength = (m_iSelectStart < m_iSelectEnd ? m_iSelectEnd - m_iSelectStart : m_iSelectStart - m_iSelectEnd);
 
-	if (len > 0)
-		return m_sText.substr(m_iSelectStart < m_iSelectEnd ? m_iSelectStart : m_iSelectEnd, len);
+	if (selectedTextLength > 0)
+		return m_sText.substr(m_iSelectStart < m_iSelectEnd ? m_iSelectStart : m_iSelectEnd, selectedTextLength);
 	else
 		return "";
 }
 
 void CBaseUITextbox::onResized()
 {
+	CBaseUIElement::onResized();
+
+	// HACKHACK: brute force fix layout
 	setText(m_sText);
 }
 
 void CBaseUITextbox::onMouseDownInside()
 {
+	CBaseUIElement::onMouseDownInside();
+
+	// force busy, can't drag scroll release (textbox requires full focus due to text selection)
 	m_bBusy = true;
 }
 
 void CBaseUITextbox::onMouseDownOutside()
 {
+	CBaseUIElement::onMouseDownOutside();
+
 	m_bBusy = false;
 	m_bActive = false;
 }
 
 void CBaseUITextbox::onMouseUpInside()
 {
+	CBaseUIElement::onMouseUpInside();
+
 	m_bBusy = false;
 }
 
 void CBaseUITextbox::onMouseUpOutside()
 {
+	CBaseUIElement::onMouseUpOutside();
+
 	m_bBusy = false;
 }

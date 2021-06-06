@@ -8,8 +8,6 @@
 #ifndef CBASEUITEXTBOX_H
 #define CBASEUITEXTBOX_H
 
-// TODO: rewrite this clusterfuck
-
 #include "CBaseUIElement.h"
 
 class McFont;
@@ -17,8 +15,8 @@ class McFont;
 class CBaseUITextbox : public CBaseUIElement
 {
 public:
-	CBaseUITextbox(float xPos=0, float yPos=0, float xSize=0, float ySize=0, UString name="");
-	virtual ~CBaseUITextbox(){;}
+	CBaseUITextbox(float xPos = 0.0f, float yPos = 0.0f, float xSize = 0.0f, float ySize = 0.0f, UString name = "");
+	virtual ~CBaseUITextbox() {;}
 
 	ELEMENT_BODY(CBaseUITextbox)
 
@@ -28,31 +26,35 @@ public:
 	virtual void onChar(KeyboardEvent &e);
 	virtual void onKeyDown(KeyboardEvent &e);
 
-	CBaseUITextbox *setDrawFrame(bool drawFrame){m_bDrawFrame = drawFrame; return this;}
-	CBaseUITextbox *setDrawBackground(bool drawBackground){m_bDrawBackground = drawBackground; return this;}
+	inline const UString getText() const {return m_sText;}
+	inline UString &getTextRef() {return m_sText;} // DEPRECATED
+	inline McFont *getFont() const {return m_font;}
 
-	CBaseUITextbox *setBackgroundColor(Color backgroundColor){m_backgroundColor = backgroundColor; return this;}
-	CBaseUITextbox *setTextColor(Color textColor){m_textColor = textColor; return this;}
-	CBaseUITextbox *setCaretColor(Color caretColor){m_caretColor = caretColor; return this;}
-	CBaseUITextbox *setFrameColor(Color frameColor){m_frameColor = frameColor; return this;}
+	CBaseUITextbox *setDrawFrame(bool drawFrame) {m_bDrawFrame = drawFrame; return this;}
+	CBaseUITextbox *setDrawBackground(bool drawBackground) {m_bDrawBackground = drawBackground; return this;}
+
+	CBaseUITextbox *setBackgroundColor(Color backgroundColor) {m_backgroundColor = backgroundColor; return this;}
+	CBaseUITextbox *setTextColor(Color textColor) {m_textColor = textColor; return this;}
+	CBaseUITextbox *setCaretColor(Color caretColor) {m_caretColor = caretColor; return this;}
+	CBaseUITextbox *setFrameColor(Color frameColor) {m_frameColor = frameColor; return this;}
 	CBaseUITextbox *setFrameBrightColor(Color frameBrightColor) {m_frameBrightColor = frameBrightColor; return this;}
 	CBaseUITextbox *setFrameDarkColor(Color frameDarkColor) {m_frameDarkColor = frameDarkColor; return this;}
 
-	virtual CBaseUITextbox *setText(UString text);
 	CBaseUITextbox *setFont(McFont *font);
 	CBaseUITextbox *setTextAddX(float textAddX) {m_iTextAddX = textAddX; return this;}
 	CBaseUITextbox *setCaretWidth(int caretWidth) {m_iCaretWidth = caretWidth; return this;}
-	CBaseUITextbox *setTextJustification(int textJustification) {m_iTextJustification = textJustification;setText(m_sText); return this;}
+	CBaseUITextbox *setTextJustification(int textJustification) {m_iTextJustification = textJustification; setText(m_sText); return this;}
+
+	virtual CBaseUITextbox *setText(UString text);
 
 	void setCursorPosRight();
 
-	inline const UString getText() const {return m_sText;}
-	inline UString &getTextRef() {return m_sText;}
-	inline McFont *getFont() const {return m_font;}
-
 	bool hitEnter();
-	bool hasSelectedText();
-	void clear() {m_iSelectStart = m_iSelectEnd = 0;setText("");}
+	bool hasSelectedText() const;
+	void clear();
+
+protected:
+	virtual void drawText(Graphics *g);
 
 	// events
 	virtual void onMouseDownInside();
@@ -60,9 +62,6 @@ public:
 	virtual void onMouseUpInside();
 	virtual void onMouseUpOutside();
 	virtual void onResized();
-
-protected:
-	virtual void drawText(Graphics *g);
 
 	void tickCaret();
 	void handleCaretKeyboardMove();
@@ -72,6 +71,7 @@ protected:
 	void handleDeleteSelectedText();
 	void insertTextFromClipboard();
 	void updateTextPos();
+	void deselectText();
 	UString getSelectedText();
 
 	UString m_sText;
@@ -106,7 +106,8 @@ protected:
 	bool m_bHitenter;
 
 	bool m_bSelectCheck;
-	int m_iSelectStart,m_iSelectEnd;
+	int m_iSelectStart;
+	int m_iSelectEnd;
 	int m_iSelectX;
 };
 
