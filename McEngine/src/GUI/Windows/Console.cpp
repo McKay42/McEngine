@@ -11,19 +11,19 @@
 #include "ConVar.h"
 #include "ResourceManager.h"
 
-#ifdef MCENGINE_FEATURE_MULTITHREADING
-
-#include <mutex>
-#include "WinMinGW.Mutex.h"
-
-#endif
-
 #include "CBaseUIContainer.h"
 #include "CBaseUITextbox.h"
 #include "CBaseUIScrollView.h"
 #include "CBaseUITextField.h"
 #include "CBaseUIButton.h"
 #include "CBaseUILabel.h"
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+#include <mutex>
+#include "WinMinGW.Mutex.h"
+
+#endif
 
 #define CFG_FOLDER "cfg/"
 
@@ -283,7 +283,7 @@ void Console::log(UString text, Color textColor)
 	logEntry->setDrawBackground(false);
 	logEntry->setTextColor(textColor);
 	logEntry->setFont(m_logFont);
-	logEntry->setSizeToContent(1,4);
+	logEntry->setSizeToContent(1, 4);
 	m_log->getContainer()->addBaseUIElement(logEntry);
 
 	// update scrollsize, scroll to bottom, clear textbox
