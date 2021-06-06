@@ -6,9 +6,11 @@
 //===============================================================================//
 
 #include "ConsoleBox.h"
+
 #include "Engine.h"
 #include "Environment.h"
 #include "ResourceManager.h"
+#include "AnimationHandler.h"
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "ConVar.h"
@@ -20,14 +22,6 @@
 #include "CBaseUIScrollView.h"
 #include "CBaseUIContainer.h"
 #include "CBaseUIButton.h"
-#include "AnimationHandler.h"
-
-#ifdef MCENGINE_FEATURE_MULTITHREADING
-
-#include <mutex>
-#include "WinMinGW.Mutex.h"
-
-#endif
 
 ConVar showconsolebox("showconsolebox");
 
@@ -37,25 +31,21 @@ ConVar console_overlay("console_overlay", true, "should the log overlay always b
 ConVar console_overlay_lines("console_overlay_lines", 6, "max number of lines of text");
 ConVar console_overlay_scale("console_overlay_scale", 1.0f, "log text size multiplier");
 
-#ifdef MCENGINE_FEATURE_MULTITHREADING
-
-std::mutex g_consoleBoxLogOverlayMutex;
-
-#endif
-
 ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, "")
 {
 	const float dpiScale = env->getDPIScale();
 
-	m_textbox = new CBaseUITextbox(5 * dpiScale, engine->getScreenHeight(), engine->getScreenWidth() - 10 * dpiScale, 26, "consoleboxtextbox");
-
 	McFont *font = engine->getResourceManager()->getFont("FONT_DEFAULT");
 	m_logFont = engine->getResourceManager()->getFont("FONT_CONSOLE");
-	m_textbox->setSizeY(m_textbox->getRelSize().y * dpiScale);
-	m_textbox->setFont(font);
-	m_textbox->setDrawBackground(true);
-	m_textbox->setVisible(false);
-	m_textbox->setBusy(true);
+
+	m_textbox = new CBaseUITextbox(5 * dpiScale, engine->getScreenHeight(), engine->getScreenWidth() - 10 * dpiScale, 26, "consoleboxtextbox");
+	{
+		m_textbox->setSizeY(m_textbox->getRelSize().y * dpiScale);
+		m_textbox->setFont(font);
+		m_textbox->setDrawBackground(true);
+		m_textbox->setVisible(false);
+		m_textbox->setBusy(true);
+	}
 
 	m_bRequireShiftToActivate = false;
 	m_fConsoleAnimation = 0;
@@ -65,12 +55,14 @@ ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, "")
 	m_bConsoleAnimateOnce = false; // set to true for on-launch anim in
 
 	m_suggestion = new CBaseUIScrollView(5 * dpiScale, engine->getScreenHeight(), engine->getScreenWidth() - 10 * dpiScale, 90 * dpiScale, "consoleboxsuggestion");
-	m_suggestion->setDrawBackground(true);
-	m_suggestion->setBackgroundColor(COLOR(255, 0, 0, 0));
-	m_suggestion->setFrameColor(COLOR(255, 255, 255, 255));
-	m_suggestion->setHorizontalScrolling(false);
-	m_suggestion->setVerticalScrolling(true);
-	m_suggestion->setVisible(false);
+	{
+		m_suggestion->setDrawBackground(true);
+		m_suggestion->setBackgroundColor(COLOR(255, 0, 0, 0));
+		m_suggestion->setFrameColor(COLOR(255, 255, 255, 255));
+		m_suggestion->setHorizontalScrolling(false);
+		m_suggestion->setVerticalScrolling(true);
+		m_suggestion->setVisible(false);
+	}
 	m_fSuggestionAnimation = 0;
 	m_bSuggestionAnimateIn = false;
 	m_bSuggestionAnimateOut = false;
@@ -92,10 +84,13 @@ ConsoleBox::~ConsoleBox()
 {
 	SAFE_DELETE(m_textbox);
 	SAFE_DELETE(m_suggestion);
+
+	anim->deleteExistingAnimation(&m_fLogYPos);
 }
 
 void ConsoleBox::draw(Graphics *g)
 {
+	// HACKHACK: legacy OpenGL fix
 	g->setAntialiasing(false);
 
 	g->pushTransform();
@@ -103,55 +98,9 @@ void ConsoleBox::draw(Graphics *g)
 		if (engine->getMouse()->isMiddleDown())
 			g->translate(0, engine->getMouse()->getPos().y - engine->getScreenHeight());
 
-		// draw overlay
 		if (console_overlay.getBool() || m_textbox->isVisible())
-		{
-#ifdef MCENGINE_FEATURE_MULTITHREADING
+			drawLogOverlay(g);
 
-			std::lock_guard<std::mutex> lk(g_consoleBoxLogOverlayMutex);
-
-#endif
-
-			const float dpiScale = getDPIScale();
-
-			const float logScale = std::round(dpiScale + 0.255f) * console_overlay_scale.getFloat();
-
-			const int shadowOffset = 1 * logScale;
-
-			g->setColor(0xff000000);
-			if (m_fLogYPos != 0.0f)
-				g->setAlpha(1.0f - (m_fLogYPos / (m_logFont->getHeight()*(console_overlay_lines.getInt()+1))));
-
-			g->pushTransform();
-			{
-				g->scale(logScale, logScale);
-				g->translate(2 * logScale + shadowOffset, -m_fLogYPos + shadowOffset);
-				for (size_t i=0; i<m_log.size(); i++)
-				{
-					g->translate(0, (int)((m_logFont->getHeight() + (i == 0 ? 0 : 2) + 1) * logScale));
-					g->drawString(m_logFont, m_log[i]);
-				}
-			}
-			g->popTransform();
-
-			g->setColor(0xffffffff);
-			if (m_fLogYPos != 0.0f)
-				g->setAlpha(1.0f - (m_fLogYPos / (m_logFont->getHeight()*(console_overlay_lines.getInt()+1))));
-
-			g->pushTransform();
-			{
-				g->scale(logScale, logScale);
-				g->translate(2 * logScale, -m_fLogYPos);
-				for (size_t i=0; i<m_log.size(); i++)
-				{
-					g->translate(0, (int)((m_logFont->getHeight() + (i == 0 ? 0 : 2) + 1) * logScale));
-					g->drawString(m_logFont, m_log[i]);
-				}
-			}
-			g->popTransform();
-		}
-
-		// draw textbox + suggestions
 		if (anim->isAnimating(&m_fConsoleAnimation))
 		{
 			g->push3DScene(McRect(m_textbox->getPos().x, m_textbox->getPos().y, m_textbox->getSize().x, m_textbox->getSize().y));
@@ -172,11 +121,62 @@ void ConsoleBox::draw(Graphics *g)
 	g->popTransform();
 }
 
+void ConsoleBox::drawLogOverlay(Graphics *g)
+{
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+	std::lock_guard<std::mutex> logGuard(m_logMutex);
+
+#endif
+
+	const float dpiScale = getDPIScale();
+
+	const float logScale = std::round(dpiScale + 0.255f) * console_overlay_scale.getFloat();
+
+	const int shadowOffset = 1 * logScale;
+
+	g->setColor(0xff000000);
+	const float alpha = 1.0f - (m_fLogYPos / (m_logFont->getHeight()*(console_overlay_lines.getInt()+1)));
+	if (m_fLogYPos != 0.0f)
+		g->setAlpha(alpha);
+
+	g->pushTransform();
+	{
+		g->scale(logScale, logScale);
+		g->translate(2 * logScale + shadowOffset, -m_fLogYPos + shadowOffset);
+		for (size_t i=0; i<m_log.size(); i++)
+		{
+			g->translate(0, (int)((m_logFont->getHeight() + (i == 0 ? 0 : 2) + 1) * logScale));
+			g->drawString(m_logFont, m_log[i].text);
+		}
+	}
+	g->popTransform();
+
+	g->setColor(0xffffffff);
+	if (m_fLogYPos != 0.0f)
+		g->setAlpha(alpha);
+
+	g->pushTransform();
+	{
+		g->scale(logScale, logScale);
+		g->translate(2 * logScale, -m_fLogYPos);
+		for (size_t i=0; i<m_log.size(); i++)
+		{
+			g->translate(0, (int)((m_logFont->getHeight() + (i == 0 ? 0 : 2) + 1) * logScale));
+			g->setColor(m_log[i].textColor);
+			g->setAlpha(alpha);
+			g->drawString(m_logFont, m_log[i].text);
+		}
+	}
+	g->popTransform();
+}
+
 void ConsoleBox::update()
 {
 	CBaseUIElement::update();
 
-	bool mleft = engine->getMouse()->isLeftDown();
+	const bool mleft = engine->getMouse()->isLeftDown();
 
 	if (mleft && m_textbox->isMouseInside() && m_textbox->isVisible())
 		m_textbox->setActive(true);
@@ -203,12 +203,12 @@ void ConsoleBox::update()
 	if (m_bConsoleAnimateIn)
 	{
 		if (m_fConsoleAnimation < getAnimTargetY() && std::round((m_fConsoleAnimation/getAnimTargetY())*500) < 500.0f)
-			m_textbox->setPosY( engine->getScreenHeight() - m_fConsoleAnimation );
+			m_textbox->setPosY(engine->getScreenHeight() - m_fConsoleAnimation);
 		else
 		{
 			m_bConsoleAnimateIn = false;
 			m_fConsoleAnimation = getAnimTargetY();
-			m_textbox->setPosY( engine->getScreenHeight() - m_fConsoleAnimation );
+			m_textbox->setPosY(engine->getScreenHeight() - m_fConsoleAnimation);
 			m_textbox->setActive(true);
 			anim->deleteExistingAnimation(&m_fConsoleAnimation);
 		}
@@ -217,13 +217,13 @@ void ConsoleBox::update()
 	if (m_bConsoleAnimateOut)
 	{
 		if (m_fConsoleAnimation > 0.0f && std::round((m_fConsoleAnimation/getAnimTargetY())*500) > 0.0f)
-			m_textbox->setPosY( engine->getScreenHeight() - m_fConsoleAnimation );
+			m_textbox->setPosY(engine->getScreenHeight() - m_fConsoleAnimation);
 		else
 		{
 			m_bConsoleAnimateOut = false;
 			m_textbox->setVisible(false);
 			m_fConsoleAnimation = 0.0f;
-			m_textbox->setPosY( engine->getScreenHeight() );
+			m_textbox->setPosY(engine->getScreenHeight());
 			anim->deleteExistingAnimation(&m_fConsoleAnimation);
 		}
 	}
@@ -235,7 +235,7 @@ void ConsoleBox::update()
 	{
 		if (m_fSuggestionAnimation <= m_fSuggestionY)
 		{
-			m_suggestion->setPosY( engine->getScreenHeight() - (m_fSuggestionY - m_fSuggestionAnimation) );
+			m_suggestion->setPosY(engine->getScreenHeight() - (m_fSuggestionY - m_fSuggestionAnimation));
 			m_fSuggestionAnimation += consolebox_animspeed.getFloat();
 		}
 		else
@@ -243,7 +243,7 @@ void ConsoleBox::update()
 			m_bSuggestionAnimateOut = false;
 			m_fSuggestionAnimation = m_fSuggestionY;
 			m_suggestion->setVisible(false);
-			m_suggestion->setPosY( engine->getScreenHeight() );
+			m_suggestion->setPosY(engine->getScreenHeight());
 		}
 	}
 
@@ -251,14 +251,14 @@ void ConsoleBox::update()
 	{
 		if (m_fSuggestionAnimation >= 0)
 		{
-			m_suggestion->setPosY( engine->getScreenHeight() - (m_fSuggestionY - m_fSuggestionAnimation) );
+			m_suggestion->setPosY(engine->getScreenHeight() - (m_fSuggestionY - m_fSuggestionAnimation));
 			m_fSuggestionAnimation -= consolebox_animspeed.getFloat();
 		}
 		else
 		{
 			m_bSuggestionAnimateIn = false;
 			m_fSuggestionAnimation = 0.0f;
-			m_suggestion->setPosY( engine->getScreenHeight() - m_fSuggestionY );
+			m_suggestion->setPosY(engine->getScreenHeight() - m_fSuggestionY);
 		}
 	}
 
@@ -289,9 +289,6 @@ void ConsoleBox::onSuggestionClicked(CBaseUIButton *suggestion)
 
 	m_textbox->setText(text);
 	m_textbox->setCursorPosRight();
-
-	clearSuggestions();
-
 	m_textbox->setActive(true);
 }
 
@@ -306,9 +303,11 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 	// textbox
 	m_textbox->onKeyDown(e);
 
-	// handle suggestion up/down buttons
+	// suggestion + command history hotkey handling
 	if (m_iSuggestionCount > 0 && m_textbox->isActive() && m_textbox->isVisible())
 	{
+		// handle suggestion up/down buttons
+
 		if (e == KEY_DOWN)
 		{
 			if (m_iSelectedSuggestion < 1)
@@ -375,9 +374,11 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 
 			e.consume();
 		}
-	} // handle command history up/down buttons
+	}
 	else if (m_commandHistory.size() > 0 && m_textbox->isActive() && m_textbox->isVisible())
 	{
+		// handle command history up/down buttons
+
 		if (e == KEY_DOWN)
 		{
 			if (m_iSelectedHistory > m_commandHistory.size()-2)
@@ -514,11 +515,12 @@ void ConsoleBox::addSuggestion(UString text, UString command)
 
 	// create button and add it
 	CBaseUIButton *button = new CBaseUIButton(3 * dpiScale, (vsize - 1)*buttonheight + 2 * dpiScale, 100, addheight, command, text);
-	button->setDrawFrame(false);
-	button->setSizeX(button->getFont()->getStringWidth(text));
-	button->setClickCallback( fastdelegate::MakeDelegate(this, &ConsoleBox::onSuggestionClicked) );
-	button->setDrawBackground(false);
-
+	{
+		button->setDrawFrame(false);
+		button->setSizeX(button->getFont()->getStringWidth(text));
+		button->setClickCallback( fastdelegate::MakeDelegate(this, &ConsoleBox::onSuggestionClicked) );
+		button->setDrawBackground(false);
+	}
 	m_suggestion->getContainer()->addBaseUIElement(button);
 	m_vSuggestionButtons.insert(m_vSuggestionButtons.begin(), button);
 
@@ -589,26 +591,38 @@ void ConsoleBox::toggle(KeyboardEvent &e)
 		e.consume();
 	}
 
-	// force layout update
+	// HACKHACK: force layout update
 	onResolutionChange(engine->getScreenSize());
 }
 
-void ConsoleBox::log(UString text)
+void ConsoleBox::log(UString text, Color textColor)
 {
+
 #ifdef MCENGINE_FEATURE_MULTITHREADING
 
-	std::lock_guard<std::mutex> lk(g_consoleBoxLogOverlayMutex);
+	std::lock_guard<std::mutex> logGuard(m_logMutex);
 
 #endif
 
-	int newline = text.find("\n", 0);
-	while (newline != -1)
+	// remove illegal chars
 	{
-		text.erase(newline, 1);
-		newline = text.find("\n", 0);
+		int newline = text.find("\n", 0);
+		while (newline != -1)
+		{
+			text.erase(newline, 1);
+			newline = text.find("\n", 0);
+		}
 	}
 
-	m_log.push_back(text);
+	// add log entry
+	{
+		LOG_ENTRY logEntry;
+		{
+			logEntry.text = text;
+			logEntry.textColor = textColor;
+		}
+		m_log.push_back(logEntry);
+	}
 
 	while (m_log.size() > console_overlay_lines.getInt())
 	{
