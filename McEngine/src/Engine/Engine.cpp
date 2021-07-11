@@ -764,7 +764,7 @@ void Engine::debugLog(Color color, const char *fmt, va_list args)
 
 		// WARNING: these calls here are not threadsafe by default
 		if (m_consoleBox != NULL)
-			m_consoleBox->log(actualBuffer);
+			m_consoleBox->log(actualBuffer, color);
 		if (m_console != NULL)
 			m_console->log(actualBuffer, color);
 	}
