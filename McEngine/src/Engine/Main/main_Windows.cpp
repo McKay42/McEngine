@@ -214,9 +214,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					if (val != HTCLIENT)
 						return val;
 
+					const float dpiScale = g_engine->getEnvironment()->getDPIScale();
+
 					// fake window moving
 					Vector2 mousePos = g_engine->getEnvironment()->getMousePos();
-					McRect dragging = McRect(40, 4, engine->getScreenWidth()-80, 20); // HACKHACK: hardcoded 40 for stuff
+					McRect dragging = McRect(40*dpiScale, 4*dpiScale, engine->getScreenWidth() - 80*dpiScale, 20*dpiScale); // HACKHACK: hardcoded 40 for stuff
 					if (dragging.contains(mousePos))
 						val = HTCAPTION;
 
@@ -224,10 +226,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						return val;
 
 					// fake window resizing
-					McRect resizeN = McRect(0, 0, engine->getScreenWidth(), 4);
-					McRect resizeW = McRect(0, 0, 4, engine->getScreenHeight());
-					McRect resizeO = McRect(engine->getScreenWidth()-5, 0, engine->getScreenWidth(), engine->getScreenHeight());
-					McRect resizeS = McRect(0, engine->getScreenHeight()-5, engine->getScreenWidth(), engine->getScreenHeight());
+					McRect resizeN = McRect(0, 0, engine->getScreenWidth(), 4*dpiScale);
+					McRect resizeW = McRect(0, 0, 4*dpiScale, engine->getScreenHeight());
+					McRect resizeO = McRect(engine->getScreenWidth() - 5*dpiScale, 0, engine->getScreenWidth(), engine->getScreenHeight());
+					McRect resizeS = McRect(0, engine->getScreenHeight() - 5*dpiScale, engine->getScreenWidth(), engine->getScreenHeight());
 					if (resizeN.contains(mousePos))
 						val = HTTOP;
 					if (resizeW.contains(mousePos))
