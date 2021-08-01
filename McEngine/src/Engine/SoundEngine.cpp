@@ -108,8 +108,10 @@ DWORD CALLBACK OutputWasapiProc(void *buffer, DWORD length, void *user)
 
 
 ConVar snd_output_device("snd_output_device", "Default");
+ConVar snd_restart("snd_restart");
 ConVar win_snd_fallback_dsound("win_snd_fallback_dsound", false, "use DirectSound instead of WASAPI");
 
+ConVar snd_freq("snd_freq", 44100, "output sampling rate in Hz (ignored on most platforms)");
 ConVar snd_chunk_size("snd_chunk_size", 256, "only used in horizon builds with sdl mixer audio");
 
 ConVar snd_restrict_play_frame("snd_restrict_play_frame", true, "only allow one new channel per frame for overlayable sounds (prevents lag and earrape)");
@@ -241,6 +243,7 @@ SoundEngine::SoundEngine()
 	initializeOutputDevice(defaultOutputDevice.id);
 
 	// convar callbacks
+	snd_restart.setCallback( fastdelegate::MakeDelegate(this, &SoundEngine::restart) );
 	snd_output_device.setCallback( fastdelegate::MakeDelegate(this, &SoundEngine::setOutputDevice) );
 
 #elif defined(MCENGINE_FEATURE_SDL) && defined(MCENGINE_FEATURE_SDL_MIXER)
@@ -271,6 +274,7 @@ SoundEngine::SoundEngine()
 	initializeOutputDevice(defaultOutputDevice.id);
 
 	// convar callbacks
+	snd_restart.setCallback( fastdelegate::MakeDelegate(this, &SoundEngine::restart) );
 	snd_output_device.setCallback( fastdelegate::MakeDelegate(this, &SoundEngine::setOutputDevice) );
 
 #endif
@@ -413,7 +417,7 @@ bool SoundEngine::initializeOutputDevice(int id)
 #endif
 
 	// init
-	const int freq = 44100;
+	const int freq = snd_freq.getInt();
 	const unsigned int flags = /* BASS_DEVICE_3D | */ runtimeFlags;
 	bool ret = false;
 
@@ -531,7 +535,7 @@ bool SoundEngine::initializeOutputDevice(int id)
 	if (m_bReady)
 		Mix_CloseAudio();
 
-	const int freq = 44100;
+	const int freq = snd_freq.getInt();
 	const int channels = 16;
 
 	if (Mix_OpenAudio(freq, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, m_iMixChunkSize) < 0)
@@ -546,7 +550,7 @@ bool SoundEngine::initializeOutputDevice(int id)
 	debugLog("SoundEngine: Allocated %i channels\n", numAllocatedChannels);
 
 	// tag all channels to allow overriding in play()
-	Mix_GroupChannels(0, numAllocatedChannels-1, 1);
+	Mix_GroupChannels(0, numAllocatedChannels - 1, 1);
 
 	m_bReady = true;
 
@@ -598,6 +602,11 @@ SoundEngine::~SoundEngine()
 	Mix_Quit();
 
 #endif
+}
+
+void SoundEngine::restart()
+{
+	setOutputDeviceForce(m_sCurrentOutputDevice);
 }
 
 void SoundEngine::update()

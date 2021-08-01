@@ -20,6 +20,8 @@ public:
 	SoundEngine();
 	~SoundEngine();
 
+	void restart();
+
 	void update();
 
 	bool play(Sound *snd, float pan = 0.0f);
