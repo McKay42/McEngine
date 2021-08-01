@@ -32,6 +32,8 @@ SDLEnvironment::SDLEnvironment(SDL_Window *window) : Environment()
 	m_bCursorClipped = false;
 	m_cursorType = CURSORTYPE::CURSOR_NORMAL;
 
+	m_sPrevClipboardTextSDL = NULL;
+
 	// TODO: init monitors
 	if (m_vMonitors.size() < 1)
 	{
@@ -44,13 +46,15 @@ SDLEnvironment::SDLEnvironment(SDL_Window *window) : Environment()
 
 void SDLEnvironment::update()
 {
+	Environment::update();
+
 	m_bIsCursorInsideWindow = McRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight()).contains(getMousePos());
 }
 
 Graphics *SDLEnvironment::createRenderer()
 {
-	return new NullGraphicsInterface();
-	//return new SDLGLLegacyInterface(m_window);
+	//return new NullGraphicsInterface();
+	return new SDLGLLegacyInterface(m_window);
 
 #ifdef MCENGINE_FEATURE_OPENGLES
 
@@ -69,7 +73,6 @@ Graphics *SDLEnvironment::createRenderer()
 
 ContextMenu *SDLEnvironment::createContextMenu()
 {
-	// TODO:
 	return new NullContextMenu();
 }
 
@@ -199,14 +202,14 @@ UString SDLEnvironment::getFileExtensionFromFilePath(UString filepath, bool incl
 		return UString("");
 }
 
-const char *_prevClipboardTextSDL = NULL;
 UString SDLEnvironment::getClipBoardText()
 {
-	if (_prevClipboardTextSDL != NULL)
-		SDL_free((void*)_prevClipboardTextSDL);
+	if (m_sPrevClipboardTextSDL != NULL)
+		SDL_free((void*)m_sPrevClipboardTextSDL);
 
-	_prevClipboardTextSDL = SDL_GetClipboardText();
-	return (_prevClipboardTextSDL != NULL ? _prevClipboardTextSDL : "");
+	m_sPrevClipboardTextSDL = SDL_GetClipboardText();
+
+	return (m_sPrevClipboardTextSDL != NULL ? UString(m_sPrevClipboardTextSDL) : UString(""));
 }
 
 void SDLEnvironment::setClipBoardText(UString text)
@@ -272,13 +275,15 @@ void SDLEnvironment::maximize()
 void SDLEnvironment::enableFullscreen()
 {
 	if (m_bFullscreen) return;
-	if (SDL_SetWindowFullscreen(m_window, SDL_WINDOW_FULLSCREEN_DESKTOP) == 0)
+
+	if (SDL_SetWindowFullscreen(m_window, SDL_WINDOW_FULLSCREEN_DESKTOP) == 0) // NOTE: "fake" fullscreen since we don't want a videomode change
 		m_bFullscreen = true;
 }
 
 void SDLEnvironment::disableFullscreen()
 {
 	if (!m_bFullscreen) return;
+
 	if (SDL_SetWindowFullscreen(m_window, 0) == 0)
 		m_bFullscreen = false;
 }
@@ -319,7 +324,9 @@ Vector2 SDLEnvironment::getWindowPos()
 {
 	int x = 0;
 	int y = 0;
-	SDL_GetWindowPosition(m_window, &x, &y);
+	{
+		SDL_GetWindowPosition(m_window, &x, &y);
+	}
 	return Vector2(x, y);
 }
 
@@ -327,7 +334,9 @@ Vector2 SDLEnvironment::getWindowSize()
 {
 	int width = 100;
 	int height = 100;
-	SDL_GetWindowSize(m_window, &width, &height);
+	{
+		SDL_GetWindowSize(m_window, &width, &height);
+	}
 	return Vector2(width, height);
 }
 
@@ -342,14 +351,16 @@ int SDLEnvironment::getMonitor()
 Vector2 SDLEnvironment::getNativeScreenSize()
 {
 	SDL_DisplayMode dm;
-	SDL_GetCurrentDisplayMode(getMonitor(), &dm);
+	{
+		SDL_GetCurrentDisplayMode(getMonitor(), &dm);
+	}
 	return Vector2(dm.w, dm.h);
 }
 
 McRect SDLEnvironment::getVirtualScreenRect()
 {
 	// TODO:
-	return McRect(0,0,1,1);
+	return McRect(0, 0, 1, 1);
 }
 
 McRect SDLEnvironment::getDesktopRect()
@@ -361,6 +372,7 @@ McRect SDLEnvironment::getDesktopRect()
 
 int SDLEnvironment::getDPI()
 {
+	// TODO: get dpi for current display the window is on?
 	const int displayIndex = 0;
 
 	float dpi = 96.0f;
@@ -371,26 +383,31 @@ int SDLEnvironment::getDPI()
 
 Vector2 SDLEnvironment::getMousePos()
 {
-	int x = 0;
-	int y = 0;
+	int mouseX = 0;
+	int mouseY = 0;
 
-	// HACKHACK:
+	// HACKHACK: workaround, don't change this
 	if (m_mouse_sensitivity_ref->getFloat() == 1.0f)
 	{
-		SDL_GetMouseState(&x, &y);
-		return Vector2(x, y);
+		SDL_GetMouseState(&mouseX, &mouseY);
+
+		return Vector2(mouseX, mouseY);
 	}
 	else
 	{
-		SDL_GetGlobalMouseState(&x, &y);
-		const Vector2 windowPos = getWindowPos();
-		return Vector2(x - windowPos.x, y - windowPos.y);
+		int windowX = 0;
+		int windowY = 0;
+
+		SDL_GetGlobalMouseState(&mouseX, &mouseY);
+		SDL_GetWindowPosition(m_window, &windowX, &windowY);
+
+		return Vector2(mouseX - windowX, mouseY - windowY);
 	}
 }
 
 void SDLEnvironment::setCursor(CURSORTYPE cur)
 {
-	// TODO:
+	// (not properly supported in SDL)
 }
 
 void SDLEnvironment::setCursorVisible(bool visible)
