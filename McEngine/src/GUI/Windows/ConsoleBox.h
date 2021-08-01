@@ -8,8 +8,14 @@
 #ifndef CONSOLEBOX_H
 #define CONSOLEBOX_H
 
-#include "cbase.h"
 #include "CBaseUIElement.h"
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+#include <mutex>
+#include "WinMinGW.Mutex.h"
+
+#endif
 
 class CBaseUITextbox;
 class CBaseUIButton;
@@ -23,6 +29,7 @@ public:
 	virtual ~ConsoleBox();
 
 	void draw(Graphics *g);
+	void drawLogOverlay(Graphics *g);
 	void update();
 
 	void onKeyDown(KeyboardEvent &e);
@@ -33,7 +40,7 @@ public:
 	void processCommand(UString command);
 	void execConfigFile(UString filename);
 
-	void log(UString text);
+	void log(UString text, Color textColor = 0xffffffff);
 
 	// set
 	void setRequireShiftToActivate(bool requireShiftToActivate) {m_bRequireShiftToActivate = requireShiftToActivate;}
@@ -41,6 +48,13 @@ public:
 	// get
 	bool isBusy();
 	bool isActive();
+
+private:
+	struct LOG_ENTRY
+	{
+		UString text;
+		Color textColor;
+	};
 
 private:
 	void onSuggestionClicked(CBaseUIButton *suggestion);
@@ -76,11 +90,18 @@ private:
 
 	float m_fLogTime;
 	float m_fLogYPos;
-	std::vector<UString> m_log;
+	std::vector<LOG_ENTRY> m_log;
 	McFont *m_logFont;
 
 	std::vector<UString> m_commandHistory;
 	int m_iSelectedHistory;
+
+#ifdef MCENGINE_FEATURE_MULTITHREADING
+
+	std::mutex m_logMutex;
+
+#endif
+
 };
 
 #endif

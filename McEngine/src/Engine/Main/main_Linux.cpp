@@ -388,7 +388,7 @@ int main(int argc, char *argv[])
     // initialize engine
 	LinuxEnvironment *environment = new LinuxEnvironment(dpy, win);
 	g_environment = environment;
-    g_engine = new Engine(environment, argc > 1 ? argv[1] : "");
+    g_engine = new Engine(environment, argc > 1 ? argv[1] : ""); // TODO: proper arg support
     g_engine->loadApp();
 
     frameTimer->update();

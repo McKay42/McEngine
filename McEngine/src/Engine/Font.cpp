@@ -123,7 +123,7 @@ void McFont::init()
 	else
 		m_textureAtlas->getAtlasImage()->setFilterMode(Graphics::FILTER_MODE::FILTER_MODE_NONE);
 
-	// calculate average ASCII glyph height
+	// precalculate average/max ASCII glyph height
 	m_fHeight = 0.0f;
 	for (int i=0; i<128; i++)
 	{
@@ -137,6 +137,8 @@ void McFont::init()
 
 void McFont::initAsync()
 {
+	// (nothing)
+
 	m_bAsyncReady = true;
 }
 
@@ -396,8 +398,7 @@ static unsigned char *unpackMonoBitmap(FT_Bitmap bitmap)
 
 			for (bit_index=0; bit_index<bits; bit_index++)
 			{
-				int bit;
-				bit = byte_value & (1 << (7 - bit_index));
+				const int bit = byte_value & (1 << (7 - bit_index));
 				result[rowstart + bit_index] = bit;
 			}
 		}

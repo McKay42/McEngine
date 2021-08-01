@@ -30,10 +30,30 @@
 
 #ifdef MCENGINE_FEATURE_SDL
 
-extern int mainSDL(int argc, char *argv[]);
+#include "WinSDLEnvironment.h"
+
+extern int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment);
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+	// disable IME text input
+	{
+		typedef BOOL (WINAPI *pfnImmDisableIME)(DWORD);
+
+	    HMODULE hImm32 = LoadLibrary("imm32.dll");
+	    if (hImm32 != NULL)
+	    {
+			pfnImmDisableIME pImmDisableIME = (pfnImmDisableIME)GetProcAddress(hImm32, "ImmDisableIME");
+			if (pImmDisableIME == NULL)
+				FreeLibrary(hImm32);
+			else
+			{
+				pImmDisableIME(-1);
+				FreeLibrary(hImm32);
+			}
+	    }
+	}
+
 	// if supported (>= Windows Vista), enable DPI awareness so that GetSystemMetrics returns correct values
 	// without this, on e.g. 150% scaling, the screen pixels of a 1080p monitor would be reported by GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN) as only 720p!
 	{
@@ -43,7 +63,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			g_SetProcessDPIAware();
 	}
 
-	return mainSDL(0, NULL);
+	// build "fake" argc + argv
+	const int argc = 2;
+	char *argv[argc];
+	char arg1 = '\0';
+	argv[0] = &arg1;
+	argv[1] = lpCmdLine;
+
+	return mainSDL(argc, argv, new WinSDLEnvironment());
 }
 
 #else
@@ -214,9 +241,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					if (val != HTCLIENT)
 						return val;
 
+					const float dpiScale = g_engine->getEnvironment()->getDPIScale();
+
 					// fake window moving
 					Vector2 mousePos = g_engine->getEnvironment()->getMousePos();
-					McRect dragging = McRect(40, 4, engine->getScreenWidth()-80, 20); // HACKHACK: hardcoded 40 for stuff
+					McRect dragging = McRect(40*dpiScale, 4*dpiScale, engine->getScreenWidth() - 80*dpiScale, 20*dpiScale); // HACKHACK: hardcoded 40 for stuff
 					if (dragging.contains(mousePos))
 						val = HTCAPTION;
 
@@ -224,10 +253,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						return val;
 
 					// fake window resizing
-					McRect resizeN = McRect(0, 0, engine->getScreenWidth(), 4);
-					McRect resizeW = McRect(0, 0, 4, engine->getScreenHeight());
-					McRect resizeO = McRect(engine->getScreenWidth()-5, 0, engine->getScreenWidth(), engine->getScreenHeight());
-					McRect resizeS = McRect(0, engine->getScreenHeight()-5, engine->getScreenWidth(), engine->getScreenHeight());
+					McRect resizeN = McRect(0, 0, engine->getScreenWidth(), 4*dpiScale);
+					McRect resizeW = McRect(0, 0, 4*dpiScale, engine->getScreenHeight());
+					McRect resizeO = McRect(engine->getScreenWidth() - 5*dpiScale, 0, engine->getScreenWidth(), engine->getScreenHeight());
+					McRect resizeS = McRect(0, engine->getScreenHeight() - 5*dpiScale, engine->getScreenWidth(), engine->getScreenHeight());
 					if (resizeN.contains(mousePos))
 						val = HTTOP;
 					if (resizeW.contains(mousePos))

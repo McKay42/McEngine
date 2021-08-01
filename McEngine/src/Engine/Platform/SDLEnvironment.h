@@ -25,83 +25,83 @@ public:
 	virtual void update();
 
 	// engine/factory
-	Graphics *createRenderer();
-	ContextMenu *createContextMenu();
+	virtual Graphics *createRenderer();
+	virtual ContextMenu *createContextMenu();
 
 	// system
 	virtual OS getOS();
-	void shutdown();
-	void restart();
+	virtual void shutdown();
+	virtual void restart();
 	virtual void sleep(unsigned int us); // NOTE: inaccurate
-	UString getExecutablePath();
+	virtual UString getExecutablePath();
 	virtual void openURLInDefaultBrowser(UString url); // NOTE: non-SDL
 
 	// user
 	virtual UString getUsername(); // NOTE: non-SDL
-	UString getUserDataPath();
+	virtual UString getUserDataPath();
 
 	// file IO
-	bool fileExists(UString filename);
+	virtual bool fileExists(UString filename);
 	virtual bool directoryExists(UString directoryName); // NOTE: non-SDL
 	virtual bool createDirectory(UString directoryName); // NOTE: non-SDL
-	bool renameFile(UString oldFileName, UString newFileName);
-	bool deleteFile(UString filePath);
+	virtual bool renameFile(UString oldFileName, UString newFileName);
+	virtual bool deleteFile(UString filePath);
 	virtual std::vector<UString> getFilesInFolder(UString folder);		// NOTE: non-SDL
 	virtual std::vector<UString> getFoldersInFolder(UString folder);	// NOTE: non-SDL
 	virtual std::vector<UString> getLogicalDrives();					// NOTE: non-SDL
 	virtual UString getFolderFromFilePath(UString filepath);			// NOTE: non-SDL
-	UString getFileExtensionFromFilePath(UString filepath, bool includeDot = false);
+	virtual UString getFileExtensionFromFilePath(UString filepath, bool includeDot = false);
 
 	// clipboard
-	UString getClipBoardText();
-	void setClipBoardText(UString text);
+	virtual UString getClipBoardText();
+	virtual void setClipBoardText(UString text);
 
 	// dialogs & message boxes
-	void showMessageInfo(UString title, UString message);
-	void showMessageWarning(UString title, UString message);
-	void showMessageError(UString title, UString message);
-	void showMessageErrorFatal(UString title, UString message);
+	virtual void showMessageInfo(UString title, UString message);
+	virtual void showMessageWarning(UString title, UString message);
+	virtual void showMessageError(UString title, UString message);
+	virtual void showMessageErrorFatal(UString title, UString message);
 	virtual UString openFileWindow(const char *filetypefilters, UString title, UString initialpath);	// NOTE: non-SDL
 	virtual UString openFolderWindow(UString title, UString initialpath);								// NOTE: non-SDL
 
 	// window
-	void focus();
-	void center();
-	void minimize();
-	void maximize();
-	void enableFullscreen();
-	void disableFullscreen();
-	void setWindowTitle(UString title);
-	void setWindowPos(int x, int y);
-	void setWindowSize(int width, int height);
-	void setWindowResizable(bool resizable);
-	void setWindowGhostCorporeal(bool corporeal);
-	void setMonitor(int monitor);
-	Vector2 getWindowPos();
-	Vector2 getWindowSize();
-	int getMonitor();
-	std::vector<McRect> getMonitors() {return m_vMonitors;}
-	Vector2 getNativeScreenSize();
-	McRect getVirtualScreenRect();
-	McRect getDesktopRect();
-	int getDPI();
-	bool isFullscreen() {return m_bFullscreen;}
-	bool isWindowResizable() {return m_bResizable;}
+	virtual void focus();
+	virtual void center();
+	virtual void minimize();
+	virtual void maximize();
+	virtual void enableFullscreen();
+	virtual void disableFullscreen();
+	virtual void setWindowTitle(UString title);
+	virtual void setWindowPos(int x, int y);
+	virtual void setWindowSize(int width, int height);
+	virtual void setWindowResizable(bool resizable);
+	virtual void setWindowGhostCorporeal(bool corporeal);
+	virtual void setMonitor(int monitor);
+	virtual Vector2 getWindowPos();
+	virtual Vector2 getWindowSize();
+	virtual int getMonitor();
+	virtual std::vector<McRect> getMonitors() {return m_vMonitors;}
+	virtual Vector2 getNativeScreenSize();
+	virtual McRect getVirtualScreenRect();
+	virtual McRect getDesktopRect();
+	virtual int getDPI();
+	virtual bool isFullscreen() {return m_bFullscreen;}
+	virtual bool isWindowResizable() {return m_bResizable;}
 
 	// mouse
-	bool isCursorInWindow() {return m_bIsCursorInsideWindow;}
-	bool isCursorVisible() {return m_bCursorVisible;}
-	bool isCursorClipped() {return m_bCursorClipped;}
+	virtual bool isCursorInWindow() {return m_bIsCursorInsideWindow;}
+	virtual bool isCursorVisible() {return m_bCursorVisible;}
+	virtual bool isCursorClipped() {return m_bCursorClipped;}
 	virtual Vector2 getMousePos();
-	McRect getCursorClip() {return m_cursorClip;}
-	CURSORTYPE getCursor() {return m_cursorType;}
-	void setCursor(CURSORTYPE cur);
-	void setCursorVisible(bool visible);
+	virtual McRect getCursorClip() {return m_cursorClip;}
+	virtual CURSORTYPE getCursor() {return m_cursorType;}
+	virtual void setCursor(CURSORTYPE cur);
+	virtual void setCursorVisible(bool visible);
 	virtual void setMousePos(int x, int y);
-	void setCursorClip(bool clip, McRect rect);
+	virtual void setCursorClip(bool clip, McRect rect);
 
 	// keyboard
-	UString keyCodeToString(KEYCODE keyCode);
+	virtual UString keyCodeToString(KEYCODE keyCode);
 
 	// ILLEGAL:
 	void setWindow(SDL_Window *window) {m_window = window;}
@@ -126,6 +126,9 @@ private:
 	bool m_bCursorClipped;
 	McRect m_cursorClip;
 	CURSORTYPE m_cursorType;
+
+	// clipboard
+	const char *m_sPrevClipboardTextSDL;
 };
 
 #endif

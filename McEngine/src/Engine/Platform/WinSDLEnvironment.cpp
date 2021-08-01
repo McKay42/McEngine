@@ -1,8 +1,8 @@
 //================ Copyright (c) 2019, PG, All rights reserved. =================//
 //
-// Purpose:		todo
+// Purpose:		windows sdl environment
 //
-// $NoKeywords: $
+// $NoKeywords: $sdlwinenv
 //===============================================================================//
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
@@ -13,24 +13,39 @@
 
 #include "Engine.h"
 
+#define SDL_VIDEO_DRIVER_WINDOWS	// HACKHACK
+#undef SDL_VIDEO_DRIVER_COCOA		// HACKHACK
+#include "SDL_syswm.h" // for SDL_GetWindowWMInfo()
+
 #include <Lmcons.h>
 #include <Shlobj.h>
 
 #include <tchar.h>
 #include <string>
 
-WinSDLEnvironment::WinSDLEnvironment(SDL_Window *window) : SDLEnvironment(window)
+WinSDLEnvironment::WinSDLEnvironment() : SDLEnvironment(NULL)
 {
 
-}
-
-WinSDLEnvironment::~WinSDLEnvironment()
-{
 }
 
 Environment::OS WinSDLEnvironment::getOS()
 {
 	return Environment::OS::OS_WINDOWS;
+}
+
+void WinSDLEnvironment::sleep(unsigned int us)
+{
+	Sleep(us/1000);
+}
+
+void WinSDLEnvironment::openURLInDefaultBrowser(UString url)
+{
+	SDL_SysWMinfo info;
+	SDL_VERSION(&info.version);
+	if (SDL_GetWindowWMInfo(m_window, &info) == SDL_TRUE)
+	{
+		ShellExecuteW(info.info.win.window, L"open", url.wc_str(), NULL, NULL, SW_SHOW);
+	}
 }
 
 UString WinSDLEnvironment::getUsername()
@@ -42,6 +57,27 @@ UString WinSDLEnvironment::getUsername()
 		return UString(username);
 
 	return UString("");
+}
+
+UString WinSDLEnvironment::getUserDataPath()
+{
+	wchar_t path[PATH_MAX];
+
+	if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, path)))
+		return UString(path);
+
+	return UString("");
+}
+
+bool WinSDLEnvironment::directoryExists(UString directoryName)
+{
+	DWORD dwAttrib = GetFileAttributesW(directoryName.wc_str());
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+bool WinSDLEnvironment::createDirectory(UString directoryName)
+{
+	return CreateDirectoryW(directoryName.wc_str(), NULL);
 }
 
 std::vector<UString> WinSDLEnvironment::getFilesInFolder(UString folder)
@@ -166,6 +202,72 @@ UString WinSDLEnvironment::getFolderFromFilePath(UString filepath)
 	char *aString = (char*)filepath.toUtf8();
 	path_strip_filename(aString);
 	return aString;
+}
+
+UString WinSDLEnvironment::openFileWindow(const char *filetypefilters, UString title, UString initialpath)
+{
+	disableFullscreen();
+
+	OPENFILENAME fn;
+	ZeroMemory(&fn, sizeof(fn));
+
+	char fileNameBuffer[255];
+
+	// fill it
+	fn.lStructSize = sizeof(fn);
+	fn.hwndOwner = NULL;
+	fn.lpstrFile = fileNameBuffer;
+	fn.lpstrFile[0] = '\0';
+	fn.nMaxFile = sizeof(fileNameBuffer);
+	fn.lpstrFilter = filetypefilters;
+	fn.nFilterIndex = 1;
+	fn.lpstrFileTitle = NULL;
+	fn.nMaxFileTitle = 0;
+	fn.lpstrTitle = title.length() > 1 ? title.toUtf8() : NULL;
+	fn.lpstrInitialDir = initialpath.length() > 1 ? initialpath.toUtf8() : NULL;
+	fn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR | OFN_ENABLESIZING;
+
+	// open the dialog
+	GetOpenFileName(&fn);
+
+	return fn.lpstrFile;
+}
+
+UString WinSDLEnvironment::openFolderWindow(UString title, UString initialpath)
+{
+	disableFullscreen();
+
+	OPENFILENAME fn;
+	ZeroMemory(&fn, sizeof(fn));
+
+	char fileNameBuffer[255];
+
+	fileNameBuffer[0] = 's';
+	fileNameBuffer[1] = 'k';
+	fileNameBuffer[2] = 'i';
+	fileNameBuffer[3] = 'n';
+	fileNameBuffer[4] = '.';
+	fileNameBuffer[5] = 'i';
+	fileNameBuffer[6] = 'n';
+	fileNameBuffer[7] = 'i';
+	fileNameBuffer[8] = '\0';
+
+	// fill it
+	fn.lStructSize = sizeof(fn);
+	fn.hwndOwner = NULL;
+	fn.lpstrFile = fileNameBuffer;
+	///fn.lpstrFile[0] = '\0';
+	fn.nMaxFile = sizeof(fileNameBuffer);
+	fn.nFilterIndex = 1;
+	fn.lpstrFileTitle = NULL;
+	fn.lpstrTitle = title.length() > 1 ? title.toUtf8() : NULL;
+	fn.lpstrInitialDir = initialpath.length() > 1 ? initialpath.toUtf8() : NULL;
+	fn.Flags = OFN_PATHMUSTEXIST | OFN_ENABLESIZING;
+
+	// open the dialog
+	GetOpenFileName(&fn);
+
+	return fn.lpstrFile;
 }
 
 

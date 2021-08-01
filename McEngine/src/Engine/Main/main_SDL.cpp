@@ -5,7 +5,7 @@
 // $NoKeywords: $main
 //===============================================================================//
 
-#include "cbase.h"
+#include "EngineFeatures.h"
 
 #ifdef MCENGINE_FEATURE_SDL
 
@@ -53,9 +53,11 @@ bool g_bHasFocus = true; // for fps_max_background
 
 SDL_Window *g_window = NULL;
 
-ConVar fps_max("fps_max", 60.0f);
-ConVar fps_max_background("fps_max_background", 30.0f);
+ConVar fps_max("fps_max", 60.0f, "framerate limiter, foreground");
+ConVar fps_max_yield("fps_max_yield", true, "always release rest of timeslice once per frame (call scheduler via sleep(0))");
+ConVar fps_max_background("fps_max_background", 30.0f, "framerate limiter, background");
 ConVar fps_unlimited("fps_unlimited", false);
+ConVar fps_unlimited_yield("fps_unlimited_yield", true, "always release rest of timeslice once per frame (call scheduler via sleep(0)), even if unlimited fps are enabled");
 
 ConVar sdl_joystick_mouse_sensitivity("sdl_joystick_mouse_sensitivity", 1.0f);
 
@@ -94,7 +96,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 #ifdef MCENGINE_FEATURE_OPENGLES
 
-	// NOTE: hardcoded to OpenGL ES 2.0 currently
+	// NOTE: hardcoded to OpenGL ES 2.0 currently (for nintendo switch builds)
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -120,6 +122,20 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 	{
 		fprintf(stderr, "Couldn't SDL_CreateWindow(): %s\n", SDL_GetError());
 		return 1;
+	}
+
+	// get the screen refresh rate, and set fps_max to that as default
+	{
+		SDL_DisplayMode currentDisplayMode;
+		currentDisplayMode.refresh_rate = fps_max.getInt();
+
+		SDL_GetCurrentDisplayMode(SDL_GetWindowDisplayIndex(g_window), &currentDisplayMode);
+
+		if (currentDisplayMode.refresh_rate > 0)
+		{
+			///printf("Display Refresh Rate is %i Hz, setting fps_max to %i.\n\n", currentDisplayMode.refresh_rate, currentDisplayMode.refresh_rate);
+			fps_max.setValue(currentDisplayMode.refresh_rate);
+		}
 	}
 
 	// post window-creation settings
@@ -163,13 +179,15 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 	else
 		environment->setWindow(g_window);
 
-	g_engine = new Engine(environment, ""); // TODO: args
+	g_engine = new Engine(environment, argc > 1 ? argv[1] : ""); // TODO: proper arg support
 	g_engine->loadApp();
 
 	frameTimer->update();
 	deltaTimer->update();
 
+	// custom
 	Vector2 mousePos;
+	ConVar *mouse_raw_input_ref = convar->getConVarByName("mouse_raw_input");
 
 	// main loop
 	SDL_Event e;
@@ -177,7 +195,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 	{
 		VPROF_MAIN();
 
-		// HACKHACK: switch hack (mouse/keyboard)
+		// HACKHACK: switch hack (usb mouse/keyboard support)
 #ifdef __SWITCH__
 
 		HorizonSDLEnvironment *horizonSDLenv = dynamic_cast<HorizonSDLEnvironment*>(environment);
@@ -187,296 +205,312 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 #endif
 
 		// handle window message queue
-		while (SDL_PollEvent(&e) != 0)
 		{
-			switch (e.type)
-			{
-			case SDL_QUIT:
-				if (g_bRunning)
-				{
-					g_bRunning = false;
-					g_engine->onShutdown();
-				}
-				break;
+			VPROF_BUDGET("SDL", VPROF_BUDGETGROUP_WNDPROC);
 
-			// window
-			case SDL_WINDOWEVENT:
-				switch (e.window.event)
+			// handle automatic raw input toggling
+			{
+				const bool isRawInputActuallyEnabled = (SDL_GetRelativeMouseMode() == SDL_TRUE);
+
+				const bool shouldRawInputBeEnabled = (mouse_raw_input_ref->getBool() && !environment->isCursorVisible());
+
+				if (shouldRawInputBeEnabled != isRawInputActuallyEnabled)
+					SDL_SetRelativeMouseMode(shouldRawInputBeEnabled ? SDL_TRUE : SDL_FALSE);
+			}
+
+			const bool isRawInputEnabled = (SDL_GetRelativeMouseMode() == SDL_TRUE);
+
+			while (SDL_PollEvent(&e) != 0)
+			{
+				switch (e.type)
 				{
-				case SDL_WINDOWEVENT_CLOSE:
+				case SDL_QUIT:
 					if (g_bRunning)
 					{
 						g_bRunning = false;
 						g_engine->onShutdown();
 					}
 					break;
-				case SDL_WINDOWEVENT_FOCUS_GAINED:
-					g_bHasFocus = true;
-					g_engine->onFocusGained();
-					break;
-				case SDL_WINDOWEVENT_FOCUS_LOST:
-					g_bHasFocus = false;
-					g_engine->onFocusLost();
-					break;
-				case SDL_WINDOWEVENT_MAXIMIZED:
-					g_bMinimized = false;
-					g_engine->onMaximized();
-					break;
-				case SDL_WINDOWEVENT_MINIMIZED:
-					g_bMinimized = true;
-					g_engine->onMinimized();
-					break;
-				case SDL_WINDOWEVENT_RESTORED:
-					g_bMinimized = false;
-					g_engine->onRestored();
-					break;
-				case SDL_WINDOWEVENT_SIZE_CHANGED:
-					g_engine->requestResolutionChange(Vector2(e.window.data1, e.window.data2));
-					break;
-				}
-				break;
 
-			// keyboard
-			case SDL_KEYDOWN:
-				g_engine->onKeyboardKeyDown(e.key.keysym.scancode);
-				break;
-
-			case SDL_KEYUP:
-				g_engine->onKeyboardKeyUp(e.key.keysym.scancode);
-				break;
-
-			case SDL_TEXTINPUT:
-				{
-					UString nullTerminatedTextInputString(e.text.text);
-					for (int i=0; i<nullTerminatedTextInputString.length(); i++)
+				// window
+				case SDL_WINDOWEVENT:
+					switch (e.window.event)
 					{
-						g_engine->onKeyboardChar(nullTerminatedTextInputString[i]);
+					case SDL_WINDOWEVENT_CLOSE:
+						if (g_bRunning)
+						{
+							g_bRunning = false;
+							g_engine->onShutdown();
+						}
+						break;
+					case SDL_WINDOWEVENT_FOCUS_GAINED:
+						g_bHasFocus = true;
+						g_engine->onFocusGained();
+						break;
+					case SDL_WINDOWEVENT_FOCUS_LOST:
+						g_bHasFocus = false;
+						g_engine->onFocusLost();
+						break;
+					case SDL_WINDOWEVENT_MAXIMIZED:
+						g_bMinimized = false;
+						g_engine->onMaximized();
+						break;
+					case SDL_WINDOWEVENT_MINIMIZED:
+						g_bMinimized = true;
+						g_engine->onMinimized();
+						break;
+					case SDL_WINDOWEVENT_RESTORED:
+						g_bMinimized = false;
+						g_engine->onRestored();
+						break;
+					case SDL_WINDOWEVENT_SIZE_CHANGED:
+						g_engine->requestResolutionChange(Vector2(e.window.data1, e.window.data2));
+						break;
 					}
-				}
-				break;
-
-			// mouse, also inject mouse 4 + 5 as keyboard keys
-			case SDL_MOUSEBUTTONDOWN:
-				switch (e.button.button)
-				{
-				case SDL_BUTTON_LEFT:
-					g_engine->onMouseLeftChange(true);
-					break;
-				case SDL_BUTTON_MIDDLE:
-					g_engine->onMouseMiddleChange(true);
-					break;
-				case SDL_BUTTON_RIGHT:
-					g_engine->onMouseRightChange(true);
 					break;
 
-				case SDL_BUTTON_X1:
-					g_engine->onKeyboardKeyDown(SDL_Scancode::SDL_NUM_SCANCODES + 1); // NOTE: abusing enum value
-					break;
-				case SDL_BUTTON_X2:
-					g_engine->onKeyboardKeyDown(SDL_Scancode::SDL_NUM_SCANCODES + 2); // NOTE: abusing enum value
-					break;
-				}
-				break;
-
-			case SDL_MOUSEBUTTONUP:
-				switch (e.button.button)
-				{
-				case SDL_BUTTON_LEFT:
-					g_engine->onMouseLeftChange(false);
-					break;
-				case SDL_BUTTON_MIDDLE:
-					g_engine->onMouseMiddleChange(false);
-					break;
-				case SDL_BUTTON_RIGHT:
-					g_engine->onMouseRightChange(false);
+				// keyboard
+				case SDL_KEYDOWN:
+					g_engine->onKeyboardKeyDown(e.key.keysym.scancode);
 					break;
 
-				case SDL_BUTTON_X1:
-					g_engine->onKeyboardKeyUp(SDL_Scancode::SDL_NUM_SCANCODES + 1); // NOTE: abusing enum value
+				case SDL_KEYUP:
+					g_engine->onKeyboardKeyUp(e.key.keysym.scancode);
 					break;
-				case SDL_BUTTON_X2:
-					g_engine->onKeyboardKeyUp(SDL_Scancode::SDL_NUM_SCANCODES + 2); // NOTE: abusing enum value
+
+				case SDL_TEXTINPUT:
+					{
+						UString nullTerminatedTextInputString(e.text.text);
+						for (int i=0; i<nullTerminatedTextInputString.length(); i++)
+						{
+							g_engine->onKeyboardChar((KEYCODE)nullTerminatedTextInputString[i]); // NOTE: this splits into UTF-16 wchar_t atm
+						}
+					}
 					break;
-				}
-				break;
 
-			case SDL_MOUSEWHEEL:
-				if (e.wheel.x != 0)
-					g_engine->onMouseWheelHorizontal(e.wheel.x > 0 ? 120 : -120);
-				if (e.wheel.y != 0)
-					g_engine->onMouseWheelVertical(e.wheel.y > 0 ? 120 : -120);
-				break;
+				// mouse
+				case SDL_MOUSEBUTTONDOWN:
+					switch (e.button.button)
+					{
+					case SDL_BUTTON_LEFT:
+						g_engine->onMouseLeftChange(true);
+						break;
+					case SDL_BUTTON_MIDDLE:
+						g_engine->onMouseMiddleChange(true);
+						break;
+					case SDL_BUTTON_RIGHT:
+						g_engine->onMouseRightChange(true);
+						break;
 
-			case SDL_MOUSEMOTION:
-				if (SDL_GetRelativeMouseMode() == SDL_TRUE)
-					g_engine->onMouseRawMove(e.motion.xrel, e.motion.yrel);
-				break;
+					case SDL_BUTTON_X1:
+						g_engine->onMouseButton4Change(true);
+						break;
+					case SDL_BUTTON_X2:
+						g_engine->onMouseButton5Change(true);
+						break;
+					}
+					break;
 
-			// touch mouse
-			// NOTE: sometimes when quickly tapping with two fingers, events will get lost (due to the touchscreen believing that it was one finger which moved very quickly, instead of 2 tapping fingers)
-			case SDL_FINGERDOWN:
-				if (e.tfinger.fingerId == 0)
-				{
-					mousePos = Vector2(e.tfinger.x, e.tfinger.y) * g_engine->getScreenSize();
-					environment->setMousePos(mousePos.x, mousePos.y);
-					g_engine->getMouse()->onPosChange(mousePos);
-
-					if (g_engine->getMouse()->isLeftDown())
+				case SDL_MOUSEBUTTONUP:
+					switch (e.button.button)
+					{
+					case SDL_BUTTON_LEFT:
 						g_engine->onMouseLeftChange(false);
+						break;
+					case SDL_BUTTON_MIDDLE:
+						g_engine->onMouseMiddleChange(false);
+						break;
+					case SDL_BUTTON_RIGHT:
+						g_engine->onMouseRightChange(false);
+						break;
 
-					g_engine->onMouseLeftChange(true);
-				}
-				else if (e.tfinger.fingerId == 1)
-				{
-					if (g_engine->getMouse()->isLeftDown())
+					case SDL_BUTTON_X1:
+						g_engine->onMouseButton4Change(false);
+						break;
+					case SDL_BUTTON_X2:
+						g_engine->onMouseButton5Change(false);
+						break;
+					}
+					break;
+
+				case SDL_MOUSEWHEEL:
+					if (e.wheel.x != 0)
+						g_engine->onMouseWheelHorizontal(e.wheel.x > 0 ? 120*std::abs(e.wheel.x) : -120*std::abs(e.wheel.x)); // NOTE: convert to Windows units
+					if (e.wheel.y != 0)
+						g_engine->onMouseWheelVertical(e.wheel.y > 0 ? 120*std::abs(e.wheel.y) : -120*std::abs(e.wheel.y)); // NOTE: convert to Windows units
+					break;
+
+				case SDL_MOUSEMOTION:
+					if (isRawInputEnabled)
+						g_engine->onMouseRawMove(e.motion.xrel, e.motion.yrel);
+					break;
+
+				// touch mouse
+				// NOTE: sometimes when quickly tapping with two fingers, events will get lost (due to the touchscreen believing that it was one finger which moved very quickly, instead of 2 tapping fingers)
+				case SDL_FINGERDOWN:
+					if (e.tfinger.fingerId == 0)
+					{
+						mousePos = Vector2(e.tfinger.x, e.tfinger.y) * g_engine->getScreenSize();
+						environment->setMousePos(mousePos.x, mousePos.y);
+						g_engine->getMouse()->onPosChange(mousePos);
+
+						if (g_engine->getMouse()->isLeftDown())
+							g_engine->onMouseLeftChange(false);
+
+						g_engine->onMouseLeftChange(true);
+					}
+					else if (e.tfinger.fingerId == 1)
+					{
+						if (g_engine->getMouse()->isLeftDown())
+							g_engine->onMouseLeftChange(false);
+
+						g_engine->onMouseLeftChange(true);
+					}
+					else if (e.tfinger.fingerId == 2)
+					{
+						if (g_engine->getMouse()->isLeftDown())
+							g_engine->onMouseLeftChange(false);
+
+						g_engine->onMouseLeftChange(true);
+					}
+					break;
+
+				case SDL_FINGERUP:
+					if (e.tfinger.fingerId == 0)
 						g_engine->onMouseLeftChange(false);
+					//else if (e.tfinger.fingerId == 1)
+					//	g_engine->onMouseRightChange(false);
+					//else if (e.tfinger.fingerId == 2)
+					//	g_engine->onMouseLeftChange(false);
+					break;
 
-					g_engine->onMouseLeftChange(true);
-				}
-				else if (e.tfinger.fingerId == 2)
-				{
-					if (g_engine->getMouse()->isLeftDown())
-						g_engine->onMouseLeftChange(false);
+				case SDL_FINGERMOTION:
+					if (e.tfinger.fingerId == 0)
+					{
+						mousePos = Vector2(e.tfinger.x, e.tfinger.y) * g_engine->getScreenSize();
+						environment->setMousePos(mousePos.x, mousePos.y);
+						g_engine->getMouse()->onPosChange(mousePos);
+					}
+					break;
 
-					g_engine->onMouseLeftChange(true);
-				}
-				break;
-
-			case SDL_FINGERUP:
-				if (e.tfinger.fingerId == 0)
-					g_engine->onMouseLeftChange(false);
-				//else if (e.tfinger.fingerId == 1)
-				//	g_engine->onMouseRightChange(false);
-				//else if (e.tfinger.fingerId == 2)
-				//	g_engine->onMouseLeftChange(false);
-				break;
-
-			case SDL_FINGERMOTION:
-				if (e.tfinger.fingerId == 0)
-				{
-					mousePos = Vector2(e.tfinger.x, e.tfinger.y) * g_engine->getScreenSize();
-					environment->setMousePos(mousePos.x, mousePos.y);
-					g_engine->getMouse()->onPosChange(mousePos);
-				}
-				break;
-
-			// joystick keyboard
-			// HACKHACK: currently hardcoded for nintendo switch (rewrite if joystick support for other platforms)
+				// joystick keyboard
+				// HACKHACK: currently hardcoded for nintendo switch (rewrite if joystick support for other platforms)
 #ifdef MCENGINE_SDL_JOYSTICK
 
-			case SDL_JOYBUTTONDOWN:
-				///debugLog("joybuttondown: %i button %i down\n", (int)e.jbutton.which, (int)e.jbutton.button);
-				if (e.jbutton.button == 0) // KEY_A
-				{
-					g_engine->onMouseLeftChange(true);
+				case SDL_JOYBUTTONDOWN:
+					///debugLog("joybuttondown: %i button %i down\n", (int)e.jbutton.which, (int)e.jbutton.button);
+					if (e.jbutton.button == 0) // KEY_A
+					{
+						g_engine->onMouseLeftChange(true);
 
-					if (engine->getConsoleBox()->isActive())
-					{
-						g_engine->onKeyboardKeyDown(SDL_SCANCODE_RETURN);
-						g_engine->onKeyboardKeyUp(SDL_SCANCODE_RETURN);
+						if (engine->getConsoleBox()->isActive())
+						{
+							g_engine->onKeyboardKeyDown(SDL_SCANCODE_RETURN);
+							g_engine->onKeyboardKeyUp(SDL_SCANCODE_RETURN);
+						}
 					}
-				}
-				else if (e.jbutton.button == 10 || e.jbutton.button == 1) // KEY_PLUS || KEY_B
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_ESCAPE);
-				else if (e.jbutton.button == 2) // KEY_X
-				{
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_X);
-					xDown = true;
-				}
-				else if (e.jbutton.button == 3) // KEY_Y
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_Y);
-				else if (e.jbutton.button == 21 || e.jbutton.button == 13) // right stick up || dpad up
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_UP);
-				else if (e.jbutton.button == 23 || e.jbutton.button == 15) // right stick down || dpad down
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_DOWN);
-				else if (e.jbutton.button == 20 || e.jbutton.button == 12) // right stick left || dpad left
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_LEFT);
-				else if (e.jbutton.button == 22 || e.jbutton.button == 14) // right stick right || dpad right
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_RIGHT);
-				else if (e.jbutton.button == 6) // KEY_L
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_L);
-				else if (e.jbutton.button == 7) // KEY_R
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_R);
-				else if (e.jbutton.button == 8) // KEY_ZL
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_Z);
-				else if (e.jbutton.button == 9) // KEY_ZR
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_V);
-				else if (e.jbutton.button == 11) // KEY_MINUS
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_F1);
-				else if (e.jbutton.button == 4) // left stick press
-				{
-					// toggle options (CTRL + O)
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_LCTRL);
-					g_engine->onKeyboardKeyDown(SDL_SCANCODE_O);
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_LCTRL);
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_O);
-				}
-				else if (e.jbutton.button == 5) // right stick press
-				{
-					if (xDown)
+					else if (e.jbutton.button == 10 || e.jbutton.button == 1) // KEY_PLUS || KEY_B
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_ESCAPE);
+					else if (e.jbutton.button == 2) // KEY_X
 					{
-						// toggle console
-						g_engine->onKeyboardKeyDown(SDL_SCANCODE_LSHIFT);
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_X);
+						xDown = true;
+					}
+					else if (e.jbutton.button == 3) // KEY_Y
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_Y);
+					else if (e.jbutton.button == 21 || e.jbutton.button == 13) // right stick up || dpad up
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_UP);
+					else if (e.jbutton.button == 23 || e.jbutton.button == 15) // right stick down || dpad down
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_DOWN);
+					else if (e.jbutton.button == 20 || e.jbutton.button == 12) // right stick left || dpad left
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_LEFT);
+					else if (e.jbutton.button == 22 || e.jbutton.button == 14) // right stick right || dpad right
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_RIGHT);
+					else if (e.jbutton.button == 6) // KEY_L
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_L);
+					else if (e.jbutton.button == 7) // KEY_R
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_R);
+					else if (e.jbutton.button == 8) // KEY_ZL
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_Z);
+					else if (e.jbutton.button == 9) // KEY_ZR
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_V);
+					else if (e.jbutton.button == 11) // KEY_MINUS
 						g_engine->onKeyboardKeyDown(SDL_SCANCODE_F1);
-						g_engine->onKeyboardKeyUp(SDL_SCANCODE_LSHIFT);
-						g_engine->onKeyboardKeyUp(SDL_SCANCODE_F1);
-					}
-					else
+					else if (e.jbutton.button == 4) // left stick press
 					{
+						// toggle options (CTRL + O)
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_LCTRL);
+						g_engine->onKeyboardKeyDown(SDL_SCANCODE_O);
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_LCTRL);
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_O);
+					}
+					else if (e.jbutton.button == 5) // right stick press
+					{
+						if (xDown)
+						{
+							// toggle console
+							g_engine->onKeyboardKeyDown(SDL_SCANCODE_LSHIFT);
+							g_engine->onKeyboardKeyDown(SDL_SCANCODE_F1);
+							g_engine->onKeyboardKeyUp(SDL_SCANCODE_LSHIFT);
+							g_engine->onKeyboardKeyUp(SDL_SCANCODE_F1);
+						}
+						else
+						{
 #ifdef __SWITCH__
 
-						((HorizonSDLEnvironment*)environment)->showKeyboard();
+							((HorizonSDLEnvironment*)environment)->showKeyboard();
 
 #endif
+						}
 					}
-				}
-				break;
+					break;
 
-			case SDL_JOYBUTTONUP:
-				if (e.jbutton.button == 0) // KEY_A
-					g_engine->onMouseLeftChange(false);
-				else if (e.jbutton.button == 10 || e.jbutton.button == 1) // KEY_PLUS || KEY_B
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_ESCAPE);
-				else if (e.jbutton.button == 2) // KEY_X
-				{
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_X);
-					xDown = false;
-				}
-				else if (e.jbutton.button == 3) // KEY_Y
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_Y);
-				else if (e.jbutton.button == 21 || e.jbutton.button == 13) // right stick up || dpad up
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_UP);
-				else if (e.jbutton.button == 23 || e.jbutton.button == 15) // right stick down || dpad down
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_DOWN);
-				else if (e.jbutton.button == 20 || e.jbutton.button == 12) // right stick left || dpad left
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_LEFT);
-				else if (e.jbutton.button == 22 || e.jbutton.button == 14) // right stick right || dpad right
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_RIGHT);
-				else if (e.jbutton.button == 6) // KEY_L
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_L);
-				else if (e.jbutton.button == 7) // KEY_R
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_R);
-				else if (e.jbutton.button == 8) // KEY_ZL
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_Z);
-				else if (e.jbutton.button == 9) // KEY_ZR
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_V);
-				else if (e.jbutton.button == 11) // KEY_MINUS
-					g_engine->onKeyboardKeyUp(SDL_SCANCODE_F1);
-				break;
+				case SDL_JOYBUTTONUP:
+					if (e.jbutton.button == 0) // KEY_A
+						g_engine->onMouseLeftChange(false);
+					else if (e.jbutton.button == 10 || e.jbutton.button == 1) // KEY_PLUS || KEY_B
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_ESCAPE);
+					else if (e.jbutton.button == 2) // KEY_X
+					{
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_X);
+						xDown = false;
+					}
+					else if (e.jbutton.button == 3) // KEY_Y
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_Y);
+					else if (e.jbutton.button == 21 || e.jbutton.button == 13) // right stick up || dpad up
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_UP);
+					else if (e.jbutton.button == 23 || e.jbutton.button == 15) // right stick down || dpad down
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_DOWN);
+					else if (e.jbutton.button == 20 || e.jbutton.button == 12) // right stick left || dpad left
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_LEFT);
+					else if (e.jbutton.button == 22 || e.jbutton.button == 14) // right stick right || dpad right
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_RIGHT);
+					else if (e.jbutton.button == 6) // KEY_L
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_L);
+					else if (e.jbutton.button == 7) // KEY_R
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_R);
+					else if (e.jbutton.button == 8) // KEY_ZL
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_Z);
+					else if (e.jbutton.button == 9) // KEY_ZR
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_V);
+					else if (e.jbutton.button == 11) // KEY_MINUS
+						g_engine->onKeyboardKeyUp(SDL_SCANCODE_F1);
+					break;
 
-			case SDL_JOYAXISMOTION:
-				///debugLog("joyaxismotion: stick %i : axis = %i, value = %i\n", (int)e.jaxis.which, (int)e.jaxis.axis, (int)e.jaxis.value);
-				// left stick
-				if (e.jaxis.axis == 1 || e.jaxis.axis == 0)
-				{
-					if (e.jaxis.axis == 0)
-						m_fJoystick0XPercent = (float)e.jaxis.value / 32767.0f;
-					else
-						m_fJoystick0YPercent = (float)e.jaxis.value / 32767.0f;
-				}
-				break;
+				case SDL_JOYAXISMOTION:
+					///debugLog("joyaxismotion: stick %i : axis = %i, value = %i\n", (int)e.jaxis.which, (int)e.jaxis.axis, (int)e.jaxis.value);
+					// left stick
+					if (e.jaxis.axis == 1 || e.jaxis.axis == 0)
+					{
+						if (e.jaxis.axis == 0)
+							m_fJoystick0XPercent = (float)e.jaxis.value / 32767.0f;
+						else
+							m_fJoystick0YPercent = (float)e.jaxis.value / 32767.0f;
+					}
+					break;
 
 #endif
+				}
 			}
 		}
 
@@ -488,8 +522,10 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 #if defined(MCENGINE_SDL_JOYSTICK) && defined(MCENGINE_SDL_JOYSTICK_MOUSE)
 
 			// joystick mouse
-			if (m_fJoystick0XPercent != 0.0f || m_fJoystick0YPercent != 0.0f)
+			if (g_bHasFocus && !g_bMinimized && (m_fJoystick0XPercent != 0.0f || m_fJoystick0YPercent != 0.0f))
 			{
+				// TODO: deadzone convars
+
 				const float hardcodedMultiplier = 1000.0f;
 				const Vector2 hardcodedResolution = Vector2(1280, 720);
 				Vector2 joystickDelta = Vector2(m_fJoystick0XPercent * sdl_joystick_mouse_sensitivity.getFloat(), m_fJoystick0YPercent * sdl_joystick_mouse_sensitivity.getFloat()) * g_engine->getFrameTime() * hardcodedMultiplier;
@@ -497,8 +533,8 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 								 g_engine->getScreenSize().y/hardcodedResolution.y : g_engine->getScreenSize().x/hardcodedResolution.x; // normalize
 
 				mousePos += joystickDelta;
-				mousePos.x = clamp<float>(mousePos.x, 0.0f, g_engine->getScreenSize().x);
-				mousePos.y = clamp<float>(mousePos.y, 0.0f, g_engine->getScreenSize().y);
+				mousePos.x = clamp<float>(mousePos.x, 0.0f, g_engine->getScreenSize().x - 1);
+				mousePos.y = clamp<float>(mousePos.y, 0.0f, g_engine->getScreenSize().y - 1);
 
 				environment->setMousePos(mousePos.x, mousePos.y);
 				g_engine->getMouse()->onPosChange(mousePos);
@@ -521,31 +557,41 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 		}
 
 		// delay the next frame
-		frameTimer->update();
-		const bool inBackground = g_bMinimized || !g_bHasFocus;
-		if (!fps_unlimited.getBool() || inBackground)
 		{
-			double delayStart = frameTimer->getElapsedTime();
-			double delayTime;
-			if (inBackground)
-				delayTime = (1.0 / (double)fps_max_background.getFloat()) - frameTimer->getDelta();
-			else
-				delayTime = (1.0 / (double)fps_max.getFloat()) - frameTimer->getDelta();
+			VPROF_BUDGET("FPSLimiter", VPROF_BUDGETGROUP_SLEEP);
 
-			while (delayTime > 0.0)
+			frameTimer->update();
+			const bool inBackground = g_bMinimized || !g_bHasFocus;
+			if (!fps_unlimited.getBool() || inBackground)
 			{
-				if (inBackground) // real waiting (very inaccurate, but very good for little background cpu utilization)
-					frameTimer->sleep((int)((1.0f / fps_max_background.getFloat())*1000.0f*1000.0f));
-				else // more or less "busy" waiting, but giving away the rest of the timeslice at least
-					frameTimer->sleep(0); // yes, there is a zero in there
+				double delayStart = frameTimer->getElapsedTime();
+				double delayTime;
+				if (inBackground)
+					delayTime = (1.0 / (double)fps_max_background.getFloat()) - frameTimer->getDelta();
+				else
+					delayTime = (1.0 / (double)fps_max.getFloat()) - frameTimer->getDelta();
 
-				// decrease the delayTime by the time we spent in this loop
-				// if the loop is executed more than once, note how delayStart now gets the value of the previous iteration from getElapsedTime()
-				// this works because the elapsed time is only updated in update(). now we can easily calculate the time the Sleep() took and subtract it from the delayTime
-				delayStart = frameTimer->getElapsedTime();
-				frameTimer->update();
-				delayTime -= (frameTimer->getElapsedTime() - delayStart);
+				const bool didSleep = delayTime > 0.0;
+				while (delayTime > 0.0)
+				{
+					if (inBackground) // real waiting (very inaccurate, but very good for little background cpu utilization)
+						frameTimer->sleep((int)((1.0f / fps_max_background.getFloat())*1000.0f*1000.0f));
+					else // more or less "busy" waiting, but giving away the rest of the timeslice at least
+						frameTimer->sleep(0); // yes, there is a zero in there
+
+					// decrease the delayTime by the time we spent in this loop
+					// if the loop is executed more than once, note how delayStart now gets the value of the previous iteration from getElapsedTime()
+					// this works because the elapsed time is only updated in update(). now we can easily calculate the time the Sleep() took and subtract it from the delayTime
+					delayStart = frameTimer->getElapsedTime();
+					frameTimer->update();
+					delayTime -= (frameTimer->getElapsedTime() - delayStart);
+				}
+
+				if (!didSleep && fps_max_yield.getBool())
+					frameTimer->sleep(0); // yes, there is a zero in there
 			}
+			else if (fps_unlimited_yield.getBool())
+				frameTimer->sleep(0); // yes, there is a zero in there
 		}
 	}
 
