@@ -123,16 +123,17 @@ void Console::processCommand(UString command)
 	// handle multiple commands separated by semicolons
 	if (command.find(";") != -1 && command.find("echo") == -1)
 	{
-		std::vector<UString> commands = command.split(";");
+		const std::vector<UString> commands = command.split(";");
 		for (size_t i=0; i<commands.size(); i++)
 		{
 			processCommand(commands[i]);
 		}
+
 		return;
 	}
 
 	// separate convar name and value
-	std::vector<UString> tokens = command.split(" ");
+	const std::vector<UString> tokens = command.split(" ");
 	UString commandName;
 	UString commandValue;
 	for (size_t i=0; i<tokens.size(); i++)
@@ -178,7 +179,9 @@ void Console::processCommand(UString command)
 
 			if (var->hasValue())
 			{
-				logMessage.append(UString::format(" = %s ( def. \"%s\" )", var->getString().toUtf8(), var->getDefaultString().toUtf8()));
+				logMessage.append(UString::format(" = %s ( def. \"%s\" , ", var->getString().toUtf8(), var->getDefaultString().toUtf8()));
+				logMessage.append(ConVar::typeToString(var->getType()));
+				logMessage.append(" )");
 			}
 
 			if (var->getHelpstring().length() > 0)
@@ -193,7 +196,6 @@ void Console::processCommand(UString command)
 
 			logMessage = commandName;
 			logMessage.append(" : ");
-			///logMessage.append(" ");
 			logMessage.append(var->getString());
 		}
 
