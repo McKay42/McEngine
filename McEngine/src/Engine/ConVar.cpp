@@ -42,6 +42,25 @@ static ConVar *_getConVar(const UString &name)
 
 
 
+UString ConVar::typeToString(CONVAR_TYPE type)
+{
+	switch (type)
+	{
+	case ConVar::CONVAR_TYPE::CONVAR_TYPE_BOOL:
+		return "bool";
+	case ConVar::CONVAR_TYPE::CONVAR_TYPE_INT:
+		return "int";
+	case ConVar::CONVAR_TYPE::CONVAR_TYPE_FLOAT:
+		return "float";
+	case ConVar::CONVAR_TYPE::CONVAR_TYPE_STRING:
+		return "string";
+	}
+
+	return "";
+}
+
+
+
 void ConVar::init()
 {
 	m_callbackfunc = NULL;
@@ -55,7 +74,7 @@ void ConVar::init()
 	m_type = CONVAR_TYPE::CONVAR_TYPE_FLOAT;
 }
 
-void ConVar::init(UString name)
+void ConVar::init(UString &name)
 {
 	init();
 
@@ -65,7 +84,7 @@ void ConVar::init(UString name)
 	m_type = CONVAR_TYPE::CONVAR_TYPE_STRING;
 }
 
-void ConVar::init(UString name, ConVarCallback callback)
+void ConVar::init(UString &name, ConVarCallback callback)
 {
 	init();
 
@@ -76,7 +95,14 @@ void ConVar::init(UString name, ConVarCallback callback)
 	m_type = CONVAR_TYPE::CONVAR_TYPE_STRING;
 }
 
-void ConVar::init(UString name, ConVarCallbackArgs callbackARGS)
+void ConVar::init(UString &name, UString helpString, ConVarCallback callback)
+{
+	init(name, callback);
+
+	m_sHelpString = helpString;
+}
+
+void ConVar::init(UString &name, ConVarCallbackArgs callbackARGS)
 {
 	init();
 
@@ -87,7 +113,14 @@ void ConVar::init(UString name, ConVarCallbackArgs callbackARGS)
 	m_type = CONVAR_TYPE::CONVAR_TYPE_STRING;
 }
 
-void ConVar::init(UString name, float defaultValue, UString helpString, ConVarChangeCallback callback)
+void ConVar::init(UString &name, UString helpString, ConVarCallbackArgs callbackARGS)
+{
+	init(name, callbackARGS);
+
+	m_sHelpString = helpString;
+}
+
+void ConVar::init(UString &name, float defaultValue, UString helpString, ConVarChangeCallback callback)
 {
 	init();
 
@@ -101,7 +134,7 @@ void ConVar::init(UString name, float defaultValue, UString helpString, ConVarCh
 	m_changecallback = callback;
 }
 
-void ConVar::init(UString name, UString defaultValue, UString helpString, ConVarChangeCallback callback)
+void ConVar::init(UString &name, UString defaultValue, UString helpString, ConVarChangeCallback callback)
 {
 	init();
 
@@ -127,113 +160,141 @@ ConVar::ConVar(UString name, ConVarCallback callback)
 	_addConVar(this);
 }
 
+ConVar::ConVar(UString name, const char *helpString, ConVarCallback callback)
+{
+	init(name, helpString, callback);
+	_addConVar(this);
+}
+
 ConVar::ConVar(UString name, ConVarCallbackArgs callbackARGS)
 {
 	init(name, callbackARGS);
 	_addConVar(this);
 }
 
+ConVar::ConVar(UString name, const char *helpString, ConVarCallbackArgs callbackARGS)
+{
+	init(name, helpString, callbackARGS);
+	_addConVar(this);
+}
+
 ConVar::ConVar(UString name, float fDefaultValue)
 {
-	init(name, fDefaultValue, "", NULL);
+	init(name, fDefaultValue, UString(""), NULL);
 	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, float fDefaultValue, ConVarChangeCallback callback)
 {
-	init(name, fDefaultValue, "", callback);
+	init(name, fDefaultValue, UString(""), callback);
 	_addConVar(this);
 }
 
-ConVar::ConVar(UString name, float fDefaultValue, UString helpString)
+ConVar::ConVar(UString name, float fDefaultValue, const char *helpString)
 {
-	init(name, fDefaultValue, helpString, NULL);
+	init(name, fDefaultValue, UString(helpString), NULL);
 	_addConVar(this);
 }
 
-ConVar::ConVar(UString name, float fDefaultValue, UString helpString, ConVarChangeCallback callback)
+ConVar::ConVar(UString name, float fDefaultValue, const char *helpString, ConVarChangeCallback callback)
 {
-	init(name, fDefaultValue, helpString, callback);
+	init(name, fDefaultValue, UString(helpString), callback);
 	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, int iDefaultValue)
 {
 	init(name, (float)iDefaultValue, "", NULL);
-	m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
+	{
+		m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
+	}
 	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, int iDefaultValue, ConVarChangeCallback callback)
 {
 	init(name, (float)iDefaultValue, "", callback);
-	m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
+	{
+		m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
+	}
 	_addConVar(this);
 }
 
-ConVar::ConVar(UString name, int iDefaultValue, UString helpString)
+ConVar::ConVar(UString name, int iDefaultValue, const char *helpString)
 {
-	init(name, (float)iDefaultValue, helpString, NULL);
-	m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
+	init(name, (float)iDefaultValue, UString(helpString), NULL);
+	{
+		m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
+	}
 	_addConVar(this);
 }
 
-ConVar::ConVar(UString name, int iDefaultValue, UString helpString, ConVarChangeCallback callback)
+ConVar::ConVar(UString name, int iDefaultValue, const char *helpString, ConVarChangeCallback callback)
 {
-	init(name, (float)iDefaultValue, helpString, callback);
-	m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
+	init(name, (float)iDefaultValue, UString(helpString), callback);
+	{
+		m_type = CONVAR_TYPE::CONVAR_TYPE_INT;
+	}
 	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, bool bDefaultValue)
 {
 	init(name, bDefaultValue ? 1.0f : 0.0f, "", NULL);
-	m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
+	{
+		m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
+	}
 	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, bool bDefaultValue, ConVarChangeCallback callback)
 {
 	init(name, bDefaultValue ? 1.0f : 0.0f, "", callback);
-	m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
+	{
+		m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
+	}
 	_addConVar(this);
 }
 
-ConVar::ConVar(UString name, bool bDefaultValue, UString helpString)
+ConVar::ConVar(UString name, bool bDefaultValue, const char *helpString)
 {
-	init(name, bDefaultValue ? 1.0f : 0.0f, helpString, NULL);
-	m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
+	init(name, bDefaultValue ? 1.0f : 0.0f, UString(helpString), NULL);
+	{
+		m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
+	}
 	_addConVar(this);
 }
 
-ConVar::ConVar(UString name, bool bDefaultValue, UString helpString, ConVarChangeCallback callback)
+ConVar::ConVar(UString name, bool bDefaultValue, const char *helpString, ConVarChangeCallback callback)
 {
-	init(name, bDefaultValue ? 1.0f : 0.0f, helpString, callback);
-	m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
+	init(name, bDefaultValue ? 1.0f : 0.0f, UString(helpString), callback);
+	{
+		m_type = CONVAR_TYPE::CONVAR_TYPE_BOOL;
+	}
 	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, const char *sDefaultValue)
 {
-	init(name, UString(sDefaultValue), "", NULL);
+	init(name, UString(sDefaultValue), UString(""), NULL);
 	_addConVar(this);
 }
 
-ConVar::ConVar(UString name, const char *sDefaultValue, UString helpString)
+ConVar::ConVar(UString name, const char *sDefaultValue, const char *helpString)
 {
-	init(name, UString(sDefaultValue), helpString, NULL);
+	init(name, UString(sDefaultValue), UString(helpString), NULL);
 	_addConVar(this);
 }
 
 ConVar::ConVar(UString name, const char *sDefaultValue, ConVarChangeCallback callback)
 {
-	init(name, UString(sDefaultValue), "", callback);
+	init(name, UString(sDefaultValue), UString(""), callback);
 	_addConVar(this);
 }
 
-ConVar::ConVar(UString name, const char *sDefaultValue, UString helpString, ConVarChangeCallback callback)
+ConVar::ConVar(UString name, const char *sDefaultValue, const char *helpString, ConVarChangeCallback callback)
 {
-	init(name, UString(sDefaultValue), helpString, callback);
+	init(name, UString(sDefaultValue), UString(helpString), callback);
 	_addConVar(this);
 }
 
@@ -262,6 +323,8 @@ void ConVar::setDefaultString(UString defaultValue)
 
 void ConVar::setValue(float value)
 {
+	// TODO: make this less unsafe in multithreaded environments (for float convars at least)
+
 	// backup previous value
 	const float oldValue = m_fValue.load();
 
@@ -344,9 +407,7 @@ bool ConVar::hasCallbackArgs() const
 //  ConVarHandler Implementation  //
 //********************************//
 
-ConVar _emptyDummyConVar("emptyDummyConVar", 42.0f);
-
-ConVar *ConVarHandler::emptyDummyConVar = &_emptyDummyConVar;
+ConVar _emptyDummyConVar("emptyDummyConVar", 42.0f, "this placeholder convar is returned by convar->getConVarByName() if no matching convar is found");
 
 ConVarHandler *convar = new ConVarHandler();
 
@@ -388,24 +449,24 @@ ConVar *ConVarHandler::getConVarByName(UString name, bool warnIfNotFound) const
 	if (!warnIfNotFound)
 		return NULL;
 	else
-		return emptyDummyConVar;
+		return &_emptyDummyConVar;
 }
 
 std::vector<ConVar*> ConVarHandler::getConVarByLetter(UString letters) const
 {
 	std::vector<ConVar*> matchingConVars;
-
-	if (letters.length() < 1)
-		return matchingConVars;
-
-	const std::vector<ConVar*> &convars = getConVarArray();
-
-	for (size_t i=0; i<convars.size(); i++)
 	{
-		if (convars[i]->getName().find(letters, 0, letters.length()) == 0)
-			matchingConVars.push_back(convars[i]);
-	}
+		if (letters.length() < 1)
+			return matchingConVars;
 
+		const std::vector<ConVar*> &convars = getConVarArray();
+
+		for (size_t i=0; i<convars.size(); i++)
+		{
+			if (convars[i]->getName().find(letters, 0, letters.length()) == 0)
+				matchingConVars.push_back(convars[i]);
+		}
+	}
 	return matchingConVars;
 }
 
@@ -431,6 +492,18 @@ static void _find(UString args)
 		UString curcvar = convars[i]->getName();
 		if (curcvar.find(args, 0, curcvar.length()) != -1)
 			matchingConVars.push_back(convars[i]);
+	}
+
+	if (matchingConVars.size() > 0)
+	{
+		struct CONVAR_SORT_COMPARATOR
+		{
+			bool operator () (ConVar const *var1, ConVar const *var2)
+			{
+				return (var1->getName() < var2->getName());
+			}
+		};
+		std::sort(matchingConVars.begin(), matchingConVars.end(), CONVAR_SORT_COMPARATOR());
 	}
 
 	if (matchingConVars.size() < 1)
@@ -461,6 +534,8 @@ static void _find(UString args)
 
 static void _help(UString args)
 {
+	args = args.trim();
+
 	if (args.length() < 1)
 	{
 		debugLog("Usage:  help <cvarname>");
@@ -479,7 +554,7 @@ static void _help(UString args)
 	}
 
 	// use closest match
-	int index = 0;
+	size_t index = 0;
 	for (size_t i=0; i<matches.size(); i++)
 	{
 		if (matches[i]->getName() == args)
@@ -488,7 +563,6 @@ static void _help(UString args)
 			break;
 		}
 	}
-
 	const ConVar *match = matches[index];
 
 	if (match->getHelpstring().length() < 1)
@@ -503,12 +577,15 @@ static void _help(UString args)
 	UString thelog = match->getName();
 	{
 		if (match->hasValue())
-			thelog.append(UString::format(" = %s ( def. \"%s\" )", match->getString().toUtf8(), match->getDefaultString().toUtf8()));
+		{
+			thelog.append(UString::format(" = %s ( def. \"%s\" , ", match->getString().toUtf8(), match->getDefaultString().toUtf8()));
+			thelog.append(ConVar::typeToString(match->getType()));
+			thelog.append(" )");
+		}
 
 		thelog.append(" - ");
 		thelog.append(match->getHelpstring());
 	}
-
 	debugLog("%s", thelog.toUtf8());
 }
 
@@ -516,24 +593,37 @@ static void _listcommands(void)
 {
 	debugLog("----------------------------------------------\n");
 	{
-		const std::vector<ConVar*> &convars = convar->getConVarArray();
+		std::vector<ConVar*> convars = convar->getConVarArray();
+		struct CONVAR_SORT_COMPARATOR
+		{
+			bool operator () (ConVar const *var1, ConVar const *var2)
+			{
+				return (var1->getName() < var2->getName());
+			}
+		};
+		std::sort(convars.begin(), convars.end(), CONVAR_SORT_COMPARATOR());
+
 		for (size_t i=0; i<convars.size(); i++)
 		{
-			UString tstring = convars[i]->getName();
+			const ConVar *var = convars[i];
 
-			if (convars[i]->hasValue())
+			UString tstring = var->getName();
 			{
-				tstring.append(UString::format(" = %s ( def. \"%s\" )", convars[i]->getString().toUtf8(), convars[i]->getDefaultString().toUtf8()));
+				if (var->hasValue())
+				{
+					tstring.append(UString::format(" = %s ( def. \"%s\" , ", var->getString().toUtf8(), var->getDefaultString().toUtf8()));
+					tstring.append(ConVar::typeToString(var->getType()));
+					tstring.append(" )");
+				}
+
+				if (var->getHelpstring().length() > 0)
+				{
+					tstring.append(" - ");
+					tstring.append(var->getHelpstring());
+				}
+
+				tstring.append("\n");
 			}
-
-			if (convars[i]->getHelpstring().length() > 0)
-			{
-				tstring.append(" - ");
-				tstring.append(convars[i]->getHelpstring());
-			}
-
-			tstring.append("\n");
-
 			debugLog("%s", tstring.toUtf8());
 		}
 	}

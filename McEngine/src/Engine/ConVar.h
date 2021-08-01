@@ -32,30 +32,36 @@ public:
 	typedef fastdelegate::FastDelegate2<UString, UString> NativeConVarChangeCallback;
 
 public:
-	ConVar(UString name);
+	static UString typeToString(CONVAR_TYPE type);
 
-	ConVar(UString name, ConVarCallback callback);
-	ConVar(UString name, ConVarCallbackArgs callbackARGS);
+public:
+	explicit ConVar(UString name);
 
-	ConVar(UString name, float defaultValue);
-	ConVar(UString name, float defaultValue, ConVarChangeCallback callback);
-	ConVar(UString name, float defaultValue, UString helpString);
-	ConVar(UString name, float defaultValue, UString helpString, ConVarChangeCallback callback);
+	explicit ConVar(UString name, ConVarCallback callback);
+	explicit ConVar(UString name, const char *helpString, ConVarCallback callback);
 
-	ConVar(UString name, int defaultValue);
-	ConVar(UString name, int defaultValue, ConVarChangeCallback callback);
-	ConVar(UString name, int defaultValue, UString helpString);
-	ConVar(UString name, int defaultValue, UString helpString, ConVarChangeCallback callback);
+	explicit ConVar(UString name, ConVarCallbackArgs callbackARGS);
+	explicit ConVar(UString name, const char *helpString, ConVarCallbackArgs callbackARGS);
 
-	ConVar(UString name, bool defaultValue);
-	ConVar(UString name, bool defaultValue, ConVarChangeCallback callback);
-	ConVar(UString name, bool defaultValue, UString helpString);
-	ConVar(UString name, bool defaultValue, UString helpString, ConVarChangeCallback callback);
+	explicit ConVar(UString name, float defaultValue);
+	explicit ConVar(UString name, float defaultValue, ConVarChangeCallback callback);
+	explicit ConVar(UString name, float defaultValue, const char *helpString);
+	explicit ConVar(UString name, float defaultValue, const char *helpString, ConVarChangeCallback callback);
 
-	ConVar(UString name, const char *defaultValue);
-	ConVar(UString name, const char *defaultValue, UString helpString);
-	ConVar(UString name, const char *defaultValue, ConVarChangeCallback callback);
-	ConVar(UString name, const char *defaultValue, UString helpString, ConVarChangeCallback callback);
+	explicit ConVar(UString name, int defaultValue);
+	explicit ConVar(UString name, int defaultValue, ConVarChangeCallback callback);
+	explicit ConVar(UString name, int defaultValue, const char *helpString);
+	explicit ConVar(UString name, int defaultValue, const char *helpString, ConVarChangeCallback callback);
+
+	explicit ConVar(UString name, bool defaultValue);
+	explicit ConVar(UString name, bool defaultValue, ConVarChangeCallback callback);
+	explicit ConVar(UString name, bool defaultValue, const char *helpString);
+	explicit ConVar(UString name, bool defaultValue, const char *helpString, ConVarChangeCallback callback);
+
+	explicit ConVar(UString name, const char *defaultValue);
+	explicit ConVar(UString name, const char *defaultValue, const char *helpString);
+	explicit ConVar(UString name, const char *defaultValue, ConVarChangeCallback callback);
+	explicit ConVar(UString name, const char *defaultValue, const char *helpString, ConVarChangeCallback callback);
 
 	// callbacks
 	void exec();
@@ -87,18 +93,20 @@ public:
 	inline const UString getName() const {return m_sName;}
 	inline CONVAR_TYPE getType() const {return m_type;}
 
-	inline bool hasValue() const {return m_bHasValue.load();}
+	inline bool hasValue() const {return m_bHasValue;}
 	bool hasCallbackArgs() const;
 
 private:
 	void init();
-	void init(UString name);
-	void init(UString name, ConVarCallback callback);
-	void init(UString name, ConVarCallbackArgs callbackARGS);
-	void init(UString name, float defaultValue, UString helpString, ConVarChangeCallback callback);
-	void init(UString name, UString defaultValue, UString helpString, ConVarChangeCallback callback);
+	void init(UString &name);
+	void init(UString &name, ConVarCallback callback);
+	void init(UString &name, UString helpString, ConVarCallback callback);
+	void init(UString &name, ConVarCallbackArgs callbackARGS);
+	void init(UString &name, UString helpString, ConVarCallbackArgs callbackARGS);
+	void init(UString &name, float defaultValue, UString helpString, ConVarChangeCallback callback);
+	void init(UString &name, UString defaultValue, UString helpString, ConVarChangeCallback callback);
 
-	std::atomic<bool> m_bHasValue;
+	bool m_bHasValue;
 	CONVAR_TYPE m_type;
 
 	UString m_sName;
@@ -132,9 +140,6 @@ public:
 
 	ConVar *getConVarByName(UString name, bool warnIfNotFound = true) const;
 	std::vector<ConVar*> getConVarByLetter(UString letters) const;
-
-private:
-	static ConVar *emptyDummyConVar;
 };
 
 extern ConVarHandler *convar;
