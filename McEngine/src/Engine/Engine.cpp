@@ -287,7 +287,7 @@ void Engine::onPaint()
 	m_bDrawing = true;
 	{
 		{
-			VPROF_BUDGET("Graphics::beginScene", VPROF_BUDGETGROUP_SWAPBUFFERS);
+			VPROF_BUDGET("Graphics::beginScene", VPROF_BUDGETGROUP_DRAW);
 			m_graphics->beginScene();
 		}
 		{
@@ -315,7 +315,7 @@ void Engine::onPaint()
 			}
 		}
 		{
-			VPROF_BUDGET("Graphics::endScene", VPROF_BUDGETGROUP_SWAPBUFFERS);
+			VPROF_BUDGET("Graphics::endScene", VPROF_BUDGETGROUP_DRAW_SWAPBUFFERS);
 			m_graphics->endScene();
 		}
 	}

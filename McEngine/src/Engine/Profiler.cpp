@@ -31,13 +31,13 @@ ProfilerProfile::ProfilerProfile(bool manualStartViaMain) : m_root("Root", VPROF
 
 	m_iNumNodes = 0;
 
-	// predefined order
-	groupNameToID(VPROF_BUDGETGROUP_ROOT);
+	// create all groups in predefined order
+	groupNameToID(VPROF_BUDGETGROUP_ROOT); // NOTE: the root group must always be the first group to be created here
 	groupNameToID(VPROF_BUDGETGROUP_SLEEP);
 	groupNameToID(VPROF_BUDGETGROUP_WNDPROC);
 	groupNameToID(VPROF_BUDGETGROUP_UPDATE);
 	groupNameToID(VPROF_BUDGETGROUP_DRAW);
-	groupNameToID(VPROF_BUDGETGROUP_SWAPBUFFERS);
+	groupNameToID(VPROF_BUDGETGROUP_DRAW_SWAPBUFFERS);
 }
 
 double ProfilerProfile::sumTimes(int groupID)
@@ -56,10 +56,10 @@ double ProfilerProfile::sumTimes(ProfilerNode *node, int groupID)
 	{
 		if (sibling->m_iGroupID == groupID)
 		{
-			if (sibling != &m_root)
-			{
-				sum += sibling->m_fTimeLastFrame;
-			}
+			if (sibling == &m_root)
+				return (m_root.m_child != NULL ? m_root.m_child->m_fTimeLastFrame : m_root.m_fTimeLastFrame); // special case: early return for the root group (total duration of the entire frame)
+			else
+				return (sum + sibling->m_fTimeLastFrame);
 		}
 		else
 		{
@@ -104,7 +104,7 @@ ProfilerNode::ProfilerNode(const char *name, const char *group, ProfilerNode *pa
 	constructor(name, group, parent);
 }
 
-inline void ProfilerNode::constructor(const char *name, const char *group, ProfilerNode *parent)
+void ProfilerNode::constructor(const char *name, const char *group, ProfilerNode *parent)
 {
 	m_name = name;
 	m_parent = parent;
@@ -113,6 +113,7 @@ inline void ProfilerNode::constructor(const char *name, const char *group, Profi
 
 	m_iNumRecursions = 0;
 	m_fTime = 0.0;
+	m_fTimeCurrentFrame = 0.0;
 	m_fTimeLastFrame = 0.0;
 
 	m_iGroupID = (s_iNodeCounter++ > 0 ? g_profCurrentProfile.groupNameToID(group) : 0);
@@ -131,7 +132,7 @@ bool ProfilerNode::exitScope()
 	if (--m_iNumRecursions == 0)
 	{
 		m_fTime = engine->getTimeReal() - m_fTime;
-		m_fTimeLastFrame = m_fTime;
+		m_fTimeCurrentFrame = m_fTime;
 	}
 
 	return (m_iNumRecursions == 0);
@@ -163,18 +164,6 @@ ProfilerNode *ProfilerNode::getSubNode(const char *name, const char *group)
 	m_child = node;
 
 	return node;
-}
-
-double ProfilerNode::getTimeLastFrameLessChildren() const
-{
-	double result = m_fTimeLastFrame;
-	ProfilerNode *child = m_child;
-	while (child != NULL)
-	{
-		result = std::max(0.0, result - child->m_fTimeLastFrame);
-		child = child->m_sibling;
-	}
-	return result;
 }
 
 

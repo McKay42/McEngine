@@ -12,6 +12,7 @@
 
 class ConVar;
 class ProfilerNode;
+class ProfilerProfile;
 
 class McFont;
 class VertexArrayObject;
@@ -24,6 +25,8 @@ public:
 
 	void draw(Graphics *g);
 	void update();
+
+	void setProfile(ProfilerProfile *profile);
 
 private:
 	static ConVar *m_vprof_ref;
@@ -38,6 +41,7 @@ private:
 	{
 		NODE node;
 		double timeLastFrame;
+		uint32_t id;
 	};
 
 	struct GROUP
@@ -48,11 +52,12 @@ private:
 	};
 
 	void drawStringWithShadow(Graphics *g, const UString string, Color color);
-	void collectProfilerNodesRecursive(const ProfilerNode *node, int depth, std::vector<NODE> &nodes, SPIKE &spike);
-	void collectProfilerNodesSpikeRecursive(const ProfilerNode *node, int depth, std::vector<SPIKE> &spikeNodes);
 
-	int getGraphWidth();
-	int getGraphHeight();
+	static void collectProfilerNodesRecursive(const ProfilerNode *node, int depth, std::vector<NODE> &nodes, SPIKE &spike);
+	static void collectProfilerNodesSpikeRecursive(const ProfilerNode *node, int depth, std::vector<SPIKE> &spikeNodes);
+
+	static int getGraphWidth();
+	static int getGraphHeight();
 
 	int m_iPrevVaoWidth;
 	int m_iPrevVaoHeight;
@@ -62,15 +67,22 @@ private:
 
 	int m_iCurLinePos;
 
+	int m_iDrawGroupID;
+	int m_iDrawSwapBuffersGroupID;
+
+	ProfilerProfile *m_profile;
 	std::vector<GROUP> m_groups;
 	std::vector<NODE> m_nodes;
 	std::vector<SPIKE> m_spikes;
 
 	SPIKE m_spike;
 	std::vector<SPIKE> m_spikeNodes;
+	uint32_t m_spikeIDCounter;
 
 	McFont *m_font;
 	VertexArrayObject *m_lineVao;
+
+	bool m_bScheduledForceRebuildLineVao;
 };
 
 #endif

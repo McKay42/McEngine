@@ -20,10 +20,11 @@
 ConVar vprof_graph_height("vprof_graph_height", 250.0f);
 ConVar vprof_graph_width("vprof_graph_width", 800.0f);
 ConVar vprof_graph_margin("vprof_graph_margin", 40.0f);
-ConVar vprof_graph_range_max("vprof_graph_range_max", 20, "max value of the y-axis in milliseconds");
+ConVar vprof_graph_range_max("vprof_graph_range_max", 16.666666f, "max value of the y-axis in milliseconds");
 ConVar vprof_graph_alpha("vprof_graph_alpha", 1.0f, "line opacity");
+ConVar vprof_graph_draw_overhead("vprof_graph_draw_overhead", false, "whether to draw the profiling overhead time in white (usually negligible)");
 
-ConVar vprof_spike("vprof_spike", false, "measure and display largest spike details (1 = small info, 2 = extended info)"); // TODO: finish this, very useful
+ConVar vprof_spike("vprof_spike", 0, "measure and display largest spike details (1 = small info, 2 = extended info)");
 
 ConVar debug_vprof("debug_vprof", false);
 
@@ -46,8 +47,17 @@ VisualProfiler::VisualProfiler() : CBaseUIElement(0, 0, 0, 0, "")
 
 	m_iCurLinePos = 0;
 
+	m_iDrawGroupID = -1;
+	m_iDrawSwapBuffersGroupID = -1;
+
+	m_spikeIDCounter = 0;
+
+	setProfile(&g_profCurrentProfile); // by default we look at the standard full engine-wide profile
+
 	m_font = engine->getResourceManager()->getFont("FONT_DEFAULT");
 	m_lineVao = engine->getResourceManager()->createVertexArrayObject(Graphics::PRIMITIVE::PRIMITIVE_LINES, Graphics::USAGE_TYPE::USAGE_DYNAMIC, true);
+
+	m_bScheduledForceRebuildLineVao = false;
 }
 
 VisualProfiler::~VisualProfiler()
@@ -69,10 +79,10 @@ void VisualProfiler::draw(Graphics *g)
 		{
 			g->translate(0, m_font->getHeight());
 
-			g->drawString(m_font, UString::format("%i nodes", g_profCurrentProfile.getNumNodes()));
+			g->drawString(m_font, UString::format("%i nodes", m_profile->getNumNodes()));
 			g->translate(0, m_font->getHeight()*1.5f);
 
-			g->drawString(m_font, UString::format("%i groups", g_profCurrentProfile.getNumGroups()));
+			g->drawString(m_font, UString::format("%i groups", m_profile->getNumGroups()));
 			g->translate(0, m_font->getHeight()*1.5f);
 
 			g->drawString(m_font, "----------------------------------------------------");
@@ -83,7 +93,7 @@ void VisualProfiler::draw(Graphics *g)
 				g->pushTransform();
 				{
 					g->translate(m_font->getHeight()*3*(m_nodes[i].depth - 1), 0);
-					g->drawString(m_font, UString::format("[%s] - %s = %f ms", m_nodes[i].node->getName(), g_profCurrentProfile.getGroupName(m_nodes[i].node->getGroupID()), ((m_nodes[i].depth == 1 ? m_nodes[i].node->getTimeLastFrameLessChildren() : m_nodes[i].node->getTimeLastFrame()) * 1000.0)));
+					g->drawString(m_font, UString::format("[%s] - %s = %f ms", m_nodes[i].node->getName(), m_profile->getGroupName(m_nodes[i].node->getGroupID()), m_nodes[i].node->getTimeLastFrame() * 1000.0));
 				}
 				g->popTransform();
 
@@ -93,10 +103,10 @@ void VisualProfiler::draw(Graphics *g)
 			g->drawString(m_font, "----------------------------------------------------");
 			g->translate(0, m_font->getHeight()*1.5f);
 
-			for (int i=0; i<g_profCurrentProfile.getNumGroups(); i++)
+			for (int i=0; i<m_profile->getNumGroups(); i++)
 			{
-				const char *groupName = g_profCurrentProfile.getGroupName(i);
-				const double sum = g_profCurrentProfile.sumTimes(i);
+				const char *groupName = m_profile->getGroupName(i);
+				const double sum = m_profile->sumTimes(i);
 
 				g->drawString(m_font, UString::format("%s = %f ms", groupName, sum*1000.0));
 				g->translate(0, m_font->getHeight()*1.5f);
@@ -124,7 +134,7 @@ void VisualProfiler::draw(Graphics *g)
 						g->pushTransform();
 						{
 							g->translate(m_font->getHeight()*3*(m_spikeNodes[i].node.depth - 1), 0);
-							g->drawString(m_font, UString::format("[%s] - %s = %f ms", m_spikeNodes[i].node.node->getName(), g_profCurrentProfile.getGroupName(m_spikeNodes[i].node.node->getGroupID()), m_spikeNodes[i].timeLastFrame * 1000.0));
+							g->drawString(m_font, UString::format("[%s] - %s = %f ms", m_spikeNodes[i].node.node->getName(), m_profile->getGroupName(m_spikeNodes[i].node.node->getGroupID()), m_spikeNodes[i].timeLastFrame * 1000.0));
 						}
 						g->popTransform();
 
@@ -259,13 +269,14 @@ void VisualProfiler::update()
 				spike.node.depth = -1;
 				spike.node.node = NULL;
 				spike.timeLastFrame = 0.0;
+				spike.id = m_spikeIDCounter++;
 			}
 
 
 
 			// run regular debug node collector
 			m_nodes.clear();
-			collectProfilerNodesRecursive(g_profCurrentProfile.getRoot(), 0, m_nodes, spike);
+			collectProfilerNodesRecursive(m_profile->getRoot(), 0, m_nodes, spike);
 
 
 
@@ -287,45 +298,65 @@ void VisualProfiler::update()
 						newSpike = m_spikes[i];
 				}
 
-				if (newSpike.timeLastFrame != m_spike.timeLastFrame)
+				if (newSpike.id != m_spike.id)
 				{
+					const bool isNewSpikeLarger = (newSpike.timeLastFrame > m_spike.timeLastFrame);
+
 					m_spike = newSpike;
 
 
 
-					m_spikeNodes.clear();
-					collectProfilerNodesSpikeRecursive(m_spike.node.node, 1, m_spikeNodes);
+					// NOTE: since we only store 1 spike snapshot, once that is erased (m_spikes.size() > graphWidth) and we have to "fall back" to a "lower" spike, we don't have any data on that lower spike anymore
+					// so, we simply only create a new snapshot if we have a new larger spike (since that is guaranteed to be the currently active one, i.e. going through node data in m_profile will return its data)
+					// (storing graphWidth amounts of snapshots seems unnecessarily wasteful, and I like this solution)
+					if (isNewSpikeLarger)
+					{
+						m_spikeNodes.clear();
+						collectProfilerNodesSpikeRecursive(m_spike.node.node, 1, m_spikeNodes);
+					}
 				}
 			}
 		}
 	}
 
 	// lazy rebuild group/color list
-	if (m_groups.size() < g_profCurrentProfile.getNumGroups())
+	if (m_groups.size() < m_profile->getNumGroups())
 	{
+		// reset
+		m_iDrawGroupID = -1;
+		m_iDrawSwapBuffersGroupID = -1;
+
 		const int curNumGroups = m_groups.size();
-		const int actualNumGroups = g_profCurrentProfile.getNumGroups();
+		const int actualNumGroups = m_profile->getNumGroups();
 
 		for (int i=curNumGroups; i<actualNumGroups; i++)
 		{
 			GROUP group;
 
-			group.name = g_profCurrentProfile.getGroupName(i);
+			group.name = m_profile->getGroupName(i);
 			group.id = i;
 
 			// hardcoded colors for some groups
-			if (strcmp(group.name, VPROF_BUDGETGROUP_SLEEP) == 0)
+			if (strcmp(group.name, VPROF_BUDGETGROUP_ROOT) == 0) // NOTE: VPROF_BUDGETGROUP_ROOT is used for drawing the profiling overhead time if vprof_graph_draw_overhead is enabled
+				group.color = 0xffffffff;
+			else if (strcmp(group.name, VPROF_BUDGETGROUP_SLEEP) == 0)
 				group.color = 0xff5555bb;
 			else if (strcmp(group.name, VPROF_BUDGETGROUP_WNDPROC) == 0)
 				group.color = 0xffffff00;
 			else if (strcmp(group.name, VPROF_BUDGETGROUP_UPDATE) == 0)
 				group.color = 0xff00bb00;
 			else if (strcmp(group.name, VPROF_BUDGETGROUP_DRAW) == 0)
+			{
 				group.color = 0xffbf6500;
-			else if (strcmp(group.name, VPROF_BUDGETGROUP_SWAPBUFFERS) == 0)
+				m_iDrawGroupID = group.id;
+			}
+			else if (strcmp(group.name, VPROF_BUDGETGROUP_DRAW_SWAPBUFFERS) == 0)
+			{
 				group.color = 0xffff0000;
+				m_iDrawSwapBuffersGroupID = group.id;
+			}
 			else
-				group.color = 0xffffffff; // default to white
+				group.color = 0xff00ffff; // default to turquoise
 
 			m_groups.push_back(group);
 		}
@@ -340,12 +371,15 @@ void VisualProfiler::update()
 		const float alpha = vprof_graph_alpha.getFloat();
 
 		// lazy rebuild line vao if parameters change
-		if (m_iPrevVaoWidth != graphWidth
+		if (m_bScheduledForceRebuildLineVao
+			|| m_iPrevVaoWidth != graphWidth
 			|| m_iPrevVaoHeight != graphHeight
 			|| m_iPrevVaoGroups != numGroups
 			|| m_fPrevVaoMaxRange != maxRange
 			|| m_fPrevVaoAlpha != alpha)
 		{
+			m_bScheduledForceRebuildLineVao = false;
+
 			m_iPrevVaoWidth = graphWidth;
 			m_iPrevVaoHeight = graphHeight;
 			m_iPrevVaoGroups = numGroups;
@@ -380,10 +414,30 @@ void VisualProfiler::update()
 				// one new multi-line per frame
 				m_iCurLinePos = m_iCurLinePos % graphWidth;
 
-				int heightCounter = 0;
-				for (int i=0; i<numGroups; i++)
+				// if enabled, calculate and draw overhead
+				// the overhead is the time spent between not having any profiler node active/alive, and should always be <= 0
+				// it is usually slightly negative (in the order of 10 microseconds, includes rounding errors and timer inaccuracies)
+				// if the overhead ever gets positive then either there are no nodes covering all paths below VPROF_MAIN(), or there is a serious problem with measuring time via engine->getTimeReal()
+				double profilingOverheadTime = 0.0;
+				if (vprof_graph_draw_overhead.getBool())
 				{
-					const double duration = g_profCurrentProfile.sumTimes(m_groups[i].id);
+					const int rootGroupID = 0;
+					double sumGroupTimes = 0.0;
+					{
+						for (size_t i=1; i<m_groups.size(); i++) // NOTE: start at 1, ignore rootGroupID
+						{
+							sumGroupTimes += m_profile->sumTimes(m_groups[i].id);
+						}
+					}
+					profilingOverheadTime = std::max(0.0, m_profile->sumTimes(rootGroupID) - sumGroupTimes);
+				}
+
+				// go through every group and build the new multi-line
+				int heightCounter = 0;
+				for (int i=0; i<numGroups && (size_t)i<m_groups.size(); i++)
+				{
+					const double rawDuration = (i == 0 ? profilingOverheadTime : m_profile->sumTimes(m_groups[i].id));
+					const double duration = (i == m_iDrawGroupID ? rawDuration - m_profile->sumTimes(m_iDrawSwapBuffersGroupID) : rawDuration); // special case: hardcoded fix for nested groups (only draw + swap atm)
 					const int lineHeight = (int)(((duration * 1000.0) / (double)maxRange) * (double)graphHeight);
 
 					m_lineVao->setVertex(m_iCurLinePos*numGroups*2 + i*2, m_iCurLinePos, heightCounter);
@@ -398,6 +452,18 @@ void VisualProfiler::update()
 				m_iCurLinePos++;
 			}
 		}
+	}
+}
+
+void VisualProfiler::setProfile(ProfilerProfile *profile)
+{
+	m_profile = profile;
+
+	// force everything to get re-built for the new profile with the next frame
+	{
+		m_groups.clear();
+
+		m_bScheduledForceRebuildLineVao = true;
 	}
 }
 
