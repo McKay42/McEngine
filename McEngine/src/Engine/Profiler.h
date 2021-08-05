@@ -26,7 +26,7 @@
 #define VPROF_BUDGETGROUP_WNDPROC			"WndProc"
 #define VPROF_BUDGETGROUP_UPDATE			"Update"
 #define VPROF_BUDGETGROUP_DRAW				"Draw"
-#define VPROF_BUDGETGROUP_SWAPBUFFERS		"SwapBuffers"
+#define VPROF_BUDGETGROUP_DRAW_SWAPBUFFERS	"SwapBuffers"
 
 #define VPROF_MAX_NUM_BUDGETGROUPS			32
 #define VPROF_MAX_NUM_NODES					32
@@ -51,11 +51,11 @@ public:
 	inline ProfilerNode *getChild() const {return m_child;}
 	inline ProfilerNode *getSibling() const {return m_sibling;}
 
+	inline double getTimeCurrentFrame() const {return m_fTimeCurrentFrame;} // NOTE: this is incomplete if retrieved within engine update(), use getTimeLastFrame() instead
 	inline double getTimeLastFrame() const {return m_fTimeLastFrame;}
-	double getTimeLastFrameLessChildren() const;
 
 private:
-	void constructor(const char *name, const char *group, ProfilerNode *parent);
+	inline void constructor(const char *name, const char *group, ProfilerNode *parent);
 
 	ProfilerNode *getSubNode(const char *name, const char *group);
 
@@ -70,6 +70,7 @@ private:
 
 	int m_iNumRecursions;
 	double m_fTime;
+	double m_fTimeCurrentFrame;
 	double m_fTimeLastFrame;
 };
 
@@ -88,6 +89,15 @@ public:
 		{
 			m_bEnableScheduled = false;
 			m_root.enterScope();
+		}
+
+		// collect all durations from the last frame and store them as a complete set
+		if (m_iEnabled > 0)
+		{
+			for (int i=0; i<m_iNumNodes; i++)
+			{
+				m_nodes[i].m_fTimeLastFrame = m_nodes[i].m_fTimeCurrentFrame;
+			}
 		}
 	}
 
