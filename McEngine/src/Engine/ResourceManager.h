@@ -110,6 +110,7 @@ public:
 
 	inline const std::vector<Resource*> &getResources() const {return m_vResources;}
 
+	bool isLoading() const;
 	bool isLoadingResource(Resource *rs) const;
 
 private:
