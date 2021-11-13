@@ -266,6 +266,7 @@ void CBaseUITextbox::update()
 	if (!mright && m_bContextMouse && isMouseInside())
 	{
 		m_bContextMouse = false;
+		/*
 		engine->getMouse()->setCursorType(CURSORTYPE::CURSOR_NORMAL);
 		cmenu->begin();
 		{
@@ -309,6 +310,7 @@ void CBaseUITextbox::update()
 			handleDeleteSelectedText();
 			break;
 		}
+		*/
 	}
 }
 
