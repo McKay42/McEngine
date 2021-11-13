@@ -34,6 +34,7 @@ constexpr wchar_t UString::nullWString[];
 UString::UString()
 {
 	mLength = 0;
+	mLengthUtf8 = 0;
 	mIsAsciiOnly = false;
 	mUnicode = (wchar_t*)nullWString;
 	mUtf8 = (char*)nullString;
@@ -42,6 +43,7 @@ UString::UString()
 UString::UString(const char *utf8)
 {
 	mLength = 0;
+	mLengthUtf8 = 0;
 	mUnicode = (wchar_t*)nullWString;
 	mUtf8 = (char*)nullString;
 
@@ -50,7 +52,8 @@ UString::UString(const char *utf8)
 
 UString::UString(const char *utf8, int length)
 {
-	mLength = length;
+	mLength = 0;
+	mLengthUtf8 = length;
 	mUnicode = (wchar_t*)nullWString;
 	mUtf8 = (char*)nullString;
 
@@ -60,6 +63,7 @@ UString::UString(const char *utf8, int length)
 UString::UString(const UString &ustr)
 {
 	mLength = 0;
+	mLengthUtf8 = 0;
 	mUnicode = (wchar_t*)nullWString;
 	mUtf8 = (char*)nullString;
 
@@ -70,6 +74,7 @@ UString::UString(UString &&ustr)
 {
 	// move
 	mLength = ustr.mLength;
+	mLengthUtf8 = ustr.mLengthUtf8;
 	mIsAsciiOnly = ustr.mIsAsciiOnly;
 	mUnicode = ustr.mUnicode;
 	mUtf8 = ustr.mUtf8;
@@ -96,16 +101,19 @@ UString::UString(const wchar_t *str)
 	mUnicode[mLength] = '\0'; // null terminate
 
 	// null out and rebuild the utf version
-	mUtf8 = NULL;
-	mIsAsciiOnly = false;
+	{
+		mUtf8 = NULL;
+		mLengthUtf8 = 0;
+		mIsAsciiOnly = false;
 
-	updateUtf8();
+		updateUtf8();
+	}
 }
 
 UString::~UString()
 {
 	mLength = 0;
-	mIsAsciiOnly = false;
+	mLengthUtf8 = 0;
 
 	deleteUnicode();
 	deleteUtf8();
@@ -114,6 +122,7 @@ UString::~UString()
 void UString::clear()
 {
 	mLength = 0;
+	mLengthUtf8 = 0;
 	mIsAsciiOnly = false;
 
 	deleteUnicode();
@@ -371,14 +380,14 @@ void UString::append(const UString &str)
 	const int newSize = mLength + str.mLength;
 
 	// allocate new data buffer
-	wchar_t *newUnicode = new wchar_t[newSize+1]; // +1 for null termination later
+	wchar_t *newUnicode = new wchar_t[newSize + 1]; // +1 for null termination later
 
 	// copy existing data
 	if (mLength > 0)
 		memcpy(newUnicode, mUnicode, mLength*sizeof(wchar_t));
 
 	// copy appended data
-	memcpy(&(newUnicode[mLength]), str.mUnicode, (str.mLength+1)*sizeof(wchar_t)); // +1 to also copy the null char from the old string
+	memcpy(&(newUnicode[mLength]), str.mUnicode, (str.mLength + 1)*sizeof(wchar_t)); // +1 to also copy the null char from the old string
 
 	// replace the old values with the new
 	deleteUnicode();
@@ -395,7 +404,7 @@ void UString::append(wchar_t ch)
 	const int newSize = mLength + 1;
 
 	// allocate new data buffer
-	wchar_t *newUnicode = new wchar_t[newSize+1]; // +1 for null termination later
+	wchar_t *newUnicode = new wchar_t[newSize + 1]; // +1 for null termination later
 
 	// copy existing data
 	if (mLength > 0)
@@ -424,7 +433,7 @@ void UString::insert(int offset, const UString &str)
 	const int newSize = mLength + str.mLength;
 
 	// allocate new data buffer
-	wchar_t *newUnicode = new wchar_t[newSize+1]; // +1 for null termination later
+	wchar_t *newUnicode = new wchar_t[newSize + 1]; // +1 for null termination later
 
 	// if we're not inserting at the beginning of the string
 	if (offset > 0)
@@ -437,9 +446,9 @@ void UString::insert(int offset, const UString &str)
 	if (offset < mLength)
 	{
 		// copy rest of string (including terminating null char)
-		const int numRightChars = mLength - offset + 1;
+		const int numRightChars = (mLength - offset + 1);
 		if (numRightChars > 0)
-			memcpy(&(newUnicode[offset+str.mLength]), &(mUnicode[offset]), (numRightChars)*sizeof(wchar_t));
+			memcpy(&(newUnicode[offset + str.mLength]), &(mUnicode[offset]), (numRightChars)*sizeof(wchar_t));
 	}
 	else
 		newUnicode[newSize] = '\0';  // null terminate
@@ -461,7 +470,7 @@ void UString::insert(int offset, wchar_t ch)
 	const int newSize = mLength + 1; // +1 for the added character
 
 	// allocate new data buffer
-	wchar_t *newUnicode = new wchar_t[newSize+1]; // and again +1 for null termination later
+	wchar_t *newUnicode = new wchar_t[newSize + 1]; // and again +1 for null termination later
 
 	// copy first part of data
 	if (offset > 0)
@@ -473,7 +482,7 @@ void UString::insert(int offset, wchar_t ch)
 	// copy rest of string (including terminating null char)
 	const int numRightChars = mLength - offset + 1;
 	if (numRightChars > 0)
-		memcpy(&(newUnicode[offset+1]), &(mUnicode[offset]), (numRightChars)*sizeof(wchar_t));
+		memcpy(&(newUnicode[offset + 1]), &(mUnicode[offset]), (numRightChars)*sizeof(wchar_t));
 
 	// replace the old values with the new
 	deleteUnicode();
@@ -495,7 +504,7 @@ void UString::erase(int offset, int count)
 	const int newLength = mLength - count;
 
 	// allocate new data buffer
-	wchar_t *newUnicode = new wchar_t[newLength+1]; // +1 for null termination later
+	wchar_t *newUnicode = new wchar_t[newLength + 1]; // +1 for null termination later
 
 	// copy first part of data
 	if (offset > 0)
@@ -699,12 +708,14 @@ UString &UString::operator = (UString &&ustr)
 
 		// move
 		mLength = ustr.mLength;
+		mLengthUtf8 = ustr.mLengthUtf8;
 		mIsAsciiOnly = ustr.mIsAsciiOnly;
 		mUnicode = ustr.mUnicode;
 		mUtf8 = ustr.mUtf8;
 
 		// reset source
 		ustr.mLength = 0;
+		ustr.mLengthUtf8 = 0;
 		ustr.mIsAsciiOnly = false;
 		ustr.mUnicode = NULL;
 		ustr.mUtf8 = NULL;
@@ -779,10 +790,10 @@ int UString::fromUtf8(const char *utf8, int length)
 {
 	if (utf8 == NULL) return 0;
 
-	size_t supposedStringSize = (length > -1 ? length : strlen(utf8)) + 1; // +1 due to null char, since we're accessing the raw data below in the utf-8/16/32 check
+	const int supposedFullStringSize = (length > -1 ? length : strlen(utf8) + 1); // NOTE: +1 only for the strlen() case, since if we are called with a specific length the buffer might not have a null byte at the end
 
 	int startIndex = 0;
-	if (supposedStringSize > 2)
+	if (supposedFullStringSize > 2)
 	{
 		if (utf8[0] == (char)0xef && utf8[1] == (char)0xbb && utf8[2] == (char)0xbf) // utf-8
 			startIndex = 3;
@@ -802,7 +813,7 @@ int UString::fromUtf8(const char *utf8, int length)
 
 			// check for utf-32
 			// HACKHACK: TODO: this check will never work, due to the null characters reporting strlen() as too short (i.e. c1 == 0x00)
-			if (supposedStringSize > 3)
+			if (supposedFullStringSize > 3)
 			{
 				char c3 = utf8[3];
 				bool utf32le = (c0 == (char)0xff && c1 == (char)0xfe && c2 == (char)0x00 && c3 == (char)0x00);
@@ -817,9 +828,9 @@ int UString::fromUtf8(const char *utf8, int length)
 		}
 	}
 
-	mLength = decode(&(utf8[startIndex]), NULL);
+	mLength = decode(&(utf8[startIndex]), NULL, supposedFullStringSize);
 	mUnicode = new wchar_t[mLength + 1]; // +1 for null termination later
-	length = decode(&(utf8[startIndex]), mUnicode);
+	length = decode(&(utf8[startIndex]), mUnicode, supposedFullStringSize);
 
 	// reencode to utf8
 	updateUtf8();
@@ -827,14 +838,14 @@ int UString::fromUtf8(const char *utf8, int length)
 	return length;
 }
 
-int UString::decode(const char *utf8, wchar_t *unicode)
+int UString::decode(const char *utf8, wchar_t *unicode, int utf8Length)
 {
 	if (utf8 == NULL) return 0; // unicode is checked below
 
 	int length = 0;
-	for (int i=0; utf8[i]!=0; i++)
+	for (int i=0; (i < utf8Length && utf8[i] != 0); i++)
 	{
-		char b = utf8[i];
+		const char b = utf8[i];
 		if ((b & USTRING_MASK_1BYTE) == USTRING_VALUE_1BYTE) // if this is a single byte code point
 		{
 			if (unicode != NULL)
@@ -997,11 +1008,11 @@ void UString::updateUtf8()
 	deleteUtf8();
 
 	// rebuild
-	const int size = encode(mUnicode, mLength, NULL, &mIsAsciiOnly);
-	if (size > 0)
+	mLengthUtf8 = encode(mUnicode, mLength, NULL, &mIsAsciiOnly);
+	if (mLengthUtf8 > 0)
 	{
-		mUtf8 = new char[size + 1];
+		mUtf8 = new char[mLengthUtf8 + 1]; // +1 for null termination later
 		encode(mUnicode, mLength, mUtf8, NULL);
-		mUtf8[size] = '\0'; // null terminate
+		mUtf8[mLengthUtf8] = '\0'; // null terminate
 	}
 }

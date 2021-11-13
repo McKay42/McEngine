@@ -28,12 +28,12 @@ static void _addConVar(ConVar *c)
 		_getGlobalConVarArray().reserve(1024);
 
 	_getGlobalConVarArray().push_back(c);
-	_getGlobalConVarMap()[std::string(c->getName().toUtf8(), c->getName().length())] = c;
+	_getGlobalConVarMap()[std::string(c->getName().toUtf8(), c->getName().lengthUtf8())] = c;
 }
 
 static ConVar *_getConVar(const UString &name)
 {
-	const auto result = _getGlobalConVarMap().find(std::string(name.toUtf8(), name.length()));
+	const auto result = _getGlobalConVarMap().find(std::string(name.toUtf8(), name.lengthUtf8()));
 	if (result != _getGlobalConVarMap().end())
 		return result->second;
 	else

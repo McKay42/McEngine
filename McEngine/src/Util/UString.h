@@ -28,6 +28,7 @@ public:
 
 	// get
 	inline int length() const {return mLength;}
+	inline int lengthUtf8() const {return mLengthUtf8;}
 	inline const char *toUtf8() const {return mUtf8;}
 	inline const wchar_t *wc_str() const {return mUnicode;}
 	inline bool isAsciiOnly() const {return mIsAsciiOnly;}
@@ -82,7 +83,7 @@ public:
 	bool lessThanIgnoreCase(const UString &ustr) const;
 
 private:
-	static int decode(const char *utf8, wchar_t *unicode);
+	static int decode(const char *utf8, wchar_t *unicode, int utf8Length);
 	static int encode(const wchar_t *unicode, int length, char *utf8, bool *isAsciiOnly);
 
 	static wchar_t getCodePoint(const char *utf8, int offset, int numBytes, unsigned char firstByteMask);
@@ -118,6 +119,7 @@ private:
 	static constexpr wchar_t nullWString[] = L"";
 
 	int mLength;
+	int mLengthUtf8;
 	bool mIsAsciiOnly;
 
 	wchar_t *mUnicode;
