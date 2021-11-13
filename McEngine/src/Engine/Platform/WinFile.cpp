@@ -46,7 +46,7 @@ WinFile::WinFile(UString filePath, File::TYPE type)
 		if (m_handle == INVALID_HANDLE_VALUE)
 		{
 			m_handle = NULL;
-			debugLog("File Error: Couldn't CreateFileW(), GetLastError() = %i\n", GetLastError());
+			debugLog("File Error: Couldn't CreateFileW(%s), GetLastError() = %i\n", filePath.toUtf8(), GetLastError());
 			return;
 		}
 
@@ -54,12 +54,12 @@ WinFile::WinFile(UString filePath, File::TYPE type)
 		m_iFileSize = GetFileSize(m_handle, 0);
 		if (m_iFileSize < 1)
 		{
-			debugLog("File Error: FileSize is < 0\n");
+			debugLog("File Error: FileSize of \"%s\" is < 1\n", filePath.toUtf8());
 			return;
 		}
 		else if (m_iFileSize > 1024*1024*File::size_max->getInt()) // size sanity check
 		{
-			debugLog("File Error: FileSize is > %i MB!!!\n", File::size_max->getInt());
+			debugLog("File Error: FileSize of \"%s\" is > %i MB!!!\n", filePath.toUtf8(), File::size_max->getInt());
 			return;
 		}
 	}
@@ -79,7 +79,7 @@ WinFile::WinFile(UString filePath, File::TYPE type)
 		if (m_handle == INVALID_HANDLE_VALUE)
 		{
 			m_handle = NULL;
-			debugLog("File Error: Couldn't CreateFileW(), GetLastError() = %i\n", GetLastError());
+			debugLog("File Error: Couldn't CreateFileW(%s), GetLastError() = %i\n", filePath.toUtf8(), GetLastError());
 			return;
 		}
 	}
