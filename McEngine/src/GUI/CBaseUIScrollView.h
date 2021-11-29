@@ -61,6 +61,8 @@ public:
 
 	CBaseUIScrollView *setBlockScrolling(bool block) {m_bBlockScrolling = block; return this;} // means: disable scrolling, not scrolling in 'blocks'
 
+	void setScrollbarSizeMultiplier(float scrollbarSizeMultiplier) {m_fScrollbarSizeMultiplier = scrollbarSizeMultiplier;}
+
 	// get
 	inline CBaseUIContainer *getContainer() const {return m_container;}
 	inline float getScrollPosY() const {return m_vScrollPos.y;}
@@ -108,6 +110,7 @@ private:
 	Vector2 m_vScrollPosBackup;
 	Vector2 m_vMouseBackup;
 
+	float m_fScrollbarSizeMultiplier;
 	McRect m_verticalScrollbar;
 	McRect m_horizontalScrollbar;
 

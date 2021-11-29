@@ -38,6 +38,8 @@ CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float 
 	m_frameDarkColor = 0;
 	m_scrollbarColor = 0xaaffffff;
 
+	m_fScrollbarSizeMultiplier = 1.0f;
+
 	m_bScrolling = false;
 	m_bScrollbarScrolling = false;
 	m_vScrollPos = Vector2(1, 1);
@@ -544,7 +546,7 @@ void CBaseUIScrollView::updateScrollbars()
 		const float verticalHeightPercent = (m_vSize.y - (verticalBlockWidth * 2)) / m_vScrollSize.y;
 		const float verticalBlockHeight = clamp<float>(std::max(verticalHeightPercent * m_vSize.y, verticalBlockWidth) * overscroll, verticalBlockWidth, m_vSize.y);
 
-		m_verticalScrollbar = McRect(m_vPos.x + m_vSize.x - verticalBlockWidth, m_vPos.y + (verticalPercent * (m_vSize.y - (verticalBlockWidth * 2) - verticalBlockHeight) + verticalBlockWidth + 1), verticalBlockWidth, verticalBlockHeight);
+		m_verticalScrollbar = McRect(m_vPos.x + m_vSize.x - (verticalBlockWidth * m_fScrollbarSizeMultiplier), m_vPos.y + (verticalPercent * (m_vSize.y - (verticalBlockWidth * 2) - verticalBlockHeight) + verticalBlockWidth + 1), (verticalBlockWidth * m_fScrollbarSizeMultiplier), verticalBlockHeight);
 	}
 
 	// update horizontal scrollbar
