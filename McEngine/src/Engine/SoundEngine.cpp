@@ -111,7 +111,10 @@ ConVar snd_output_device("snd_output_device", "Default");
 ConVar snd_restart("snd_restart");
 ConVar win_snd_fallback_dsound("win_snd_fallback_dsound", false, "use DirectSound instead of WASAPI");
 
-ConVar snd_freq("snd_freq", 44100, "output sampling rate in Hz (ignored on most platforms)");
+ConVar snd_freq("snd_freq", 44100, "output sampling rate in Hz");
+ConVar snd_updateperiod("snd_updateperiod", 10, "BASS_CONFIG_UPDATEPERIOD length in milliseconds");
+ConVar snd_dev_period("snd_dev_period", 10, "BASS_CONFIG_DEV_PERIOD length in milliseconds, or if negative then in samples");
+ConVar snd_dev_buffer("snd_dev_buffer", 30, "BASS_CONFIG_DEV_BUFFER length in milliseconds");
 ConVar snd_chunk_size("snd_chunk_size", 256, "only used in horizon builds with sdl mixer audio");
 
 ConVar snd_restrict_play_frame("snd_restrict_play_frame", true, "only allow one new channel per frame for overlayable sounds (prevents lag and earrape)");
@@ -216,6 +219,19 @@ SoundEngine::SoundEngine()
 #endif
 
 	BASS_SetConfig(BASS_CONFIG_VISTA_TRUEPOS, 0); // NOTE: if set to 1, increases sample playback latency +10 ms
+
+	// allow users to override some defaults (but which may cause beatmap desyncs)
+	// we only want to set these if their values have been explicitly modified (to avoid sideeffects in the default case, and for my sanity)
+	{
+		if (snd_updateperiod.getFloat() != snd_updateperiod.getDefaultFloat())
+			BASS_SetConfig(BASS_CONFIG_UPDATEPERIOD, snd_updateperiod.getInt());
+
+		if (snd_dev_buffer.getFloat() != snd_dev_buffer.getDefaultFloat())
+			BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, snd_dev_buffer.getInt());
+
+		if (snd_dev_period.getFloat() != snd_dev_period.getDefaultFloat())
+			BASS_SetConfig(BASS_CONFIG_DEV_PERIOD, snd_dev_period.getInt());
+	}
 
 	// add default output device
 	m_iCurrentOutputDevice = -1;
@@ -611,6 +627,7 @@ void SoundEngine::restart()
 
 void SoundEngine::update()
 {
+	/*
 	if (snd_change_check_interval.getFloat() > 0.0f)
 	{
 		if (engine->getTime() > m_fPrevOutputDeviceChangeCheckTime)
@@ -619,6 +636,7 @@ void SoundEngine::update()
 			///updateOutputDevices(true, false); // NOTE: commented for now, since it's not yet finished anyway
 		}
 	}
+	*/
 }
 
 bool SoundEngine::play(Sound *snd, float pan)
