@@ -432,7 +432,7 @@ OpenVRInterface::OpenVRInterface()
 	// check if openvr runtime is installed
 	if (!vr::VR_IsRuntimeInstalled())
 	{
-		engine->showMessageError("OpenVR Error", "OpenVR runtime is not installed!");
+		engine->showMessageWarning("OpenVR Warning", "OpenVR runtime is not installed!\nProceeding without VR support ...");
 		return;
 	}
 
@@ -446,7 +446,7 @@ OpenVRInterface::OpenVRInterface()
 
 		if (eError == vr::VRInitError_Init_HmdNotFound || eError == vr::VRInitError_Init_HmdNotFoundPresenceFailed)
 		{
-			engine->showMessageInfo("OpenVR", "Couldn't find HMD, please connect your headset and restart the engine!");
+			engine->showMessageInfo("OpenVR", "Couldn't find HMD, if you want to play in VR then please connect your headset and restart the engine!");
 			return;
 		}
 
