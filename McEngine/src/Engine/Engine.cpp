@@ -70,9 +70,6 @@ public:
 
 			const float margin = 5 * dpiScale;
 
-			g->setColor(0xffffffff);
-			g->drawRect(engine->getScreenWidth()/2 - stringWidth/2 - margin, engine->getScreenHeight()/2 - stringHeight/2 - margin, stringWidth + margin*2, stringHeight + margin*2);
-
 			g->pushTransform();
 			{
 				g->scale(dpiScale, dpiScale);
@@ -81,6 +78,9 @@ public:
 				g->drawString(consoleFont, loadingText);
 			}
 			g->popTransform();
+
+			g->setColor(0xffffffff);
+			g->drawRect(engine->getScreenWidth()/2 - stringWidth/2 - margin, engine->getScreenHeight()/2 - stringHeight/2 - margin, stringWidth + margin*2, stringHeight + margin*2);
 		}
 	}
 };
