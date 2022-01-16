@@ -2,7 +2,7 @@
 //
 // Purpose:		core
 //
-// $NoKeywords: $engine $os
+// $NoKeywords: $engine
 //===============================================================================//
 
 #ifndef ENGINE_H
@@ -191,6 +191,7 @@ private:
 	UString m_sArgs;
 	bool m_bBlackout;
 	bool m_bDrawing;
+	int m_iLoadingScreenDelay;
 };
 
 extern Engine *engine;

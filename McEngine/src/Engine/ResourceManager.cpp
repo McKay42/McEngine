@@ -675,6 +675,11 @@ Shader *ResourceManager::getShader(UString resourceName) const
 	return NULL;
 }
 
+bool ResourceManager::isLoading() const
+{
+	return (m_loadingWork.size() > 0);
+}
+
 bool ResourceManager::isLoadingResource(Resource *rs) const
 {
 	for (size_t i=0; i<m_loadingWork.size(); i++)

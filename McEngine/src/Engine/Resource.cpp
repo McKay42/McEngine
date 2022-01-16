@@ -30,11 +30,11 @@ Resource::Resource(UString filepath)
 
 			// search backwards from end to first dot, then toUpper() forwards till end of string
 			char *utf8String = (char*)filepath.toUtf8();
-			for (int s=filepath.length(); s>=0; s--)
+			for (int s=filepath.lengthUtf8(); s>=0; s--)
 			{
 				if (utf8String[s] == '.')
 				{
-					for (int i=s+1; i<filepath.length(); i++)
+					for (int i=s+1; i<filepath.lengthUtf8(); i++)
 					{
 						utf8String[i] = std::toupper(utf8String[i]);
 					}
@@ -50,7 +50,7 @@ Resource::Resource(UString filepath)
 
 				// search backwards from end to first dot, then toLower() everything until first slash
 				bool foundFilenameStart = false;
-				for (int s=filepath.length(); s>=0; s--)
+				for (int s=filepath.lengthUtf8(); s>=0; s--)
 				{
 					if (foundFilenameStart)
 					{
@@ -71,7 +71,7 @@ Resource::Resource(UString filepath)
 					// last chance, try with toLower() filename + extension
 
 					// toLower() backwards until first slash
-					for (int s=filepath.length(); s>=0; s--)
+					for (int s=filepath.lengthUtf8(); s>=0; s--)
 					{
 						if (utf8String[s] == '/')
 							break;

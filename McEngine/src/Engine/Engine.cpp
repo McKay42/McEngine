@@ -51,6 +51,42 @@
 
 
 
+class EngineLoadingScreenApp : public App
+{
+public:
+	virtual ~EngineLoadingScreenApp() {;}
+
+	virtual void draw(Graphics *g) override
+	{
+		McFont *consoleFont = engine->getResourceManager()->getFont("FONT_CONSOLE");
+		if (consoleFont != NULL)
+		{
+			UString loadingText = "Loading ...";
+
+			const float dpiScale = std::round(env->getDPIScale() + 0.255f);
+
+			const float stringHeight = consoleFont->getHeight() * dpiScale;
+			const float stringWidth = consoleFont->getStringWidth(loadingText) * dpiScale;
+
+			const float margin = 5 * dpiScale;
+
+			g->pushTransform();
+			{
+				g->scale(dpiScale, dpiScale);
+				g->translate((int)(engine->getScreenWidth()/2 - stringWidth/2), (int)(engine->getScreenHeight()/2 + stringHeight/2));
+				g->setColor(0xffffffff);
+				g->drawString(consoleFont, loadingText);
+			}
+			g->popTransform();
+
+			g->setColor(0xffffffff);
+			g->drawRect(engine->getScreenWidth()/2 - stringWidth/2 - margin, engine->getScreenHeight()/2 - stringHeight/2 - margin, stringWidth + margin*2, stringHeight + margin*2);
+		}
+	}
+};
+
+
+
 void _version(void);
 void _host_timescale_( UString oldValue, UString newValue );
 ConVar host_timescale("host_timescale", 1.0f, "Scale by which the engine measures elapsed time, affects engine->getTime()", _host_timescale_);
@@ -97,6 +133,7 @@ Engine::Engine(Environment *environment, const char *args)
 	// print debug information
 	debugLog("-= Engine Startup =-\n");
 	_version();
+	debugLog("Engine: args = %s\n", m_sArgs.toUtf8());
 
 	// timing
 	m_timer = new Timer();
@@ -117,47 +154,52 @@ Engine::Engine(Environment *environment, const char *args)
 
 	debugLog("Engine: ScreenSize = (%ix%i)\n", (int)m_vScreenSize.x, (int)m_vScreenSize.y);
 
-	// engine
+	// custom
 	m_bDrawing = false;
+	m_iLoadingScreenDelay = 0;
 
 	// initialize all engine subsystems (the order does matter!)
+	debugLog("\nEngine: Initializing subsystems ...\n");
+	{
+		// input devices
+		m_mouse = new Mouse();
+		m_inputDevices.push_back(m_mouse);
+		m_mice.push_back(m_mouse);
 
-	// input devices
-	m_mouse = new Mouse();
-	m_inputDevices.push_back(m_mouse);
-	m_mice.push_back(m_mouse);
+		m_keyboard = new Keyboard();
+		m_inputDevices.push_back(m_keyboard);
+		m_keyboards.push_back(m_keyboard);
 
-	m_keyboard = new Keyboard();
-	m_inputDevices.push_back(m_keyboard);
-	m_keyboards.push_back(m_keyboard);
+		m_gamepad = new XInputGamepad();
+		m_inputDevices.push_back(m_gamepad);
+		m_gamepads.push_back(m_gamepad);
 
-	m_gamepad = new XInputGamepad();
-	m_inputDevices.push_back(m_gamepad);
-	m_gamepads.push_back(m_gamepad);
+		// init platform specific interfaces
+		m_vulkan = new VulkanInterface(); // needs to be created before Graphics
+		m_graphics = m_environment->createRenderer();
+		{
+			m_graphics->init(); // needs init() separation due to potential engine->getGraphics() access
+		}
+		m_contextMenu = m_environment->createContextMenu();
 
-	// init platform specific interfaces
-	m_vulkan = new VulkanInterface(); // needs to be created before Graphics
-	m_graphics = m_environment->createRenderer(); m_graphics->init(); // needs init() separation due to potential engine->getGraphics() access
-	m_contextMenu = m_environment->createContextMenu();
+		// and the rest
+		m_resourceManager = new ResourceManager();
+		m_sound = new SoundEngine();
+		m_animationHandler = new AnimationHandler();
+		m_openCL = new OpenCLInterface();
+		m_openVR = new OpenVRInterface();
+		m_networkHandler = new NetworkHandler();
+		m_squirrel = new SquirrelInterface();
+		m_steam = new SteamworksInterface();
+		m_discord = new DiscordInterface();
 
-	// and the rest
-	m_resourceManager = new ResourceManager();
-	m_sound = new SoundEngine();
-	m_animationHandler = new AnimationHandler();
-	m_openCL = new OpenCLInterface();
-	m_openVR = new OpenVRInterface();
-	m_networkHandler = new NetworkHandler();
-	m_squirrel = new SquirrelInterface();
-	m_steam = new SteamworksInterface();
-	m_discord = new DiscordInterface();
+		// default launch overrides
+		m_graphics->setVSync(false);
 
-	// default launch overrides
-	m_graphics->setVSync(false);
-
-	// engine time starts now
-	m_timer->start();
-
-	debugLog("\n");
+		// engine time starts now
+		m_timer->start();
+	}
+	debugLog("Engine: Initializing subsystems done.\n\n");
 }
 
 Engine::~Engine()
@@ -233,50 +275,72 @@ Engine::~Engine()
 
 void Engine::loadApp()
 {
-	debugLog("Engine: Loading default resources ...\n");
-
-	// load default resources
-	engine->getResourceManager()->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, m_environment->getDPI());
-	engine->getResourceManager()->loadFont("tahoma.ttf", "FONT_CONSOLE", 8, false, 96);
-	Image *missingTexture = engine->getResourceManager()->createImage(512, 512);
-	missingTexture->setName("MISSING_TEXTURE");
-	for (int x=0; x<512; x++)
+	// load core default resources (these are required to be able to draw the loading screen)
+	if (m_iLoadingScreenDelay == 0)
 	{
-		for (int y=0; y<512; y++)
+		debugLog("Engine: Loading default resources ...\n");
 		{
-			int rowCounter = (x / 64);
-			int columnCounter = (y / 64);
-			Color color = (((rowCounter+columnCounter) % 2 == 0) ? COLOR(255, 255, 0, 221) : COLOR(255, 0, 0, 0));
-			missingTexture->setPixel(x, y, color);
+			engine->getResourceManager()->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, m_environment->getDPI());
+			engine->getResourceManager()->loadFont("tahoma.ttf", "FONT_CONSOLE", 8, false, 96);
 		}
+		debugLog("Engine: Loading default resources done.\n");
 	}
-	missingTexture->load();
 
-	// create engine gui
-	m_guiContainer = new CBaseUIContainer(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "");
-	m_consoleBox = new ConsoleBox();
-	m_visualProfiler = new VisualProfiler();
-	m_guiContainer->addBaseUIElement(m_visualProfiler);
-	m_guiContainer->addBaseUIElement(m_consoleBox);
+	// allow the engine to draw an initial loading screen before the real app is loaded
+	// this schedules another delayed loadApp() call in update()
+	if (m_iLoadingScreenDelay == 0)
+	{
+		m_app = new EngineLoadingScreenApp();
+		m_iLoadingScreenDelay = 1; // allow drawing 1 single frame
+		return; // NOTE: early return
+	}
+	else
+		SAFE_DELETE(m_app);
+
+	// load other default resources and things which are not strictly necessary
+	{
+		Image *missingTexture = engine->getResourceManager()->createImage(512, 512);
+		missingTexture->setName("MISSING_TEXTURE");
+		for (int x=0; x<512; x++)
+		{
+			for (int y=0; y<512; y++)
+			{
+				int rowCounter = (x / 64);
+				int columnCounter = (y / 64);
+				Color color = (((rowCounter+columnCounter) % 2 == 0) ? COLOR(255, 255, 0, 221) : COLOR(255, 0, 0, 0));
+				missingTexture->setPixel(x, y, color);
+			}
+		}
+		missingTexture->load();
+
+		// create engine gui
+		m_guiContainer = new CBaseUIContainer(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "");
+		m_consoleBox = new ConsoleBox();
+		m_visualProfiler = new VisualProfiler();
+		m_guiContainer->addBaseUIElement(m_visualProfiler);
+		m_guiContainer->addBaseUIElement(m_consoleBox);
+
+		// (engine gui comes first)
+		m_keyboard->addListener(m_guiContainer, true);
+	}
 
 	debugLog("\nEngine: Loading app ...\n");
+	{
+		//*****************//
+		//	Load App here  //
+		//*****************//
+
+		//m_app = new Osu();
+
+		m_app = new FrameworkTest();
 
 
 
-	//*****************//
-	//	Load App here  //
-	//*****************//
-
-	//m_app = new Osu();
-
-	m_app = new FrameworkTest();
-
-
-
-
-	// start listening to the default keyboard input (engine gui comes first)
-	m_keyboard->addListener(m_guiContainer, true);
-	m_keyboard->addListener(m_app);
+		// start listening to the default keyboard input
+		if (m_app != NULL)
+			m_keyboard->addListener(m_app);
+	}
+	debugLog("Engine: Loading app done.\n\n");
 }
 
 void Engine::onPaint()
@@ -286,18 +350,19 @@ void Engine::onPaint()
 
 	m_bDrawing = true;
 	{
+		// begin
 		{
 			VPROF_BUDGET("Graphics::beginScene", VPROF_BUDGETGROUP_DRAW);
 			m_graphics->beginScene();
 		}
+
+		// middle
 		{
 			if (m_app != NULL)
 			{
 				VPROF_BUDGET("App::draw", VPROF_BUDGETGROUP_DRAW);
 				m_app->draw(m_graphics);
 			}
-
-
 
 			if (m_guiContainer != NULL)
 				m_guiContainer->draw(m_graphics);
@@ -314,6 +379,8 @@ void Engine::onPaint()
 				m_graphics->fillRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight());
 			}
 		}
+
+		// end
 		{
 			VPROF_BUDGET("Graphics::endScene", VPROF_BUDGETGROUP_DRAW_SWAPBUFFERS);
 			m_graphics->endScene();
@@ -327,13 +394,22 @@ void Engine::onPaint()
 void Engine::onUpdate()
 {
 	VPROF_BUDGET("Engine::onUpdate", VPROF_BUDGETGROUP_UPDATE);
+
+	if (m_iLoadingScreenDelay > 0 && m_iFrameCount >= m_iLoadingScreenDelay)
+	{
+		m_iLoadingScreenDelay = -1;
+		loadApp();
+	}
+
 	if (m_bBlackout || (m_bIsMinimized && !(m_networkHandler->isClient() || m_networkHandler->isServer()))) return;
 
 	// update time
-	m_timer->update();
-	m_dRunTime = m_timer->getElapsedTime();
-	m_dFrameTime *= (double)host_timescale.getFloat();
-	m_dTime += m_dFrameTime;
+	{
+		m_timer->update();
+		m_dRunTime = m_timer->getElapsedTime();
+		m_dFrameTime *= (double)host_timescale.getFloat();
+		m_dTime += m_dFrameTime;
+	}
 
 	// handle resolution changes
 	if (m_bResolutionChange)
@@ -342,48 +418,50 @@ void Engine::onUpdate()
 		onResolutionChange(m_vNewScreenSize);
 	}
 
-	// update input devices
-	for (size_t i=0; i<m_inputDevices.size(); i++)
+	// update miscellaneous engine subsystems
 	{
-		m_inputDevices[i]->update();
-	}
-
-	m_openVR->update(); // (this also handles its input devices)
-
-	{
-		VPROF_BUDGET("AnimationHandler::update", VPROF_BUDGETGROUP_UPDATE);
-		m_animationHandler->update();
-	}
-
-	{
-		VPROF_BUDGET("SoundEngine::update", VPROF_BUDGETGROUP_UPDATE);
-		m_sound->update();
-	}
-
-	{
-		VPROF_BUDGET("ResourceManager::update", VPROF_BUDGETGROUP_UPDATE);
-		m_resourceManager->update();
-	}
-
-	// update gui
-	if (m_guiContainer != NULL)
-		m_guiContainer->update();
-
-	// execute queued commands
-	// TODO: this is shit
-	if (Console::g_commandQueue.size() > 0)
-	{
-		for (size_t i=0; i<Console::g_commandQueue.size(); i++)
+		for (size_t i=0; i<m_inputDevices.size(); i++)
 		{
-			Console::processCommand(Console::g_commandQueue[i]);
+			m_inputDevices[i]->update();
 		}
-		Console::g_commandQueue = std::vector<UString>(); // reset
-	}
 
-	// update networking
-	{
-		VPROF_BUDGET("NetworkHandler::update", VPROF_BUDGETGROUP_UPDATE);
-		m_networkHandler->update();
+		m_openVR->update(); // (this also handles its input devices)
+
+		{
+			VPROF_BUDGET("AnimationHandler::update", VPROF_BUDGETGROUP_UPDATE);
+			m_animationHandler->update();
+		}
+
+		{
+			VPROF_BUDGET("SoundEngine::update", VPROF_BUDGETGROUP_UPDATE);
+			m_sound->update();
+		}
+
+		{
+			VPROF_BUDGET("ResourceManager::update", VPROF_BUDGETGROUP_UPDATE);
+			m_resourceManager->update();
+		}
+
+		// update gui
+		if (m_guiContainer != NULL)
+			m_guiContainer->update();
+
+		// execute queued commands
+		// TODO: this is shit
+		if (Console::g_commandQueue.size() > 0)
+		{
+			for (size_t i=0; i<Console::g_commandQueue.size(); i++)
+			{
+				Console::processCommand(Console::g_commandQueue[i]);
+			}
+			Console::g_commandQueue = std::vector<UString>(); // reset
+		}
+
+		// update networking
+		{
+			VPROF_BUDGET("NetworkHandler::update", VPROF_BUDGETGROUP_UPDATE);
+			m_networkHandler->update();
+		}
 	}
 
 	// update app
@@ -393,7 +471,7 @@ void Engine::onUpdate()
 		m_app->update();
 	}
 
-	// update environment
+	// update environment (after app, at the end here)
 	{
 		VPROF_BUDGET("Environment::update", VPROF_BUDGETGROUP_UPDATE);
 		m_environment->update();
@@ -431,7 +509,9 @@ void Engine::onFocusLost()
 	{
 		if ((!m_environment->isFullscreenWindowedBorderless() && minimize_on_focus_lost_if_fullscreen.getBool())
 		  || (m_environment->isFullscreenWindowedBorderless() && minimize_on_focus_lost_if_borderless_windowed_fullscreen.getBool()))
+		{
 			m_environment->minimize();
+		}
 	}
 }
 
@@ -474,7 +554,7 @@ void Engine::onResolutionChange(Vector2 newResolution)
 	if (newResolution.x < 2 || newResolution.y < 2)
 	{
 		m_bIsMinimized = true;
-		newResolution = Vector2(2,2);
+		newResolution = Vector2(2, 2);
 	}
 
 	// to avoid double resolutionChange
@@ -560,26 +640,29 @@ void Engine::onMouseButton5Change(bool mouse5down)
 
 void Engine::onKeyboardKeyDown(KEYCODE keyCode)
 {
-	// handle ALT+F4 quit
-	if (m_keyboard->isAltDown() && keyCode == KEY_F4)
+	// hardcoded engine hotkeys
 	{
-		shutdown();
-		return;
-	}
+		// handle ALT+F4 quit
+		if (m_keyboard->isAltDown() && keyCode == KEY_F4)
+		{
+			shutdown();
+			return;
+		}
 
-	// handle ALT+ENTER fullscreen toggle
-	if (m_keyboard->isAltDown() && keyCode == KEY_ENTER)
-	{
-		toggleFullscreen();
-		return;
-	}
+		// handle ALT+ENTER fullscreen toggle
+		if (m_keyboard->isAltDown() && keyCode == KEY_ENTER)
+		{
+			toggleFullscreen();
+			return;
+		}
 
-	// handle CTRL+F11 profiler toggle
-	if (m_keyboard->isControlDown() && keyCode == KEY_F11)
-	{
-		ConVar *vprof = convar->getConVarByName("vprof");
-		vprof->setValue(vprof->getBool() ? 0.0f : 1.0f);
-		return;
+		// handle CTRL+F11 profiler toggle
+		if (m_keyboard->isControlDown() && keyCode == KEY_F11)
+		{
+			ConVar *vprof = convar->getConVarByName("vprof");
+			vprof->setValue(vprof->getBool() ? 0.0f : 1.0f);
+			return;
+		}
 	}
 
 	m_keyboard->onKeyDown(keyCode);
