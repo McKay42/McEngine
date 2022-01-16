@@ -781,7 +781,11 @@ void Engine::requestResolutionChange(Vector2 newResolution)
 void Engine::setFrameTime(double delta)
 {
 	// NOTE: clamp to between 10000 fps and 1 fps, very small/big timesteps could cause problems
-	m_dFrameTime = clamp<double>(delta, 0.0001, 1.0);
+	// NOTE: special case for loading screen and first app frame
+	if (m_iFrameCount < 3)
+		m_dFrameTime = delta;
+	else
+		m_dFrameTime = clamp<double>(delta, 0.0001, 1.0);
 }
 
 double const Engine::getTimeReal()
