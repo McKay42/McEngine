@@ -176,7 +176,17 @@ UString StdFile::readLine()
 	if (!canRead()) return "";
 
 	m_bRead = (bool)std::getline(m_ifstream, m_sBuffer);
-	return UString(m_sBuffer.c_str());
+
+	// HACKHACK: remove \n or \r for \r\n, because std::getline() sucks
+	UString uString = UString(m_sBuffer.c_str());
+	if (uString.length() > 0)
+	{
+		const wchar_t &lastChar = uString[uString.length() - 1];
+		if (lastChar == L'\n' || lastChar == L'\r')
+			uString = uString.substr(0, uString.length() - 1);
+	}
+
+	return uString;
 }
 
 const char *StdFile::readFile()
