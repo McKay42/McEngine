@@ -20,6 +20,14 @@ class DirectX11Shader;
 class DirectX11Interface : public NullGraphicsInterface
 {
 public:
+	struct SimpleVertex
+	{
+		Vector3 pos;
+		Vector4 col;
+		Vector2 tex;
+	};
+
+public:
 	DirectX11Interface(HWND hwnd, bool minimalistContext = false);
 	virtual ~DirectX11Interface();
 
@@ -95,6 +103,10 @@ public:
 	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory);
 
 	// ILLEGAL:
+	void resizeTarget(Vector2 newResolution);
+	bool enableFullscreen(bool borderlessWindowedFullscreen = false);
+	void disableFullscreen();
+	void setRenderTargetFrameBuffer();
 	inline bool isReady() const {return m_bReady;}
 	ID3D11Device *getDevice() const {return m_device;}
 	ID3D11DeviceContext *getDeviceContext() const {return m_deviceContext;}
@@ -117,6 +129,7 @@ private:
 	// d3d
 	ID3D11Device *m_device;
 	ID3D11DeviceContext *m_deviceContext;
+	DXGI_MODE_DESC m_swapChainModeDesc;
 	IDXGISwapChain *m_swapChain;
 	ID3D11RenderTargetView *m_frameBuffer;
 	ID3D11Texture2D *m_frameBufferDepthStencilTexture;
@@ -124,6 +137,7 @@ private:
 
 	// renderer
 	bool m_bIsFullscreen;
+	bool m_bIsFullscreenBorderlessWindowed;
 	Vector2 m_vResolution;
 
 	ID3D11RasterizerState *m_rasterizerState;
@@ -141,12 +155,6 @@ private:
 
 	DirectX11Shader *m_shaderTexturedGeneric;
 
-	struct SimpleVertex
-	{
-		Vector3 pos;
-		Vector4 col;
-		Vector2 tex;
-	};
 	std::vector<SimpleVertex> m_vertices;
 	ID3D11Buffer *m_vertexBuffer;
 

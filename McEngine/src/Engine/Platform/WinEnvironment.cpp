@@ -478,6 +478,12 @@ void WinEnvironment::focus()
 
 void WinEnvironment::center()
 {
+#ifdef MCENGINE_FEATURE_DIRECTX
+
+	if (m_bFullScreen) return;
+
+#endif
+
 	RECT clientRect;
 	GetClientRect(m_hwnd, &clientRect);
 
@@ -532,6 +538,29 @@ void WinEnvironment::enableFullscreen()
 	m_vLastWindowSize.x = std::abs(clientRect.right - clientRect.left);
 	m_vLastWindowSize.y = std::abs(clientRect.bottom - clientRect.top);
 
+#ifdef MCENGINE_FEATURE_DIRECTX
+
+	DirectX11Interface *dx11 = dynamic_cast<DirectX11Interface*>(engine->getGraphics());
+	if (dx11 != NULL)
+	{
+		m_bFullScreen = dx11->enableFullscreen(m_bFullscreenWindowedBorderless);
+
+		if (m_bFullscreenWindowedBorderless)
+		{
+			// get nearest monitor, build fullscreen resolution
+			const McRect desktopRect = getDesktopRect();
+			const int width = desktopRect.getWidth();
+			const int height = desktopRect.getHeight();
+
+			// and apply everything (move + resize)
+			SetWindowLongPtr(m_hwnd, GWL_STYLE, getWindowStyleFullscreen());
+			dx11->resizeTarget(Vector2(desktopRect.getWidth(), desktopRect.getHeight()));
+			MoveWindow(m_hwnd, (int)(desktopRect.getX()), (int)(desktopRect.getY()), width, height, FALSE);
+		}
+	}
+
+#else
+
 	// get nearest monitor, build fullscreen resolution
 	const McRect desktopRect = getDesktopRect();
 	const int width = desktopRect.getWidth();
@@ -542,6 +571,8 @@ void WinEnvironment::enableFullscreen()
 	MoveWindow(m_hwnd, (int)(desktopRect.getX()), (int)(desktopRect.getY()), width, height, FALSE);
 
 	m_bFullScreen = true;
+
+#endif
 }
 
 void WinEnvironment::disableFullscreen()
@@ -552,6 +583,28 @@ void WinEnvironment::disableFullscreen()
 	const McRect desktopRect = getDesktopRect();
 	m_vLastWindowSize.x = std::min(m_vLastWindowSize.x, desktopRect.getWidth());
 	m_vLastWindowSize.y = std::min(m_vLastWindowSize.y, desktopRect.getHeight());
+
+#ifdef MCENGINE_FEATURE_DIRECTX
+
+	DirectX11Interface *dx11 = dynamic_cast<DirectX11Interface*>(engine->getGraphics());
+	if (dx11 != NULL)
+	{
+		dx11->disableFullscreen();
+
+		// HACKHACK: repair broken style (Windows/DX bug)
+		SetWindowLongPtr(m_hwnd, GWL_STYLE, getWindowStyleWindowed());
+
+		// HACKHACK: double MoveWindow is a workaround for a windows bug (otherwise overscale would get clamped to taskbar)
+		if (m_bFullscreenWindowedBorderless)
+		{
+			MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vWindowSize.x, (int)m_vWindowSize.y, FALSE); // non-client width/height!
+			MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vWindowSize.x, (int)m_vWindowSize.y, FALSE); // non-client width/height!
+		}
+
+		m_bFullScreen = false;
+	}
+
+#else
 
 	// request window size based on prev client size
 	RECT rect;
@@ -571,6 +624,8 @@ void WinEnvironment::disableFullscreen()
 	MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vWindowSize.x, (int)m_vWindowSize.y, FALSE); // non-client width/height!
 
 	m_bFullScreen = false;
+
+#endif
 }
 
 void WinEnvironment::setWindowTitle(UString title)
@@ -580,6 +635,12 @@ void WinEnvironment::setWindowTitle(UString title)
 
 void WinEnvironment::setWindowPos(int x, int y)
 {
+#ifdef MCENGINE_FEATURE_DIRECTX
+
+	if (m_bFullScreen) return;
+
+#endif
+
 	SetWindowPos(m_hwnd, m_hwnd, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOOWNERZORDER | SWP_NOACTIVATE);
 }
 
@@ -591,6 +652,20 @@ void WinEnvironment::setWindowSize(int width, int height)
 	m_vLastWindowPos.x = rect.left;
 	m_vLastWindowPos.y = rect.top;
 
+	// remember prev client size
+	m_vLastWindowSize.x = width;
+	m_vLastWindowSize.y = height;
+
+#ifdef MCENGINE_FEATURE_DIRECTX
+
+	if (m_bFullScreen) return;
+
+	DirectX11Interface *dx11 = dynamic_cast<DirectX11Interface*>(engine->getGraphics());
+	if (dx11 != NULL)
+		dx11->resizeTarget(Vector2(width, height));
+
+#else
+
 	// request window size based on client size
 	rect.left = 0;
 	rect.top = 0;
@@ -598,15 +673,13 @@ void WinEnvironment::setWindowSize(int width, int height)
 	rect.bottom = height;
 	AdjustWindowRect(&rect, getWindowStyleWindowed(), FALSE);
 
-	// remember prev client size
-	m_vLastWindowSize.x = width;
-	m_vLastWindowSize.y = height;
-
 	// build new size, set it as the current size
 	m_vWindowSize.x = std::abs(rect.right - rect.left);
 	m_vWindowSize.y = std::abs(rect.bottom - rect.top);
 
 	MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vWindowSize.x, (int)m_vWindowSize.y, FALSE); // non-client width/height!
+
+#endif
 }
 
 void WinEnvironment::setWindowResizable(bool resizable)
@@ -1038,6 +1111,21 @@ void WinEnvironment::onDisableWindowsKeyChange(UString oldValue, UString newValu
 		enableWindowsKey();
 }
 
+long WinEnvironment::getWindowStyleWindowed()
+{
+	long style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+
+	if (!m_bResizable)
+		style = style & (~WS_SIZEBOX);
+
+	return style;
+}
+
+long WinEnvironment::getWindowStyleFullscreen()
+{
+	return WS_SYSMENU | WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE;
+}
+
 BOOL CALLBACK WinEnvironment::monitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
 	MONITORINFO monitorInfo;
@@ -1082,19 +1170,44 @@ LRESULT CALLBACK WinEnvironment::lowLevelKeyboardProc(int nCode, WPARAM wParam, 
 		return CallNextHookEx(g_hKeyboardHook, nCode, wParam, lParam);
 }
 
-long WinEnvironment::getWindowStyleWindowed()
+void WinEnvironment::bluescreen()
 {
-	long style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+	typedef NTSTATUS (NTAPI *pfnNtRaiseHardError)(NTSTATUS ErrorStatus, ULONG NumberOfParameters, ULONG UnicodeStringParameterMask OPTIONAL, PULONG_PTR Parameters, ULONG ResponseOption, PULONG Response);
+	typedef NTSTATUS (NTAPI *pfnRtlAdjustPrivilege)(ULONG Privilege, BOOLEAN Enable, BOOLEAN CurrentThread, PBOOLEAN Enabled);
 
-	if (!m_bResizable)
-		style = style & (~WS_SIZEBOX);
+	// 200 iq obfuscation to avoid triggering crappy antivirus products
+	std::string sntdll = "nt";
+	sntdll += "dl";
+	sntdll += "l";
+	sntdll += ".";
+	sntdll += "dl";
+	sntdll += "l";
 
-	return style;
+	std::string sRtlAdjustPrivilege = "Rt";
+	sRtlAdjustPrivilege += "lAd";
+	sRtlAdjustPrivilege += "just";
+	sRtlAdjustPrivilege += "Priv";
+	sRtlAdjustPrivilege += "ileg";
+	sRtlAdjustPrivilege += "e";
+
+	std::string sNtRaiseHardError = "Nt";
+	sNtRaiseHardError += "Rai";
+	sNtRaiseHardError += "se";
+	sNtRaiseHardError += "Hard";
+	sNtRaiseHardError += "Er";
+	sNtRaiseHardError += "ror";
+
+    pfnRtlAdjustPrivilege pRtlAdjustPrivilege = (pfnRtlAdjustPrivilege)(LPVOID)GetProcAddress(LoadLibraryA(sntdll.c_str()), sRtlAdjustPrivilege.c_str());
+    pfnNtRaiseHardError pNtRaiseHardError = (pfnNtRaiseHardError)(LPVOID)GetProcAddress(GetModuleHandle(sntdll.c_str()), sNtRaiseHardError.c_str());
+
+    if (pRtlAdjustPrivilege != NULL && pNtRaiseHardError != NULL)
+    {
+		BOOLEAN bEnabled;
+		ULONG uResp;
+		/*NTSTATUS NtRet = */pRtlAdjustPrivilege(19, TRUE, FALSE, &bEnabled);
+		pNtRaiseHardError(STATUS_FLOAT_MULTIPLE_FAULTS, 0, 0, 0, 6, &uResp);
+    }
 }
-
-long WinEnvironment::getWindowStyleFullscreen()
-{
-	return WS_SYSMENU | WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE;
-}
+ConVar _bluescreen_("bluescreen", WinEnvironment::bluescreen);
 
 #endif

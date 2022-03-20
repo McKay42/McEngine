@@ -8,12 +8,8 @@
 #include "Camera.h"
 #include "Engine.h"
 
-// TODO: fix matrix calculations row major switch column major
-
-Matrix4 Camera::buildMatrixOrtho2D(float left, float right, float bottom, float top)
+Matrix4 Camera::buildMatrixOrtho2D(float left, float right, float bottom, float top, float zn, float zf)
 {
-	const float zn = -1.0f;
-	const float zf = 1.0f;
 	const float invX = 1.0f / (right - left);
 	const float invY = 1.0f / (top - bottom);
 	const float invZ = 1.0f / (zf - zn);
@@ -24,9 +20,41 @@ Matrix4 Camera::buildMatrixOrtho2D(float left, float right, float bottom, float 
 				   0,				0,				0,			   	1).transpose();
 }
 
+Matrix4 Camera::buildMatrixOrtho2DGLLH(float left, float right, float bottom, float top, float zn, float zf)
+{
+	const float invX = 1.0f / (right - left);
+	const float invY = 1.0f / (top - bottom);
+	const float invZ = 1.0f / (zf - zn);
+
+	return Matrix4((2.0f * invX),	0, 				0,				(-(right + left) * invX),
+				   0, 				(2.0 * invY),	0,				(-(top + bottom) * invY),
+				   0,				0,				(-2.0f * invZ),	(-(zf + zn) * invZ),
+				   0,				0,				0,			   	1).transpose();
+}
+
+Matrix4 Camera::buildMatrixOrtho2DDXLH(float left, float right, float bottom, float top, float zn, float zf)
+{
+	return Matrix4(2.0f/(right - left),		0, 						0,					(left + right)/(left - right),
+				   0, 						2.0f/(top - bottom),	0,					(top + bottom)/(bottom - top),
+				   0,						0,						1.0f/(zf - zn),		zn/(zn - zf),
+				   0,						0,						0,			   		1).transpose();
+}
+
 Matrix4 Camera::buildMatrixLookAt(Vector3 eye, Vector3 target, Vector3 up)
 {
 	const Vector3 zAxis = (eye - target).normalize();
+	const Vector3 xAxis = up.cross(zAxis).normalize();
+	const Vector3 yAxis = zAxis.cross(xAxis);
+
+	return Matrix4(xAxis.x, xAxis.y, xAxis.z, -xAxis.dot(eye),
+				   yAxis.x, yAxis.y, yAxis.z, -yAxis.dot(eye),
+				   zAxis.x, zAxis.y, zAxis.z, -zAxis.dot(eye),
+				   0,		0,		 0,		   1).transpose();
+}
+
+Matrix4 Camera::buildMatrixLookAtLH(Vector3 eye, Vector3 target, Vector3 up)
+{
+	const Vector3 zAxis = (target - eye).normalize();
 	const Vector3 xAxis = up.cross(zAxis).normalize();
 	const Vector3 yAxis = zAxis.cross(xAxis);
 
@@ -62,6 +90,16 @@ Matrix4 Camera::buildMatrixPerspectiveFovVertical(float fovRad, float aspectRati
 				   0,								0,		-1,		0).transpose();
 }
 
+Matrix4 Camera::buildMatrixPerspectiveFovVerticalDXLH(float fovRad, float aspectRatioWidthToHeight, float zn, float zf)
+{
+	const float f = 1.0f / std::tan(fovRad / 2.0f);
+
+	return Matrix4(f / aspectRatioWidthToHeight,	0,		0, 				0,
+				   0, 								f, 		0,				0,
+				   0, 								0,		zf/(zf - zn),	-zn*zf/(zf - zn),
+				   0,								0,		1,				0).transpose();
+}
+
 Matrix4 Camera::buildMatrixPerspectiveFovHorizontal(float fovRad, float aspectRatioHeightToWidth, float zn, float zf)
 {
 	const float f = 1.0f / std::tan(fovRad / 2.0f);
@@ -75,6 +113,7 @@ Matrix4 Camera::buildMatrixPerspectiveFovHorizontal(float fovRad, float aspectRa
 				   0,	0,								-1,		0).transpose();
 }
 
+/*
 static Quaternion MatrixToQuaternion(const Matrix4 &in)
 {
 	const float trace = in[0] + in[5] + in[10];
@@ -122,15 +161,14 @@ static Quaternion MatrixToQuaternion(const Matrix4 &in)
 
 	return final;
 
-	/*
-	float qw = std::sqrt(1 + in[0] + in[5] + in[10]) / 2.0f;
-	float qx = (in[9] - in[6]) / (4 *qw);
-	float qy = (in[2] - in[8]) / (4 *qw);
-	float qz = (in[4] - in[1]) / (4 *qw);
+	//float qw = std::sqrt(1 + in[0] + in[5] + in[10]) / 2.0f;
+	//float qx = (in[9] - in[6]) / (4 *qw);
+	//float qy = (in[2] - in[8]) / (4 *qw);
+	//float qz = (in[4] - in[1]) / (4 *qw);
 
-	return Quaternion(qx, qy, qz, qw);
-	*/
+	//return Quaternion(qx, qy, qz, qw);
 }
+*/
 
 static Vector3 Vector3TransformCoord(const Vector3 &in, const Matrix4 &mat)
 {

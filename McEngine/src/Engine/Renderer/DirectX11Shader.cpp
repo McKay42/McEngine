@@ -15,6 +15,8 @@
 #include "DirectX11Interface.h"
 #include "d3dcompiler.h"
 
+#include <sstream>
+
 DirectX11Shader::DirectX11Shader(UString vertexShader, UString fragmentShader, bool source)
 {
 	m_sVsh = vertexShader;
@@ -76,6 +78,27 @@ void DirectX11Shader::disable()
 	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->IASetInputLayout(m_prevInputLayout); // restore
 	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->VSSetShader(m_prevVS, NULL, 0); // restore
 	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShader(m_prevPS, NULL, 0); // restore
+
+	// refcount
+	{
+		if (m_prevInputLayout != NULL)
+		{
+			m_prevInputLayout->Release();
+			m_prevInputLayout = NULL;
+		}
+
+		if (m_prevVS != NULL)
+		{
+			m_prevVS->Release();
+			m_prevVS = NULL;
+		}
+
+		if (m_prevPS != NULL)
+		{
+			m_prevPS->Release();
+			m_prevPS = NULL;
+		}
+	}
 }
 
 void DirectX11Shader::setUniform1f(UString name, float value)
@@ -163,7 +186,36 @@ void DirectX11Shader::setUniformMatrix4fv(UString name, float *v)
 
 bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool source)
 {
-	// TODO: file support!
+	if (!source)
+	{
+		// vs
+		{
+			std::ifstream inFile(vertexShader.toUtf8());
+			if (!inFile)
+			{
+				engine->showMessageError("Shader Error", vertexShader);
+				return false;
+			}
+			std::stringstream buffer;
+			buffer << inFile.rdbuf();
+			const std::string str = buffer.str();
+			vertexShader = UString(str.c_str(), str.length());
+		}
+
+		// ps
+		{
+			std::ifstream inFile(fragmentShader.toUtf8());
+			if (!inFile)
+			{
+				engine->showMessageError("Shader Error", fragmentShader);
+				return false;
+			}
+			std::stringstream buffer;
+			buffer << inFile.rdbuf();
+			const std::string str = buffer.str();
+			fragmentShader = UString(str.c_str(), str.length());
+		}
+	}
 
 	const char *vsProfile = (((DirectX11Interface*)engine->getGraphics())->getDevice()->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0) ? "vs_5_0" : "vs_4_0";
 	const char *psProfile = (((DirectX11Interface*)engine->getGraphics())->getDevice()->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0) ? "ps_5_0" : "ps_4_0";
@@ -193,14 +245,14 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 	{
 		if (vsError != NULL)
 		{
-			debugLog("Vertex Shader Error: \n%s\n", (const char *)vsError->GetBufferPointer());
+			debugLog("Vertex Shader Error: \n%s\n", (const char*)vsError->GetBufferPointer());
 			vsError->Release();
 			debugLog("\n");
 		}
 
 		if (psError != NULL)
 		{
-			debugLog("Pixel Shader Error: \n%s\n", (const char *)psError->GetBufferPointer());
+			debugLog("Pixel Shader Error: \n%s\n", (const char*)psError->GetBufferPointer());
 			psError->Release();
 			debugLog("\n");
 		}
@@ -237,7 +289,7 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 	UINT numElements = _countof(elements);
 
 	hr1 = ((DirectX11Interface*)engine->getGraphics())->getDevice()->CreateInputLayout(elements, numElements, vs->GetBufferPointer(), vs->GetBufferSize(), &m_inputLayout);
-	vs->Release();
+	vs->Release(); // now we can release it
 
 	if (FAILED(hr1))
 	{
@@ -248,13 +300,14 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 	// TODO: extract this into public functions
 	// create contant buffer
 	D3D11_BUFFER_DESC matrixBufferDesc;
-	matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	matrixBufferDesc.ByteWidth = sizeof(MatrixBufferType);
-	matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	matrixBufferDesc.MiscFlags = 0;
-	matrixBufferDesc.StructureByteStride = 0;
-
+	{
+		matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+		matrixBufferDesc.ByteWidth = sizeof(MatrixBufferType);
+		matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		matrixBufferDesc.MiscFlags = 0;
+		matrixBufferDesc.StructureByteStride = 0;
+	}
 	hr1 = ((DirectX11Interface*)engine->getGraphics())->getDevice()->CreateBuffer(&matrixBufferDesc, NULL, &m_constantBuffer);
 	if (FAILED(hr1))
 	{

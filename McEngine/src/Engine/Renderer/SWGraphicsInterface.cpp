@@ -45,7 +45,7 @@ SWGraphicsInterface::~SWGraphicsInterface()
 
 void SWGraphicsInterface::beginScene()
 {
-	Matrix4 defaultProjectionMatrix = Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0);
+	Matrix4 defaultProjectionMatrix = Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0, -1.0f, 1.0f);
 
 	// push main transforms
 	pushTransform();
