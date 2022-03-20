@@ -911,6 +911,26 @@ void _fullscreen(void)
 	engine->toggleFullscreen();
 }
 
+void _borderless(void)
+{
+	ConVar *fullscreen_windowed_borderless_ref = convar->getConVarByName("fullscreen_windowed_borderless");
+	if (fullscreen_windowed_borderless_ref != NULL)
+	{
+		if (fullscreen_windowed_borderless_ref->getBool())
+		{
+			fullscreen_windowed_borderless_ref->setValue(0.0f);
+			if (env->isFullscreen())
+				env->disableFullscreen();
+		}
+		else
+		{
+			fullscreen_windowed_borderless_ref->setValue(1.0f);
+			if (!env->isFullscreen())
+				env->enableFullscreen();
+		}
+	}
+}
+
 void _windowed(UString args)
 {
 	env->disableFullscreen();
@@ -988,6 +1008,7 @@ ConVar _shutdown_("shutdown", _exit);
 ConVar _restart_("restart", _restart);
 ConVar _printsize_("printsize", _printsize);
 ConVar _fullscreen_("fullscreen", _fullscreen);
+ConVar _borderless_("borderless", _borderless);
 ConVar _windowed_("windowed", _windowed);
 ConVar _minimize_("minimize", _minimize);
 ConVar _maximize_("maximize", _maximize);
