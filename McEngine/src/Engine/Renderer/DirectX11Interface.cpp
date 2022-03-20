@@ -1032,112 +1032,115 @@ void DirectX11Interface::onResolutionChange(Vector2 newResolution)
 {
 	m_vResolution = newResolution;
 
-	// rebuild swapchain rendertarget + view
-	HRESULT hr;
-
-	// unset + release
+	if (!engine->isDrawing()) // HACKHACK: to allow viewport changes for rendertarget rendering OpenGL style
 	{
-		m_deviceContext->OMSetRenderTargets(0, NULL, NULL);
+		// rebuild swapchain rendertarget + view
+		HRESULT hr;
 
-		if (m_frameBuffer != NULL)
+		// unset + release
 		{
-			m_frameBuffer->Release();
-			m_frameBuffer = NULL;
-		}
+			m_deviceContext->OMSetRenderTargets(0, NULL, NULL);
 
-		if (m_frameBufferDepthStencilView != NULL)
-		{
-			m_frameBufferDepthStencilView->Release();
-			m_frameBufferDepthStencilView = NULL;
-		}
-
-		if (m_frameBufferDepthStencilTexture != NULL)
-		{
-			m_frameBufferDepthStencilTexture->Release();
-			m_frameBufferDepthStencilTexture = NULL;
-		}
-	}
-
-	// resize
-	// NOTE: when in fullscreen mode, use 0 as width/height (because they were set internally by SetFullscreenState())
-	// NOTE: DXGI_FORMAT_UNKNOWN preserves the existing format
-	hr = m_swapChain->ResizeBuffers(0, (m_bIsFullscreen && !m_bIsFullscreenBorderlessWindowed ? 0 : (UINT)newResolution.x), (m_bIsFullscreen && !m_bIsFullscreenBorderlessWindowed ? 0 : (UINT)newResolution.y), DXGI_FORMAT::DXGI_FORMAT_UNKNOWN, /*DXGI_SWAP_CHAIN_FLAG::DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH*/0);
-	if (FAILED(hr))
-		debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't ResizeBuffers(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
-
-	// get new (automatically generated) backbuffer
-	ID3D11Texture2D *backBuffer;
-	hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-	if (FAILED(hr))
-	{
-		debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't GetBuffer(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
-		return;
-	}
-
-	// read actual new width/height of backbuffer
-	{
-		D3D11_TEXTURE2D_DESC backBufferTextureDesc;
-		backBuffer->GetDesc(&backBufferTextureDesc);
-
-		// NOTE: force overwrite local resolution (even though it was just set at the start of onResolutionChange() here)
-		m_vResolution.x = (float)backBufferTextureDesc.Width;
-		m_vResolution.y = (float)backBufferTextureDesc.Height;
-	}
-
-	// and create new framebuffer from it
-	hr = m_device->CreateRenderTargetView(backBuffer, NULL, &m_frameBuffer);
-	backBuffer->Release(); // (release temp buffer)
-	if (FAILED(hr))
-	{
-		debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateRenderTargetView(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
-		m_frameBuffer = NULL;
-		return;
-	}
-
-	// add new depth buffer
-	{
-		D3D11_TEXTURE2D_DESC depthStencilTextureDesc;
-		{
-			depthStencilTextureDesc.ArraySize = 1;
-			depthStencilTextureDesc.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_DEPTH_STENCIL;
-			depthStencilTextureDesc.CPUAccessFlags = 0;
-			depthStencilTextureDesc.Format = DXGI_FORMAT::DXGI_FORMAT_D24_UNORM_S8_UINT;
-			depthStencilTextureDesc.MipLevels = 1;
-			depthStencilTextureDesc.MiscFlags = 0;
-			depthStencilTextureDesc.SampleDesc.Count = 1;
-			depthStencilTextureDesc.SampleDesc.Quality = 0;
-			depthStencilTextureDesc.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT;
-			depthStencilTextureDesc.Width = (UINT)m_vResolution.x;
-			depthStencilTextureDesc.Height = (UINT)m_vResolution.y;
-		}
-
-		hr = m_device->CreateTexture2D(&depthStencilTextureDesc, NULL, &m_frameBufferDepthStencilTexture);
-		if (FAILED(hr))
-		{
-			debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateTexture2D(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
-			m_frameBufferDepthStencilTexture = NULL;
-		}
-		else
-		{
-			D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+			if (m_frameBuffer != NULL)
 			{
-				depthStencilViewDesc.Format = depthStencilTextureDesc.Format;
-				depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION::D3D11_DSV_DIMENSION_TEXTURE2D;
-				depthStencilViewDesc.Flags = 0;
-				depthStencilViewDesc.Texture2D.MipSlice = 0;
+				m_frameBuffer->Release();
+				m_frameBuffer = NULL;
 			}
 
-			hr = m_device->CreateDepthStencilView(m_frameBufferDepthStencilTexture, &depthStencilViewDesc, &m_frameBufferDepthStencilView);
-			if (FAILED(hr))
+			if (m_frameBufferDepthStencilView != NULL)
 			{
-				debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateDepthStencilView(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+				m_frameBufferDepthStencilView->Release();
 				m_frameBufferDepthStencilView = NULL;
 			}
-		}
-	}
 
-	// use new framebuffer
-	m_deviceContext->OMSetRenderTargets(1, &m_frameBuffer, m_frameBufferDepthStencilView);
+			if (m_frameBufferDepthStencilTexture != NULL)
+			{
+				m_frameBufferDepthStencilTexture->Release();
+				m_frameBufferDepthStencilTexture = NULL;
+			}
+		}
+
+		// resize
+		// NOTE: when in fullscreen mode, use 0 as width/height (because they were set internally by SetFullscreenState())
+		// NOTE: DXGI_FORMAT_UNKNOWN preserves the existing format
+		hr = m_swapChain->ResizeBuffers(0, (m_bIsFullscreen && !m_bIsFullscreenBorderlessWindowed ? 0 : (UINT)newResolution.x), (m_bIsFullscreen && !m_bIsFullscreenBorderlessWindowed ? 0 : (UINT)newResolution.y), DXGI_FORMAT::DXGI_FORMAT_UNKNOWN, /*DXGI_SWAP_CHAIN_FLAG::DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH*/0);
+		if (FAILED(hr))
+			debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't ResizeBuffers(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+
+		// get new (automatically generated) backbuffer
+		ID3D11Texture2D *backBuffer;
+		hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+		if (FAILED(hr))
+		{
+			debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't GetBuffer(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+			return;
+		}
+
+		// read actual new width/height of backbuffer
+		{
+			D3D11_TEXTURE2D_DESC backBufferTextureDesc;
+			backBuffer->GetDesc(&backBufferTextureDesc);
+
+			// NOTE: force overwrite local resolution (even though it was just set at the start of onResolutionChange() here)
+			m_vResolution.x = (float)backBufferTextureDesc.Width;
+			m_vResolution.y = (float)backBufferTextureDesc.Height;
+		}
+
+		// and create new framebuffer from it
+		hr = m_device->CreateRenderTargetView(backBuffer, NULL, &m_frameBuffer);
+		backBuffer->Release(); // (release temp buffer)
+		if (FAILED(hr))
+		{
+			debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateRenderTargetView(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+			m_frameBuffer = NULL;
+			return;
+		}
+
+		// add new depth buffer
+		{
+			D3D11_TEXTURE2D_DESC depthStencilTextureDesc;
+			{
+				depthStencilTextureDesc.ArraySize = 1;
+				depthStencilTextureDesc.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_DEPTH_STENCIL;
+				depthStencilTextureDesc.CPUAccessFlags = 0;
+				depthStencilTextureDesc.Format = DXGI_FORMAT::DXGI_FORMAT_D24_UNORM_S8_UINT;
+				depthStencilTextureDesc.MipLevels = 1;
+				depthStencilTextureDesc.MiscFlags = 0;
+				depthStencilTextureDesc.SampleDesc.Count = 1;
+				depthStencilTextureDesc.SampleDesc.Quality = 0;
+				depthStencilTextureDesc.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT;
+				depthStencilTextureDesc.Width = (UINT)m_vResolution.x;
+				depthStencilTextureDesc.Height = (UINT)m_vResolution.y;
+			}
+
+			hr = m_device->CreateTexture2D(&depthStencilTextureDesc, NULL, &m_frameBufferDepthStencilTexture);
+			if (FAILED(hr))
+			{
+				debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateTexture2D(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+				m_frameBufferDepthStencilTexture = NULL;
+			}
+			else
+			{
+				D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+				{
+					depthStencilViewDesc.Format = depthStencilTextureDesc.Format;
+					depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION::D3D11_DSV_DIMENSION_TEXTURE2D;
+					depthStencilViewDesc.Flags = 0;
+					depthStencilViewDesc.Texture2D.MipSlice = 0;
+				}
+
+				hr = m_device->CreateDepthStencilView(m_frameBufferDepthStencilTexture, &depthStencilViewDesc, &m_frameBufferDepthStencilView);
+				if (FAILED(hr))
+				{
+					debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateDepthStencilView(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+					m_frameBufferDepthStencilView = NULL;
+				}
+			}
+		}
+
+		// use new framebuffer
+		m_deviceContext->OMSetRenderTargets(1, &m_frameBuffer, m_frameBufferDepthStencilView);
+	}
 
 	// rebuild viewport
 	D3D11_VIEWPORT viewport;
