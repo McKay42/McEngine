@@ -95,6 +95,7 @@ OpenVRInterface *openvr = NULL;
 
 
 
+#ifdef MCENGINE_FEATURE_OPENVR
 #ifdef MCENGINE_FEATURE_DIRECTX
 
 class LIVInterface
@@ -256,6 +257,7 @@ private:
 
 static LIVInterface liv;
 
+#endif
 #endif
 
 
@@ -1354,6 +1356,7 @@ void OpenVRInterface::renderSpectatorTarget(Graphics *g, RenderTarget *rt)
 			if (isLIVDraw)
 			{
 				// NOTE: all liv calculations are inverted (even the rotation)
+#ifdef MCENGINE_FEATURE_OPENVR
 #ifdef MCENGINE_FEATURE_DIRECTX
 
 				Matrix4 translation;
@@ -1370,6 +1373,7 @@ void OpenVRInterface::renderSpectatorTarget(Graphics *g, RenderTarget *rt)
 				matCurrentVP = matCurrentP;
 				matCurrentMVP = matCurrentVP * matCurrentM;
 
+#endif
 #endif
 
 			}
@@ -2377,6 +2381,7 @@ void OpenVRInterface::loadFakeCamera()
 
 void OpenVRInterface::loadLIVCalibration()
 {
+#ifdef MCENGINE_FEATURE_OPENVR
 #ifdef MCENGINE_FEATURE_DIRECTX
 
 	UString livConfigFile1 = "liv-camera.cfg";
@@ -2431,6 +2436,7 @@ void OpenVRInterface::loadLIVCalibration()
 	else
 		debugLog("OpenVRInterface::loadLIVCalibration() : \"%s\" does not exist!\n", livConfigFile.toUtf8());
 
+#endif
 #endif
 }
 
