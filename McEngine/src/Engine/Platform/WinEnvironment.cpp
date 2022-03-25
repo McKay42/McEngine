@@ -584,28 +584,6 @@ void WinEnvironment::disableFullscreen()
 	m_vLastWindowSize.x = std::min(m_vLastWindowSize.x, desktopRect.getWidth());
 	m_vLastWindowSize.y = std::min(m_vLastWindowSize.y, desktopRect.getHeight());
 
-#ifdef MCENGINE_FEATURE_DIRECTX
-
-	DirectX11Interface *dx11 = dynamic_cast<DirectX11Interface*>(engine->getGraphics());
-	if (dx11 != NULL)
-	{
-		dx11->disableFullscreen();
-
-		// HACKHACK: repair broken style (Windows/DX bug)
-		SetWindowLongPtr(m_hwnd, GWL_STYLE, getWindowStyleWindowed());
-
-		// HACKHACK: double MoveWindow is a workaround for a windows bug (otherwise overscale would get clamped to taskbar)
-		if (m_bFullscreenWindowedBorderless)
-		{
-			MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vWindowSize.x, (int)m_vWindowSize.y, FALSE); // non-client width/height!
-			MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vWindowSize.x, (int)m_vWindowSize.y, FALSE); // non-client width/height!
-		}
-
-		m_bFullScreen = false;
-	}
-
-#else
-
 	// request window size based on prev client size
 	RECT rect;
 	rect.left = 0;
@@ -618,14 +596,25 @@ void WinEnvironment::disableFullscreen()
 	m_vWindowSize.x = std::abs(rect.right - rect.left);
 	m_vWindowSize.y = std::abs(rect.bottom - rect.top);
 
+#ifdef MCENGINE_FEATURE_DIRECTX
+
+	DirectX11Interface *dx11 = dynamic_cast<DirectX11Interface*>(engine->getGraphics());
+	if (dx11 != NULL)
+	{
+		// HACKHACK: repair broken style before disabling fullscreen so that it gives us the correct client size (Windows/DX bug)
+		SetWindowLongPtr(m_hwnd, GWL_STYLE, getWindowStyleWindowed());
+
+		dx11->disableFullscreen();
+	}
+
+#endif
+
 	// HACKHACK: double MoveWindow is a workaround for a windows bug (otherwise overscale would get clamped to taskbar)
 	SetWindowLongPtr(m_hwnd, GWL_STYLE, getWindowStyleWindowed());
 	MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vWindowSize.x, (int)m_vWindowSize.y, FALSE); // non-client width/height!
 	MoveWindow(m_hwnd, (int)m_vLastWindowPos.x, (int)m_vLastWindowPos.y, (int)m_vWindowSize.x, (int)m_vWindowSize.y, FALSE); // non-client width/height!
 
 	m_bFullScreen = false;
-
-#endif
 }
 
 void WinEnvironment::setWindowTitle(UString title)

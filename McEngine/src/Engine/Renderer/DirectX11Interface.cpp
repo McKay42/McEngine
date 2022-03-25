@@ -46,6 +46,8 @@ DirectX11Interface::DirectX11Interface(HWND hwnd, bool minimalistContext) : Null
 	m_blendState = NULL;
 	m_shaderTexturedGeneric = NULL;
 	m_vertexBuffer = NULL;
+	m_iVertexBufferMaxNumVertices = 16384;
+	m_iVertexBufferNumVertexOffsetCounter = 0;
 
 	// persistent vars
 	m_color = 0xffffffff;
@@ -255,7 +257,6 @@ void DirectX11Interface::init()
 		"	float4 col;			// global color\n"
 		"	float4 misc;		// misc params. [0] = textured or flat, [1] = vertex colors\n"
 		"};\n"
-		"\n"
 		"struct VS_INPUT\n"
 		"{\n"
 		"	float4 pos	: POSITION;\n"
@@ -275,7 +276,6 @@ void DirectX11Interface::init()
 		"{\n"
 		"	VS_OUTPUT Out;"
 		"	In.pos.w = 1.0f;\n"
-		"	In.pos.z = -In.pos.z;\n" // NOTE: convert from OpenGL coordinate system
 		"	Out.pos = mul(In.pos, mvp);\n"
 		//"	Out.pos.z = (Out.pos.z + Out.pos.w)/2.0f;\n" // TODO: not sure if necessary to compensate clip space range here, no artifacts so far (OpenGL NDC z from -1 to 1, DirectX NDC z from 0 to 1)
 		"	Out.col = In.col;\n"
@@ -324,17 +324,16 @@ void DirectX11Interface::init()
 	m_shaderTexturedGeneric = (DirectX11Shader*)createShaderFromSource(vertexShader, pixelShader);
 	m_shaderTexturedGeneric->load();
 
-	// default vertexbuffer (not dynamic because we want to use UpdateSubresource())
-	D3D11_BUFFER_DESC bufferDesc;
+	// default vertexbuffer
 	{
-		bufferDesc.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT;
-		bufferDesc.ByteWidth = sizeof(SimpleVertex) * 16384;
-		bufferDesc.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_VERTEX_BUFFER;
-		bufferDesc.CPUAccessFlags = 0;
-		bufferDesc.MiscFlags = 0;
-		bufferDesc.StructureByteStride = 0;
+		m_vertexBufferDesc.Usage = D3D11_USAGE::D3D11_USAGE_DYNAMIC;
+		m_vertexBufferDesc.ByteWidth = sizeof(SimpleVertex) * m_iVertexBufferMaxNumVertices;
+		m_vertexBufferDesc.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_VERTEX_BUFFER;
+		m_vertexBufferDesc.CPUAccessFlags = (m_vertexBufferDesc.Usage == D3D11_USAGE::D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_WRITE : 0);
+		m_vertexBufferDesc.MiscFlags = 0;
+		m_vertexBufferDesc.StructureByteStride = 0;
 	}
-	if (FAILED(m_device->CreateBuffer(&bufferDesc, NULL, &m_vertexBuffer)))
+	if (FAILED(m_device->CreateBuffer(&m_vertexBufferDesc, NULL, &m_vertexBuffer)))
 		engine->showMessageError("DirectX Error", "Couldn't CreateBuffer()!");
 
 	onResolutionChange(m_vResolution); // force build swapchain rendertarget view
@@ -456,27 +455,51 @@ void DirectX11Interface::drawPixel(int x, int y)
 	}
 
 	// upload everything to gpu
+	size_t numVertexOffset = 0;
+	bool uploadedSuccessfully = true;
 	{
-		D3D11_BOX box;
+		if (m_vertexBufferDesc.Usage == D3D11_USAGE::D3D11_USAGE_DEFAULT)
 		{
-			box.left = sizeof(DirectX11Interface::SimpleVertex) * 0;
-			box.right = box.left + (sizeof(DirectX11Interface::SimpleVertex) * m_vertices.size());
-			box.top = 0;
-			box.bottom = 1;
-			box.front = 0;
-			box.back = 1;
+			D3D11_BOX box;
+			{
+				box.left = sizeof(DirectX11Interface::SimpleVertex) * 0;
+				box.right = box.left + (sizeof(DirectX11Interface::SimpleVertex) * m_vertices.size());
+				box.top = 0;
+				box.bottom = 1;
+				box.front = 0;
+				box.back = 1;
+			}
+			m_deviceContext->UpdateSubresource(m_vertexBuffer, 0, &box, &m_vertices[0], 0, 0);
 		}
-		m_deviceContext->UpdateSubresource(m_vertexBuffer, 0, &box, &m_vertices[0], 0, 0);
+		else
+		{
+			const bool needsDiscardEntireBuffer = (m_iVertexBufferNumVertexOffsetCounter + m_vertices.size() > m_iVertexBufferMaxNumVertices);
+			const size_t writeOffsetNumVertices = (needsDiscardEntireBuffer ? 0 : m_iVertexBufferNumVertexOffsetCounter);
+			numVertexOffset = writeOffsetNumVertices;
+			{
+				D3D11_MAPPED_SUBRESOURCE mappedResource;
+				ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+				if (SUCCEEDED(m_deviceContext->Map(m_vertexBuffer, 0, (needsDiscardEntireBuffer ? D3D11_MAP::D3D11_MAP_WRITE_DISCARD : D3D11_MAP::D3D11_MAP_WRITE_NO_OVERWRITE), 0, &mappedResource)))
+				{
+					memcpy((void*)(((SimpleVertex*)mappedResource.pData) + writeOffsetNumVertices), &m_vertices[0], sizeof(DirectX11Interface::SimpleVertex) * m_vertices.size());
+					m_deviceContext->Unmap(m_vertexBuffer, 0);
+				}
+				else
+					uploadedSuccessfully = false;
+			}
+			m_iVertexBufferNumVertexOffsetCounter = writeOffsetNumVertices + m_vertices.size();
+		}
 	}
 
 	// draw it
+	if (uploadedSuccessfully)
 	{
 		const UINT stride = sizeof(SimpleVertex);
 		const UINT offset = 0;
 
 		m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
 		m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-		m_deviceContext->Draw(m_vertices.size(), 0);
+		m_deviceContext->Draw(m_vertices.size(), numVertexOffset);
 	}
 }
 
@@ -829,27 +852,51 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	}
 
 	// upload everything to gpu
+	size_t numVertexOffset = 0;
+	bool uploadedSuccessfully = true;
 	{
-		D3D11_BOX box;
+		if (m_vertexBufferDesc.Usage == D3D11_USAGE::D3D11_USAGE_DEFAULT)
 		{
-			box.left = sizeof(DirectX11Interface::SimpleVertex) * 0;
-			box.right = box.left + (sizeof(DirectX11Interface::SimpleVertex) * m_vertices.size());
-			box.top = 0;
-			box.bottom = 1;
-			box.front = 0;
-			box.back = 1;
+			D3D11_BOX box;
+			{
+				box.left = sizeof(DirectX11Interface::SimpleVertex) * 0;
+				box.right = box.left + (sizeof(DirectX11Interface::SimpleVertex) * m_vertices.size());
+				box.top = 0;
+				box.bottom = 1;
+				box.front = 0;
+				box.back = 1;
+			}
+			m_deviceContext->UpdateSubresource(m_vertexBuffer, 0, &box, &m_vertices[0], 0, 0);
 		}
-		m_deviceContext->UpdateSubresource(m_vertexBuffer, 0, &box, &m_vertices[0], 0, 0);
+		else
+		{
+			const bool needsDiscardEntireBuffer = (m_iVertexBufferNumVertexOffsetCounter + m_vertices.size() > m_iVertexBufferMaxNumVertices);
+			const size_t writeOffsetNumVertices = (needsDiscardEntireBuffer ? 0 : m_iVertexBufferNumVertexOffsetCounter);
+			numVertexOffset = writeOffsetNumVertices;
+			{
+				D3D11_MAPPED_SUBRESOURCE mappedResource;
+				ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+				if (SUCCEEDED(m_deviceContext->Map(m_vertexBuffer, 0, (needsDiscardEntireBuffer ? D3D11_MAP::D3D11_MAP_WRITE_DISCARD : D3D11_MAP::D3D11_MAP_WRITE_NO_OVERWRITE), 0, &mappedResource)))
+				{
+					memcpy((void*)(((SimpleVertex*)mappedResource.pData) + writeOffsetNumVertices), &m_vertices[0], sizeof(DirectX11Interface::SimpleVertex) * m_vertices.size());
+					m_deviceContext->Unmap(m_vertexBuffer, 0);
+				}
+				else
+					uploadedSuccessfully = false;
+			}
+			m_iVertexBufferNumVertexOffsetCounter = writeOffsetNumVertices + m_vertices.size();
+		}
 	}
 
 	// draw it
+	if (uploadedSuccessfully)
 	{
 		const UINT stride = sizeof(SimpleVertex);
 		const UINT offset = 0;
 
 		m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
 		m_deviceContext->IASetPrimitiveTopology((D3D_PRIMITIVE_TOPOLOGY)primitiveToDirectX(primitive));
-		m_deviceContext->Draw(m_vertices.size(), 0);
+		m_deviceContext->Draw(m_vertices.size(), numVertexOffset);
 	}
 }
 
@@ -1230,7 +1277,10 @@ void DirectX11Interface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &w
 	m_projectionMatrix = projectionMatrix;
 	m_worldMatrix = worldMatrix;
 
-	m_MP = m_projectionMatrix * m_worldMatrix;
+	// NOTE: convert from OpenGL coordinate space
+	static Matrix4 zflip = Matrix4().scale(1, 1, -1);
+
+	m_MP = m_projectionMatrix * m_worldMatrix * zflip;
 	m_shaderTexturedGeneric->setUniformMatrix4fv("mvp", m_MP);
 }
 

@@ -113,6 +113,16 @@ Matrix4 Camera::buildMatrixPerspectiveFovHorizontal(float fovRad, float aspectRa
 				   0,	0,								-1,		0).transpose();
 }
 
+Matrix4 Camera::buildMatrixPerspectiveFovHorizontalDXLH(float fovRad, float aspectRatioHeightToWidth, float zn, float zf)
+{
+	const float f = 1.0f / std::tan(fovRad / 2.0f);
+
+	return Matrix4(f,	0,								0, 				0,
+				   0, 	f / aspectRatioHeightToWidth, 	0,				0,
+				   0, 	0,								zf/(zf - zn),	-zn*zf/(zf - zn),
+				   0,	0,								1,				0).transpose();
+}
+
 /*
 static Quaternion MatrixToQuaternion(const Matrix4 &in)
 {

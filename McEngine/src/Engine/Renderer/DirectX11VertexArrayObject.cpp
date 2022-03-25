@@ -28,8 +28,10 @@ void DirectX11VertexArrayObject::init()
 
 	if (m_bReady)
 	{
+		const D3D11_USAGE usage = (D3D11_USAGE)usageToDirectX(m_usage);
+
 		// TODO: somehow merge this with the partialUpdateColorIndices, annoying
-		// TODO: also support converted meshes, extremely annoying
+		// TODO: also support converted meshes, extremely annoying. currently this will crash for converted meshes!
 
 		// update vertex buffer
 
@@ -56,16 +58,29 @@ void DirectX11VertexArrayObject::init()
 						break;
 				}
 
-				D3D11_BOX box;
+				if (usage == D3D11_USAGE::D3D11_USAGE_DEFAULT)
 				{
-					box.left = sizeof(DirectX11Interface::SimpleVertex) * offsetIndex;
-					box.right = box.left + (sizeof(DirectX11Interface::SimpleVertex) * numContinuousIndices);
-					box.top = 0;
-					box.bottom = 1;
-					box.front = 0;
-					box.back = 1;
+					D3D11_BOX box;
+					{
+						box.left = sizeof(DirectX11Interface::SimpleVertex) * offsetIndex;
+						box.right = box.left + (sizeof(DirectX11Interface::SimpleVertex) * numContinuousIndices);
+						box.top = 0;
+						box.bottom = 1;
+						box.front = 0;
+						box.back = 1;
+					}
+					dx11->getDeviceContext()->UpdateSubresource(m_vertexBuffer, 0, &box, &m_convertedVertices[offsetIndex], 0, 0);
 				}
-				dx11->getDeviceContext()->UpdateSubresource(m_vertexBuffer, 0, &box, &m_convertedVertices[offsetIndex], 0, 0);
+				else if (usage == D3D11_USAGE::D3D11_USAGE_DYNAMIC)
+				{
+					D3D11_MAPPED_SUBRESOURCE mappedResource;
+					ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+					if (SUCCEEDED(dx11->getDeviceContext()->Map(m_vertexBuffer, 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+					{
+						memcpy(mappedResource.pData, &m_convertedVertices[0], sizeof(DirectX11Interface::SimpleVertex) * m_convertedVertices.size());
+						dx11->getDeviceContext()->Unmap(m_vertexBuffer, 0);
+					}
+				}
 			}
 			m_partialUpdateVertexIndices.clear();
 			m_partialUpdateColorIndices.clear();
@@ -212,28 +227,29 @@ void DirectX11VertexArrayObject::init()
 		}
 	}
 
-	// NOTE: staging and default usage support is currently not implemented
+	// create buffer
 	const D3D11_USAGE usage = (D3D11_USAGE)usageToDirectX(m_usage);
-
-	D3D11_BUFFER_DESC bufferDesc;
 	{
-		bufferDesc.Usage = usage;
-		bufferDesc.ByteWidth = sizeof(DirectX11Interface::SimpleVertex) * m_convertedVertices.size();
-		bufferDesc.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_VERTEX_BUFFER;
-		bufferDesc.CPUAccessFlags = (usage == D3D11_USAGE::D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_WRITE : 0);
-		bufferDesc.MiscFlags = 0;
-		bufferDesc.StructureByteStride = 0;
-	}
-	D3D11_SUBRESOURCE_DATA data;
-	{
-		data.pSysMem = &m_convertedVertices[0];
-		data.SysMemPitch = 0; // (unused for vertices)
-		data.SysMemSlicePitch = 0; // (unused for vertices)
-	}
-	if (FAILED(dx11->getDevice()->CreateBuffer(&bufferDesc, (usage == D3D11_USAGE::D3D11_USAGE_IMMUTABLE ? &data : NULL), &m_vertexBuffer))) // NOTE: immutable is uploaded to gpu right here
-	{
-		debugLog("DirectX Error: Couldn't CreateBuffer(%i)\n", (int)m_convertedVertices.size());
-		return;
+		D3D11_BUFFER_DESC bufferDesc;
+		{
+			bufferDesc.Usage = usage;
+			bufferDesc.ByteWidth = sizeof(DirectX11Interface::SimpleVertex) * m_convertedVertices.size();
+			bufferDesc.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_VERTEX_BUFFER;
+			bufferDesc.CPUAccessFlags = (bufferDesc.Usage == D3D11_USAGE::D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_WRITE : 0);
+			bufferDesc.MiscFlags = 0;
+			bufferDesc.StructureByteStride = 0;
+		}
+		D3D11_SUBRESOURCE_DATA dataForImmutable;
+		{
+			dataForImmutable.pSysMem = &m_convertedVertices[0];
+			dataForImmutable.SysMemPitch = 0; // (unused for vertices)
+			dataForImmutable.SysMemSlicePitch = 0; // (unused for vertices)
+		}
+		if (FAILED(dx11->getDevice()->CreateBuffer(&bufferDesc, (bufferDesc.Usage == D3D11_USAGE::D3D11_USAGE_IMMUTABLE ? &dataForImmutable : NULL), &m_vertexBuffer))) // NOTE: immutable is uploaded to gpu right here
+		{
+			debugLog("DirectX Error: Couldn't CreateBuffer(%i)\n", (int)m_convertedVertices.size());
+			return;
+		}
 	}
 
 	// upload everything to gpu
@@ -348,9 +364,9 @@ int DirectX11VertexArrayObject::usageToDirectX(Graphics::USAGE_TYPE usage)
 	case Graphics::USAGE_TYPE::USAGE_STATIC:
 		return D3D11_USAGE::D3D11_USAGE_IMMUTABLE;
 	case Graphics::USAGE_TYPE::USAGE_DYNAMIC:
-		return D3D11_USAGE::D3D11_USAGE_DEFAULT; // reason for not using D3D11_USAGE_DYNAMIC: UpdateSubresource is faster than Map/memcpy/Unmap
+		return D3D11_USAGE::D3D11_USAGE_DEFAULT; // NOTE: this is intentional. no performance benefits found so far with DYNAMIC, since D3D11_MAP_WRITE_NO_OVERWRITE has very limited use cases
 	case Graphics::USAGE_TYPE::USAGE_STREAM:
-		return D3D11_USAGE::D3D11_USAGE_IMMUTABLE;
+		return D3D11_USAGE::D3D11_USAGE_DEFAULT;
 	}
 
 	return D3D11_USAGE::D3D11_USAGE_IMMUTABLE;

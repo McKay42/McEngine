@@ -156,6 +156,9 @@ private:
 	DirectX11Shader *m_shaderTexturedGeneric;
 
 	std::vector<SimpleVertex> m_vertices;
+	size_t m_iVertexBufferMaxNumVertices;
+	size_t m_iVertexBufferNumVertexOffsetCounter;
+	D3D11_BUFFER_DESC m_vertexBufferDesc;
 	ID3D11Buffer *m_vertexBuffer;
 
 	// persistent vars

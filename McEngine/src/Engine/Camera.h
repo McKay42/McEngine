@@ -23,6 +23,7 @@ public:
 	static Matrix4 buildMatrixPerspectiveFovVertical(float fovRad, float aspectRatioWidthToHeight, float zn, float zf); // DEPRECATED
 	static Matrix4 buildMatrixPerspectiveFovVerticalDXLH(float fovRad, float aspectRatioWidthToHeight, float zn, float zf);
 	static Matrix4 buildMatrixPerspectiveFovHorizontal(float fovRad, float aspectRatioHeightToWidth, float zn, float zf); // DEPRECATED
+	static Matrix4 buildMatrixPerspectiveFovHorizontalDXLH(float fovRad, float aspectRatioHeightToWidth, float zn, float zf);
 
 public:
 	enum CAMERA_TYPE
