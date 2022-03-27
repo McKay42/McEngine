@@ -133,7 +133,7 @@ void DirectX11Interface::init()
 		swapChainDesc.BufferCount = 1;
 		swapChainDesc.OutputWindow = m_hwnd;
 		swapChainDesc.Windowed = TRUE;
-		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD;
+		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD; // TODO: Windows 10 and newer support flip to avoid the blit, but older versions don't
 		swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG::DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 	}
 

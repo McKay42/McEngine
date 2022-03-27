@@ -17,6 +17,8 @@
 
 #include <sstream>
 
+//#define MCENGINE_D3D11_CREATE_SHADER_DEBUG
+
 DirectX11Shader::DirectX11Shader(UString vertexShader, UString fragmentShader, bool source)
 {
 	m_sVsh = vertexShader;
@@ -62,22 +64,26 @@ void DirectX11Shader::enable()
 {
 	if (!m_bReady) return;
 
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->IAGetInputLayout(&m_prevInputLayout); // backup
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->VSGetShader(&m_prevVS, NULL, NULL); // backup
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSGetShader(&m_prevPS, NULL, NULL); // backup
+	DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
 
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->IASetInputLayout(m_inputLayout);
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->VSSetShader(m_vs, NULL, 0);
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShader(m_ps, NULL, 0);
+	dx11->getDeviceContext()->IAGetInputLayout(&m_prevInputLayout); // backup
+	dx11->getDeviceContext()->VSGetShader(&m_prevVS, NULL, NULL); // backup
+	dx11->getDeviceContext()->PSGetShader(&m_prevPS, NULL, NULL); // backup
+
+	dx11->getDeviceContext()->IASetInputLayout(m_inputLayout);
+	dx11->getDeviceContext()->VSSetShader(m_vs, NULL, 0);
+	dx11->getDeviceContext()->PSSetShader(m_ps, NULL, 0);
 }
 
 void DirectX11Shader::disable()
 {
 	if (!m_bReady) return;
 
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->IASetInputLayout(m_prevInputLayout); // restore
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->VSSetShader(m_prevVS, NULL, 0); // restore
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShader(m_prevPS, NULL, 0); // restore
+	DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
+
+	dx11->getDeviceContext()->IASetInputLayout(m_prevInputLayout); // restore
+	dx11->getDeviceContext()->VSSetShader(m_prevVS, NULL, 0); // restore
+	dx11->getDeviceContext()->PSSetShader(m_prevPS, NULL, 0); // restore
 
 	// refcount
 	{
@@ -105,9 +111,11 @@ void DirectX11Shader::setUniform1f(UString name, float value)
 {
 	if (!m_bReady || m_constantBuffer == NULL) return;
 
+	DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
+
 	// lock
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (FAILED(((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	if (FAILED(dx11->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 	{
 		if (debug_shaders->getBool())
 			debugLog("DirectX11Shader::setUniformMatrix4fv() couldn't Map()!\n");
@@ -124,16 +132,48 @@ void DirectX11Shader::setUniform1f(UString name, float value)
 	memcpy(mappedResource.pData, &m_constants, sizeof(MatrixBufferType));
 
 	// unlock
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->Unmap(m_constantBuffer, 0);
+	dx11->getDeviceContext()->Unmap(m_constantBuffer, 0);
+}
+
+void DirectX11Shader::setUniform1fv(UString name, int count, float *values)
+{
+	// TODO: implement
+}
+
+void DirectX11Shader::setUniform1i(UString name, int value)
+{
+	// TODO: implement
+}
+
+void DirectX11Shader::setUniform2f(UString name, float x, float y)
+{
+	// TODO: implement
+}
+
+void DirectX11Shader::setUniform2fv(UString name, int count, float *vectors)
+{
+	// TODO: implement
+}
+
+void DirectX11Shader::setUniform3f(UString name, float x, float y, float z)
+{
+	// TODO: implement
+}
+
+void DirectX11Shader::setUniform3fv(UString name, int count, float *vectors)
+{
+	// TODO: implement
 }
 
 void DirectX11Shader::setUniform4f(UString name, float x, float y, float z, float w)
 {
 	if (!m_bReady || m_constantBuffer == NULL) return;
 
+	DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
+
 	// lock
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (FAILED(((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	if (FAILED(dx11->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 	{
 		if (debug_shaders->getBool())
 			debugLog("DirectX11Shader::setUniformMatrix4fv() couldn't Map()!\n");
@@ -150,7 +190,7 @@ void DirectX11Shader::setUniform4f(UString name, float x, float y, float z, floa
 	memcpy(mappedResource.pData, &m_constants, sizeof(MatrixBufferType));
 
 	// unlock
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->Unmap(m_constantBuffer, 0);
+	dx11->getDeviceContext()->Unmap(m_constantBuffer, 0);
 }
 
 void DirectX11Shader::setUniformMatrix4fv(UString name, Matrix4 &matrix)
@@ -162,9 +202,11 @@ void DirectX11Shader::setUniformMatrix4fv(UString name, float *v)
 {
 	if (!m_bReady || m_constantBuffer == NULL || v == NULL) return;
 
+	DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
+
 	// lock
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (FAILED(((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	if (FAILED(dx11->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 	{
 		if (debug_shaders->getBool())
 			debugLog("DirectX11Shader::setUniformMatrix4fv() couldn't Map()!\n");
@@ -181,7 +223,7 @@ void DirectX11Shader::setUniformMatrix4fv(UString name, float *v)
 	memcpy(mappedResource.pData, &m_constants, sizeof(MatrixBufferType));
 
 	// unlock
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->Unmap(m_constantBuffer, 0);
+	dx11->getDeviceContext()->Unmap(m_constantBuffer, 0);
 }
 
 bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool source)
@@ -217,12 +259,20 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 		}
 	}
 
-	const char *vsProfile = (((DirectX11Interface*)engine->getGraphics())->getDevice()->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0) ? "vs_5_0" : "vs_4_0";
-	const char *psProfile = (((DirectX11Interface*)engine->getGraphics())->getDevice()->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0) ? "ps_5_0" : "ps_4_0";
+	DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
+
+	const char *vsProfile = (dx11->getDevice()->GetFeatureLevel() >= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0 ? "vs_5_0" : "vs_4_0");
+	const char *psProfile = (dx11->getDevice()->GetFeatureLevel() >= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0 ? "ps_5_0" : "ps_4_0");
 	const char *vsEntryPoint = "vsmain";
 	const char *psEntryPoint = "psmain";
 
-	UINT flags = D3DCOMPILE_DEBUG;
+	UINT flags = 0;
+
+#ifdef MCENGINE_D3D11_CREATE_SHADER_DEBUG
+
+	flags |= D3DCOMPILE_DEBUG;
+
+#endif
 
 	const D3D_SHADER_MACRO defines[] =
 	{
@@ -263,11 +313,11 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 
 	// encapsulate
 	debugLog("Shader: CreateVertexShader(%i) ...\n", vs->GetBufferSize());
-	hr1 = ((DirectX11Interface*)engine->getGraphics())->getDevice()->CreateVertexShader(vs->GetBufferPointer(), vs->GetBufferSize(), NULL, &m_vs);
-	// note how vs is not released here, since it's still needed for the input layout
+	hr1 = dx11->getDevice()->CreateVertexShader(vs->GetBufferPointer(), vs->GetBufferSize(), NULL, &m_vs);
+	// (note how vs is not released here, since it's still needed for the input layout)
 
 	debugLog("Shader: CreatePixelShader(%i) ...\n", ps->GetBufferSize());
-	hr2 = ((DirectX11Interface*)engine->getGraphics())->getDevice()->CreatePixelShader(ps->GetBufferPointer(), ps->GetBufferSize(), NULL, &m_ps);
+	hr2 = dx11->getDevice()->CreatePixelShader(ps->GetBufferPointer(), ps->GetBufferSize(), NULL, &m_ps);
 	ps->Release();
 
 	if (FAILED(hr1) || FAILED(hr2))
@@ -288,8 +338,8 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 	};
 	UINT numElements = _countof(elements);
 
-	hr1 = ((DirectX11Interface*)engine->getGraphics())->getDevice()->CreateInputLayout(elements, numElements, vs->GetBufferPointer(), vs->GetBufferSize(), &m_inputLayout);
-	vs->Release(); // now we can release it
+	hr1 = dx11->getDevice()->CreateInputLayout(elements, numElements, vs->GetBufferPointer(), vs->GetBufferSize(), &m_inputLayout);
+	vs->Release(); // (now we can release it)
 
 	if (FAILED(hr1))
 	{
@@ -302,13 +352,13 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 	D3D11_BUFFER_DESC matrixBufferDesc;
 	{
 		matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-		matrixBufferDesc.ByteWidth = sizeof(MatrixBufferType);
+		matrixBufferDesc.ByteWidth = sizeof(MatrixBufferType); // NOTE: "If the bind flag is D3D11_BIND_CONSTANT_BUFFER, you must set the ByteWidth value in multiples of 16, and less than or equal to D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT."
 		matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		matrixBufferDesc.MiscFlags = 0;
 		matrixBufferDesc.StructureByteStride = 0;
 	}
-	hr1 = ((DirectX11Interface*)engine->getGraphics())->getDevice()->CreateBuffer(&matrixBufferDesc, NULL, &m_constantBuffer);
+	hr1 = dx11->getDevice()->CreateBuffer(&matrixBufferDesc, NULL, &m_constantBuffer);
 	if (FAILED(hr1))
 	{
 		engine->showMessageError("Shader Error", UString::format("Couldn't CreateBuffer(%ld, %x, %x)!", hr1, hr1, MAKE_DXGI_HRESULT(hr1)));
@@ -317,7 +367,7 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 
 	// TODO: set buffer number?
 	UINT bufferNumber = 0;
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->VSSetConstantBuffers(bufferNumber, 1, &m_constantBuffer);
+	dx11->getDeviceContext()->VSSetConstantBuffers(bufferNumber, 1, &m_constantBuffer);
 
 	return true;
 }
