@@ -32,7 +32,9 @@ public:
 	virtual void setUniformMatrix4fv(UString name, Matrix4 &matrix);
 	virtual void setUniformMatrix4fv(UString name, float *v);
 
+	// ILLEGAL:
 	int getAttribLocation(UString name);
+	int getAndCacheUniformLocation(const UString &name);
 
 private:
 	virtual void init();
@@ -51,6 +53,9 @@ private:
 	int m_iProgram;
 
 	int m_iProgramBackup;
+
+	std::unordered_map<std::string, int> m_uniformLocationCache;
+	std::string m_sTempStringBuffer;
 };
 
 #endif
