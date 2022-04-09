@@ -14,11 +14,16 @@
 class Camera
 {
 public:
-	static Matrix4 buildMatrixOrtho2D(float left, float right, float bottom, float top);
-	static Matrix4 buildMatrixLookAt(Vector3 eye, Vector3 target, Vector3 up);
-	static Matrix4 buildMatrixPerspectiveFov(float fovRad, float aspect, float zn, float zf); // DEPRECATED
-	static Matrix4 buildMatrixPerspectiveFovVertical(float fovRad, float aspectRatioWidthToHeight, float zn, float zf);
-	static Matrix4 buildMatrixPerspectiveFovHorizontal(float fovRad, float aspectRatioHeightToWidth, float zn, float zf);
+	static Matrix4 buildMatrixOrtho2D(float left, float right, float bottom, float top, float zn, float zf); // DEPRECATED (OpenGL specific)
+	static Matrix4 buildMatrixOrtho2DGLLH(float left, float right, float bottom, float top, float zn, float zf); // OpenGL
+	static Matrix4 buildMatrixOrtho2DDXLH(float left, float right, float bottom, float top, float zn, float zf); // DirectX
+	static Matrix4 buildMatrixLookAt(Vector3 eye, Vector3 target, Vector3 up); // DEPRECATED
+	static Matrix4 buildMatrixLookAtLH(Vector3 eye, Vector3 target, Vector3 up);
+	static Matrix4 buildMatrixPerspectiveFov(float fovRad, float aspect, float zn, float zf); // DEPRECATED (OpenGL specific)
+	static Matrix4 buildMatrixPerspectiveFovVertical(float fovRad, float aspectRatioWidthToHeight, float zn, float zf); // DEPRECATED
+	static Matrix4 buildMatrixPerspectiveFovVerticalDXLH(float fovRad, float aspectRatioWidthToHeight, float zn, float zf);
+	static Matrix4 buildMatrixPerspectiveFovHorizontal(float fovRad, float aspectRatioHeightToWidth, float zn, float zf); // DEPRECATED
+	static Matrix4 buildMatrixPerspectiveFovHorizontalDXLH(float fovRad, float aspectRatioHeightToWidth, float zn, float zf);
 
 public:
 	enum CAMERA_TYPE

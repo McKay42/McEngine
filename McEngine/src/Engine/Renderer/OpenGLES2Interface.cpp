@@ -151,7 +151,7 @@ void OpenGLES2Interface::beginScene()
 	// enable default shader (must happen before any uniform calls)
 	m_shaderTexturedGeneric->enable();
 
-	Matrix4 defaultProjectionMatrix = Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0);
+	Matrix4 defaultProjectionMatrix = Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0, -1.0f, 1.0f);
 
 	// push main transforms
 	pushTransform();
@@ -661,7 +661,7 @@ void OpenGLES2Interface::onResolutionChange(Vector2 newResolution)
 	// special case: custom rendertarget resolution rendering, update active projection matrix immediately
 	if (m_bInScene)
 	{
-		m_projectionTransformStack.top() = Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0);
+		m_projectionTransformStack.top() = Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0, -1.0f, 1.0f);
 		m_bTransformUpToDate = false;
 	}
 }

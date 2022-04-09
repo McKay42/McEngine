@@ -84,7 +84,6 @@ public:
 	inline bool isKeyboardVisible() const {return m_bIsKeyboardVisible;}
 
 	bool hasInputFocus();
-	bool isLIVReady();
 
 private:
 	enum class EYE
@@ -144,7 +143,6 @@ private:
 	void toggleFakeCameraMouseCapture();
 	void saveFakeCamera();
 	void loadFakeCamera();
-	void loadLIVCalibration();
 
 	bool m_bReady;
 	UString m_sTrackingSystemName;
@@ -177,7 +175,6 @@ private:
 	RenderTarget *m_compositorEye1;
 	RenderTarget *m_compositorEye2;
 	RenderTarget *m_debugOverlay;
-	RenderTarget *m_livEye;
 
 	// shaders
 	Shader *m_renderModelShader;
@@ -202,7 +199,6 @@ private:
 	bool m_bShiftDown;
 	bool m_bCtrlDown;
 	bool m_bIsSpectatorDraw;
-	bool m_bIsLIVDraw;
 
 	// custom
 	float m_fPrevSSMultiplier;
@@ -233,26 +229,6 @@ private:
 	GLuint m_glControllerVertBuffer;
 	GLuint m_unControllerVAO;
 	unsigned int m_uiControllerVertcount;
-
-	// LIV support
-#ifdef MCENGINE_FEATURE_DIRECTX
-
-	DirectX11Interface *m_directx;
-	DirectX11Image *m_dxtex;
-	HANDLE m_dxgldev;
-	HANDLE m_dxgltex;
-	unsigned int m_gldxtex;
-	unsigned int m_gldxfbo;
-
-#endif
-
-	Matrix4 m_LIVTrackingReferenceM;
-
-	Vector3 m_vLIVCamPos;
-	Vector3 m_vLIVCamRotDeg;
-	float m_fLIVCamFovDeg;
-	float m_fLIVCamNearZ;
-	float m_fLIVCamFarZ;
 
 #endif
 };

@@ -178,8 +178,6 @@ WinGLLegacyInterface::WinGLLegacyInterface(HWND hwnd) : OpenGLLegacyInterface()
 		exit(0);
 	}
 
-	m_vr_liv = convar->getConVarByName("vr_liv");
-
 	// get device context
 	m_hdc = GetDC(m_hwnd);
 
@@ -233,10 +231,7 @@ WinGLLegacyInterface::~WinGLLegacyInterface()
 void WinGLLegacyInterface::endScene()
 {
 	OpenGLLegacyInterface::endScene();
-	if (m_vr_liv->getBool() && openvr->isReady() && openvr->isLIVReady())
-		wglSwapLayerBuffers(m_hdc, WGL_SWAP_MAIN_PLANE); // currently required for liv support to hook correctly, not feeling confident enough using it for non-VR
-	else
-		SwapBuffers(m_hdc);
+	SwapBuffers(m_hdc);
 }
 
 void WinGLLegacyInterface::setVSync(bool vsync)

@@ -395,9 +395,12 @@ void VisualProfiler::update()
 				{
 					const Color color = COLOR((unsigned char)(m_fPrevVaoAlpha * 255.0f), COLOR_GET_Ri(m_groups[g].color), COLOR_GET_Gi(m_groups[g].color), COLOR_GET_Bi(m_groups[g].color));
 
-					m_lineVao->addVertex(0, 0, 0);
+					//m_lineVao->addVertex(x, -(((float)graphHeight)/(float)numGroups)*g, 0);
+					m_lineVao->addVertex(x, 0, 0);
 					m_lineVao->addColor(color);
-					m_lineVao->addVertex(0, 0, 0);
+
+					//m_lineVao->addVertex(x, -(((float)graphHeight)/(float)numGroups)*(g + 1), 0);
+					m_lineVao->addVertex(x, 0, 0);
 					m_lineVao->addColor(color);
 				}
 			}

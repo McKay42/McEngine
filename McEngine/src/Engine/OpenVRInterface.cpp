@@ -35,7 +35,6 @@
 // therefore, vr_ss_compositor can only be set ONCE upon application startup (in the app constructor, before the first frame is submitted!)
 // however, vr_ss can be set dynamically because the rendered frame is blit into ANOTHER framebuffer (m_compositorEye)
 
-ConVar vr_liv("vr_liv", true, "native liv sdk support");
 ConVar vr_bug_workaround_triggerhapticpulse("vr_bug_workaround_triggerhapticpulse", true);
 
 ConVar vr_ss("vr_ss", 1.3f, "internal engine supersampling factor. the recommended rendertarget size, as reported by OpenVR, is multiplied by this value");
@@ -49,8 +48,6 @@ ConVar vr_farz("vr_farz", 300.0f);
 ConVar vr_draw_lighthouse_models("vr_draw_lighthouse_models", true);
 ConVar vr_draw_controller_models("vr_draw_controller_models", true);
 ConVar vr_draw_head_model("vr_draw_head_model", true);
-ConVar vr_liv_draw_head_model("vr_liv_draw_head_model", false);
-ConVar vr_liv_draw_controller_models("vr_liv_draw_controller_models", true);
 ConVar vr_draw_hmd_to_window("vr_draw_hmd_to_window", true);
 ConVar vr_draw_hmd_to_window_draw_both_eyes("vr_draw_hmd_to_window_draw_both_eyes", true);
 ConVar vr_controller_model_brightness_multiplier("vr_controller_model_brightness_multiplier", 8.0f);
@@ -63,7 +60,6 @@ ConVar vr_auto_switch_primary_controller("vr_auto_switch_primary_controller", tr
 ConVar vr_fake_camera_movement("vr_fake_camera_movement", false);
 ConVar vr_fake_controller_movement("vr_fake_controller_movement", false);
 ConVar vr_reset_fake_camera_movement("vr_reset_fake_camera_movement");
-ConVar vr_liv_reload_calibration("vr_liv_reload_calibration");
 ConVar vr_noclip_walk_speed("vr_noclip_walk_speed", 4.0f);
 ConVar vr_noclip_sprint_speed("vr_noclip_sprint_speed", 20.0f);
 ConVar vr_noclip_crouch_speed("vr_noclip_crouch_speed", 1.0f);
@@ -92,171 +88,6 @@ ConVar vr_head_translation("vr_head_translation", -0.12f);
 */
 
 OpenVRInterface *openvr = NULL;
-
-
-
-#ifdef MCENGINE_FEATURE_DIRECTX
-
-class LIVInterface
-{
-public:
-	const uint32_t VERSION = 1;
-	const wchar_t *SHM_NAME = L"liv-client-shared-texture-info";
-
-#pragma pack(1)
-
-	struct shared_texture_info_v1
-	{
-		uint32_t version;
-		uint32_t width;
-		uint32_t height;
-		uint32_t vflip;
-
-		uint64_t texture_handle;
-
-		bool active;
-	};
-
-#pragma pack()
-
-public:
-	LIVInterface()
-	{
-		m_bIsTextureSet = false;
-
-		shm_handle = NULL;
-		shm_data = NULL;
-
-		auto pid = GetCurrentProcessId();
-		shm_handle = CreateFileMappingW(
-			INVALID_HANDLE_VALUE,
-			nullptr,
-			PAGE_READWRITE,
-			0,
-			sizeof(shared_texture_info_v1),
-			(SHM_NAME + std::to_wstring(pid)).c_str()
-		);
-
-		if (shm_handle == NULL)
-		{
-			debugLog("LIVInterface: Couldn't CreateFileMappingW( %ls ), GetLastError() = %i\n", SHM_NAME, (int)GetLastError());
-			return;
-		}
-
-		shm_data = (shared_texture_info_v1*)MapViewOfFile(
-			shm_handle,
-			FILE_MAP_ALL_ACCESS,
-			0,
-			0,
-			sizeof(shared_texture_info_v1)
-		);
-
-		if (shm_data == NULL)
-		{
-			debugLog("LIVInterface: Couldn't MapViewOfFile(), GetLastError() = %i\n", (int)GetLastError());
-			return;
-		}
-
-		shm_data->version = VERSION;
-		shm_data->vflip = 1;
-	}
-
-	~LIVInterface()
-	{
-		if (shm_data)
-		{
-			UnmapViewOfFile(shm_data);
-			shm_data = NULL;
-		}
-
-		if (shm_handle)
-		{
-			CloseHandle(shm_handle);
-			shm_handle = NULL;
-		}
-	}
-
-	void setTexture(DirectX11Image *texture)
-	{
-		if (!isValid()) return;
-		if (m_bIsTextureSet) return;
-
-		ID3D11Texture2D *tex = texture->getTexture();
-		if (tex == NULL)
-		{
-			debugLog("LIVInterface::setTexture() : NULL texture!\n");
-			return;
-		}
-
-		IDXGIResource *dxgi_resource = NULL;
-		HRESULT hr = tex->QueryInterface(
-			__uuidof(IDXGIResource),
-			(void**)&dxgi_resource
-		);
-
-		if (FAILED(hr))
-		{
-			debugLog("LIVInterface::setTexture() : Couldn't QueryInterface( %ld, %x, %x )!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
-			return;
-		}
-
-		HANDLE tex_handle;
-		hr = dxgi_resource->GetSharedHandle(&tex_handle);
-		dxgi_resource->Release();
-		if (FAILED(hr))
-		{
-			debugLog("LIVInterface::setTexture() : Couldn't GetSharedHandle( %ld, %x, %x )!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
-			return;
-		}
-
-		shm_data->texture_handle = reinterpret_cast<uint64_t>(tex_handle);
-
-		m_bIsTextureSet = true;
-
-		debugLog("LIVInterface::setTexture() succeeded.\n");
-	}
-
-	inline bool isValid()
-	{
-		return shm_data != NULL;
-	}
-
-	inline bool isActive()
-	{
-		return isValid() && shm_data->active;
-	}
-
-	inline bool isTextureSet()
-	{
-		return m_bIsTextureSet;
-	}
-
-	inline int getWidth()
-	{
-		if (isValid())
-			return shm_data->width;
-		else
-			return 0;
-	}
-
-	inline int getHeight()
-	{
-		if (isValid())
-			return shm_data->height;
-		else
-			return 0;
-	}
-
-private:
-	bool m_bIsTextureSet;
-
-	HANDLE shm_handle;
-	shared_texture_info_v1 *shm_data;
-};
-
-static LIVInterface liv;
-
-#endif
 
 
 
@@ -320,7 +151,6 @@ OpenVRInterface::OpenVRInterface()
 	m_compositorEye1 = NULL;
 	m_compositorEye2 = NULL;
 	m_debugOverlay = NULL;
-	m_livEye = NULL;
 
 	// shaders
 	m_renderModelShader = NULL;
@@ -344,7 +174,6 @@ OpenVRInterface::OpenVRInterface()
 	m_bShiftDown = false;
 	m_bCtrlDown = false;
 	m_bIsSpectatorDraw = false;
-	m_bIsLIVDraw = false;
 
 #if !defined(MCENGINE_FEATURE_OPENVR)
 
@@ -373,7 +202,6 @@ OpenVRInterface::OpenVRInterface()
 	vr_showkeyboard.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::showKeyboard));
 	vr_hidekeyboard.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::hideKeyboard));
 	vr_reset_fake_camera_movement.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::resetFakeCameraMovement));
-	vr_liv_reload_calibration.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::loadLIVCalibration));
 	vr_spectator_camera_position.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onSpectatorCameraPositionChange));
 	vr_spectator_camera_rotation.setCallback(fastdelegate::MakeDelegate(this, &OpenVRInterface::onSpectatorCameraRotationChange));
 
@@ -393,25 +221,6 @@ OpenVRInterface::OpenVRInterface()
 	m_controllerRight = new OpenVRController(NULL, OpenVRController::ROLE::ROLE_RIGHTHAND);
 	m_controller = m_controllerRight;
 
-	// LIV support
-#if defined(MCENGINE_FEATURE_DIRECTX) && defined(MCENGINE_FEATURE_OPENGL)
-
-	m_directx = NULL;
-	m_dxtex = NULL;
-	m_dxgldev = NULL;
-	m_dxtex = NULL;
-	m_dxgltex = NULL;
-	m_gldxtex = 0;
-	m_gldxfbo = 0;
-
-	m_vLIVCamPos = Vector3(0, 0, 0);
-	m_vLIVCamRotDeg = Vector3(0, 0, 0);
-	m_fLIVCamFovDeg = 90.0f;
-	m_fLIVCamNearZ = vr_nearz.getFloat();
-	m_fLIVCamFarZ = vr_farz.getFloat();
-
-#endif
-
 	m_pHMD = NULL;
 	m_iTrackedControllerCount = 0;
 	m_iValidPoseCount = 0;
@@ -428,6 +237,13 @@ OpenVRInterface::OpenVRInterface()
 	///return;
 	if (engine->getArgs().length() > 0 && engine->getArgs().find("novr") != -1)
 		return;
+
+#ifdef MCENGINE_FEATURE_DIRECTX
+
+	if (dynamic_cast<DirectX11Interface*>(engine->getGraphics()) != NULL)
+		return;
+
+#endif
 
 	// check if openvr runtime is installed
 	if (!vr::VR_IsRuntimeInstalled())
@@ -517,33 +333,6 @@ OpenVRInterface::OpenVRInterface()
 		vr_console_overlay.setValue(1.0f);
 	}
 
-	// LIV support
-#if defined(MCENGINE_FEATURE_DIRECTX) && defined(MCENGINE_FEATURE_OPENGL)
-
-	// create minimalist DirectX interface
-	m_directx = new DirectX11Interface(NULL, true); ((Graphics*)m_directx)->init();
-	if (m_directx->isReady())
-	{
-		// create OpenGL DirectX interop device
-		m_dxgldev = wglDXOpenDeviceNV(m_directx->getDevice());
-		if (m_dxgldev != NULL)
-		{
-			// create OpenGL DirectX interop rendertarget
-			glGenTextures(1, &m_gldxtex);
-			glGenFramebuffers(1, &m_gldxfbo);
-			glBindFramebuffer(GL_FRAMEBUFFER, m_gldxfbo);
-			glBindTexture(GL_TEXTURE_2D, m_gldxtex);
-			{
-				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_gldxtex, 0);
-			}
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
-		else
-			debugLog("ERROR: Couldn't wglDXOpenDeviceNV(), GetLastError() = %i\n", (int)GetLastError());
-	}
-
-#endif
-
 #endif
 
 	loadFakeCamera();
@@ -582,25 +371,6 @@ OpenVRInterface::~OpenVRInterface()
 	// vertex buffers
 	if (m_unControllerVAO != 0)
 		glDeleteVertexArrays(1, &m_unControllerVAO);
-
-#if defined(MCENGINE_FEATURE_DIRECTX) && defined(MCENGINE_FEATURE_OPENGL)
-
-	if (m_gldxfbo != 0)
-		glDeleteFramebuffers(1, &m_gldxfbo);
-
-	if (m_gldxtex != 0)
-		glDeleteTextures(1, &m_gldxtex);
-
-	if (m_dxgltex != 0)
-		wglDXUnregisterObjectNV(m_dxgldev, m_dxgltex);
-
-	if (m_dxgldev != NULL)
-		wglDXCloseDeviceNV(m_dxgldev);
-
-	SAFE_DELETE(m_dxtex);
-	SAFE_DELETE(m_directx);
-
-#endif
 
 #endif
 
@@ -907,7 +677,7 @@ void OpenVRInterface::draw(Graphics *g)
 	g->setDepthBuffer(false);
 
 	// viewer window (without spectator mode)
-	if (!vr_spectator_mode.getBool() && vr_draw_hmd_to_window.getBool() && !isLIVReady())
+	if (!vr_spectator_mode.getBool() && vr_draw_hmd_to_window.getBool())
 		renderStereoToWindow(g);
 
 #ifdef MCENGINE_FEATURE_OPENGL
@@ -980,18 +750,18 @@ void OpenVRInterface::draw(Graphics *g)
 
 #endif
 
-	// spectator mode + liv
-	if (vr_spectator_mode.getBool() || isLIVReady())
+	// spectator mode
+	if (vr_spectator_mode.getBool())
 	{
 		g->setDepthBuffer(true);
 		{
-			renderSpectatorTarget(g, (isLIVReady() && m_livEye != NULL && m_livEye->isReady()) ? m_livEye : m_leftEye);
+			renderSpectatorTarget(g, m_leftEye);
 		}
 		g->setDepthBuffer(false);
 	}
 
-	// viewer window (with spectator mode), or liv
-	if ((vr_spectator_mode.getBool() && vr_draw_hmd_to_window.getBool()) || isLIVReady())
+	// viewer window (with spectator mode)
+	if (vr_spectator_mode.getBool() && vr_draw_hmd_to_window.getBool())
 		renderStereoToWindow(g);
 }
 
@@ -1078,7 +848,7 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 
 			vr::ETrackedDeviceClass trackedDeviceClass = m_pHMD->GetTrackedDeviceClass(unTrackedDevice);
 
-			if ((bIsInputCapturedByAnotherProcess || !vr_draw_controller_models.getBool() || (m_bIsLIVDraw && !vr_liv_draw_controller_models.getBool())) && trackedDeviceClass == vr::TrackedDeviceClass_Controller)
+			if ((bIsInputCapturedByAnotherProcess || !vr_draw_controller_models.getBool()) && trackedDeviceClass == vr::TrackedDeviceClass_Controller)
 				continue;
 
 			if (!vr_draw_lighthouse_models.getBool() && trackedDeviceClass != vr::TrackedDeviceClass_Controller)
@@ -1106,7 +876,7 @@ void OpenVRInterface::renderScene(Graphics *g,  Matrix4 &matCurrentEye, Matrix4 
 	m_renderModelShader->disable();
 
 	// draw head rendermodel if in spectator mode/draw
-	if ((m_bIsSpectatorDraw && !m_bIsLIVDraw && vr_draw_head_model.getBool()) || (m_bIsLIVDraw && vr_liv_draw_head_model.getBool()))
+	if (m_bIsSpectatorDraw && vr_draw_head_model.getBool())
 	{
 		// lazy loading
 		if (m_headRenderModel == NULL)
@@ -1335,8 +1105,6 @@ void OpenVRInterface::renderStereoTargets(Graphics *g)
 
 void OpenVRInterface::renderSpectatorTarget(Graphics *g, RenderTarget *rt)
 {
-	const bool isLIVDraw = (rt == m_livEye);
-
 	// backup engine resolution
 	Vector2 resolutionBackup = g->getResolution();
 
@@ -1351,43 +1119,16 @@ void OpenVRInterface::renderSpectatorTarget(Graphics *g, RenderTarget *rt)
 			Matrix4 matCurrentVP = getCurrentViewProjectionMatrix(OpenVRInterface::EYE::EYE_LEFT);
 			Matrix4 matCurrentMVP;
 
-			if (isLIVDraw)
-			{
-				// NOTE: all liv calculations are inverted (even the rotation)
-#ifdef MCENGINE_FEATURE_DIRECTX
-
-				Matrix4 translation;
-				translation.translate(-m_vLIVCamPos);
-
-				Quaternion rotation;
-				rotation.fromEuler(m_vLIVCamRotDeg.z, m_vLIVCamRotDeg.y, m_vLIVCamRotDeg.x);
-
-				Matrix4 trackingReferenceM = m_LIVTrackingReferenceM;
-				trackingReferenceM.invert();
-
-				matCurrentM = rotation.getMatrix() * translation * trackingReferenceM;
-				matCurrentP = Camera::buildMatrixPerspectiveFov(deg2rad(m_fLIVCamFovDeg), rt->getWidth() / rt->getHeight(), m_fLIVCamNearZ, m_fLIVCamFarZ);
-				matCurrentVP = matCurrentP;
-				matCurrentMVP = matCurrentVP * matCurrentM;
-
-#endif
-
-			}
-			else
-			{
-				Matrix4 translation;
-				translation.translate(m_fakeCamera->getPos());
-				matCurrentM = m_fakeCamera->getRotation().getMatrix() * translation;
-				matCurrentMVP = matCurrentVP * matCurrentM;
-			}
+			Matrix4 translation;
+			translation.translate(m_fakeCamera->getPos());
+			matCurrentM = m_fakeCamera->getRotation().getMatrix() * translation;
+			matCurrentMVP = matCurrentVP * matCurrentM;
 
 			m_bIsSpectatorDraw = true;
-			m_bIsLIVDraw = isLIVDraw;
 			{
 				renderScene(g, matCurrentEye, matCurrentM, matCurrentP, matCurrentVP, matCurrentMVP);
 			}
 			m_bIsSpectatorDraw = false;
-			m_bIsLIVDraw = false;
 		}
 		rt->disable();
 	}
@@ -1401,99 +1142,15 @@ void OpenVRInterface::renderStereoToWindow(Graphics *g)
 {
 	g->setBlending(false);
 	{
-		if (vr_draw_hmd_to_window.getBool()) // extra check to allow liv draw without hmd to window draw
+		if (vr_draw_hmd_to_window.getBool())
 		{
 			if (vr_draw_hmd_to_window_draw_both_eyes.getBool())
 			{
-				if (isLIVReady() && m_livEye != NULL && m_livEye->isReady())
-					m_livEye->draw(g, 0, 0, engine->getScreenWidth()/2, engine->getScreenHeight());
-				else
-					m_leftEye->draw(g, 0, 0, engine->getScreenWidth()/2, engine->getScreenHeight());
-
+				m_leftEye->draw(g, 0, 0, engine->getScreenWidth()/2, engine->getScreenHeight());
 				m_rightEye->draw(g, engine->getScreenWidth()/2, 0, engine->getScreenWidth()/2, engine->getScreenHeight());
 			}
 			else
 				m_leftEye->draw(g, 0, 0, engine->getScreenWidth(), engine->getScreenHeight());
-		}
-
-		// LIV support
-		if (isLIVReady())
-		{
-
-#if defined(MCENGINE_FEATURE_DIRECTX) && defined(MCENGINE_FEATURE_OPENGL)
-
-			if (liv.isActive() && liv.getWidth() > 0 && liv.getHeight() > 0)
-			{
-				// lazy create shared dx texture and livEye rendertarget
-				if (m_dxtex == NULL)
-				{
-					debugLog("Creating LIV texture (%i, %i) ...\n", liv.getWidth(), liv.getHeight());
-
-					m_dxtex = (DirectX11Image*)m_directx->createImage(liv.getWidth(), liv.getHeight(), false, false);
-					m_dxtex->setDirectX11InterfaceHack(m_directx);
-					m_dxtex->setShared(true);
-
-					Graphics::MULTISAMPLE_TYPE multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X;
-					if (vr_aa.getInt() > 0)
-						multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_2X;
-					else if (vr_aa.getInt() > 2)
-						multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_4X;
-					else if (vr_aa.getInt() > 4)
-						multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_8X;
-					else if (vr_aa.getInt() > 8)
-						multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_16X;
-
-					engine->getResourceManager()->loadResource(m_dxtex);
-					m_dxgltex = wglDXRegisterObjectNV(m_dxgldev, (void*)m_dxtex->getTexture(), m_gldxtex, GL_TEXTURE_2D, WGL_ACCESS_WRITE_DISCARD_NV);
-					m_livEye = engine->getResourceManager()->createRenderTarget(m_dxtex->getSize().x, m_dxtex->getSize().y/2, multisampleType);
-				}
-
-				// sanity flushing
-				g->flush();
-
-				// render liv texture
-				const BOOL locked = wglDXLockObjectsNV(m_dxgldev, 1, &m_dxgltex);
-				if (locked)
-				{
-					int frameBufferBackup = 0;
-					const Vector2 resolutionBackup = g->getResolution(); // backup
-					glGetIntegerv(GL_FRAMEBUFFER_BINDING, &frameBufferBackup); // backup
-
-					glBindFramebuffer(GL_FRAMEBUFFER, m_gldxfbo);
-					g->onResolutionChange(m_dxtex->getSize()); // force renderer resolution
-					{
-						// in here, rendering natively into shared liv texture
-
-						// base alpha fill, full alpha
-						g->setColor(0xff000000);
-						g->fillRect(0, 0, m_dxtex->getWidth(), m_dxtex->getHeight());
-
-						// draw bottom half, i.e. background layer, (RGB only!)
-						glColorMask(TRUE, TRUE, TRUE, FALSE);
-						{
-							if (m_livEye != NULL && m_livEye->isReady())
-								m_livEye->draw(g, 0, m_dxtex->getHeight()/2);
-						}
-						glColorMask(TRUE, TRUE, TRUE, TRUE);
-
-						// mask off top half, i.e. foreground layer, 0 alpha = nothing in foreground
-						g->setColor(0x00000000);
-						g->fillRect(0, 0, m_dxtex->getWidth(), m_dxtex->getHeight()/2);
-					}
-					g->onResolutionChange(resolutionBackup); // restore
-					glBindFramebuffer(GL_FRAMEBUFFER, frameBufferBackup); // restore
-
-					// sanity flushing
-					g->flush();
-
-					wglDXUnlockObjectsNV(m_dxgldev, 1, &m_dxgltex);
-				}
-
-				// update liv texture
-				liv.setTexture(m_dxtex);
-			}
-#endif
-
 		}
 	}
 	g->setBlending(true);
@@ -1789,19 +1446,6 @@ bool OpenVRInterface::hasInputFocus()
 #if defined(MCENGINE_FEATURE_OPENVR)
 
 	return m_bReady && m_pHMD != NULL && !m_pHMD->IsInputFocusCapturedByAnotherProcess();
-
-#else
-
-	return false;
-
-#endif
-}
-
-bool OpenVRInterface::isLIVReady()
-{
-#if defined(MCENGINE_FEATURE_OPENVR) && defined(MCENGINE_FEATURE_OPENGL) && defined(MCENGINE_FEATURE_DIRECTX)
-
-	return (vr_liv.getBool() && m_dxgldev != NULL && liv.isValid());
 
 #else
 
@@ -2108,14 +1752,6 @@ bool OpenVRInterface::updateMatrixPoses()
 		return false;
 	}
 
-	struct LIV_TRACKING_REFERENCE
-	{
-		int deviceIndex;
-		int weight;
-	};
-	std::vector<LIV_TRACKING_REFERENCE> livTrackingReferences;
-	livTrackingReferences.reserve(6);
-
 	m_iValidPoseCount = 0;
 	m_strPoseClasses = "";
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
@@ -2164,80 +1800,12 @@ bool OpenVRInterface::updateMatrixPoses()
 						m_controllerRight->updateMatrixPose(m_rmat4DevicePose[nDevice]);
 				}
 			}
-
-			// update liv reference devices (1), see https://gitlab.com/liv/public/application-protocol/blob/v1/protocol.md#openvr-device-selection
-			if (isLIVReady() && isConnected)
-			{
-				const bool isGenericTracker = m_pHMD->GetTrackedDeviceClass(nDevice) == vr::TrackedDeviceClass::TrackedDeviceClass_GenericTracker;
-
-				if (isController || isGenericTracker)
-				{
-					LIV_TRACKING_REFERENCE trackingReference;
-					trackingReference.deviceIndex = nDevice;
-					trackingReference.weight = 1;
-
-					char stringBuffer[32];
-					memset(stringBuffer, '\0', sizeof(stringBuffer));
-					m_pHMD->GetStringTrackedDeviceProperty(nDevice, vr::ETrackedDeviceProperty::Prop_ModelNumber_String, stringBuffer, sizeof(stringBuffer), NULL);
-					stringBuffer[sizeof(stringBuffer) - 1] = '\0';
-					UString uModelNumber = UString(stringBuffer);
-
-					if (uModelNumber == "LIV Virtual Camera")
-						trackingReference.weight = 10;
-					else if (uModelNumber == "Virtual Controller Device")
-						trackingReference.weight = 9;
-					else if (isController)
-					{
-						memset(stringBuffer, '\0', sizeof(stringBuffer));
-						m_pHMD->GetStringTrackedDeviceProperty(nDevice, vr::ETrackedDeviceProperty::Prop_RenderModelName_String, stringBuffer, sizeof(stringBuffer), NULL);
-						stringBuffer[sizeof(stringBuffer) - 1] = '\0';
-						UString uRenderModelName = UString(stringBuffer);
-
-						if (uRenderModelName == "{htc}vr_tracker_vive_1_0" || uRenderModelName == "vr_tracker_vive_1_0")
-							trackingReference.weight = 8;
-						else
-						{
-							const int controllerRoleHint = m_pHMD->GetInt32TrackedDeviceProperty(nDevice, vr::ETrackedDeviceProperty::Prop_ControllerRoleHint_Int32, NULL);
-							if (controllerRoleHint == 3) // 3 = OptOut
-								trackingReference.weight = 7;
-							else if (controllerRoleHint == vr::ETrackedControllerRole::TrackedControllerRole_Invalid)
-								trackingReference.weight = 6;
-						}
-					}
-					else if (isGenericTracker)
-						trackingReference.deviceIndex = 5;
-
-					livTrackingReferences.push_back(trackingReference);
-				}
-			}
 		}
 	}
 
 	// update hmd matrix
 	if (m_rTrackedDevicePose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid)
 		m_mat4HMDPose = m_rmat4DevicePose[vr::k_unTrackedDeviceIndex_Hmd].invert();
-
-	// update liv reference device matrix (2), see https://gitlab.com/liv/public/application-protocol/blob/v1/protocol.md#openvr-device-selection
-	if (isLIVReady())
-	{
-		if (livTrackingReferences.size() > 0)
-		{
-			struct SortComparator
-			{
-				bool operator() (LIV_TRACKING_REFERENCE const &a, LIV_TRACKING_REFERENCE const &b) const
-				{
-					// strict weak ordering!
-					if (a.weight != b.weight)
-						return a.weight > b.weight;
-					else
-						return a.deviceIndex < b.deviceIndex;
-				}
-			};
-			std::sort(livTrackingReferences.begin(), livTrackingReferences.end(), SortComparator());
-
-			m_LIVTrackingReferenceM = m_rmat4DevicePose[livTrackingReferences[0].deviceIndex];
-		}
-	}
 
 #endif
 
@@ -2372,66 +1940,6 @@ void OpenVRInterface::saveFakeCamera()
 void OpenVRInterface::loadFakeCamera()
 {
 	Console::execConfigFile("vrspectatorcamera");
-	loadLIVCalibration();
-}
-
-void OpenVRInterface::loadLIVCalibration()
-{
-#ifdef MCENGINE_FEATURE_DIRECTX
-
-	UString livConfigFile1 = "liv-camera.cfg";
-	UString livConfigFile2 = "externalcamera.cfg";
-
-	UString livConfigFile = livConfigFile1;
-	if (!env->fileExists(livConfigFile))
-		livConfigFile = livConfigFile2;
-
-	if (env->fileExists(livConfigFile))
-	{
-		File file(livConfigFile);
-		if (file.canRead())
-		{
-			while (file.canRead())
-			{
-				UString line = file.readLine();
-				std::vector<UString> tokens = line.split("=");
-				if (tokens.size() > 1)
-				{
-					for (size_t i=0; i<tokens.size(); i++)
-					{
-						tokens[i] = tokens[i].trim();
-					}
-
-					debugLog("Read %s = %s\n", tokens[0].toUtf8(), tokens[1].toUtf8());
-
-					if (tokens[0] == "x")
-						m_vLIVCamPos.x = tokens[1].toFloat();
-					else if (tokens[0] == "y")
-						m_vLIVCamPos.y = tokens[1].toFloat();
-					else if (tokens[0] == "z")
-						m_vLIVCamPos.z = tokens[1].toFloat();
-					else if (tokens[0] == "rx")
-						m_vLIVCamRotDeg.x = tokens[1].toFloat();
-					else if (tokens[0] == "ry")
-						m_vLIVCamRotDeg.y = tokens[1].toFloat();
-					else if (tokens[0] == "rz")
-						m_vLIVCamRotDeg.z = tokens[1].toFloat();
-					else if (tokens[0] == "fov")
-						m_fLIVCamFovDeg = tokens[1].toFloat();
-					else if (tokens[0] == "near")
-						m_fLIVCamNearZ = tokens[1].toFloat();
-					else if (tokens[0] == "far")
-						m_fLIVCamFarZ = tokens[1].toFloat();
-				}
-			}
-		}
-		else
-			debugLog("OpenVRInterface::loadLIVCalibration() : Can't read \"%s\"!\n", livConfigFile.toUtf8());
-	}
-	else
-		debugLog("OpenVRInterface::loadLIVCalibration() : \"%s\" does not exist!\n", livConfigFile.toUtf8());
-
-#endif
 }
 
 

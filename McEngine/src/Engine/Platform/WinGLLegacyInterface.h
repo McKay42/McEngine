@@ -48,8 +48,6 @@ public:
 	inline HDC getGLHDC() const {return m_hdc;}
 
 private:
-	ConVar *m_vr_liv;
-
 	// device context
 	HWND m_hwnd;
 	HGLRC m_hglrc;

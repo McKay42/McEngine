@@ -20,6 +20,8 @@ public:
 	static long getWindowStyleWindowed();
 	static long getWindowStyleFullscreen();
 
+	static void bluescreen();
+
 public:
 	WinEnvironment(HWND hwnd, HINSTANCE hinstance);
 	virtual ~WinEnvironment();
@@ -115,13 +117,14 @@ public:
 	inline bool isRestartScheduled() const {return m_bIsRestartScheduled;}
 
 private:
+	static BOOL CALLBACK monitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
+	static LRESULT CALLBACK lowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
+
 	void path_strip_filename(TCHAR *Path);
 	void handleShowMessageFullscreen();
 	void enumerateMonitors();
 	void onProcessPriorityChange(UString oldValue, UString newValue);
 	void onDisableWindowsKeyChange(UString oldValue, UString newValue);
-	static BOOL CALLBACK monitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
-	static LRESULT CALLBACK lowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 
 	HWND m_hwnd;
 	HINSTANCE m_hInstance;

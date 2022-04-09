@@ -5,8 +5,6 @@
 // $NoKeywords: $dx11i
 //===============================================================================//
 
-// TODO: fix resolution changes not working, general fullscreen/windowed switching bullshit
-
 #include "DirectX11Interface.h"
 
 #ifdef MCENGINE_FEATURE_DIRECTX
@@ -14,16 +12,16 @@
 #include "Engine.h"
 #include "ConVar.h"
 #include "Camera.h"
-#include "VertexArrayObject.h"
 
 #include "Font.h"
 #include "DirectX11Image.h"
 #include "DirectX11Shader.h"
 #include "DirectX11RenderTarget.h"
+#include "DirectX11VertexArrayObject.h"
 
 #include "d3dx9math.h" // is there no modern version of this?
 
-#define MCENGINE_D3D11_CREATE_DEVICE_DEBUG
+//#define MCENGINE_D3D11_CREATE_DEVICE_DEBUG
 
 DirectX11Interface::DirectX11Interface(HWND hwnd, bool minimalistContext) : NullGraphicsInterface()
 {
@@ -41,12 +39,15 @@ DirectX11Interface::DirectX11Interface(HWND hwnd, bool minimalistContext) : Null
 
 	// renderer
 	m_bIsFullscreen = false;
+	m_bIsFullscreenBorderlessWindowed = false;
 	m_vResolution = engine->getScreenSize(); // initial viewport size = window size
 	m_rasterizerState = NULL;
 	m_depthStencilState = NULL;
 	m_blendState = NULL;
 	m_shaderTexturedGeneric = NULL;
 	m_vertexBuffer = NULL;
+	m_iVertexBufferMaxNumVertices = 16384;
+	m_iVertexBufferNumVertexOffsetCounter = 0;
 
 	// persistent vars
 	m_color = 0xffffffff;
@@ -110,30 +111,29 @@ void DirectX11Interface::init()
 	const UINT numFeatureLevels = _countof(featureLevels);
 
 	// backbuffer descriptor
-	DXGI_MODE_DESC swapChainBufferDesc;
-	ZeroMemory(&swapChainBufferDesc, sizeof(DXGI_MODE_DESC));
+	ZeroMemory(&m_swapChainModeDesc, sizeof(DXGI_MODE_DESC));
 	{
-		swapChainBufferDesc.Width = (UINT)m_vResolution.x;
-		swapChainBufferDesc.Height = (UINT)m_vResolution.y;
-		swapChainBufferDesc.RefreshRate.Numerator = 0; // TODO: use currently active refresh rate? (maybe 0 doesn't do what I think it does)
-		swapChainBufferDesc.RefreshRate.Denominator = 1;
-		swapChainBufferDesc.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM; // NOTE: DXGI_FORMAT_R8G8B8A8_UNORM has the broadest compatibility range
-		swapChainBufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER::DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-		swapChainBufferDesc.Scaling = DXGI_MODE_SCALING::DXGI_MODE_SCALING_UNSPECIFIED;
+		m_swapChainModeDesc.Width = (UINT)m_vResolution.x;
+		m_swapChainModeDesc.Height = (UINT)m_vResolution.y;
+		m_swapChainModeDesc.RefreshRate.Numerator = 0;
+		m_swapChainModeDesc.RefreshRate.Denominator = 1;
+		m_swapChainModeDesc.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM; // NOTE: DXGI_FORMAT_R8G8B8A8_UNORM has the broadest compatibility range
+		m_swapChainModeDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER::DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+		m_swapChainModeDesc.Scaling = DXGI_MODE_SCALING::DXGI_MODE_SCALING_UNSPECIFIED;
 	}
 
 	// swapchain descriptor
 	DXGI_SWAP_CHAIN_DESC swapChainDesc;
 	ZeroMemory(&swapChainDesc, sizeof(DXGI_SWAP_CHAIN_DESC));
 	{
-		swapChainDesc.BufferDesc = swapChainBufferDesc;
+		swapChainDesc.BufferDesc = m_swapChainModeDesc;
 		swapChainDesc.SampleDesc.Count = 1;
 		swapChainDesc.SampleDesc.Quality = 0;
 		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		swapChainDesc.BufferCount = 1;
 		swapChainDesc.OutputWindow = m_hwnd;
 		swapChainDesc.Windowed = TRUE;
-		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD;
+		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD; // TODO: Windows 10 and newer support flip to avoid the blit, but older versions don't
 		swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG::DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 	}
 
@@ -172,7 +172,7 @@ void DirectX11Interface::init()
 	// disable dxgi interfering with mode changes and WndProc (again, handled by the engine internally)
 	{
 		IDXGIFactory1 *pFactory = NULL;
-		if (SUCCEEDED(m_swapChain->GetParent(__uuidof(IDXGIFactory1), (void **)&pFactory)))
+		if (SUCCEEDED(m_swapChain->GetParent(__uuidof(IDXGIFactory1), (void**)&pFactory)))
 		{
 			pFactory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_ALT_ENTER);
 			pFactory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_WINDOW_CHANGES);
@@ -257,7 +257,6 @@ void DirectX11Interface::init()
 		"	float4 col;			// global color\n"
 		"	float4 misc;		// misc params. [0] = textured or flat, [1] = vertex colors\n"
 		"};\n"
-		"\n"
 		"struct VS_INPUT\n"
 		"{\n"
 		"	float4 pos	: POSITION;\n"
@@ -278,6 +277,7 @@ void DirectX11Interface::init()
 		"	VS_OUTPUT Out;"
 		"	In.pos.w = 1.0f;\n"
 		"	Out.pos = mul(In.pos, mvp);\n"
+		//"	Out.pos.z = (Out.pos.z + Out.pos.w)/2.0f;\n" // TODO: not sure if necessary to compensate clip space range here, no artifacts so far (OpenGL NDC z from -1 to 1, DirectX NDC z from 0 to 1)
 		"	Out.col = In.col;\n"
 		"	Out.misc = misc;\n"
 		"	Out.tex = In.tex;\n"
@@ -324,17 +324,16 @@ void DirectX11Interface::init()
 	m_shaderTexturedGeneric = (DirectX11Shader*)createShaderFromSource(vertexShader, pixelShader);
 	m_shaderTexturedGeneric->load();
 
-	// dynamic vertexbuffer
-	D3D11_BUFFER_DESC bufferDesc;
+	// default vertexbuffer
 	{
-		bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-		bufferDesc.ByteWidth = sizeof(SimpleVertex) * 16384; // TODO: hardcoded shit
-		bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		bufferDesc.MiscFlags = 0;
-		bufferDesc.StructureByteStride = 0;
+		m_vertexBufferDesc.Usage = D3D11_USAGE::D3D11_USAGE_DYNAMIC;
+		m_vertexBufferDesc.ByteWidth = sizeof(SimpleVertex) * m_iVertexBufferMaxNumVertices;
+		m_vertexBufferDesc.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_VERTEX_BUFFER;
+		m_vertexBufferDesc.CPUAccessFlags = (m_vertexBufferDesc.Usage == D3D11_USAGE::D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_WRITE : 0);
+		m_vertexBufferDesc.MiscFlags = 0;
+		m_vertexBufferDesc.StructureByteStride = 0;
 	}
-	if (FAILED(m_device->CreateBuffer(&bufferDesc, NULL, &m_vertexBuffer)))
+	if (FAILED(m_device->CreateBuffer(&m_vertexBufferDesc, NULL, &m_vertexBuffer)))
 		engine->showMessageError("DirectX Error", "Couldn't CreateBuffer()!");
 
 	onResolutionChange(m_vResolution); // force build swapchain rendertarget view
@@ -344,7 +343,7 @@ void DirectX11Interface::init()
 
 void DirectX11Interface::beginScene()
 {
-	Matrix4 defaultProjectionMatrix = Camera::buildMatrixOrtho2D(0, m_vResolution.x, m_vResolution.y, 0);
+	Matrix4 defaultProjectionMatrix = Camera::buildMatrixOrtho2DDXLH(0, m_vResolution.x, m_vResolution.y, 0, -1.0f, 1.0f);
 
 	// push main transforms
 	pushTransform();
@@ -359,7 +358,7 @@ void DirectX11Interface::beginScene()
 	if (m_frameBuffer != NULL)
 		m_deviceContext->ClearRenderTargetView(m_frameBuffer, clearColor);
 	if (m_frameBufferDepthStencilView != NULL)
-		m_deviceContext->ClearDepthStencilView(m_frameBufferDepthStencilView, D3D11_CLEAR_FLAG::D3D11_CLEAR_DEPTH | D3D11_CLEAR_FLAG::D3D11_CLEAR_STENCIL, 1.0f, 0);
+		m_deviceContext->ClearDepthStencilView(m_frameBufferDepthStencilView, D3D11_CLEAR_FLAG::D3D11_CLEAR_DEPTH | D3D11_CLEAR_FLAG::D3D11_CLEAR_STENCIL, 1.0f, 0); // yes, the 1.0f is correct
 
 	// enable default shader
 	m_shaderTexturedGeneric->enable();
@@ -378,20 +377,6 @@ void DirectX11Interface::endScene()
 	}
 
 	m_swapChain->Present(m_bVSync ? 1 : 0, 0);
-
-	// handle fullscreen state changes (1)
-	// lazy ensure fullscreen state is always restored, especially when switching between applications
-	/*
-	if (engine->hasFocus())
-	{
-		WINBOOL isActuallyFullscreen;
-		if (SUCCEEDED(m_swapChain->GetFullscreenState(&isActuallyFullscreen, NULL)))
-		{
-			if (env->isFullscreen() && m_bIsFullscreen && !isActuallyFullscreen)
-				m_swapChain->SetFullscreenState(TRUE, NULL);
-		}
-	}
-	*/
 
 	// aka checkErrors()
 #ifdef MCENGINE_D3D11_CREATE_DEVICE_DEBUG
@@ -427,7 +412,7 @@ void DirectX11Interface::endScene()
 void DirectX11Interface::clearDepthBuffer()
 {
 	if (m_frameBufferDepthStencilView != NULL)
-		m_deviceContext->ClearDepthStencilView(m_frameBufferDepthStencilView, D3D11_CLEAR_FLAG::D3D11_CLEAR_DEPTH, 1.0f, 0);
+		m_deviceContext->ClearDepthStencilView(m_frameBufferDepthStencilView, D3D11_CLEAR_FLAG::D3D11_CLEAR_DEPTH, 1.0f, 0); // yes, the 1.0f is correct
 }
 
 void DirectX11Interface::setColor(Color color)
@@ -470,29 +455,51 @@ void DirectX11Interface::drawPixel(int x, int y)
 	}
 
 	// upload everything to gpu
+	size_t numVertexOffset = 0;
+	bool uploadedSuccessfully = true;
 	{
-		D3D11_MAPPED_SUBRESOURCE mappedResource;
-		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-		if (SUCCEEDED(m_deviceContext->Map(m_vertexBuffer, 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+		if (m_vertexBufferDesc.Usage == D3D11_USAGE::D3D11_USAGE_DEFAULT)
 		{
-			memcpy(mappedResource.pData, &m_vertices[0], std::min(sizeof(SimpleVertex) * 16384, sizeof(SimpleVertex) * m_vertices.size())); // TODO: hardcoded shit
-			m_deviceContext->Unmap(m_vertexBuffer, 0);
+			D3D11_BOX box;
+			{
+				box.left = sizeof(DirectX11Interface::SimpleVertex) * 0;
+				box.right = box.left + (sizeof(DirectX11Interface::SimpleVertex) * m_vertices.size());
+				box.top = 0;
+				box.bottom = 1;
+				box.front = 0;
+				box.back = 1;
+			}
+			m_deviceContext->UpdateSubresource(m_vertexBuffer, 0, &box, &m_vertices[0], 0, 0);
 		}
 		else
 		{
-			debugLog("DirectX Error: Couldn't Map() vertexbuffer!\n");
-			return;
+			const bool needsDiscardEntireBuffer = (m_iVertexBufferNumVertexOffsetCounter + m_vertices.size() > m_iVertexBufferMaxNumVertices);
+			const size_t writeOffsetNumVertices = (needsDiscardEntireBuffer ? 0 : m_iVertexBufferNumVertexOffsetCounter);
+			numVertexOffset = writeOffsetNumVertices;
+			{
+				D3D11_MAPPED_SUBRESOURCE mappedResource;
+				ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+				if (SUCCEEDED(m_deviceContext->Map(m_vertexBuffer, 0, (needsDiscardEntireBuffer ? D3D11_MAP::D3D11_MAP_WRITE_DISCARD : D3D11_MAP::D3D11_MAP_WRITE_NO_OVERWRITE), 0, &mappedResource)))
+				{
+					memcpy((void*)(((SimpleVertex*)mappedResource.pData) + writeOffsetNumVertices), &m_vertices[0], sizeof(DirectX11Interface::SimpleVertex) * m_vertices.size());
+					m_deviceContext->Unmap(m_vertexBuffer, 0);
+				}
+				else
+					uploadedSuccessfully = false;
+			}
+			m_iVertexBufferNumVertexOffsetCounter = writeOffsetNumVertices + m_vertices.size();
 		}
 	}
 
 	// draw it
+	if (uploadedSuccessfully)
 	{
 		const UINT stride = sizeof(SimpleVertex);
 		const UINT offset = 0;
 
 		m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
 		m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-		m_deviceContext->Draw(m_vertices.size(), 0);
+		m_deviceContext->Draw(m_vertices.size(), numVertexOffset);
 	}
 }
 
@@ -696,7 +703,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	// if baked, then we can directly draw the buffer
 	if (vao->isReady())
 	{
-		// TODO: baked vao drawing support
+		((DirectX11VertexArrayObject*)vao)->draw();
 		return;
 	}
 
@@ -712,10 +719,14 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	// no support for quads, because fuck you
 	// no support for triangle fans, because fuck youuu
 	// rewrite all quads into triangles
-	std::vector<Vector3> finalVertices = vertices;
-	std::vector<std::vector<Vector2>> finalTexcoords = texcoords;
-	std::vector<Vector4> colors;
-	std::vector<Vector4> finalColors;
+	static std::vector<Vector3> finalVertices;
+	finalVertices = vertices;
+	static std::vector<std::vector<Vector2>> finalTexcoords;
+	finalTexcoords = texcoords;
+	static std::vector<Vector4> colors;
+	colors.clear();
+	static std::vector<Vector4> finalColors;
+	finalColors.clear();
 
 	for (size_t i=0; i<vcolors.size(); i++)
 	{
@@ -815,53 +826,77 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	}
 
 	// build directx vertices
-	m_vertices.clear();
-	for (size_t i=0; i<finalVertices.size(); i++)
+	m_vertices.resize(finalVertices.size());
 	{
-		SimpleVertex v;
+		const bool hasColors = (finalColors.size() > 0);
+		const bool hasTexcoords0 = (finalTexcoords.size() > 0 && finalTexcoords[0].size() > 0);
 
-		// position
-		v.pos = finalVertices[i];
+		const size_t maxColorIndex = finalColors.size() - 1;
+		const size_t maxTexcoords0Index = (hasTexcoords0 ? finalTexcoords[0].size() - 1 : 0);
 
-		// color
-		if (finalColors.size() > 0 && i < finalColors.size())
-			v.col = finalColors[i];
-		else
-			v.col = Vector4(COLOR_GET_Rf(m_color), COLOR_GET_Gf(m_color), COLOR_GET_Bf(m_color), COLOR_GET_Af(m_color));
+		const Vector4 color = Vector4(COLOR_GET_Rf(m_color), COLOR_GET_Gf(m_color), COLOR_GET_Bf(m_color), COLOR_GET_Af(m_color));
 
-		// texcoord
-		if (finalTexcoords.size() > 0 && finalTexcoords[0].size() > 0 && i < finalTexcoords[0].size())
-			v.tex = finalTexcoords[0][i];
-		else
-			v.tex = Vector2(0, 0);
+		for (size_t i=0; i<finalVertices.size(); i++)
+		{
+			m_vertices[i].pos = finalVertices[i];
 
-		m_vertices.push_back(v);
+			if (hasColors)
+				m_vertices[i].col = finalColors[clamp<size_t>(i, 0, maxColorIndex)];
+			else
+				m_vertices[i].col = color;
+
+			// TODO: multitexturing
+			if (hasTexcoords0)
+				m_vertices[i].tex = finalTexcoords[0][clamp<size_t>(i, 0, maxTexcoords0Index)];
+		}
 	}
 
 	// upload everything to gpu
+	size_t numVertexOffset = 0;
+	bool uploadedSuccessfully = true;
 	{
-		D3D11_MAPPED_SUBRESOURCE mappedResource;
-		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-		if (SUCCEEDED(m_deviceContext->Map(m_vertexBuffer, 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+		if (m_vertexBufferDesc.Usage == D3D11_USAGE::D3D11_USAGE_DEFAULT)
 		{
-			memcpy(mappedResource.pData, &m_vertices[0], std::min(sizeof(SimpleVertex) * 16384, sizeof(SimpleVertex) * m_vertices.size())); // TODO: hardcoded shit
-			m_deviceContext->Unmap(m_vertexBuffer, 0);
+			D3D11_BOX box;
+			{
+				box.left = sizeof(DirectX11Interface::SimpleVertex) * 0;
+				box.right = box.left + (sizeof(DirectX11Interface::SimpleVertex) * m_vertices.size());
+				box.top = 0;
+				box.bottom = 1;
+				box.front = 0;
+				box.back = 1;
+			}
+			m_deviceContext->UpdateSubresource(m_vertexBuffer, 0, &box, &m_vertices[0], 0, 0);
 		}
 		else
 		{
-			debugLog("DirectX Error: Couldn't Map() vertexbuffer!\n");
-			return;
+			const bool needsDiscardEntireBuffer = (m_iVertexBufferNumVertexOffsetCounter + m_vertices.size() > m_iVertexBufferMaxNumVertices);
+			const size_t writeOffsetNumVertices = (needsDiscardEntireBuffer ? 0 : m_iVertexBufferNumVertexOffsetCounter);
+			numVertexOffset = writeOffsetNumVertices;
+			{
+				D3D11_MAPPED_SUBRESOURCE mappedResource;
+				ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+				if (SUCCEEDED(m_deviceContext->Map(m_vertexBuffer, 0, (needsDiscardEntireBuffer ? D3D11_MAP::D3D11_MAP_WRITE_DISCARD : D3D11_MAP::D3D11_MAP_WRITE_NO_OVERWRITE), 0, &mappedResource)))
+				{
+					memcpy((void*)(((SimpleVertex*)mappedResource.pData) + writeOffsetNumVertices), &m_vertices[0], sizeof(DirectX11Interface::SimpleVertex) * m_vertices.size());
+					m_deviceContext->Unmap(m_vertexBuffer, 0);
+				}
+				else
+					uploadedSuccessfully = false;
+			}
+			m_iVertexBufferNumVertexOffsetCounter = writeOffsetNumVertices + m_vertices.size();
 		}
 	}
 
 	// draw it
+	if (uploadedSuccessfully)
 	{
 		const UINT stride = sizeof(SimpleVertex);
 		const UINT offset = 0;
 
 		m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
 		m_deviceContext->IASetPrimitiveTopology((D3D_PRIMITIVE_TOPOLOGY)primitiveToDirectX(primitive));
-		m_deviceContext->Draw(m_vertices.size(), 0);
+		m_deviceContext->Draw(m_vertices.size(), numVertexOffset);
 	}
 }
 
@@ -1024,9 +1059,14 @@ void DirectX11Interface::flush()
 std::vector<unsigned char> DirectX11Interface::getScreenshot()
 {
 	std::vector<unsigned char> result;
+	{
+		result.push_back(0);
+		result.push_back(0);
+		result.push_back(0);
+		result.push_back(0);
 
-	// TODO: screenshot support
-
+		// TODO: screenshot support
+	}
 	return result;
 }
 
@@ -1039,163 +1079,115 @@ void DirectX11Interface::onResolutionChange(Vector2 newResolution)
 {
 	m_vResolution = newResolution;
 
-	// TODO: when minimized and getting -> (0, 0) and onResolutionChanged(2, 2), then don't actually change the backbuffer size? seems wasteful. but could cause more bugs if fixed?
-
-	// TODO: engine->showMessageError() and others will break this entirely if they happen while fullscreen, fix that
-
-	// handle fullscreen state changes (2)
-	/*
-	if (m_bIsFullscreen != env->isFullscreen())
+	if (!engine->isDrawing()) // HACKHACK: to allow viewport changes for rendertarget rendering OpenGL style
 	{
-		m_bIsFullscreen = env->isFullscreen();
+		// rebuild swapchain rendertarget + view
+		HRESULT hr;
 
-		const Vector2 prevWindowPos = env->getWindowPos();
-
-		// NOTE: SetFullscreenState() always generates WM_SIZE, which is very annoying
-		m_swapChain->SetFullscreenState(m_bIsFullscreen, NULL);
-
-		// workaround by forcing another resize to the resolution we actually want
-		if (!m_bIsFullscreen)
+		// unset + release
 		{
-			env->setWindowSize(newResolution.x, newResolution.y);
-			env->setWindowPos(prevWindowPos.x, prevWindowPos.y);
-		}
-	}
-	*/
+			m_deviceContext->OMSetRenderTargets(0, NULL, NULL);
 
-	// TODO: second attempt at handling fullscreen switching
-	{
-		WINBOOL isActuallyFullscreen;
-		if (SUCCEEDED(m_swapChain->GetFullscreenState(&isActuallyFullscreen, NULL)))
-		{
-			m_bIsFullscreen = env->isFullscreen();
-
-			// TODO: this is buggy. the client area is not respected, so when constantly switching between windowed/fullscreen the window will keep moving down right
-			const Vector2 prevWindowPos = env->getWindowPos();
-
-			// NOTE: SetFullscreenState() always generates WM_SIZE, which is very annoying
-			bool fullscreenDidChange = false;
-			if (m_bIsFullscreen != (bool)isActuallyFullscreen)
+			if (m_frameBuffer != NULL)
 			{
-				fullscreenDidChange = true;
-				m_swapChain->SetFullscreenState((WINBOOL)m_bIsFullscreen, NULL);
+				m_frameBuffer->Release();
+				m_frameBuffer = NULL;
 			}
 
-			// workaround by forcing another resize to the resolution we actually want
-			if (!m_bIsFullscreen && fullscreenDidChange)
+			if (m_frameBufferDepthStencilView != NULL)
 			{
-				env->setWindowSize(newResolution.x, newResolution.y);
-				env->setWindowPos(prevWindowPos.x, prevWindowPos.y);
-			}
-		}
-	}
-
-	// rebuild swapchain rendertarget + view
-	HRESULT hr;
-
-	// unset + release
-	{
-		m_deviceContext->OMSetRenderTargets(0, NULL, NULL);
-
-		if (m_frameBuffer != NULL)
-		{
-			m_frameBuffer->Release();
-			m_frameBuffer = NULL;
-		}
-
-		if (m_frameBufferDepthStencilView != NULL)
-		{
-			m_frameBufferDepthStencilView->Release();
-			m_frameBufferDepthStencilView = NULL;
-		}
-
-		if (m_frameBufferDepthStencilTexture != NULL)
-		{
-			m_frameBufferDepthStencilTexture->Release();
-			m_frameBufferDepthStencilTexture = NULL;
-		}
-	}
-
-	// resize
-	// NOTE: when in fullscreen mode, use 0 as width/height (because they were set internally by SetFullscreenState())
-	// NOTE: DXGI_FORMAT_UNKNOWN preserves the existing format
-	hr = m_swapChain->ResizeBuffers(0, (m_bIsFullscreen ? 0 : (UINT)newResolution.x), (m_bIsFullscreen ? 0 : (UINT)newResolution.y), DXGI_FORMAT::DXGI_FORMAT_UNKNOWN, /*DXGI_SWAP_CHAIN_FLAG::DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH*/0);
-	if (FAILED(hr))
-		debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't ResizeBuffers(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
-
-	// get new (automatically generated) backbuffer
-	ID3D11Texture2D *backBuffer;
-	hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-	if (FAILED(hr))
-	{
-		debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't GetBuffer(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
-		return;
-	}
-
-	// read actual new width/height of backbuffer
-	{
-		D3D11_TEXTURE2D_DESC backBufferTextureDesc;
-		backBuffer->GetDesc(&backBufferTextureDesc);
-
-		// NOTE: force overwrite local resolution (even though it was just set at the start of onResolutionChange() here)
-		m_vResolution.x = (float)backBufferTextureDesc.Width;
-		m_vResolution.y = (float)backBufferTextureDesc.Height;
-	}
-
-	// and create new framebuffer from it
-	hr = m_device->CreateRenderTargetView(backBuffer, NULL, &m_frameBuffer);
-	backBuffer->Release(); // TODO: why is this here again? do we even really have to release that?
-	if (FAILED(hr))
-	{
-		debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateRenderTargetView(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
-		m_frameBuffer = NULL;
-		return;
-	}
-
-	// add new depth buffer
-	{
-		D3D11_TEXTURE2D_DESC depthStencilTextureDesc;
-		{
-			depthStencilTextureDesc.ArraySize = 1;
-			depthStencilTextureDesc.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_DEPTH_STENCIL;
-			depthStencilTextureDesc.CPUAccessFlags = 0;
-			depthStencilTextureDesc.Format = DXGI_FORMAT::DXGI_FORMAT_D24_UNORM_S8_UINT;
-			depthStencilTextureDesc.MipLevels = 1;
-			depthStencilTextureDesc.MiscFlags = 0;
-			depthStencilTextureDesc.SampleDesc.Count = 1;
-			depthStencilTextureDesc.SampleDesc.Quality = 0;
-			depthStencilTextureDesc.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT;
-			depthStencilTextureDesc.Width = (UINT)m_vResolution.x;
-			depthStencilTextureDesc.Height = (UINT)m_vResolution.y;
-		}
-
-		hr = m_device->CreateTexture2D(&depthStencilTextureDesc, NULL, &m_frameBufferDepthStencilTexture);
-		if (FAILED(hr))
-		{
-			debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateTexture2D(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
-			m_frameBufferDepthStencilTexture = NULL;
-		}
-		else
-		{
-			D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
-			{
-				depthStencilViewDesc.Format = depthStencilTextureDesc.Format;
-				depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION::D3D11_DSV_DIMENSION_TEXTURE2D;
-				depthStencilViewDesc.Flags = 0;
-				depthStencilViewDesc.Texture2D.MipSlice = 0;
-			}
-
-			hr = m_device->CreateDepthStencilView(m_frameBufferDepthStencilTexture, &depthStencilViewDesc, &m_frameBufferDepthStencilView);
-			if (FAILED(hr))
-			{
-				debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateDepthStencilView(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+				m_frameBufferDepthStencilView->Release();
 				m_frameBufferDepthStencilView = NULL;
 			}
-		}
-	}
 
-	// use new framebuffer
-	m_deviceContext->OMSetRenderTargets(1, &m_frameBuffer, m_frameBufferDepthStencilView);
+			if (m_frameBufferDepthStencilTexture != NULL)
+			{
+				m_frameBufferDepthStencilTexture->Release();
+				m_frameBufferDepthStencilTexture = NULL;
+			}
+		}
+
+		// resize
+		// NOTE: when in fullscreen mode, use 0 as width/height (because they were set internally by SetFullscreenState())
+		// NOTE: DXGI_FORMAT_UNKNOWN preserves the existing format
+		hr = m_swapChain->ResizeBuffers(0, (m_bIsFullscreen && !m_bIsFullscreenBorderlessWindowed ? 0 : (UINT)newResolution.x), (m_bIsFullscreen && !m_bIsFullscreenBorderlessWindowed ? 0 : (UINT)newResolution.y), DXGI_FORMAT::DXGI_FORMAT_UNKNOWN, /*DXGI_SWAP_CHAIN_FLAG::DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH*/0);
+		if (FAILED(hr))
+			debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't ResizeBuffers(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+
+		// get new (automatically generated) backbuffer
+		ID3D11Texture2D *backBuffer;
+		hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+		if (FAILED(hr))
+		{
+			debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't GetBuffer(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+			return;
+		}
+
+		// read actual new width/height of backbuffer
+		{
+			D3D11_TEXTURE2D_DESC backBufferTextureDesc;
+			backBuffer->GetDesc(&backBufferTextureDesc);
+
+			// NOTE: force overwrite local resolution (even though it was just set at the start of onResolutionChange() here)
+			m_vResolution.x = (float)backBufferTextureDesc.Width;
+			m_vResolution.y = (float)backBufferTextureDesc.Height;
+		}
+
+		// and create new framebuffer from it
+		hr = m_device->CreateRenderTargetView(backBuffer, NULL, &m_frameBuffer);
+		backBuffer->Release(); // (release temp buffer)
+		if (FAILED(hr))
+		{
+			debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateRenderTargetView(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+			m_frameBuffer = NULL;
+			return;
+		}
+
+		// add new depth buffer
+		{
+			D3D11_TEXTURE2D_DESC depthStencilTextureDesc;
+			{
+				depthStencilTextureDesc.ArraySize = 1;
+				depthStencilTextureDesc.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_DEPTH_STENCIL;
+				depthStencilTextureDesc.CPUAccessFlags = 0;
+				depthStencilTextureDesc.Format = DXGI_FORMAT::DXGI_FORMAT_D24_UNORM_S8_UINT;
+				depthStencilTextureDesc.MipLevels = 1;
+				depthStencilTextureDesc.MiscFlags = 0;
+				depthStencilTextureDesc.SampleDesc.Count = 1;
+				depthStencilTextureDesc.SampleDesc.Quality = 0;
+				depthStencilTextureDesc.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT;
+				depthStencilTextureDesc.Width = (UINT)m_vResolution.x;
+				depthStencilTextureDesc.Height = (UINT)m_vResolution.y;
+			}
+
+			hr = m_device->CreateTexture2D(&depthStencilTextureDesc, NULL, &m_frameBufferDepthStencilTexture);
+			if (FAILED(hr))
+			{
+				debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateTexture2D(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+				m_frameBufferDepthStencilTexture = NULL;
+			}
+			else
+			{
+				D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+				{
+					depthStencilViewDesc.Format = depthStencilTextureDesc.Format;
+					depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION::D3D11_DSV_DIMENSION_TEXTURE2D;
+					depthStencilViewDesc.Flags = 0;
+					depthStencilViewDesc.Texture2D.MipSlice = 0;
+				}
+
+				hr = m_device->CreateDepthStencilView(m_frameBufferDepthStencilTexture, &depthStencilViewDesc, &m_frameBufferDepthStencilView);
+				if (FAILED(hr))
+				{
+					debugLog("FATAL ERROR: DirectX11Interface::onResolutionChange() couldn't CreateDepthStencilView(%ld, %x, %x)!!!\n", hr, hr, MAKE_DXGI_HRESULT(hr));
+					m_frameBufferDepthStencilView = NULL;
+				}
+			}
+		}
+
+		// use new framebuffer
+		m_deviceContext->OMSetRenderTargets(1, &m_frameBuffer, m_frameBufferDepthStencilView);
+	}
 
 	// rebuild viewport
 	D3D11_VIEWPORT viewport;
@@ -1209,6 +1201,45 @@ void DirectX11Interface::onResolutionChange(Vector2 newResolution)
 		viewport.MaxDepth = 1.0f; // NOTE: between 0 and 1
 	}
 	m_deviceContext->RSSetViewports(1, &viewport);
+}
+
+void DirectX11Interface::resizeTarget(Vector2 newResolution)
+{
+	m_swapChainModeDesc.Width = (UINT)newResolution.x;
+	m_swapChainModeDesc.Height = (UINT)newResolution.y;
+
+	m_swapChain->ResizeTarget(&m_swapChainModeDesc); // NOTE: this will resize the actual window and send WM_SIZE which will in turn call onResolutionChange() here
+}
+
+bool DirectX11Interface::enableFullscreen(bool borderlessWindowedFullscreen)
+{
+	m_bIsFullscreenBorderlessWindowed = borderlessWindowedFullscreen;
+
+	if (!m_bIsFullscreenBorderlessWindowed)
+	{
+		HRESULT hr = m_swapChain->SetFullscreenState((WINBOOL)true, NULL);
+		m_bIsFullscreen = !FAILED(hr);
+	}
+	else
+		m_bIsFullscreen = true; // ("fake" fullscreen)
+
+	return m_bIsFullscreen;
+}
+
+void DirectX11Interface::disableFullscreen()
+{
+	if (!m_bIsFullscreen) return;
+
+	if (!m_bIsFullscreenBorderlessWindowed)
+		m_swapChain->SetFullscreenState((WINBOOL)false, NULL);
+
+	m_bIsFullscreen = false;
+	m_bIsFullscreenBorderlessWindowed = false;
+}
+
+void DirectX11Interface::setRenderTargetFrameBuffer()
+{
+	m_deviceContext->OMSetRenderTargets(1, &m_frameBuffer, m_frameBufferDepthStencilView);
 }
 
 Image *DirectX11Interface::createImage(UString filePath, bool mipmapped, bool keepInSystemMemory)
@@ -1238,9 +1269,7 @@ Shader *DirectX11Interface::createShaderFromSource(UString vertexShader, UString
 
 VertexArrayObject *DirectX11Interface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
-	// TODO: implement DirectX11VertexArrayObject
-
-	return new VertexArrayObject(primitive, usage, keepInSystemMemory);
+	return new DirectX11VertexArrayObject(primitive, usage, keepInSystemMemory);
 }
 
 void DirectX11Interface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)
@@ -1248,7 +1277,10 @@ void DirectX11Interface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &w
 	m_projectionMatrix = projectionMatrix;
 	m_worldMatrix = worldMatrix;
 
-	m_MP = m_projectionMatrix * m_worldMatrix;
+	// NOTE: convert from OpenGL coordinate space
+	static Matrix4 zflip = Matrix4().scale(1, 1, -1);
+
+	m_MP = m_projectionMatrix * m_worldMatrix * zflip;
 	m_shaderTexturedGeneric->setUniformMatrix4fv("mvp", m_MP);
 }
 
