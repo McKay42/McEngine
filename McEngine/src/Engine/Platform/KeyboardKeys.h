@@ -106,6 +106,8 @@
 #define KEY_HELP			SDL_SCANCODE_HELP
 #define KEY_HOME			SDL_SCANCODE_HOME
 #define KEY_SUPER			SDL_SCANCODE_LGUI
+#define KEY_PAGEUP			SDL_SCANCODE_PAGEUP
+#define KEY_PAGEDOWN		SDL_SCANCODE_PAGEDOWN
 
 #elif defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
@@ -207,6 +209,8 @@
 #define KEY_HELP			VK_HELP
 #define KEY_HOME			VK_HOME
 #define KEY_SUPER			VK_LWIN
+#define KEY_PAGEUP			VK_PRIOR
+#define KEY_PAGEDOWN		VK_NEXT
 
 #elif defined __linux__
 
@@ -298,7 +302,7 @@
 #define KEY_ENTER			XK_Return
 #define KEY_SHIFT			XK_Shift_L
 #define KEY_CONTROL			XK_Control_L
-#define KEY_ALT				XK_Caps_Lock // HACKHACK: using caps lock for now
+#define KEY_ALT				XK_Caps_Lock // HACKHACK: using caps lock for now, see https://github.com/McKay42/McEngine/issues/9
 #define KEY_ESCAPE			XK_Escape
 #define KEY_SPACE			XK_space
 #define KEY_BACKSPACE		XK_BackSpace
@@ -308,6 +312,8 @@
 #define KEY_HELP			XK_Help
 #define KEY_HOME			XK_Home
 #define KEY_SUPER			XK_Super_L
+#define KEY_PAGEUP			XK_Prior
+#define KEY_PAGEDOWN		XK_Next
 
 #elif defined __APPLE__
 
@@ -409,6 +415,8 @@
 #define KEY_HELP			kVK_Help
 #define KEY_HOME			kVK_Home
 #define KEY_SUPER			kVK_Command
+#define KEY_PAGEUP			kVK_PageUp
+#define KEY_PAGEDOWN		kVK_PageDown
 
 #endif
 
