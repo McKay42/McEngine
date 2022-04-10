@@ -203,8 +203,7 @@ HorizonSDLEnvironment::HorizonSDLEnvironment() : SDLEnvironment(NULL)
 		m_mouse_sensitivity_ref = convar->getConVarByName("mouse_sensitivity");
 
 	// the switch has its own internal deadzone handling already applied
-	convar->getConVarByName("sdl_joystick0_deadzone_x")->setValue(0.0f);
-	convar->getConVarByName("sdl_joystick0_deadzone_y")->setValue(0.0f);
+	convar->getConVarByName("sdl_joystick0_deadzone")->setValue(0.0f);
 
 	m_bDocked = false;
 
