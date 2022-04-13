@@ -60,8 +60,7 @@ ConVar fps_unlimited("fps_unlimited", false);
 ConVar fps_unlimited_yield("fps_unlimited_yield", true, "always release rest of timeslice once per frame (call scheduler via sleep(0)), even if unlimited fps are enabled");
 
 ConVar sdl_joystick_mouse_sensitivity("sdl_joystick_mouse_sensitivity", 1.0f);
-ConVar sdl_joystick0_deadzone_x("sdl_joystick0_deadzone_x", 0.3f);
-ConVar sdl_joystick0_deadzone_y("sdl_joystick0_deadzone_y", 0.3f);
+ConVar sdl_joystick0_deadzone("sdl_joystick0_deadzone", 0.3f);
 ConVar sdl_joystick_zl_threshold("sdl_joystick_zl_threshold", -0.5f);
 ConVar sdl_joystick_zr_threshold("sdl_joystick_zr_threshold", -0.5f);
 
@@ -622,8 +621,8 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 				float joystick0XPercent = m_fJoystick0XPercent;
 				float joystick0YPercent = m_fJoystick0YPercent;
 				{
-					const float joystick0DeadzoneX = sdl_joystick0_deadzone_x.getFloat();
-					const float joystick0DeadzoneY = sdl_joystick0_deadzone_y.getFloat();
+					const float joystick0DeadzoneX = sdl_joystick0_deadzone.getFloat();
+					const float joystick0DeadzoneY = sdl_joystick0_deadzone.getFloat();
 
 					if (joystick0DeadzoneX > 0.0f && joystick0DeadzoneX < 1.0f)
 					{

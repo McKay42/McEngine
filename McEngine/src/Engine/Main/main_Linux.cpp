@@ -7,6 +7,21 @@
 
 #ifdef __linux__
 
+#include "cbase.h"
+
+#ifdef MCENGINE_FEATURE_SDL
+
+#include "LinuxSDLEnvironment.h"
+
+extern int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment);
+
+int main(int argc, char *argv[])
+{
+	return mainSDL(argc, argv, new LinuxSDLEnvironment());
+}
+
+#else
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -487,5 +502,7 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+
+#endif
 
 #endif
