@@ -13,11 +13,11 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
    1. ```/src/App/``` contains the code for applications using the engine
    2. ```/src/Engine/``` contains the core
       1. ```/src/Engine/Input/``` contains input devices
-      2. ```/src/Engine/Main/``` contains the main entry points (and icons for the executable)
-      3. ```/src/Engine/Platform/``` contains all platform specific code which is not in main
+      2. ```/src/Engine/Main/``` contains the main entry points
+      3. ```/src/Engine/Platform/``` contains all platform specific code which is not in Main
       4. ```/src/Engine/Renderer/``` contains renderer specific code
    3. ```/src/GUI/``` contains very primitive UI elements, mostly for debugging (such as the console)
-   4. ```/src/Util/``` contains helper functions, and small libraries which are contained in one file
+   4. ```/src/Util/``` contains helper functions, and small libraries which are header-only or contained in one file
 
 - Every supported platform must have a ```main_<OS_NAME>.cpp``` file in ```/src/Engine/Main/``` containing the main entry point.
 - Other platform specific code which is not part of the main file goes into ```/src/Engine/Platform/```.
@@ -35,42 +35,63 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 
 [Yesterday (university course project, YouTube link)](https://www.youtube.com/watch?v=RbuP1dNG304)
 
-## Eclipse
-This is a preconfigured Eclipse CDT (C/C++) project, meaning that in the best case you only have to copy the McEngine folder (which contains src, libraries, build and the project files) to your workspace and import it in Eclipse as an existing project.
+## Building
+
+### Scripts
+Included in the repository are platform specific zero dependency build scripts, so all you need is a C++ compiler/toolchain.  
+For example, the Windows `build.bat` script only depends on having `g++.exe` and `gcc.exe` available in your `PATH`.
+
+Currently there are `build.bat` and `build.sh` as well as `run.bat` and `run.sh` for their respective platforms.
+
+- The build scripts will always do full builds (and **not** incremental builds)
+- The build scripts are meant for one-off and automated builds
+- The build scripts are also meant for documenting compiler flags/paths/libs/etc.
+
+### Eclipse
+This is a preconfigured Eclipse CDT (C/C++) project, meaning that in the best case you only have to git clone the repository into your workspace folder and File > Import > "Existing Projects into Workspace". You can get it here:
 
 [https://www.eclipse.org/downloads/eclipse-packages/](https://www.eclipse.org/downloads/eclipse-packages/)
 
-- In Eclipse, make sure you select the correct build configuration. All libraries, paths, includes, flags are already set.
-For Windows, the build configuration to use would be either ```Windows Release``` or ```Windows Debug```.
+- In Eclipse, make sure you select the correct build configuration. All libraries, paths, includes and flags are already set.
+On Windows, the build configuration to use would be either ```Windows Release``` or ```Windows Debug```.
 
-- Eclipse may complain that the ```Toolchain "MinGW GCC" is not detected```, just ignore it. As long as g++ and all the other tools are in your PATH, everything should work fine.
+- On Windows, Eclipse may complain that the ```Toolchain "MinGW GCC" is not detected```, just ignore it. As long as g++ and all the other tools are in your `PATH`, everything should work fine.
 
-- Make sure you create a correct ```Run Configuration```. The working directory must be ```${workspace_loc:McEngine/build}```, and the C/C++ Application path must be ```Windows Release/McEngine.exe``` (if this is a Windows release of course).
+- Make sure you create a correct ```Run Configuration```. The working directory must be ```${workspace_loc:McEngine/build}```, and the C/C++ Application path must be ```Windows Release/McEngine.exe``` if the ```Windows Release``` build config was used for building, or ```Windows Debug/McEngine.exe``` if the ```Windows Debug``` build config was used for building etc.
 
-If you don't want to use eclipse you'll have to create your own makefile. Microsoft Visual Studio and their compilers are not supported.
+If you don't want to use Eclipse then either use the included build scripts mentioned before or create your own makefiles.  
 
-## Windows
-The Windows build needs mingw-w64 (i686 with Win32 threads), you can get it here:
+### Windows
+The Windows build needs Mingw-W64 (**i686** with **Win32** threads and **seh** exceptions), you can get it here:
 
-Project: [https://mingw-w64.org/doku.php/](https://mingw-w64.org/doku.php/)
+[https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/)
 
-Installer: [https://sourceforge.net/projects/mingw-w64/files/mingw-w64/](https://sourceforge.net/projects/mingw-w64/files/mingw-w64/)
+- Pick the newest version available, currently 8.1.0.  
+Note that newer versions are available at [https://winlibs.com/#download-release](https://winlibs.com/#download-release), but have not been tested nor validated by me.
 
-__Please use the "online" installer__, since it just works™. The pre-built toolchains on the project page for mingw-w64 are apparently outdated and don't contain all the necessary files for a Windows build, while the installer supports all newest g++ versions.
-Make sure you add the mingw directory to your PATH after the installation is finished. To test if everything works, try to enter the following command in a cmd window: `g++ --version`.
+- Extract e.g. ```x86_64-8.1.0-release-win32-seh-rt_v6-rev0.7z``` and copy the contained ```mingw64``` folder to the root of a drive, resulting in e.g. ```C:\mingw64```.
 
-Alternatively and/or additionally, you can also configure the environment inside the eclipse project settings (C/C++ Build > Environment), by setting `MINGW_HOME` (e.g. `C:\mingw32\mingw32`) and `PATH` (e.g. `C:\MinGW\bin;C:\MinGW\msys\1.0\bin;C:\mingw32\mingw32\bin`) accordingly.
+- Make sure you add the e.g. ```C:\mingw64\bin``` directory to your `PATH` (environmental variable). To test if everything works, try to enter the following command in a cmd window: `g++ --version`.
+
+- Alternatively and/or additionally, you can also configure the environment inside the Eclipse project settings (C/C++ Build > Environment), by setting `MINGW_HOME` (e.g. `C:\mingw64`) and `PATH` (e.g. `C:\mingw64\bin`) accordingly.
+
+If you don't want to use Eclipse then just run the included `build.bat` and `run.bat`.
+
+**Microsoft Visual Studio and their compilers (MSVC) are not supported and never will be.**
 
 
-## Linux
-The Linux build needs the following packages:
+### Linux
+The Linux build needs the following packages (Ubuntu example here):
+- sudo apt-get install build-essential
 - sudo apt-get install mesa-common-dev
 - sudo apt-get install libglu1-mesa-dev
 - sudo apt-get install libx11-dev
 - sudo apt-get install xorg-dev
 
+If you don't want to use Eclipse then just run the included `build.sh` and `run.sh`.
 
-## macOS
+
+### macOS
 The macOS build needs the following tweaks:
 - In Eclipse > Right click on the imported project > Properties > C/C++ General > File Types
     1. Select "Use Project Settings"
