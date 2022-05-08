@@ -84,8 +84,8 @@ for /l %%i in (0,1,%NUMCPPFILES%) do (
 			)
 		)
 		
-		echo %CXX% %CXXFLAGS% %PFLAGS% !INCLUDEPATHS! -o "%FULLPATH%%BUILD%\%%i_!CPPFILENAME!.o" "!CPPFILEPATH!"
-		%CXX% %CXXFLAGS% %PFLAGS% !INCLUDEPATHS! -o "%FULLPATH%%BUILD%\%%i_!CPPFILENAME!.o" "!CPPFILEPATH!"
+		echo %CXX% %CXXFLAGS% %PFLAGS% !INCLUDEPATHS! -o "%FULLPATH%%BUILD%\%%i_cpp_!CPPFILENAME!.o" "!CPPFILEPATH!"
+		%CXX% %CXXFLAGS% %PFLAGS% !INCLUDEPATHS! -o "%FULLPATH%%BUILD%\%%i_cpp_!CPPFILENAME!.o" "!CPPFILEPATH!"
 		
 		if !ERRORLEVEL! neq 0 (
 			goto END
@@ -99,8 +99,8 @@ for /l %%i in (0,1,%NUMCFILES%) do (
 		set CFILEPATH=!CFILE%%i!
 		for %%a in ("!CFILEPATH!") do set CFILENAME=%%~na
 		
-		echo %CC% %CFLAGS% -o "%FULLPATH%%BUILD%\%%i_!CFILENAME!.o" "!CFILEPATH!"
-		%CC% %CFLAGS% -o "%FULLPATH%%BUILD%\%%i_!CFILENAME!.o" "!CFILEPATH!"
+		echo %CC% %CFLAGS% -o "%FULLPATH%%BUILD%\%%i_c_!CFILENAME!.o" "!CFILEPATH!"
+		%CC% %CFLAGS% -o "%FULLPATH%%BUILD%\%%i_c_!CFILENAME!.o" "!CFILEPATH!"
 		
 		if !ERRORLEVEL! neq 0 (
 			goto END
