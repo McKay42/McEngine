@@ -56,7 +56,7 @@ This is a preconfigured Eclipse CDT (C/C++) project, meaning that in the best ca
 - In Eclipse, make sure you select the correct build configuration. All libraries, paths, includes and flags are already set.
 On Windows, the build configuration to use would be either ```Windows Release``` or ```Windows Debug```.
 
-- On Windows, Eclipse may complain that the ```Toolchain "MinGW GCC" is not detected```, just ignore it. As long as g++ and all the other tools are in your `PATH`, everything should work fine.
+- Eclipse may complain that the ```Toolchain "MinGW GCC" is not detected```, just ignore it. As long as g++ and all the other tools are in your `PATH`, everything should work fine.
 
 - Make sure you create a correct ```Run Configuration```. The working directory must be ```${workspace_loc:McEngine/build}```, and the C/C++ Application path must be ```Windows Release/McEngine.exe``` if the ```Windows Release``` build config was used for building, or ```Windows Debug/McEngine.exe``` if the ```Windows Debug``` build config was used for building etc.
 
