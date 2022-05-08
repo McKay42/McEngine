@@ -44,6 +44,7 @@ For example, the Windows `build.bat` script only depends on having `g++.exe` and
 Currently there are `build.bat` and `build.sh` as well as `run.bat` and `run.sh` for their respective platforms.
 
 - The build scripts will always do full builds (and **not** incremental builds)
+- The build scripts will always create release builds (and **not** debug builds)
 - The build scripts are meant for one-off and automated builds
 - The build scripts are also meant for documenting compiler flags/paths/libs/etc.
 
