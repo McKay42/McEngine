@@ -14,10 +14,10 @@
 #include <windows.h>
 
 #define GLEW_STATIC
-#include <glew.h>
+#include <gl/glew.h>
 
 #define WGL_WGLEXT_PROTOTYPES // only used for wglDX*() interop stuff atm
-#include <wglew.h>
+#include <gl/wglew.h>
 
 #include <gl/glu.h>
 #include <gl/gl.h>
@@ -30,7 +30,7 @@
 #ifdef __linux__
 
 #define GLEW_STATIC
-#include <glew.h>
+#include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <GL/glu.h>
