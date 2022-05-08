@@ -41,12 +41,18 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 Included in the repository are platform specific zero dependency build scripts, so all you need is a C++ compiler/toolchain.  
 For example, the Windows `build.bat` script only depends on having `g++.exe` and `gcc.exe` available in your `PATH`.
 
-Currently there are `build.bat` and `build.sh` as well as `run.bat` and `run.sh` for their respective platforms.
+There are `build.bat` and `build.sh` as well as `run.bat` and `run.sh` for their respective platforms.
 
+- The build scripts are meant for one-off and automated builds
 - The build scripts will always do full builds (and **not** incremental builds)
 - The build scripts will always create release builds (and **not** debug builds)
-- The build scripts are meant for one-off and automated builds
 - The build scripts are also meant for documenting compiler flags/paths/libs/etc.
+
+There are also `build_unity.bat` and `build_unity.sh` for their respective platforms.
+
+- The unity build scripts are meant for development without an IDE
+- The unity build scripts support partial incremental builds if run with the `incremental` command line argument
+- The unity build scripts incremental builds will still always recompile all C++ files (but not all C files)
 
 ### Eclipse
 This is a preconfigured Eclipse CDT (C/C++) project, meaning that in the best case you only have to git clone the repository into your workspace folder and File > Import > "Existing Projects into Workspace". You can get it here:
