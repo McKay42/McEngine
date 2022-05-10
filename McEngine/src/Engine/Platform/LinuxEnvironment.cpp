@@ -594,8 +594,8 @@ void LinuxEnvironment::setWindowResizableInt(bool resizable, Vector2 windowSize)
 	wmsize.flags = PMinSize | PMaxSize;
 	wmsize.min_width = m_bResizable ? 100 : (int)windowSize.x;
 	wmsize.min_height = m_bResizable ? 100 : (int)windowSize.y;
-	wmsize.max_width = m_bResizable ? (std::numeric_limits<int>::max() - 1) : (int)windowSize.x;
-	wmsize.max_height = m_bResizable ? (std::numeric_limits<int>::max() - 1) : (int)windowSize.y;
+	wmsize.max_width = m_bResizable ? 16384 : (int)windowSize.x;
+	wmsize.max_height = m_bResizable ? 16384 : (int)windowSize.y;
 
 	XSetWMNormalHints(m_display, m_window, &wmsize);
 
