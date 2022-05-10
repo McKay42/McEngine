@@ -100,10 +100,9 @@ If you don't want to use Eclipse then just run the included `build.bat` and `run
 ### Linux
 The Linux build needs the following packages (Ubuntu example here):
 - sudo apt-get install build-essential
-- sudo apt-get install mesa-common-dev
-- sudo apt-get install libglu1-mesa-dev
 - sudo apt-get install libx11-dev
-- sudo apt-get install xorg-dev
+- sudo apt-get install libxi-dev
+- sudo apt-get install libglu1-mesa-dev
 
 If you don't want to use Eclipse then just run the included `build.sh` and `run.sh`.
 
