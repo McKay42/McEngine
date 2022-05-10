@@ -1,5 +1,12 @@
 # McEngine
-A small cross-platform engine/framework/sandbox for drawing stuff to a window with GPU acceleration, handling various input devices, outputting sound, and networking. Mostly aimed at game development, although it does not have a baby editor like Unreal or CryEngine, (everything must be written in C++ atm). It's more or less my little coding playground, and may be useful to other people as well.
+A small cross-platform engine/framework/sandbox for drawing stuff to a window with GPU acceleration, handling various input devices, outputting sound, and networking. Mostly aimed at game development, although it does not (and will never) have a visual editor like Unity, Unreal or CryEngine, so everything is written in C++. It's more or less my little coding playground, a place to experiment and improve over time, and may be useful to other people as well. As it contains code from since I started learning programming (2009) to today, quality varies a bit across not-yet-refactored-and-cleaned-up files.
+
+**Design Philosophy:**
+
+- Very thin wrappers around OS and graphics APIs (e.g. at most one level of indirection or vtable lookup)
+- Lean dependencies (e.g. a C++ compiler/toolchain is the only requirement to get started, all dependencies are wrapped and replaceable)
+- No preempting of any specific development or architectural game code style (e.g. there will never be a generic "Entity" class of any kind)
+- Rapid prototyping (e.g. loading and drawing an image is two lines of code, moving the image with a key three more)
 
 **About the structure:**
 
@@ -31,6 +38,8 @@ Inside the McEngine project folder are three subfolders, ```build``` &amp; ```li
 
 [https://github.com/McKay42/McOsu](https://github.com/McKay42/McOsu)
 
+[https://github.com/McKay42/McOsu-NX](https://github.com/McKay42/McOsu-NX)
+
 [https://github.com/McKay42/mph-model-viewer](https://github.com/McKay42/mph-model-viewer)
 
 [Yesterday (university course project, YouTube link)](https://www.youtube.com/watch?v=RbuP1dNG304)
@@ -52,7 +61,8 @@ There are also `build_unity.bat` and `build_unity.sh` for their respective platf
 
 - The unity build scripts are meant for development without an IDE
 - The unity build scripts support partial incremental builds if run with the `incremental` command line argument
-- The unity build scripts incremental builds will still always recompile all C++ files (but not all C files)
+- The unity build scripts incremental builds will still always recompile all C++ files as one big unity.cpp file (but not all C files)
+- The unity build scripts are expected to be manually customized for debug builds
 
 ### Eclipse
 This is a preconfigured Eclipse CDT (C/C++) project, meaning that in the best case you only have to git clone the repository into your workspace folder and File > Import > "Existing Projects into Workspace". You can get it here:
@@ -90,10 +100,9 @@ If you don't want to use Eclipse then just run the included `build.bat` and `run
 ### Linux
 The Linux build needs the following packages (Ubuntu example here):
 - sudo apt-get install build-essential
-- sudo apt-get install mesa-common-dev
-- sudo apt-get install libglu1-mesa-dev
 - sudo apt-get install libx11-dev
-- sudo apt-get install xorg-dev
+- sudo apt-get install libxi-dev
+- sudo apt-get install libglu1-mesa-dev
 
 If you don't want to use Eclipse then just run the included `build.sh` and `run.sh`.
 
