@@ -43,6 +43,20 @@ void CBaseUIButton::draw(Graphics *g)
 	// draw frame
 	if (m_bDrawFrame)
 	{
+		/*
+		///const float lineThickness = std::round((float)m_font->getDPI() / 96.0f); // NOTE: abusing font dpi
+		const float lineThickness = 9.0f;
+
+		const float lineOffset = std::floor(lineThickness / 2.0f);
+
+		g->setColor(m_frameColor);
+		g->setAlpha(0.5f);
+		g->fillRect(m_vPos.x - lineOffset, m_vPos.y - lineOffset, lineThickness, m_vSize.y);
+		g->fillRect(m_vPos.x + lineThickness - lineOffset, m_vPos.y - lineOffset, m_vSize.x - lineThickness, lineThickness);
+		g->fillRect(m_vPos.x + m_vSize.x - lineOffset, m_vPos.y - lineOffset, lineThickness, m_vSize.y);
+		g->fillRect(m_vPos.x - lineOffset, m_vPos.y + m_vSize.y - lineOffset, m_vSize.x + lineThickness, lineThickness);
+		*/
+
 		g->setColor(m_frameColor);
 		g->drawRect(m_vPos.x, m_vPos.y, m_vSize.x, m_vSize.y);
 	}
@@ -131,7 +145,7 @@ void CBaseUIButton::updateStringMetrics()
 		m_fStringHeight = m_font->getHeight();
 
 		if (m_bTextLeft)
-			m_fStringWidth = m_vSize.x - 4;
+			m_fStringWidth = m_vSize.x - 4; // TODO: this is broken af, why is it like this? where is this even used/needed
 		else
 			m_fStringWidth = m_font->getStringWidth(m_sText);
 	}
