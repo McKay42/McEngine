@@ -220,19 +220,6 @@ SoundEngine::SoundEngine()
 
 	BASS_SetConfig(BASS_CONFIG_VISTA_TRUEPOS, 0); // NOTE: if set to 1, increases sample playback latency +10 ms
 
-	// allow users to override some defaults (but which may cause beatmap desyncs)
-	// we only want to set these if their values have been explicitly modified (to avoid sideeffects in the default case, and for my sanity)
-	{
-		if (snd_updateperiod.getFloat() != snd_updateperiod.getDefaultFloat())
-			BASS_SetConfig(BASS_CONFIG_UPDATEPERIOD, snd_updateperiod.getInt());
-
-		if (snd_dev_buffer.getFloat() != snd_dev_buffer.getDefaultFloat())
-			BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, snd_dev_buffer.getInt());
-
-		if (snd_dev_period.getFloat() != snd_dev_period.getDefaultFloat())
-			BASS_SetConfig(BASS_CONFIG_DEV_PERIOD, snd_dev_period.getInt());
-	}
-
 	// add default output device
 	m_iCurrentOutputDevice = -1;
 	m_sCurrentOutputDevice = "NULL";
@@ -259,6 +246,7 @@ SoundEngine::SoundEngine()
 	initializeOutputDevice(defaultOutputDevice.id);
 
 	// convar callbacks
+	snd_freq.setCallback( fastdelegate::MakeDelegate(this, &SoundEngine::onFreqChanged) );
 	snd_restart.setCallback( fastdelegate::MakeDelegate(this, &SoundEngine::restart) );
 	snd_output_device.setCallback( fastdelegate::MakeDelegate(this, &SoundEngine::setOutputDevice) );
 
@@ -410,6 +398,19 @@ bool SoundEngine::initializeOutputDevice(int id)
 
 #ifdef MCENGINE_FEATURE_SOUND
 
+	// allow users to override some defaults (but which may cause beatmap desyncs)
+	// we only want to set these if their values have been explicitly modified (to avoid sideeffects in the default case, and for my sanity)
+	{
+		if (snd_updateperiod.getFloat() != snd_updateperiod.getDefaultFloat())
+			BASS_SetConfig(BASS_CONFIG_UPDATEPERIOD, snd_updateperiod.getInt());
+
+		if (snd_dev_buffer.getFloat() != snd_dev_buffer.getDefaultFloat())
+			BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, snd_dev_buffer.getInt());
+
+		if (snd_dev_period.getFloat() != snd_dev_period.getDefaultFloat())
+			BASS_SetConfig(BASS_CONFIG_DEV_PERIOD, snd_dev_period.getInt());
+	}
+
 	// cleanup potential previous device
 	BASS_Free();
 
@@ -447,12 +448,12 @@ bool SoundEngine::initializeOutputDevice(int id)
 
 #endif
 
-		const WinEnvironment *winEnv = dynamic_cast<WinEnvironment*>(env);
-		ret = BASS_Init(idForBassInit, freq, flags, (winEnv != NULL ? winEnv->getHwnd() : (HWND)NULL), NULL);
+	const WinEnvironment *winEnv = dynamic_cast<WinEnvironment*>(env);
+	ret = BASS_Init(idForBassInit, freq, flags, (winEnv != NULL ? winEnv->getHwnd() : (HWND)NULL), NULL);
 
 #else
 
-		ret = BASS_Init(id, freq, flags, 0, NULL);
+	ret = BASS_Init(id, freq, flags, 0, NULL);
 
 #endif
 
@@ -1024,6 +1025,11 @@ void SoundEngine::set3dPosition(Vector3 headPos, Vector3 viewDir, Vector3 viewUp
 		BASS_Apply3D(); // apply the changes
 
 #endif
+}
+
+void SoundEngine::onFreqChanged(UString oldValue, UString newValue)
+{
+	restart();
 }
 
 std::vector<UString> SoundEngine::getOutputDevices()
