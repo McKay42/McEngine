@@ -27,7 +27,7 @@ public:
 
 public:
 	McThread(START_ROUTINE start_routine, void *arg);
-	virtual ~McThread();
+	~McThread();
 
 	bool isReady();
 

@@ -76,6 +76,8 @@ McThread::McThread(START_ROUTINE start_routine, void *arg)
 
 	m_baseThread = new HorizonThread(start_routine, arg);
 
+#else
+#error Missing Thread implementation for OS!
 #endif
 
 #endif
