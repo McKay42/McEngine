@@ -38,6 +38,7 @@ CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float 
 	m_frameDarkColor = 0;
 	m_scrollbarColor = 0xaaffffff;
 
+	m_fScrollMouseWheelMultiplier = 1.0f;
 	m_fScrollbarSizeMultiplier = 1.0f;
 
 	m_bScrolling = false;
@@ -153,6 +154,8 @@ void CBaseUIScrollView::update()
 	CBaseUIElement::update();
 	if (!m_bVisible) return;
 
+	const bool wasContainerBusyBeforeUpdate = m_container->isBusy();
+
 	m_container->update();
 
 	if (m_bBusy)
@@ -185,9 +188,10 @@ void CBaseUIScrollView::update()
 			m_container->stealFocus();
 
 		// handle scrollbar scrolling start
-		if (!m_container->isBusy())
+		if (m_verticalScrollbar.contains(engine->getMouse()->getPos()) && !m_bScrollbarScrolling && !m_bScrolling)
 		{
-			if (m_verticalScrollbar.contains(engine->getMouse()->getPos()) && !m_bScrollbarScrolling && !m_bScrolling)
+			// NOTE: scrollbar dragging always force steals focus
+			if (!wasContainerBusyBeforeUpdate)
 			{
 				m_container->stealFocus();
 
@@ -195,7 +199,11 @@ void CBaseUIScrollView::update()
 				m_bScrollbarScrolling = true;
 				m_bScrollbarIsVerticalScrolling = true;
 			}
-			else if (m_horizontalScrollbar.contains(engine->getMouse()->getPos()) && !m_bScrollbarScrolling && !m_bScrolling)
+		}
+		else if (m_horizontalScrollbar.contains(engine->getMouse()->getPos()) && !m_bScrollbarScrolling && !m_bScrolling)
+		{
+			// NOTE: scrollbar dragging always force steals focus
+			if (!wasContainerBusyBeforeUpdate)
 			{
 				m_container->stealFocus();
 
@@ -203,7 +211,10 @@ void CBaseUIScrollView::update()
 				m_bScrollbarScrolling = true;
 				m_bScrollbarIsVerticalScrolling = false;
 			}
-			else if (!m_bScrolling && !m_bScrollbarScrolling && !m_container->isBusy() && !m_container->isActive())
+		}
+		else if (!m_bScrolling && !m_bScrollbarScrolling && !m_container->isBusy() && !m_container->isActive())
+		{
+			if (!m_container->isBusy())
 			{
 				// if we have successfully stolen the focus or the container is no longer busy, start scrolling
 				m_bScrollbarIsVerticalScrolling = false;
@@ -244,9 +255,9 @@ void CBaseUIScrollView::update()
 	if (!engine->getKeyboard()->isAltDown() && m_bMouseInside && m_bEnabled)
 	{
 		if (engine->getMouse()->getWheelDeltaVertical() != 0)
-			scrollY(engine->getMouse()->getWheelDeltaVertical() * ui_scrollview_mousewheel_multiplier.getFloat());
+			scrollY(engine->getMouse()->getWheelDeltaVertical() * m_fScrollMouseWheelMultiplier * ui_scrollview_mousewheel_multiplier.getFloat());
 		if (engine->getMouse()->getWheelDeltaHorizontal() != 0)
-			scrollX(-engine->getMouse()->getWheelDeltaHorizontal() * ui_scrollview_mousewheel_multiplier.getFloat());
+			scrollX(-engine->getMouse()->getWheelDeltaHorizontal() * m_fScrollMouseWheelMultiplier * ui_scrollview_mousewheel_multiplier.getFloat());
 	}
 
 	// handle drag scrolling and rubber banding
