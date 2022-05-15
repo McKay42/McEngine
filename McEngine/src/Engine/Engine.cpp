@@ -46,6 +46,7 @@
 //********************//
 
 //#include "Osu.h"
+//#include "GUICoherenceMode.h"
 #include "FrameworkTest.h"
 
 
@@ -155,7 +156,7 @@ Engine::Engine(Environment *environment, const char *args)
 
 	// custom
 	m_bDrawing = false;
-	m_iLoadingScreenDelay = 0;
+	m_iLoadingScreenDelay = 0; // 0 == enabled, -2 == disabled (-1 is reserved)
 
 	// initialize all engine subsystems (the order does matter!)
 	debugLog("\nEngine: Initializing subsystems ...\n");
@@ -271,7 +272,7 @@ Engine::~Engine()
 void Engine::loadApp()
 {
 	// load core default resources (these are required to be able to draw the loading screen)
-	if (m_iLoadingScreenDelay == 0)
+	if (m_iLoadingScreenDelay == 0 || m_iLoadingScreenDelay == -2)
 	{
 		debugLog("Engine: Loading default resources ...\n");
 		{
@@ -326,6 +327,8 @@ void Engine::loadApp()
 		//*****************//
 
 		//m_app = new Osu();
+
+		//m_app = new GUICoherenceMode();
 
 		m_app = new FrameworkTest();
 
