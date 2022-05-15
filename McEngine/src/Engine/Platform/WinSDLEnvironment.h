@@ -38,6 +38,7 @@ public:
 	virtual std::vector<UString> getFoldersInFolder(UString folder);
 	virtual std::vector<UString> getLogicalDrives();
 	virtual UString getFolderFromFilePath(UString filepath);
+	virtual UString getFileNameFromFilePath(UString filePath);
 
 	// dialogs & message boxes
 	virtual UString openFileWindow(const char *filetypefilters, UString title, UString initialpath);

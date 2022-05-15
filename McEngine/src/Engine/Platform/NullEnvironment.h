@@ -43,6 +43,7 @@ public:
 	std::vector<UString> getLogicalDrives() {return std::vector<UString>();}
 	UString getFolderFromFilePath(UString filepath) {return "";}
 	UString getFileExtensionFromFilePath(UString filepath, bool includeDot = false) {return "";}
+	UString getFileNameFromFilePath(UString filePath) {return "";}
 
 	// clipboard
 	UString getClipBoardText() {return "";}

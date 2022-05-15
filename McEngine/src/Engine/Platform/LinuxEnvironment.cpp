@@ -331,6 +331,17 @@ UString LinuxEnvironment::getFileExtensionFromFilePath(UString filepath, bool in
 		return UString("");
 }
 
+UString LinuxEnvironment::getFileNameFromFilePath(UString filePath)
+{
+	if (filePath.length() < 1) return filePath;
+
+	const size_t lastSlashIndex = filePath.findLast("/");
+	if (lastSlashIndex != std::string::npos)
+		return filePath.substr(lastSlashIndex + 1);
+
+	return filePath;
+}
+
 UString LinuxEnvironment::getClipBoardText()
 {
 	return getClipboardTextInt();
