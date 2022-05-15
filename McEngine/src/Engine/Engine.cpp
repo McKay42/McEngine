@@ -17,7 +17,6 @@
 #endif
 
 #include "SteamworksInterface.h"
-#include "SquirrelInterface.h"
 #include "AnimationHandler.h"
 #include "DiscordInterface.h"
 #include "OpenCLInterface.h"
@@ -189,7 +188,6 @@ Engine::Engine(Environment *environment, const char *args)
 		m_openCL = new OpenCLInterface();
 		m_openVR = new OpenVRInterface();
 		m_networkHandler = new NetworkHandler();
-		m_squirrel = new SquirrelInterface();
 		m_steam = new SteamworksInterface();
 		m_discord = new DiscordInterface();
 
@@ -239,9 +237,6 @@ Engine::~Engine()
 
 	debugLog("Engine: Freeing network handler...\n");
 	SAFE_DELETE(m_networkHandler);
-
-	debugLog("Engine: Freeing Squirrel...\n");
-	SAFE_DELETE(m_squirrel);
 
 	debugLog("Engine: Freeing Steam...\n");
 	SAFE_DELETE(m_steam);
