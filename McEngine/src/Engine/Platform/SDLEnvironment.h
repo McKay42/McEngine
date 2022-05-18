@@ -51,6 +51,7 @@ public:
 	virtual std::vector<UString> getLogicalDrives();					// NOTE: non-SDL
 	virtual UString getFolderFromFilePath(UString filepath);			// NOTE: non-SDL
 	virtual UString getFileExtensionFromFilePath(UString filepath, bool includeDot = false);
+	virtual UString getFileNameFromFilePath(UString filePath);			// NOTE: non-SDL
 
 	// clipboard
 	virtual UString getClipBoardText();

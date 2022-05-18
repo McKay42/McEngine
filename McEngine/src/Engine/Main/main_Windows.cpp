@@ -155,6 +155,7 @@ __declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001; /
 ConVar fps_max("fps_max", 60.0f, "framerate limiter, foreground");
 ConVar fps_max_yield("fps_max_yield", true, "always release rest of timeslice once per frame (call scheduler via sleep(0))");
 ConVar fps_max_background("fps_max_background", 30.0f, "framerate limiter, background");
+ConVar fps_max_background_interleaved("fps_max_background_interleaved", 1, "experimental, update normally but only draw every n-th frame");
 ConVar fps_unlimited("fps_unlimited", false);
 ConVar fps_unlimited_yield("fps_unlimited_yield", true, "always release rest of timeslice once per frame (call scheduler via sleep(0)), even if unlimited fps are enabled");
 
@@ -1186,6 +1187,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// main loop
 	MSG msg;
 	msg.message = WM_NULL;
+	unsigned long tickCounter = 0;
 	while (g_bRunning)
 	{
 		VPROF_MAIN();
@@ -1251,22 +1253,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				g_engine->onUpdate();
 		}
 
+		const bool inBackground = (g_bMinimized || !g_bHasFocus);
+
 		// draw
-		if (g_bDraw)
 		{
-			g_bDrawing = true;
+			const unsigned long interleaved = fps_max_background_interleaved.getInt();
+			if (g_bDraw && (!inBackground || interleaved < 2 || tickCounter % interleaved == 0))
 			{
-				g_engine->onPaint();
+				g_bDrawing = true;
+				{
+					g_engine->onPaint();
+				}
+				g_bDrawing = false;
 			}
-			g_bDrawing = false;
 		}
+
+		tickCounter++;
 
 		// delay the next frame
 		{
 			VPROF_BUDGET("FPSLimiter", VPROF_BUDGETGROUP_SLEEP);
 
 			frameTimer->update();
-			const bool inBackground = g_bMinimized || !g_bHasFocus;
+
 			if (!fps_unlimited.getBool() || inBackground)
 			{
 				double delayStart = frameTimer->getElapsedTime();

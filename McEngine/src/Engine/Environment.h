@@ -60,6 +60,7 @@ public:
 	virtual std::vector<UString> getLogicalDrives() = 0;
 	virtual UString getFolderFromFilePath(UString filepath) = 0;
 	virtual UString getFileExtensionFromFilePath(UString filepath, bool includeDot = false) = 0;
+	virtual UString getFileNameFromFilePath(UString filePath) = 0;
 
 	// clipboard
 	virtual UString getClipBoardText() = 0;

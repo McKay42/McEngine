@@ -202,6 +202,17 @@ UString SDLEnvironment::getFileExtensionFromFilePath(UString filepath, bool incl
 		return UString("");
 }
 
+UString SDLEnvironment::getFileNameFromFilePath(UString filePath)
+{
+	if (filePath.length() < 1) return filePath;
+
+	const size_t lastSlashIndex = filePath.findLast("/");
+	if (lastSlashIndex != std::string::npos)
+		return filePath.substr(lastSlashIndex + 1);
+
+	return filePath;
+}
+
 UString SDLEnvironment::getClipBoardText()
 {
 	if (m_sPrevClipboardTextSDL != NULL)

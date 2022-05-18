@@ -430,6 +430,18 @@ UString WinEnvironment::getFileExtensionFromFilePath(UString filepath, bool incl
 		return UString("");
 }
 
+UString WinEnvironment::getFileNameFromFilePath(UString filePath)
+{
+	// TODO: use PathStripPath
+	if (filePath.length() < 1) return filePath;
+
+	const size_t lastSlashIndex = filePath.findLast("/");
+	if (lastSlashIndex != std::string::npos)
+		return filePath.substr(lastSlashIndex + 1);
+
+	return filePath;
+}
+
 void WinEnvironment::showMessageInfo(UString title, UString message)
 {
 	bool wasFullscreen = m_bFullScreen;

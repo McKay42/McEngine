@@ -17,7 +17,6 @@
 #endif
 
 #include "SteamworksInterface.h"
-#include "SquirrelInterface.h"
 #include "AnimationHandler.h"
 #include "DiscordInterface.h"
 #include "OpenCLInterface.h"
@@ -47,6 +46,8 @@
 //********************//
 
 //#include "Osu.h"
+//#include "GUICoherenceMode.h"
+//#include "Asteroids.h"
 #include "FrameworkTest.h"
 
 
@@ -156,7 +157,7 @@ Engine::Engine(Environment *environment, const char *args)
 
 	// custom
 	m_bDrawing = false;
-	m_iLoadingScreenDelay = 0;
+	m_iLoadingScreenDelay = 0; // 0 == enabled, -2 == disabled (-1 is reserved)
 
 	// initialize all engine subsystems (the order does matter!)
 	debugLog("\nEngine: Initializing subsystems ...\n");
@@ -189,7 +190,6 @@ Engine::Engine(Environment *environment, const char *args)
 		m_openCL = new OpenCLInterface();
 		m_openVR = new OpenVRInterface();
 		m_networkHandler = new NetworkHandler();
-		m_squirrel = new SquirrelInterface();
 		m_steam = new SteamworksInterface();
 		m_discord = new DiscordInterface();
 
@@ -240,9 +240,6 @@ Engine::~Engine()
 	debugLog("Engine: Freeing network handler...\n");
 	SAFE_DELETE(m_networkHandler);
 
-	debugLog("Engine: Freeing Squirrel...\n");
-	SAFE_DELETE(m_squirrel);
-
 	debugLog("Engine: Freeing Steam...\n");
 	SAFE_DELETE(m_steam);
 
@@ -276,7 +273,7 @@ Engine::~Engine()
 void Engine::loadApp()
 {
 	// load core default resources (these are required to be able to draw the loading screen)
-	if (m_iLoadingScreenDelay == 0)
+	if (m_iLoadingScreenDelay == 0 || m_iLoadingScreenDelay == -2)
 	{
 		debugLog("Engine: Loading default resources ...\n");
 		{
@@ -331,6 +328,10 @@ void Engine::loadApp()
 		//*****************//
 
 		//m_app = new Osu();
+
+		//m_app = new GUICoherenceMode();
+
+		//m_app = new Asteroids();
 
 		m_app = new FrameworkTest();
 

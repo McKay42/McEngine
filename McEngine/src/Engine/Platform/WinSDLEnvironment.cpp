@@ -204,6 +204,18 @@ UString WinSDLEnvironment::getFolderFromFilePath(UString filepath)
 	return aString;
 }
 
+UString WinSDLEnvironment::getFileNameFromFilePath(UString filePath)
+{
+	// TODO: use PathStripPath
+	if (filePath.length() < 1) return filePath;
+
+	const size_t lastSlashIndex = filePath.findLast("/");
+	if (lastSlashIndex != std::string::npos)
+		return filePath.substr(lastSlashIndex + 1);
+
+	return filePath;
+}
+
 UString WinSDLEnvironment::openFileWindow(const char *filetypefilters, UString title, UString initialpath)
 {
 	disableFullscreen();

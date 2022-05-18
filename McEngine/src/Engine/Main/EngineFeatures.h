@@ -69,11 +69,6 @@
 //#define MCENGINE_FEATURE_OPENVR
 
 /*
- * Squirrel Scripting
- */
-//#define MCENGINE_FEATURE_SQUIRREL
-
-/*
  * SDL2 main + Environment
  */
 //#define MCENGINE_FEATURE_SDL

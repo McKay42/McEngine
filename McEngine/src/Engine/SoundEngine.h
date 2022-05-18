@@ -61,6 +61,8 @@ private:
 	void updateOutputDevices(bool handleOutputDeviceChanges, bool printInfo);
 	bool initializeOutputDevice(int id = -1);
 
+	void onFreqChanged(UString oldValue, UString newValue);
+
 	bool m_bReady;
 
 	float m_fPrevOutputDeviceChangeCheckTime;

@@ -187,15 +187,6 @@ void McFont::drawString(Graphics *g, UString text)
 
 void McFont::addAtlasGlyphToVao(Graphics *g, wchar_t ch, float &advanceX, VertexArrayObject *vao)
 {
-	// TODO: dynamic glyph loading, finish this
-	/*
-	if (m_vGlyphExistence.find(ch) == m_vGlyphExistence.end())
-	{
-		if (addGlyph(ch))
-			reload();
-	}
-	*/
-
 	const GLYPH_METRICS &gm = getGlyphMetrics(ch);
 
 	// apply glyph offsets and flip horizontally

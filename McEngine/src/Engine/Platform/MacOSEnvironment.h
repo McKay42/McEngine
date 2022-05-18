@@ -49,6 +49,7 @@ public:
 	std::vector<UString> getLogicalDrives();
 	UString getFolderFromFilePath(UString filepath);
 	UString getFileExtensionFromFilePath(UString filepath, bool includeDot = false);
+	UString getFileNameFromFilePath(UString filePath);
 
 	// clipboard
 	UString getClipBoardText();
