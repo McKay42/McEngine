@@ -6,7 +6,6 @@
 //===============================================================================//
 
 #include "Timer.h"
-#include "cbase.h"
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
@@ -47,7 +46,9 @@ Timer::Timer()
 	m_timer = new HorizonTimer();
 
 #else
+
 #error Missing Timer implementation for OS!
+
 #endif
 
 }
@@ -55,14 +56,4 @@ Timer::Timer()
 Timer::~Timer()
 {
 	SAFE_DELETE(m_timer);
-}
-
-void Timer::start()
-{
-	m_timer->start();
-}
-
-void Timer::update()
-{
-	m_timer->update();
 }

@@ -2,7 +2,7 @@
 //
 // Purpose:		thread wrapper
 //
-// $NoKeywords: $thread $os
+// $NoKeywords: $thread
 //===============================================================================//
 
 #ifndef THREAD_H

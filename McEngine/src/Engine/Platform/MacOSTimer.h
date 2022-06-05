@@ -2,7 +2,7 @@
 //
 // Purpose:		fps timer
 //
-// $NoKeywords: $mactime
+// $NoKeywords: $mactime $os
 //===============================================================================//
 
 #ifdef __APPLE__
@@ -19,23 +19,23 @@ class MacOSTimer : public BaseTimer
 {
 public:
 	MacOSTimer();
-	virtual ~MacOSTimer();
+	virtual ~MacOSTimer() {;}
 
-	void start();
-	void update();
+	virtual void start() override;
+	virtual void update() override;
 
-	void sleep(unsigned int us);
-
-	inline double getDelta() const {return m_delta;}
-	inline double getElapsedTime()  const {return m_elapsedTime;}
+	virtual inline double getDelta() const override {return m_delta;}
+	virtual inline double getElapsedTime() const override {return m_elapsedTime;}
+	virtual inline uint64_t getElapsedTimeMS() const override {return m_elapsedTimeMS;}
 
 private:
-    mach_timebase_info_data_t m_timebaseInfo;
+	mach_timebase_info_data_t m_timebaseInfo;
 	uint64_t m_currentTime;
 	uint64_t m_startTime;
 
-    double m_delta;
-    double m_elapsedTime;
+	double m_delta;
+	double m_elapsedTime;
+	uint64_t m_elapsedTimeMS;
 };
 
 #endif
