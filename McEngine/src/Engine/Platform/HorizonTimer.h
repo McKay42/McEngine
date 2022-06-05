@@ -2,7 +2,7 @@
 //
 // Purpose:		fps timer
 //
-// $NoKeywords: $nxtime
+// $NoKeywords: $nxtime $os
 //===============================================================================//
 
 #ifdef __SWITCH__
@@ -10,23 +10,20 @@
 #ifndef HORIZONTIMER_H
 #define HORIZONTIMER_H
 
-#include "cbase.h"
-
 #include "Timer.h"
 
 class HorizonTimer : public BaseTimer
 {
 public:
 	HorizonTimer();
-	virtual ~HorizonTimer();
+	virtual ~HorizonTimer() {;}
 
-	void start();
-	void update();
+	virtual void start() override;
+	virtual void update() override;
 
-	void sleep(unsigned int us);
-
-	inline double getDelta() const {return m_delta;}
-	inline double getElapsedTime()  const {return m_elapsedTime;}
+	virtual inline double getDelta() const override {return m_delta;}
+	virtual inline double getElapsedTime() const override {return m_elapsedTime;}
+	virtual inline uint64_t getElapsedTimeMS() const override {return m_elapsedTimeMS;}
 
 private:
     uint64_t m_startTime;
@@ -34,6 +31,7 @@ private:
 
     double m_delta;
     double m_elapsedTime;
+    uint64_t m_elapsedTimeMS;
 };
 
 #endif

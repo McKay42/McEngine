@@ -2,7 +2,7 @@
 //
 // Purpose:		fps timer
 //
-// $NoKeywords: $nxtime
+// $NoKeywords: $nxtime $os
 //===============================================================================//
 
 #ifdef __SWITCH__
@@ -11,41 +11,34 @@
 
 #include <switch.h>
 
-HorizonTimer::HorizonTimer()
+HorizonTimer::HorizonTimer() : BaseTimer()
 {
-	m_delta = 0;
-	m_elapsedTime = 0;
-
-	m_currentTime = 0;
 	m_startTime = 0;
-}
+	m_currentTime = 0;
 
-HorizonTimer::~HorizonTimer()
-{
-	m_delta = 0;
-	m_elapsedTime = 0;
+	m_delta = 0.0;
+	m_elapsedTime = 0.0;
+	m_elapsedTimeMS = 0;
 }
 
 void HorizonTimer::start()
 {
 	m_startTime = armGetSystemTick();
 	m_currentTime = m_startTime;
+
+	m_delta = 0.0;
+	m_elapsedTime = 0.0;
+	m_elapsedTimeMS = 0;
 }
 
 void HorizonTimer::update()
 {
-	// get current time
 	const uint64_t nowTime = armGetSystemTick();
 
-	// update timer
-	m_elapsedTime = (double)armTicksToNs(nowTime - m_startTime) / 1000000000.0;
 	m_delta = (double)armTicksToNs(nowTime - m_currentTime) / 1000000000.0;
+	m_elapsedTime = (double)armTicksToNs(nowTime - m_startTime) / 1000000000.0;
+	m_elapsedTimeMS = armTicksToNs(nowTime - m_startTime) / (uint64_t)1000000;
 	m_currentTime = nowTime;
-}
-
-void HorizonTimer::sleep(unsigned int us)
-{
-	svcSleepThread(us*1000);
 }
 
 #endif
