@@ -38,6 +38,7 @@ public:
 	void scrollToX(int scrollPosX, bool animated = true);
 	void scrollToElement(CBaseUIElement *element, int xOffset = 0, int yOffset = 0);
 
+	void scrollToLeft();
 	void scrollToRight();
 	void scrollToBottom();
 	void scrollToTop();
