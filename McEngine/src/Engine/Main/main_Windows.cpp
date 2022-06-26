@@ -105,6 +105,7 @@ PGPI g_GetPointerInfo = (PGPI)GetProcAddress(GetModuleHandle(TEXT("user32.dll"))
 #include "Timer.h"
 #include "Mouse.h"
 
+#include "DirectX11Interface.h"
 #include "WinGLLegacyInterface.h"
 #include "WinEnvironment.h"
 
@@ -760,6 +761,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		// resize limit
 		case WM_GETMINMAXINFO:
 			{
+				// NOTE: if rendering via DirectX then don't interfere here, since it handles all window management stuff for us
+#ifdef MCENGINE_FEATURE_DIRECTX
+
+				if (g_engine != NULL && dynamic_cast<DirectX11Interface*>(g_engine->getGraphics()) != NULL)
+					return DefWindowProcW(hwnd, msg, wParam, lParam);
+
+#endif
+
 				WINDOWPLACEMENT wPos;
 				{
 					wPos.length = sizeof(WINDOWPLACEMENT);
@@ -775,8 +784,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				pMMI->ptMinTrackSize.x = WINDOW_WIDTH_MIN;
 				pMMI->ptMinTrackSize.y = WINDOW_HEIGHT_MIN;
 
+				// NOTE: this is only required for OpenGL and custom renderers
 				// allow dynamic overscale (offscreen window borders/decorations)
 				// this also clamps all user-initiated resolution changes to the resolution of the monitor the window is on
+
 				//HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
 				// HACKHACK: use center instead of MonitorFromWindow() in order to workaround windows display scaling bullshit bug
 				POINT centerOfWindow;
