@@ -1,6 +1,6 @@
 //================ Copyright (c) 2015, PG, All rights reserved. =================//
 //
-// Purpose:		app base class (v2)
+// Purpose:		app base class (v3)
 //
 // $NoKeywords: $appb
 //===============================================================================//
@@ -27,6 +27,7 @@ public:
 	virtual void onChar(KeyboardEvent &e) {;}
 
 	virtual void onResolutionChanged(Vector2 newResolution) {;}
+	virtual void onDPIChanged() {;}
 
 	virtual void onFocusGained() {;}
 	virtual void onFocusLost() {;}

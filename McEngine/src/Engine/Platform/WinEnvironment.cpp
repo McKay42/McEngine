@@ -43,6 +43,7 @@ WinEnvironment::WinEnvironment(HWND hwnd, HINSTANCE hinstance) : Environment()
 	m_vWindowSize = getWindowSize();
 	m_bCursorClipped = false;
 
+	m_iDPIOverride = -1;
 	m_bIsRestartScheduled = false;
 
 	// init
@@ -807,6 +808,8 @@ McRect WinEnvironment::getDesktopRect()
 
 int WinEnvironment::getDPI()
 {
+	if (m_iDPIOverride > 0) return m_iDPIOverride;
+
 	HDC hdc = GetDC(m_hwnd);
 	if (hdc != NULL)
 	{

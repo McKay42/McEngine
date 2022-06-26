@@ -412,10 +412,14 @@ void Engine::onUpdate()
 		m_dTime += m_dFrameTime;
 	}
 
-	// handle resolution changes
+	// handle pending queued resolution changes
 	if (m_bResolutionChange)
 	{
 		m_bResolutionChange = false;
+
+		if (debug_engine.getBool())
+			debugLog("Engine: executing pending queued resolution change to (%i, %i)\n", (int)m_vNewScreenSize.x, (int)m_vNewScreenSize.y);
+
 		onResolutionChange(m_vNewScreenSize);
 	}
 
@@ -575,6 +579,14 @@ void Engine::onResolutionChange(Vector2 newResolution)
 		m_openVR->onResolutionChange(newResolution);
 	if (m_app != NULL)
 		m_app->onResolutionChanged(newResolution);
+}
+
+void Engine::onDPIChange()
+{
+	debugLog(0xff00ff00, "Engine: DPI changed to %i\n", m_environment->getDPI());
+
+	if (m_app != NULL)
+		m_app->onDPIChanged();
 }
 
 void Engine::onShutdown()

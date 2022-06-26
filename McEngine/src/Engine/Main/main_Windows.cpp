@@ -40,9 +40,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	{
 		typedef BOOL (WINAPI *pfnImmDisableIME)(DWORD);
 
-	    HMODULE hImm32 = LoadLibrary("imm32.dll");
-	    if (hImm32 != NULL)
-	    {
+		HMODULE hImm32 = LoadLibrary("imm32.dll");
+		if (hImm32 != NULL)
+		{
 			pfnImmDisableIME pImmDisableIME = (pfnImmDisableIME)GetProcAddress(hImm32, "ImmDisableIME");
 			if (pImmDisableIME == NULL)
 				FreeLibrary(hImm32);
@@ -51,7 +51,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				pImmDisableIME(-1);
 				FreeLibrary(hImm32);
 			}
-	    }
+		}
 	}
 
 	// if supported (>= Windows Vista), enable DPI awareness so that GetSystemMetrics returns correct values
@@ -122,7 +122,13 @@ PGPI g_GetPointerInfo = (PGPI)GetProcAddress(GetModuleHandle(TEXT("user32.dll"))
 
 
 
+#ifndef WM_MOUSEHWHEEL
 #define WM_MOUSEHWHEEL 0x020E
+#endif
+
+#ifndef WM_DPICHANGED
+#define WM_DPICHANGED 0x02E0
+#endif
 
 #define WM_NCUAHDRAWCAPTION 0x00AE
 #define WM_NCUAHDRAWFRAME 0x00AF
@@ -144,6 +150,7 @@ bool g_bDrawing = false;
 bool g_bMinimized = false; // for fps_max_background
 bool g_bHasFocus = false; // for fps_max_background
 bool g_bIsCursorVisible = true; // local variable
+bool g_bSupportsPerMonitorDpiAwareness = false; // local variable
 
 std::vector<unsigned int> g_vTouches;
 
@@ -169,8 +176,8 @@ extern ConVar *win_realtimestylus;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    switch (msg)
-    {
+	switch (msg)
+	{
 #ifdef WINDOW_GHOST
 
 	// window click-through
@@ -180,57 +187,93 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 #endif
 
+	case WM_NCCREATE:
+		if (g_bSupportsPerMonitorDpiAwareness)
+		{
+			typedef WINBOOL (WINAPI *EPNCDS)(HWND);
+			EPNCDS g_EnableNonClientDpiScaling = (EPNCDS)GetProcAddress(GetModuleHandle(TEXT("user32.dll")), "EnableNonClientDpiScaling");
+			if (g_EnableNonClientDpiScaling != NULL)
+				g_EnableNonClientDpiScaling(hwnd);
+		}
+		return DefWindowProcW(hwnd, msg, wParam, lParam);
+
 #if defined(WINDOW_FRAMELESS) && !defined(WINDOW_GHOST)
 
-    	// ignore
-    	/*case WM_ERASEBKGND:
-    		return 1;*/
+		// ignore
+		/*
+		case WM_ERASEBKGND:
+			return 1;
+		*/
 
-    	// window border paint
-    	case WM_NCPAINT:
-    		{
-    			// draw beautifully blurred windows 7 background + shadows
-    			return DefWindowProc(hwnd, msg, wParam, lParam);
+		// window border paint
+		/*
+		case WM_NCPAINT:
+			{
+				// draw beautifully blurred windows 7 background + shadows
+				return DefWindowProcW(hwnd, msg, wParam, lParam);
 
-    			// draw white rectangle over everything except the shadows
-    			/*
-				HDC hdc;
-				hdc = GetDCEx(hwnd, (HRGN)wParam, DCX_WINDOW|DCX_INTERSECTRGN);
-				PAINTSTRUCT ps;
-				hdc = BeginPaint(hwnd, &ps);
-				RECT wr;
-				GetClientRect(hwnd, &wr);
-				HBRUSH br;
-				br = GetSysColorBrush(COLOR_WINDOW);
-				FillRect(hdc, &wr, br);
-				ReleaseDC(hwnd, hdc);
-				*/
-    		}
-    		/// return 0;
+				// draw white rectangle over everything except the shadows
+				//HDC hdc;
+				//hdc = GetDCEx(hwnd, (HRGN)wParam, DCX_WINDOW|DCX_INTERSECTRGN);
+				//PAINTSTRUCT ps;
+				//hdc = BeginPaint(hwnd, &ps);
+				//RECT wr;
+				//GetClientRect(hwnd, &wr);
+				//HBRUSH br;
+				//br = GetSysColorBrush(COLOR_WINDOW);
+				//FillRect(hdc, &wr, br);
+				//ReleaseDC(hwnd, hdc);
+			}
+			/// return 0;
+		*/
 
 		case WM_NCCALCSIZE:
 			{
-				LPNCCALCSIZE_PARAMS pncc = (LPNCCALCSIZE_PARAMS)lParam;
-
-				/*
-				debugLog("new Rectangle: top = %i, right = %i, bottom = %i, left = %i\n",pncc->rgrc[0].top,pncc->rgrc[0].right,pncc->rgrc[0].bottom,pncc->rgrc[0].left);
-				debugLog("old Rectangle: top = %i, right = %i, bottom = %i, left = %i\n",pncc->rgrc[1].top,pncc->rgrc[1].right,pncc->rgrc[1].bottom,pncc->rgrc[1].left);
-				debugLog("client Rectan: top = %i, right = %i, bottom = %i, left = %i\n",pncc->rgrc[2].top,pncc->rgrc[2].right,pncc->rgrc[2].bottom,pncc->rgrc[2].left);
-				*/
-
-				if (IsZoomed(hwnd))
-				{
-					pncc->rgrc[0].right += pncc->rgrc[0].left;
-					pncc->rgrc[0].bottom += pncc->rgrc[0].top;
-					pncc->rgrc[0].top = 0;
-					pncc->rgrc[0].left = 0;
-				}
-
-				// "When wParam is TRUE, simply returning 0 without processing the NCCALCSIZE_PARAMS rectangles will cause the client area to resize to the size of the window,
-				// including the window frame. This will remove the window frame and caption items from your window, leaving only the client area displayed."
 				if (wParam == TRUE)
-					return TRUE;
+				{
+					LPNCCALCSIZE_PARAMS pncc = (LPNCCALCSIZE_PARAMS)lParam;
+
+					//debugLog("new rectang: top = %i, right = %i, bottom = %i, left = %i\n", pncc->rgrc[0].top, pncc->rgrc[0].right, pncc->rgrc[0].bottom, pncc->rgrc[0].left);
+					//debugLog("old rectang: top = %i, right = %i, bottom = %i, left = %i\n", pncc->rgrc[1].top, pncc->rgrc[1].right, pncc->rgrc[1].bottom, pncc->rgrc[1].left);
+					//debugLog("client rect: top = %i, right = %i, bottom = %i, left = %i\n", pncc->rgrc[2].top, pncc->rgrc[2].right, pncc->rgrc[2].bottom, pncc->rgrc[2].left);
+
+					if (IsZoomed(hwnd))
+					{
+						// HACKHACK: use center instead of MonitorFromWindow() in order to workaround windows display scaling bullshit bug
+						POINT centerOfWindow;
+						{
+							centerOfWindow.x = pncc->rgrc[0].left + (pncc->rgrc[0].right - pncc->rgrc[0].left)/2;
+							centerOfWindow.y = pncc->rgrc[0].top + (pncc->rgrc[0].bottom - pncc->rgrc[0].top)/2;
+						}
+						HMONITOR monitor = MonitorFromPoint(centerOfWindow, MONITOR_DEFAULTTONEAREST);
+
+						MONITORINFO info;
+						info.cbSize = sizeof(MONITORINFO);
+						GetMonitorInfo(monitor, &info);
+
+						//McRect mr(info.rcMonitor.left, info.rcMonitor.top, std::abs(info.rcMonitor.left - info.rcMonitor.right), std::abs(info.rcMonitor.top - info.rcMonitor.bottom));
+						//printf("monitor.x = %i, y = %i, width = %i, height = %i\n", (int)mr.getX(), (int)mr.getY(), (int)mr.getWidth(), (int)mr.getHeight());
+
+						// old (broken for multi-monitor setups)
+						//pncc->rgrc[0].right += pncc->rgrc[0].left;
+						//pncc->rgrc[0].bottom += pncc->rgrc[0].top;
+						//pncc->rgrc[0].top = 0;
+						//pncc->rgrc[0].left = 0;
+
+						// new (still feels incorrect and fragile, but works for what I've tested it on)
+						pncc->rgrc[0].right += pncc->rgrc[0].left - info.rcMonitor.left;
+						pncc->rgrc[0].bottom += pncc->rgrc[0].top - info.rcMonitor.top;
+						pncc->rgrc[0].top = info.rcMonitor.top;
+						pncc->rgrc[0].left = info.rcMonitor.left;
+					}
+
+					//printf("after:  right = %i, bottom = %i, top = %i, left = %i\n", (int)pncc->rgrc[0].right, (int)pncc->rgrc[0].bottom, (int)pncc->rgrc[0].top, (int)pncc->rgrc[0].left);
+				}
 			}
+			// "When wParam is TRUE, simply returning 0 without processing the NCCALCSIZE_PARAMS rectangles will cause the client area to resize to the size of the window,
+			// including the window frame. This will remove the window frame and caption items from your window, leaving only the client area displayed."
+			// "Starting with Windows Vista, removing the standard frame by simply returning 0 when the wParam is TRUE does not affect frames that are extended into the client area using the DwmExtendFrameIntoClientArea function.
+			// Only the standard frame will be removed."
 			return 0;
 
 		// window border
@@ -238,7 +281,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				if (g_engine != NULL)
 				{
-					long val = DefWindowProc(hwnd, msg, wParam, lParam);
+					long val = DefWindowProcW(hwnd, msg, wParam, lParam);
 					if (val != HTCLIENT)
 						return val;
 
@@ -279,25 +322,25 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					return val;
 				}
 				else
-					return DefWindowProc(hwnd, msg, wParam, lParam);
+					return DefWindowProcW(hwnd, msg, wParam, lParam);
 			}
 			break;
 #endif
 
-    	// graceful shutdown request
-    	case WM_DESTROY:
+		// graceful shutdown request
+		case WM_DESTROY:
 			if (g_engine != NULL)
 				g_engine->shutdown(); // this will in turn trigger a WM_CLOSE
 			return 0;
 
 		// alt-f4, window X button press, right click > close, "exit" ConCommand and WM_DESTROY will all send WM_CLOSE
-        case WM_CLOSE:
-        	if (g_bRunning)
-        	{
-        		g_bRunning = false;
+		case WM_CLOSE:
+			if (g_bRunning)
+			{
+				g_bRunning = false;
 				if (g_engine != NULL)
 					g_engine->onShutdown();
-        	}
+			}
 			return 0;
 
 		// paint nothing on repaint
@@ -406,41 +449,57 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 			break;
 
-		// left mouse button
+		// left mouse button, inject as keyboard key as well
 		case WM_LBUTTONDOWN:
 			if (g_engine != NULL && (!win_realtimestylus->getBool() || !IsPenEvent(GetMessageExtraInfo()))) // if realtimestylus support is enabled, all clicks are handled by it and not here
 			{
 				g_engine->onMouseLeftChange(true);
+				g_engine->onKeyboardKeyDown(VK_LBUTTON);
 			}
 			SetCapture(hwnd);
 			break;
 		case WM_LBUTTONUP:
 			if (g_engine != NULL)
+			{
 				g_engine->onMouseLeftChange(false);
+				g_engine->onKeyboardKeyUp(VK_LBUTTON);
+			}
 			ReleaseCapture();
 			break;
 
-		// middle mouse button
+		// middle mouse button, inject as keyboard key as well
 		case WM_MBUTTONDOWN:
 			if (g_engine != NULL)
+			{
 				g_engine->onMouseMiddleChange(true);
+				g_engine->onKeyboardKeyDown(VK_MBUTTON);
+			}
 			SetCapture(hwnd);
 			break;
 		case WM_MBUTTONUP:
 			if (g_engine != NULL)
+			{
 				g_engine->onMouseMiddleChange(false);
+				g_engine->onKeyboardKeyUp(VK_MBUTTON);
+			}
 			ReleaseCapture();
 			break;
 
-		// right mouse button
+		// right mouse button, inject as keyboard key as well
 		case WM_RBUTTONDOWN:
 			if (g_engine != NULL && (!win_realtimestylus->getBool() || !IsPenEvent(GetMessageExtraInfo()))) // if realtimestylus support is enabled, all pen clicks are handled by it and not here
+			{
 				g_engine->onMouseRightChange(true);
+				g_engine->onKeyboardKeyDown(VK_RBUTTON);
+			}
 			SetCapture(hwnd);
 			break;
 		case WM_RBUTTONUP:
 			if (g_engine != NULL)
+			{
 				g_engine->onMouseRightChange(false);
+				g_engine->onKeyboardKeyUp(VK_RBUTTON);
+			}
 			ReleaseCapture();
 			break;
 
@@ -643,8 +702,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				if (g_engine != NULL)
 				{
 					RECT rect;
-					GetClientRect(hwnd,&rect);
-					g_engine->onResolutionChange(Vector2(rect.right,rect.bottom));
+					GetClientRect(hwnd, &rect);
+					g_engine->onResolutionChange(Vector2(rect.right, rect.bottom));
 					g_engine->onMaximized();
 				}
 				break;
@@ -671,21 +730,61 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if (g_engine != NULL && g_bUpdate)
 			{
 				RECT rect;
-				GetClientRect(hwnd,&rect);
-				g_engine->requestResolutionChange(Vector2(rect.right,rect.bottom));
+				GetClientRect(hwnd, &rect);
+				g_engine->requestResolutionChange(Vector2(rect.right, rect.bottom));
+			}
+			break;
+
+		// DPI scaling change (e.g. because user changed scaling in settings, or moved the window to a monitor with different scaling)
+		case WM_DPICHANGED:
+			if (g_engine != NULL)
+			{
+				WinEnvironment *winEnv = dynamic_cast<WinEnvironment*>(g_engine->getEnvironment());
+				if (winEnv != NULL)
+				{
+					winEnv->setDPIOverride(HIWORD(wParam));
+					g_engine->onDPIChange();
+
+					RECT* const prcNewWindow = (RECT*)lParam;
+					SetWindowPos(hwnd,
+						NULL,
+						prcNewWindow->left,
+						prcNewWindow->top,
+						prcNewWindow->right - prcNewWindow->left,
+						prcNewWindow->bottom - prcNewWindow->top,
+						SWP_NOZORDER | SWP_NOACTIVATE);
+				}
 			}
 			break;
 
 		// resize limit
 		case WM_GETMINMAXINFO:
 			{
+				WINDOWPLACEMENT wPos;
+				{
+					wPos.length = sizeof(WINDOWPLACEMENT);
+				}
+				GetWindowPlacement(hwnd, &wPos);
+
 				// min
 				LPMINMAXINFO pMMI = (LPMINMAXINFO)lParam;
+
+				//printf("before: %i %i %i %i\n", (int)pMMI->ptMinTrackSize.x, (int)pMMI->ptMinTrackSize.y, (int)pMMI->ptMaxTrackSize.x, (int)pMMI->ptMaxTrackSize.y);
+				//printf("window pos: left = %i, top = %i, bottom = %i, right = %i\n", (int)wPos.rcNormalPosition.left, (int)wPos.rcNormalPosition.top, (int)wPos.rcNormalPosition.bottom, (int)wPos.rcNormalPosition.right);
+
 				pMMI->ptMinTrackSize.x = WINDOW_WIDTH_MIN;
 				pMMI->ptMinTrackSize.y = WINDOW_HEIGHT_MIN;
 
 				// allow dynamic overscale (offscreen window borders/decorations)
-				HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+				// this also clamps all user-initiated resolution changes to the resolution of the monitor the window is on
+				//HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+				// HACKHACK: use center instead of MonitorFromWindow() in order to workaround windows display scaling bullshit bug
+				POINT centerOfWindow;
+				{
+					centerOfWindow.x = wPos.rcNormalPosition.left + (wPos.rcNormalPosition.right - wPos.rcNormalPosition.left)/2;
+					centerOfWindow.y = wPos.rcNormalPosition.top + (wPos.rcNormalPosition.bottom - wPos.rcNormalPosition.top)/2;
+				}
+				HMONITOR monitor = MonitorFromPoint(centerOfWindow, MONITOR_DEFAULTTONEAREST);
 				{
 					MONITORINFO info;
 					info.cbSize = sizeof(MONITORINFO);
@@ -701,20 +800,22 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						const LONG decorationsSumWidth = (windowRect.right - windowRect.left) - clientRect.right;
 						const LONG decorationsSumHeight = (windowRect.bottom - windowRect.top) - clientRect.bottom;
 
+						//printf("window rect: left = %i, top = %i, bottom = %i, right = %i\n", (int)windowRect.left, (int)windowRect.top, (int)windowRect.bottom, (int)windowRect.right);
+						//printf("client rect: left = %i, top = %i, bottom = %i, right = %i\n", (int)clientRect.left, (int)clientRect.top, (int)clientRect.bottom, (int)clientRect.right);
+						//printf("monitor width = %i, height = %i\n", (int)std::abs(info.rcMonitor.left - info.rcMonitor.right), (int)std::abs(info.rcMonitor.top - info.rcMonitor.bottom));
+						//printf("decorations: width = %i, height = %i\n", (int)decorationsSumWidth, (int)decorationsSumHeight);
+
 						pMMI->ptMaxTrackSize.x = std::abs(info.rcMonitor.left - info.rcMonitor.right) + decorationsSumWidth;
 						pMMI->ptMaxTrackSize.y = std::abs(info.rcMonitor.top - info.rcMonitor.bottom) + decorationsSumHeight;
-
-						/*
-						pMMI->ptMaxTrackSize.x = 9999;
-						pMMI->ptMaxTrackSize.y = 9999;
-						*/
 					}
 				}
+
+				//printf("after: %i %i %i %i\n", (int)pMMI->ptMinTrackSize.x, (int)pMMI->ptMinTrackSize.y, (int)pMMI->ptMaxTrackSize.x, (int)pMMI->ptMaxTrackSize.y);
 			}
 			return 0;
-    }
+	}
 
-    return DefWindowProcW(hwnd, msg, wParam, lParam);
+	return DefWindowProcW(hwnd, msg, wParam, lParam);
 }
 
 
@@ -725,7 +826,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 HWND createWinWindow(HINSTANCE hInstance)
 {
-    HWND hwnd;
+	HWND hwnd;
 
 	// window style
 	LONG_PTR style = WinEnvironment::getWindowStyleWindowed();
@@ -779,22 +880,22 @@ HWND createWinWindow(HINSTANCE hInstance)
 	height = GetSystemMetrics(SM_CYSCREEN); // WTF: if these are both equal to exactly the current screen size, Windows will NOT draw anything behind the engine even though the window is transparent!
 #endif
 
-    // create the window
-    hwnd = CreateWindowExW(
-        exStyle,
-        WINDOW_TITLE,
-        WINDOW_TITLE,
-        style,
+	// create the window
+	hwnd = CreateWindowExW(
+		exStyle,
+		WINDOW_TITLE,
+		WINDOW_TITLE,
+		style,
 		xPos, yPos, width, height,
 		NULL, NULL, hInstance, NULL);
 
-    if (hwnd == NULL)
-    {
-        MessageBox(NULL, "Couldn't CreateWindowEx()!", "Fatal Error", MB_ICONEXCLAMATION | MB_OK);
-        return NULL;
-    }
+	if (hwnd == NULL)
+	{
+		MessageBox(NULL, "Couldn't CreateWindowEx()!", "Fatal Error", MB_ICONEXCLAMATION | MB_OK);
+		return NULL;
+	}
 
-    return hwnd;
+	return hwnd;
 }
 
 
@@ -941,9 +1042,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	{
 		typedef BOOL (WINAPI *pfnImmDisableIME)(DWORD);
 
-	    HMODULE hImm32 = LoadLibrary("imm32.dll");
-	    if (hImm32 != NULL)
-	    {
+		HMODULE hImm32 = LoadLibrary("imm32.dll");
+		if (hImm32 != NULL)
+		{
 			pfnImmDisableIME pImmDisableIME = (pfnImmDisableIME)GetProcAddress(hImm32, "ImmDisableIME");
 			if (pImmDisableIME == NULL)
 				FreeLibrary(hImm32);
@@ -952,7 +1053,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				pImmDisableIME(-1);
 				FreeLibrary(hImm32);
 			}
-	    }
+		}
 	}
 
 	// enable fancy themed windows controls (v6+), requires McEngine.exe.manifest AND linking to comctl32, for fucks sake
@@ -966,36 +1067,60 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	// if supported (>= Windows Vista), enable DPI awareness so that GetSystemMetrics returns correct values
 	// without this, on e.g. 150% scaling, the screen pixels of a 1080p monitor would be reported by GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN) as only 720p!
+	// also on even newer systems (>= Windows 8.1) we can get WM_DPICHANGED notified
 	{
-		typedef WINBOOL (WINAPI *PSPDA)(void);
-		PSPDA g_SetProcessDPIAware = (PSPDA)GetProcAddress(GetModuleHandle(TEXT("user32.dll")), "SetProcessDPIAware");
-		if (g_SetProcessDPIAware != NULL)
-			g_SetProcessDPIAware();
+		// Windows 8.1+
+		// per-monitor dpi scaling
+		{
+			HMODULE shcore = GetModuleHandle(TEXT("shcore.dll"));
+			if (shcore != NULL)
+			{
+				typedef HRESULT (WINAPI *PSPDAN)(int);
+				PSPDAN g_SetProcessDpiAwareness = (PSPDAN)GetProcAddress(shcore, "SetProcessDpiAwareness");
+				if (g_SetProcessDpiAwareness != NULL)
+				{
+					const HRESULT result = g_SetProcessDpiAwareness(2); // 2 == PROCESS_PER_MONITOR_DPI_AWARE
+					g_bSupportsPerMonitorDpiAwareness = (result == S_OK || result == E_ACCESSDENIED);
+				}
+			}
+		}
+
+		if (!g_bSupportsPerMonitorDpiAwareness)
+		{
+			// Windows Vista+
+			// system-wide dpi scaling
+			{
+				typedef WINBOOL (WINAPI *PSPDA)(void);
+				PSPDA g_SetProcessDPIAware = (PSPDA)GetProcAddress(GetModuleHandle(TEXT("user32.dll")), "SetProcessDPIAware");
+				if (g_SetProcessDPIAware != NULL)
+					g_SetProcessDPIAware();
+			}
+		}
 	}
 
 	// prepare window class
-    WNDCLASSEXW wc;
+	WNDCLASSEXW wc;
 
-    wc.cbSize        = sizeof(WNDCLASSEX);
-    wc.style         = 0;
-    wc.lpfnWndProc   = WndProc;
-    wc.cbClsExtra    = 0;
-    wc.cbWndExtra    = 0;
-    wc.hInstance     = hInstance;
-    wc.hIcon         = NULL;
-    wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)CreateSolidBrush(0x00000000);
-    wc.lpszMenuName  = NULL;
-	wc.lpszClassName = WINDOW_TITLE;
-    //wc.hIconSm       = LoadIcon(hInstance, MAKEINTRESOURCE(1)); // NOTE: load icon named "1" in /Main/WinIcon.rc file, must link to WinIcon.o which was created with windres.exe
-    wc.hIconSm       = LoadIcon(NULL, IDI_APPLICATION);
+	wc.cbSize			= sizeof(WNDCLASSEX);
+	wc.style			= 0;
+	wc.lpfnWndProc		= WndProc;
+	wc.cbClsExtra		= 0;
+	wc.cbWndExtra		= 0;
+	wc.hInstance		= hInstance;
+	wc.hIcon			= NULL;
+	wc.hCursor			= LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground	= (HBRUSH)CreateSolidBrush(0x00000000);
+	wc.lpszMenuName		= NULL;
+	wc.lpszClassName	= WINDOW_TITLE;
+	//wc.hIconSm			= LoadIcon(hInstance, MAKEINTRESOURCE(1)); // NOTE: load icon named "1" in /Main/WinIcon.rc file, must link to WinIcon.o which was created with windres.exe
+	wc.hIconSm			= LoadIcon(NULL, IDI_APPLICATION);
 
 	// register window class
-    if (!RegisterClassExW(&wc))
-    {
-        MessageBox(NULL, "Couldn't RegisterClassEx()!", "Fatal Error", MB_ICONEXCLAMATION | MB_OK);
-        return -1;
-    }
+	if (!RegisterClassExW(&wc))
+	{
+		MessageBox(NULL, "Couldn't RegisterClassEx()!", "Fatal Error", MB_ICONEXCLAMATION | MB_OK);
+		return -1;
+	}
 
 	// create the window
 	HWND hwnd = createWinWindow(hInstance);
@@ -1052,17 +1177,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #ifdef WINDOW_FRAMELESS
 	{
-		MARGINS m = {1,1,1,1};
-		printf("DwmExtendFrameIntoClientArea() = %x\n",(int)DwmExtendFrameIntoClientArea(hwnd, &m));
+		MARGINS m;
+		{
+			  m.cxLeftWidth = 1;
+			  m.cxRightWidth = 1;
+			  m.cyTopHeight = 1;
+			  m.cyBottomHeight = 1;
+		}
+		//HRESULT result = DwmExtendFrameIntoClientArea(hwnd, &m);
+		DwmExtendFrameIntoClientArea(hwnd, &m);
+		//printf("DwmExtendFrameIntoClientArea() = %x\n", (int)result);
 		SetWindowPos(hwnd, NULL, 0,0,0,0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
 
-		/*
-		DWM_BLURBEHIND bb = {0};
-		bb.dwFlags = DWM_BB_ENABLE;
-		bb.fEnable = 0;
-		bb.hRgnBlur = NULL;
-		DwmEnableBlurBehindWindow(hwnd, &bb);
-		*/
+		//DWM_BLURBEHIND bb;
+		//{
+		//	bb.dwFlags = DWM_BB_ENABLE;
+		//	bb.fEnable = 0;
+		//	bb.hRgnBlur = NULL;
+		//	bb.fTransitionOnMaximized = FALSE;
+		//}
+		//DwmEnableBlurBehindWindow(hwnd, &bb);
 	}
 #endif
 
@@ -1150,19 +1284,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 #endif
 
-    // create timers
-    Timer *frameTimer = new Timer();
-    frameTimer->start();
-    frameTimer->update();
+	// create timers
+	Timer *frameTimer = new Timer();
+	frameTimer->start();
+	frameTimer->update();
 
-    Timer *deltaTimer = new Timer();
-    deltaTimer->start();
-    deltaTimer->update();
+	Timer *deltaTimer = new Timer();
+	deltaTimer->start();
+	deltaTimer->update();
 
-    // NOTE: it seems that focus events get lost between CreateWindow() above and ShowWindow() here
-    // can be simulated by sleeping and alt-tab for testing.
-    // seems to be a Windows bug? if you switch to the window after all of this, no activate or focus events will be received!
-    //Sleep(1000);
+	// NOTE: it seems that focus events get lost between CreateWindow() above and ShowWindow() here
+	// can be simulated by sleeping and alt-tab for testing.
+	// seems to be a Windows bug? if you switch to the window after all of this, no activate or focus events will be received!
+	//Sleep(1000);
 
 	// make the window visible
 	ShowWindow(hwnd, nCmdShow);
@@ -1170,19 +1304,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ShowWindow(hwnd, SW_MAXIMIZE);
 #endif
 
-    // initialize engine
+	// initialize engine
 	WinEnvironment *environment = new WinEnvironment(hwnd, hInstance);
-    g_engine = new Engine(environment, lpCmdLine);
-    g_engine->loadApp();
+	g_engine = new Engine(environment, lpCmdLine);
+	g_engine->loadApp();
 
-    g_bHasFocus = g_bHasFocus && (GetForegroundWindow() == hwnd);	// HACKHACK: workaround (1), see above
-    bool wasLaunchedInBackgroundAndWaitingForFocus = !g_bHasFocus;	// HACKHACK: workaround (2), see above
+	g_bHasFocus = g_bHasFocus && (GetForegroundWindow() == hwnd);	// HACKHACK: workaround (1), see above
+	bool wasLaunchedInBackgroundAndWaitingForFocus = !g_bHasFocus;	// HACKHACK: workaround (2), see above
 
-    if (g_bHasFocus)
-    	g_engine->onFocusGained();
+	if (g_bHasFocus)
+		g_engine->onFocusGained();
 
-    frameTimer->update();
-    deltaTimer->update();
+	frameTimer->update();
+	deltaTimer->update();
 
 	// main loop
 	MSG msg;
@@ -1309,10 +1443,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 	}
 
-    // uninitialize RealTimeStylus (COM)
+	// uninitialize RealTimeStylus (COM)
 #ifdef MCENGINE_WINDOWS_REALTIMESTYLUS_SUPPORT
 	UninitRealTimeStylus();
-    CoUninitialize();
+	CoUninitialize();
 #endif
 
 	// release the timers
@@ -1321,8 +1455,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	const bool isRestartScheduled = environment->isRestartScheduled();
 
-    // release engine
-    SAFE_DELETE(g_engine);
+	// release engine
+	SAFE_DELETE(g_engine);
 
 	// finally, destroy the window
 	DestroyWindow(hwnd);
@@ -1348,7 +1482,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		CreateProcessW(full_path, NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &startupInfo, &processInfo);
 	}
 
-    return 0;
+	return 0;
 }
 
 #endif

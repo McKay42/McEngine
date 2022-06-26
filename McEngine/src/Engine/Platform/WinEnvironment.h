@@ -109,6 +109,8 @@ public:
 	UString keyCodeToString(KEYCODE keyCode);
 
 	// ILLEGAL:
+	// (also custom)
+	void setDPIOverride(int newForcedDPI) {m_iDPIOverride = newForcedDPI;}
 	bool setProcessPriority(int priority); // 0 = normal, 1 = high
 	bool setProcessAffinity(int affinity); // -1 = reset (all cores), 0 = first core, 1 = last core
 	void disableWindowsKey();
@@ -149,6 +151,7 @@ private:
 	CURSORTYPE m_cursorType;
 
 	// custom
+	int m_iDPIOverride;
 	bool m_bIsRestartScheduled;
 	static int m_iNumCoresForProcessAffinity;
 	static HHOOK g_hKeyboardHook;

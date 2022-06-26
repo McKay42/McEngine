@@ -59,6 +59,7 @@ public:
 	void onMaximized();
 	void onRestored();
 	void onResolutionChange(Vector2 newResolution);
+	void onDPIChange();
 	void onShutdown();
 
 	// primary mouse messages
