@@ -607,6 +607,11 @@ CBaseUIScrollView *CBaseUIScrollView::setScrollSizeToContent(int border)
 	return this;
 }
 
+void CBaseUIScrollView::scrollToLeft()
+{
+	scrollToX(0);
+}
+
 void CBaseUIScrollView::scrollToRight()
 {
 	scrollToX(-m_vScrollSize.x);
