@@ -81,7 +81,7 @@ If you don't want to use Eclipse then either use the included build scripts ment
 ### Windows
 The Windows build needs Mingw-W64 (**i686** with **Win32** threads and **dwarf** exceptions), you can get it here:
 
-[https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/)
+[https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/)
 
 - Pick the newest version available, currently 8.1.0.  
 Note that newer versions are available at [https://winlibs.com/#download-release](https://winlibs.com/#download-release), but have not been tested nor validated by me.
