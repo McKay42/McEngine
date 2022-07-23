@@ -108,8 +108,10 @@ for /l %%i in (0,1,%NUMCFILES%) do (
 	)
 )
 
-echo LDFLAGS = %LDFLAGS%
-echo %LDFLAGS%>> "%LDARGSFILE%"
+if not "%LDFLAGS%"=="" (
+	echo LDFLAGS = %LDFLAGS%
+	echo %LDFLAGS%>> "%LDARGSFILE%"
+)
 
 echo [0mCollecting library search paths ...
 for /d %%i in ("%FULLPATH%%LIB%"\*) do (

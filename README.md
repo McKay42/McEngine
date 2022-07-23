@@ -79,18 +79,18 @@ On Windows, the build configuration to use would be either ```Windows Release```
 If you don't want to use Eclipse then either use the included build scripts mentioned before or create your own makefiles.  
 
 ### Windows
-The Windows build needs Mingw-W64 (**i686** with **Win32** threads and **seh** exceptions), you can get it here:
+The Windows build needs Mingw-W64 (**i686** with **Win32** threads and **dwarf** exceptions), you can get it here:
 
-[https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/)
+[https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/)
 
 - Pick the newest version available, currently 8.1.0.  
 Note that newer versions are available at [https://winlibs.com/#download-release](https://winlibs.com/#download-release), but have not been tested nor validated by me.
 
-- Extract e.g. ```x86_64-8.1.0-release-win32-seh-rt_v6-rev0.7z``` and copy the contained ```mingw64``` folder to the root of a drive, resulting in e.g. ```C:\mingw64```.
+- Extract e.g. ```i686-8.1.0-release-win32-dwarf-rt_v6-rev0.7z``` and copy the contained ```mingw32``` folder to the root of a drive, resulting in e.g. ```C:\mingw32```.
 
-- Make sure you add the e.g. ```C:\mingw64\bin``` directory to your `PATH` (environmental variable). To test if everything works, try to enter the following command in a cmd window: `g++ --version`.
+- Make sure you add the e.g. ```C:\mingw32\bin``` directory to your `PATH` (environmental variable). To test if everything works, try to enter the following command in a cmd window: `g++ --version`.
 
-- Alternatively and/or additionally, you can also configure the environment inside the Eclipse project settings (C/C++ Build > Environment), by setting `MINGW_HOME` (e.g. `C:\mingw64`) and `PATH` (e.g. `C:\mingw64\bin`) accordingly.
+- Alternatively and/or additionally, you can also configure the environment inside the Eclipse project settings (C/C++ Build > Environment), by setting `MINGW_HOME` (e.g. `C:\mingw32`) and `PATH` (e.g. `C:\mingw32\bin`) accordingly.
 
 If you don't want to use Eclipse then just run the included `build.bat` and `run.bat`.
 
