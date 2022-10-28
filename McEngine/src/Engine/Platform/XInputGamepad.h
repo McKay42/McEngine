@@ -26,6 +26,8 @@ public:
 
 	void update();
 
+	void setVibration(float leftMotorSpeedPercent, float rightMotorSpeedPercent);
+
 	inline Vector2 getLeftStick() {return m_vLeftStick;}
 	inline Vector2 getRightStick() {return m_vRightStick;}
 

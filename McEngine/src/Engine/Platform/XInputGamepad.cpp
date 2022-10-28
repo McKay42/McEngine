@@ -94,6 +94,26 @@ void XInputGamepad::update()
 #endif
 }
 
+void XInputGamepad::setVibration(float leftMotorSpeedPercent, float rightMotorSpeedPercent)
+{
+#if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
+#ifdef MCENGINE_FEATURE_GAMEPAD
+
+	if (m_iPort != -1)
+	{
+		XINPUT_VIBRATION vibration;
+		memset(&vibration, 0, sizeof(XINPUT_VIBRATION));
+		{
+			vibration.wLeftMotorSpeed = (WORD)(65535.0f * clamp<float>(leftMotorSpeedPercent, 0.0f, 1.0f));
+			vibration.wRightMotorSpeed = (WORD)(65535.0f * clamp<float>(rightMotorSpeedPercent, 0.0f, 1.0f));
+		}
+		XInputSetState(m_iPort, &vibration);
+	}
+
+#endif
+#endif
+}
+
 void XInputGamepad::updateConnection()
 {
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
