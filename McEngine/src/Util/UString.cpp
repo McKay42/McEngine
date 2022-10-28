@@ -731,7 +731,7 @@ bool UString::operator == (const UString &ustr) const
 	if (isUnicodeNull() && ustr.isUnicodeNull())
 		return true;
 	else if (isUnicodeNull() || ustr.isUnicodeNull())
-		return false;
+		return (mLength == 0 && ustr.mLength == 0);
 
 	return memcmp(mUnicode, ustr.mUnicode, mLength*sizeof(wchar_t)) == 0;
 }
