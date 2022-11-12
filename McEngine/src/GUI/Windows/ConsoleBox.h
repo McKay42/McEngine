@@ -49,6 +49,9 @@ public:
 	bool isBusy();
 	bool isActive();
 
+	// ILLEGAL:
+	inline CBaseUITextbox *getTextbox() const {return m_textbox;}
+
 private:
 	struct LOG_ENTRY
 	{
@@ -59,7 +62,7 @@ private:
 private:
 	void onSuggestionClicked(CBaseUIButton *suggestion);
 
-	void addSuggestion(UString text, UString command);
+	void addSuggestion(const UString &text, const UString &helpText, const UString &command);
 	void clearSuggestions();
 
 	void show();
