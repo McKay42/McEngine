@@ -355,7 +355,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 	{
 		// handle suggestion up/down buttons
 
-		if (e == KEY_DOWN)
+		if (e == KEY_DOWN || (e == KEY_TAB && !engine->getKeyboard()->isShiftDown()))
 		{
 			if (m_iSelectedSuggestion < 1)
 				m_iSelectedSuggestion = m_iSuggestionCount - 1;
@@ -388,7 +388,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 
 			e.consume();
 		}
-		else if (e == KEY_UP)
+		else if (e == KEY_UP || (e == KEY_TAB && engine->getKeyboard()->isShiftDown()))
 		{
 			if (m_iSelectedSuggestion > m_iSuggestionCount-2)
 				m_iSelectedSuggestion = 0;
@@ -464,6 +464,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 void ConsoleBox::onChar(KeyboardEvent &e)
 {
 	if (m_bConsoleAnimateOut && !m_bConsoleAnimateIn) return;
+	if (e == KEY_TAB) return;
 
 	m_textbox->onChar(e);
 
