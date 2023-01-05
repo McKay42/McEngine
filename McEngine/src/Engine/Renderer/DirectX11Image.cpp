@@ -10,6 +10,8 @@
 #ifdef MCENGINE_FEATURE_DIRECTX
 
 #include "Engine.h"
+#include "ConVar.h"
+#include "ResourceManager.h"
 
 #include "DirectX11Interface.h"
 #include "DirectX11Shader.h"
@@ -149,7 +151,9 @@ void DirectX11Image::initAsync()
 {
 	if (!m_bCreatedImage)
 	{
-		printf("Resource Manager: Loading %s\n", m_sFilePath.toUtf8());
+		if (ResourceManager::debug_rm->getBool())
+			debugLog("Resource Manager: Loading %s\n", m_sFilePath.toUtf8());
+
 		m_bAsyncReady = loadRawImage();
 
 		// rewrite all non-4-channels-per-pixel formats, because directx doesn't have any fucking 24bpp formats ffs

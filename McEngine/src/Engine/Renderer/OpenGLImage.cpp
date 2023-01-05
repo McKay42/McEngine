@@ -12,6 +12,7 @@
 #include "ResourceManager.h"
 #include "Environment.h"
 #include "Engine.h"
+#include "ConVar.h"
 #include "File.h"
 
 #include "OpenGLHeaders.h"
@@ -119,7 +120,9 @@ void OpenGLImage::initAsync()
 
 	if (!m_bCreatedImage)
 	{
-		printf("Resource Manager: Loading %s\n", m_sFilePath.toUtf8());
+		if (ResourceManager::debug_rm->getBool())
+			debugLog("Resource Manager: Loading %s\n", m_sFilePath.toUtf8());
+
 		m_bAsyncReady = loadRawImage();
 	}
 }

@@ -10,6 +10,7 @@
 #include "ResourceManager.h"
 #include "Environment.h"
 #include "Engine.h"
+#include "ConVar.h"
 
 #include "SWGraphicsInterface.h"
 
@@ -32,7 +33,10 @@ void SWImage::init()
 void SWImage::initAsync()
 {
 	if (!m_bCreatedImage)
-		printf("Resource Manager: Loading %s\n", m_sFilePath.toUtf8());
+	{
+		if (ResourceManager::debug_rm->getBool())
+			printf("Resource Manager: Loading %s\n", m_sFilePath.toUtf8());
+	}
 
 	m_bAsyncReady = loadRawImage();
 }

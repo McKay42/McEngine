@@ -1016,6 +1016,11 @@ void _crash(void)
 	nullPointer->setValue(false);
 }
 
+void _dpiinfo(void)
+{
+	debugLog("env->getDPI() = %i, env->getDPIScale() = %f\n", env->getDPI(), env->getDPIScale());
+}
+
 ConVar _exit_("exit", _exit);
 ConVar _shutdown_("shutdown", _exit);
 ConVar _restart_("restart", _restart);
@@ -1032,3 +1037,4 @@ ConVar _version_("version", _version);
 ConVar _corporeal_("debug_ghost", false, _debugCorporeal);
 ConVar _errortest_("errortest", _errortest);
 ConVar _crash_("crash", _crash);
+ConVar _dpiinfo_("dpiinfo", _dpiinfo);

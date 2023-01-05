@@ -29,6 +29,8 @@
 
 #include "Engine.h"
 #include "SoundEngine.h"
+#include "ConVar.h"
+#include "ResourceManager.h"
 
 
 
@@ -105,7 +107,8 @@ void Sound::init()
 
 void Sound::initAsync()
 {
-	printf("Resource Manager: Loading %s\n", m_sFilePath.toUtf8());
+	if (ResourceManager::debug_rm->getBool())
+		debugLog("Resource Manager: Loading %s\n", m_sFilePath.toUtf8());
 
 	// HACKHACK: workaround for BASS crashes on malformed WAV files
 	{

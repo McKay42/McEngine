@@ -327,11 +327,37 @@ void SoundEngine::updateOutputDevices(bool handleOutputDeviceChanges, bool print
 
 		if (d > 0 || allowNoSoundDevice) // the first device doesn't count ("No sound") ~ Default in array
 		{
+			UString originalDeviceName = deviceInfo.name;
+
 			OUTPUT_DEVICE soundDevice;
 			soundDevice.id = d;
-			soundDevice.name = deviceInfo.name;
+			soundDevice.name = originalDeviceName;
 			soundDevice.enabled = isEnabled;
 			soundDevice.isDefault = isDefault;
+
+			// avoid duplicate names
+			int duplicateNameCounter = 2;
+			while (true)
+			{
+				bool foundDuplicateName = false;
+				for (size_t i=0; i<m_outputDevices.size(); i++)
+				{
+					if (m_outputDevices[i].name == soundDevice.name)
+					{
+						foundDuplicateName = true;
+
+						soundDevice.name = originalDeviceName;
+						soundDevice.name.append(UString::format(" (%i)", duplicateNameCounter));
+
+						duplicateNameCounter++;
+
+						break;
+					}
+				}
+
+				if (!foundDuplicateName)
+					break;
+			}
 
 			// detect output device changes
 			// TODO: this causes endless loops on audio devices with chinese/russian etc. characters in their name, may be caused by BASS reordering indices
