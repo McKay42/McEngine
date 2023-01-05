@@ -510,7 +510,7 @@ void Engine::onFocusLost()
 		m_app->onFocusLost();
 
 	// auto minimize on certain conditions
-	if (m_environment->isFullscreen() && !m_environment->isFullscreenWindowedBorderless() && minimize_on_focus_lost_if_fullscreen.getBool())
+	if (m_environment->isFullscreen() || m_environment->isFullscreenWindowedBorderless())
 	{
 		if ((!m_environment->isFullscreenWindowedBorderless() && minimize_on_focus_lost_if_fullscreen.getBool())
 		  || (m_environment->isFullscreenWindowedBorderless() && minimize_on_focus_lost_if_borderless_windowed_fullscreen.getBool()))
