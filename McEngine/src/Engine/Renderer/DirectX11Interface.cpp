@@ -394,7 +394,7 @@ void DirectX11Interface::endScene()
 				D3D11_MESSAGE *message = (D3D11_MESSAGE*)malloc(message_size + 1);
 				memset((void*)message, '\0', message_size + 1);
 				if (SUCCEEDED(debugInfoQueue->GetMessage(i, message, &message_size)))
-					printf("DirectX11Debug: %s\n", message->pDescription);
+					debugLog("DirectX11Debug: %s\n", message->pDescription);
 				else
 					debugLog("DirectX Error: Couldn't debugInfoQueue->GetMessage()\n");
 

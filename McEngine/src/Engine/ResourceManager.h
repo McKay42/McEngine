@@ -18,16 +18,21 @@
 #include "TextureAtlas.h"
 #include "VertexArrayObject.h"
 
+class ConVar;
+
 class ResourceManagerLoaderThread;
 
 class ResourceManager
 {
 public:
+	static ConVar *debug_rm;
+
 	static const char *PATH_DEFAULT_IMAGES;
 	static const char *PATH_DEFAULT_FONTS;
 	static const char *PATH_DEFAULT_SOUNDS;
 	static const char *PATH_DEFAULT_SHADERS;
 
+public:
 	template<typename T>
 	struct MobileAtomic
 	{
