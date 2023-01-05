@@ -320,12 +320,12 @@ void CBaseUIScrollView::update()
 		if (m_bScrollbarIsVerticalScrolling)
 		{
 			const float percent = clamp<float>((engine->getMouse()->getPos().y - m_vPos.y - m_verticalScrollbar.getWidth() - m_verticalScrollbar.getHeight() - m_vMouseBackup.y - 1) / (m_vSize.y - 2*m_verticalScrollbar.getWidth()), 0.0f, 1.0f);
-			scrollToY(-m_vScrollSize.y*percent, false);
+			scrollToYInt(-m_vScrollSize.y*percent, true, false);
 		}
 		else
 		{
 			const float percent = clamp<float>((engine->getMouse()->getPos().x - m_vPos.x - m_horizontalScrollbar.getHeight() - m_horizontalScrollbar.getWidth() - m_vMouseBackup.x - 1) / (m_vSize.x - 2*m_horizontalScrollbar.getHeight()), 0.0f, 1.0f);
-			scrollToX(-m_vScrollSize.x*percent, false);
+			scrollToXInt(-m_vScrollSize.x*percent, true, false);
 		}
 	}
 
@@ -456,31 +456,15 @@ void CBaseUIScrollView::scrollX(int delta, bool animated)
 
 void CBaseUIScrollView::scrollToX(int scrollPosX, bool animated)
 {
-	if (!m_bHorizontalScrolling || m_bScrolling) return;
-
-	float upperBounds = 1;
-	float lowerBounds = -m_vScrollSize.x + m_vSize.x;
-	if (lowerBounds >= upperBounds)
-		lowerBounds = upperBounds;
-
-	const float targetX = clamp<float>(scrollPosX, lowerBounds, upperBounds);
-
-	m_vVelocity.x = targetX;
-
-	// NOTE: temporarily disabled non-animated scrolls to improve ui smoothness (scrollbar integer step stutter)
-	//if (animated)
-	{
-		m_bAutoScrollingX = true;
-
-		anim->moveQuadOut(&m_vScrollPos.x, targetX, animated ? 0.15f : 0.035f, 0.0f, true);
-	}
-	/*
-	else
-		m_vScrollPos.x = targetX;
-	*/
+	scrollToXInt(scrollPosX, animated);
 }
 
 void CBaseUIScrollView::scrollToY(int scrollPosY, bool animated)
+{
+	scrollToYInt(scrollPosY, animated);
+}
+
+void CBaseUIScrollView::scrollToYInt(int scrollPosY, bool animated, bool slow)
 {
 	if (!m_bVerticalScrolling || m_bScrolling) return;
 
@@ -493,26 +477,51 @@ void CBaseUIScrollView::scrollToY(int scrollPosY, bool animated)
 
 	m_vVelocity.y = targetY;
 
-	// NOTE: temporarily disabled non-animated scrolls to improve ui smoothness (scrollbar integer step stutter)
-	//if (animated)
+	if (animated)
 	{
 		m_bAutoScrollingY = true;
-		anim->moveQuadOut(&m_vScrollPos.y, targetY, animated ? 0.15f : 0.035f, 0.0f, true);
+		anim->moveQuadOut(&m_vScrollPos.y, targetY, (slow ? 0.15f : 0.035f), 0.0f, true);
 	}
-	/*
 	else
+	{
+		anim->deleteExistingAnimation(&m_vScrollPos.y);
 		m_vScrollPos.y = targetY;
-	*/
+	}
 }
 
-void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int xOffset, int yOffset)
+void CBaseUIScrollView::scrollToXInt(int scrollPosX, bool animated, bool slow)
+{
+	if (!m_bHorizontalScrolling || m_bScrolling) return;
+
+	float upperBounds = 1;
+	float lowerBounds = -m_vScrollSize.x + m_vSize.x;
+	if (lowerBounds >= upperBounds)
+		lowerBounds = upperBounds;
+
+	const float targetX = clamp<float>(scrollPosX, lowerBounds, upperBounds);
+
+	m_vVelocity.x = targetX;
+
+	if (animated)
+	{
+		m_bAutoScrollingX = true;
+		anim->moveQuadOut(&m_vScrollPos.x, targetX, (slow ? 0.15f : 0.035f), 0.0f, true);
+	}
+	else
+	{
+		anim->deleteExistingAnimation(&m_vScrollPos.x);
+		m_vScrollPos.x = targetX;
+	}
+}
+
+void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int xOffset, int yOffset, bool animated)
 {
 	const std::vector<CBaseUIElement*> &elements = m_container->getElements();
 	for (size_t i=0; i<elements.size(); i++)
 	{
 		if (elements[i] == element)
 		{
-			scrollToY(-element->getRelPos().y + yOffset);
+			scrollToY(-element->getRelPos().y + yOffset, animated);
 			return;
 		}
 	}

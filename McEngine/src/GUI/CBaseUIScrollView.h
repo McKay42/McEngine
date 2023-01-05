@@ -36,7 +36,7 @@ public:
 	void scrollX(int delta, bool animated = true);
 	void scrollToY(int scrollPosY, bool animated = true);
 	void scrollToX(int scrollPosX, bool animated = true);
-	void scrollToElement(CBaseUIElement *element, int xOffset = 0, int yOffset = 0);
+	void scrollToElement(CBaseUIElement *element, int xOffset = 0, int yOffset = 0, bool animated = true);
 
 	void scrollToLeft();
 	void scrollToRight();
@@ -92,6 +92,9 @@ protected:
 private:
 	void updateClipping();
 	void updateScrollbars();
+
+	void scrollToYInt(int scrollPosY, bool animated = true, bool slow = true);
+	void scrollToXInt(int scrollPosX, bool animated = true, bool slow = true);
 
 	// main container
 	CBaseUIContainer *m_container;
