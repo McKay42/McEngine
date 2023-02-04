@@ -114,6 +114,9 @@ public:
 	Shader *getShader(UString resourceName) const;
 
 	inline const std::vector<Resource*> &getResources() const {return m_vResources;}
+	inline size_t getNumThreads() const {return m_threads.size();}
+	inline size_t getNumLoadingWork() const {return m_loadingWork.size();}
+	inline size_t getNumLoadingWorkAsyncDestroy() const {return m_loadingWorkAsyncDestroy.size();}
 
 	bool isLoading() const;
 	bool isLoadingResource(Resource *rs) const;
@@ -127,7 +130,6 @@ private:
 
 	// content
 	std::vector<Resource*> m_vResources;
-	std::vector<Resource*> m_vAsyncDestroy;
 
 	// flags
 	bool m_bNextLoadAsync;
