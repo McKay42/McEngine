@@ -19,6 +19,7 @@
 
 #include <string.h>
 
+ConVar vprof_graph("vprof_graph", true, "whether to draw the graph when the overlay is enabled");
 ConVar vprof_graph_height("vprof_graph_height", 250.0f);
 ConVar vprof_graph_width("vprof_graph_width", 800.0f);
 ConVar vprof_graph_margin("vprof_graph_margin", 40.0f);
@@ -281,6 +282,7 @@ void VisualProfiler::draw(Graphics *g)
 	}
 
 	// draw graph
+	if (vprof_graph.getBool())
 	{
 		VPROF_BUDGET("LineGraph", VPROF_BUDGETGROUP_DRAW);
 
