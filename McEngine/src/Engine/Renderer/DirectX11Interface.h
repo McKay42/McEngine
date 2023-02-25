@@ -11,7 +11,7 @@
 #include "cbase.h"
 #include "NullGraphicsInterface.h"
 
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 
 #include "d3d11.h"
 
@@ -85,8 +85,11 @@ public:
 
 	// renderer info
 	virtual Vector2 getResolution() const {return m_vResolution;}
-
-	// TODO: other getters
+	virtual UString getVendor();
+	virtual UString getModel();
+	virtual UString getVersion();
+	virtual int getVRAMTotal();
+	virtual int getVRAMRemaining();
 
 	// device settings
 	virtual void setVSync(bool vsync);
@@ -106,7 +109,6 @@ public:
 	void resizeTarget(Vector2 newResolution);
 	bool enableFullscreen(bool borderlessWindowedFullscreen = false);
 	void disableFullscreen();
-	void setRenderTargetFrameBuffer();
 	inline bool isReady() const {return m_bReady;}
 	ID3D11Device *getDevice() const {return m_device;}
 	ID3D11DeviceContext *getDeviceContext() const {return m_deviceContext;}

@@ -7,7 +7,7 @@
 
 #include "DirectX11Shader.h"
 
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 
 #include "Engine.h"
 #include "ConVar.h"
@@ -115,7 +115,7 @@ void DirectX11Shader::setUniform1f(UString name, float value)
 
 	// lock
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (FAILED(dx11->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	if (FAILED(dx11->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 	{
 		if (debug_shaders->getBool())
 			debugLog("DirectX11Shader::setUniformMatrix4fv() couldn't Map()!\n");
@@ -173,7 +173,7 @@ void DirectX11Shader::setUniform4f(UString name, float x, float y, float z, floa
 
 	// lock
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (FAILED(dx11->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	if (FAILED(dx11->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 	{
 		if (debug_shaders->getBool())
 			debugLog("DirectX11Shader::setUniformMatrix4fv() couldn't Map()!\n");
@@ -206,7 +206,7 @@ void DirectX11Shader::setUniformMatrix4fv(UString name, float *v)
 
 	// lock
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (FAILED(dx11->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	if (FAILED(dx11->getDeviceContext()->Map(m_constantBuffer, 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 	{
 		if (debug_shaders->getBool())
 			debugLog("DirectX11Shader::setUniformMatrix4fv() couldn't Map()!\n");
@@ -235,7 +235,7 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 			std::ifstream inFile(vertexShader.toUtf8());
 			if (!inFile)
 			{
-				engine->showMessageError("Shader Error", vertexShader);
+				engine->showMessageError("DirectX11Shader Error", vertexShader);
 				return false;
 			}
 			std::stringstream buffer;
@@ -249,7 +249,7 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 			std::ifstream inFile(fragmentShader.toUtf8());
 			if (!inFile)
 			{
-				engine->showMessageError("Shader Error", fragmentShader);
+				engine->showMessageError("DirectX11Shader Error", fragmentShader);
 				return false;
 			}
 			std::stringstream buffer;
@@ -277,7 +277,7 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 	const D3D_SHADER_MACRO defines[] =
 	{
 		"EXAMPLE_DEFINE", "1",
-		NULL, NULL
+		NULL, NULL // sentinel
 	};
 
 	ID3D10Blob *vs = NULL, *ps = NULL;
@@ -285,45 +285,45 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 	HRESULT hr1, hr2;
 
 	// compile
-	debugLog("Shader: Compiling %s ...\n", vertexShader.toUtf8());
+	debugLog("DirectX11Shader: Compiling %s ...\n", (source ? "vertex source" : vertexShader.toUtf8()));
 	hr1 = D3DCompile(vertexShader.toUtf8(), vertexShader.length(), "VS", defines, NULL, vsEntryPoint, vsProfile, flags, 0, &vs, &vsError);
 
-	debugLog("Shader: Compiling %s ...\n", fragmentShader.toUtf8());
+	debugLog("DirectX11Shader: Compiling %s ...\n", (source ? "pixel source" : fragmentShader.toUtf8()));
 	hr2 = D3DCompile(fragmentShader.toUtf8(), fragmentShader.length(), "PS", defines, NULL, psEntryPoint, psProfile, flags, 0, &ps, &psError);
 
 	if (FAILED(hr1) || FAILED(hr2) || vs == NULL || ps == NULL)
 	{
 		if (vsError != NULL)
 		{
-			debugLog("Vertex Shader Error: \n%s\n", (const char*)vsError->GetBufferPointer());
+			debugLog("DirectX11Shader Vertex Shader Error: \n%s\n", (const char*)vsError->GetBufferPointer());
 			vsError->Release();
 			debugLog("\n");
 		}
 
 		if (psError != NULL)
 		{
-			debugLog("Pixel Shader Error: \n%s\n", (const char*)psError->GetBufferPointer());
+			debugLog("DirectX11Shader Pixel Shader Error: \n%s\n", (const char*)psError->GetBufferPointer());
 			psError->Release();
 			debugLog("\n");
 		}
 
-		engine->showMessageError("Shader Error", "Couldn't D3DCompile()!");
+		engine->showMessageError("DirectX11Shader Error", "Couldn't D3DCompile()!");
 		return false;
 	}
 
 	// encapsulate
-	debugLog("Shader: CreateVertexShader(%i) ...\n", vs->GetBufferSize());
+	debugLog("DirectX11Shader: CreateVertexShader(%i) ...\n", vs->GetBufferSize());
 	hr1 = dx11->getDevice()->CreateVertexShader(vs->GetBufferPointer(), vs->GetBufferSize(), NULL, &m_vs);
 	// (note how vs is not released here, since it's still needed for the input layout)
 
-	debugLog("Shader: CreatePixelShader(%i) ...\n", ps->GetBufferSize());
+	debugLog("DirectX11Shader: CreatePixelShader(%i) ...\n", ps->GetBufferSize());
 	hr2 = dx11->getDevice()->CreatePixelShader(ps->GetBufferPointer(), ps->GetBufferSize(), NULL, &m_ps);
 	ps->Release();
 
 	if (FAILED(hr1) || FAILED(hr2))
 	{
 		vs->Release();
-		engine->showMessageError("Shader Error", "Couldn't CreateVertexShader()/CreatePixelShader()!");
+		engine->showMessageError("DirectX11Shader Error", "Couldn't CreateVertexShader()/CreatePixelShader()!");
 		return false;
 	}
 
@@ -331,10 +331,10 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 	// TODO: extract this into public functions
 	D3D11_INPUT_ELEMENT_DESC elements[] =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },	// + 3*4
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },	// + 4*4
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 28, D3D11_INPUT_PER_VERTEX_DATA, 0 },		// + 2*4
-		//{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 }, // + 3*4
+		{ "POSITION",	0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,	0,	0,	D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA, 0 },	// + 3*4
+		{ "COLOR",		0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,	0,	12,	D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA, 0 },	// + 4*4
+		{ "TEXCOORD",	0, DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT,		0,	28,	D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA, 0 },	// + 2*4
+		//{ "NORMAL",	0, DXGI_FORMAT_R32G32B32A32_FLOAT,				0,	36,	D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA, 0 },	// + 3*4
 	};
 	UINT numElements = _countof(elements);
 
@@ -343,7 +343,7 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 
 	if (FAILED(hr1))
 	{
-		engine->showMessageError("Shader Error", "Couldn't CreateInputLayout()!");
+		engine->showMessageError("DirectX11Shader Error", "Couldn't CreateInputLayout()!");
 		return false;
 	}
 
@@ -351,21 +351,22 @@ bool DirectX11Shader::compile(UString vertexShader, UString fragmentShader, bool
 	// create contant buffer
 	D3D11_BUFFER_DESC matrixBufferDesc;
 	{
-		matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+		matrixBufferDesc.Usage = D3D11_USAGE::D3D11_USAGE_DYNAMIC;
 		matrixBufferDesc.ByteWidth = sizeof(MatrixBufferType); // NOTE: "If the bind flag is D3D11_BIND_CONSTANT_BUFFER, you must set the ByteWidth value in multiples of 16, and less than or equal to D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT."
-		matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		matrixBufferDesc.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_CONSTANT_BUFFER;
+		matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_WRITE;
 		matrixBufferDesc.MiscFlags = 0;
 		matrixBufferDesc.StructureByteStride = 0;
 	}
 	hr1 = dx11->getDevice()->CreateBuffer(&matrixBufferDesc, NULL, &m_constantBuffer);
 	if (FAILED(hr1))
 	{
-		engine->showMessageError("Shader Error", UString::format("Couldn't CreateBuffer(%ld, %x, %x)!", hr1, hr1, MAKE_DXGI_HRESULT(hr1)));
+		engine->showMessageError("DirectX11Shader Error", UString::format("Couldn't CreateBuffer(%ld, %x, %x)!", hr1, hr1, MAKE_DXGI_HRESULT(hr1)));
 		return false;
 	}
 
 	// TODO: set buffer number?
+	// TODO: this is a global number across all shaders, so needs to be specified in the shader via descs probably
 	UINT bufferNumber = 0;
 	dx11->getDeviceContext()->VSSetConstantBuffers(bufferNumber, 1, &m_constantBuffer);
 

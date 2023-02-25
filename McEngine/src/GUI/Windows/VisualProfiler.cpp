@@ -95,16 +95,20 @@ void VisualProfiler::draw(Graphics *g)
 					const int vramRemainingMB = g->getVRAMRemaining() / 1024;
 
 					UString vendor = g->getVendor();
+					UString model = g->getModel();
 					UString version = g->getVersion();
 
 					UString line1 = "GPU Vendor: "; line1.append(vendor);
 					addTextLine(line1, textFont, m_textLines);
-					UString line2 = "Version: "; line2.append(version);
+					UString line2 = "Model: "; line2.append(model);
 					addTextLine(line2, textFont, m_textLines);
+					UString line3 = "Version: "; line3.append(version);
+					addTextLine(line3, textFont, m_textLines);
 					addTextLine(UString::format("Resolution: %i x %i", (int)g->getResolution().x, (int)g->getResolution().y), textFont, m_textLines);
 					addTextLine(UString::format("NativeRes: %i x %i", (int)env->getNativeScreenSize().x, (int)env->getNativeScreenSize().y), textFont, m_textLines);
 					addTextLine(UString::format("Env DPI Scale: %f", env->getDPIScale()), textFont, m_textLines);
 					addTextLine(UString::format("Env DPI: %i", (int)env->getDPI()), textFont, m_textLines);
+					//addTextLine(UString::format("Renderer: %s", typeid(g).name()), textFont, m_textLines); // TODO: add g->getName() or something
 					addTextLine(UString::format("VRAM: %i MB / %i MB", vramRemainingMB, vramTotalMB), textFont, m_textLines);
 				}
 				break;

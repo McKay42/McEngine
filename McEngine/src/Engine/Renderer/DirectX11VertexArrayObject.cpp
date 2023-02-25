@@ -7,7 +7,7 @@
 
 #include "DirectX11VertexArrayObject.h"
 
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 
 #include "Engine.h"
 
@@ -106,7 +106,7 @@ void DirectX11VertexArrayObject::init()
 			colors.push_back(color);
 			finalColors.push_back(color);
 		}
-		const size_t maxColorIndex = finalColors.size() - 1;
+		const size_t maxColorIndex = (finalColors.size() > 0 ? finalColors.size() - 1 : 0);
 
 		if (m_primitive == Graphics::PRIMITIVE::PRIMITIVE_QUADS)
 		{

@@ -29,9 +29,9 @@
 //#define MCENGINE_FEATURE_OPENGLES
 
 /*
- * DirectX graphics
+ * DirectX 11 graphics
  */
-//#define MCENGINE_FEATURE_DIRECTX
+//#define MCENGINE_FEATURE_DIRECTX11
 
 /*
  * ENet & CURL networking

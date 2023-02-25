@@ -7,7 +7,7 @@
 
 #include "DirectX11RenderTarget.h"
 
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 
 #include "Engine.h"
 #include "ConVar.h"
@@ -58,25 +58,7 @@ void DirectX11RenderTarget::init()
 		colorTextureDesc.Width = (UINT)m_vSize.x;
 		colorTextureDesc.Height = (UINT)m_vSize.y;
 	}
-
-	// initial data
-	const size_t numBytes = colorTextureDesc.Width * colorTextureDesc.Height * 4;
-	{
-		// TODO: is this actually necessary? why can't we just not have any initial data
-		unsigned char *buf = new unsigned char[numBytes];
-		{
-			memset(buf, 255, numBytes);
-
-			D3D11_SUBRESOURCE_DATA initialData;
-			{
-				initialData.pSysMem = buf;
-				initialData.SysMemPitch = colorTextureDesc.Width * 4;
-				initialData.SysMemSlicePitch = 0;
-			}
-			hr = g->getDevice()->CreateTexture2D(&colorTextureDesc, &initialData, &m_renderTexture);
-		}
-		delete[] buf;
-	}
+	hr = g->getDevice()->CreateTexture2D(&colorTextureDesc, NULL, &m_renderTexture);
 	if (FAILED(hr))
 	{
 		engine->showMessageErrorFatal("RenderTarget Error", UString::format("Couldn't color CreateTexture2D(%ld, %x, %x)!", hr, hr, MAKE_DXGI_HRESULT(hr)));

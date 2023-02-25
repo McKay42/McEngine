@@ -10,7 +10,7 @@
 
 #include "VertexArrayObject.h"
 
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 
 #include "DirectX11Interface.h"
 

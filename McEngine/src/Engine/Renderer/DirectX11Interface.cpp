@@ -7,7 +7,7 @@
 
 #include "DirectX11Interface.h"
 
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 
 #include "Engine.h"
 #include "ConVar.h"
@@ -615,7 +615,7 @@ void DirectX11Interface::drawQuad(Vector2 topLeft, Vector2 topRight, Vector2 bot
 {
 	updateTransform();
 
-	m_shaderTexturedGeneric->setUniform1f("misc", 1.0f); // enable texturing
+	m_shaderTexturedGeneric->setUniform1f("misc", 0.0f); // disable texturing
 
 	static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
 	{
@@ -623,16 +623,16 @@ void DirectX11Interface::drawQuad(Vector2 topLeft, Vector2 topRight, Vector2 bot
 
 		vao.addVertex(topLeft.x, topLeft.y);
 		vao.addColor(topLeftColor);
-		vao.addTexcoord(0, 0);
+		//vao.addTexcoord(0, 0);
 		vao.addVertex(bottomLeft.x, bottomLeft.y);
 		vao.addColor(bottomLeftColor);
-		vao.addTexcoord(0, 1);
+		//vao.addTexcoord(0, 1);
 		vao.addVertex(bottomRight.x, bottomRight.y);
 		vao.addColor(bottomRightColor);
-		vao.addTexcoord(1, 1);
+		//vao.addTexcoord(1, 1);
 		vao.addVertex(topRight.x, topRight.y);
 		vao.addColor(topRightColor);
-		vao.addTexcoord(1, 0);
+		//vao.addTexcoord(1, 0);
 	}
 	drawVAO(&vao);
 }
@@ -719,6 +719,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	// no support for quads, because fuck you
 	// no support for triangle fans, because fuck youuu
 	// rewrite all quads into triangles
+	// rewrite all triangle fans into triangles
 	static std::vector<Vector3> finalVertices;
 	finalVertices = vertices;
 	static std::vector<std::vector<Vector2>> finalTexcoords;
@@ -734,7 +735,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 		colors.push_back(color);
 		finalColors.push_back(color);
 	}
-	int maxColorIndex = colors.size() - 1;
+	const size_t maxColorIndex = (colors.size() > 0 ? colors.size() - 1 : 0);
 
 	Graphics::PRIMITIVE primitive = vao->getPrimitive();
 	if (primitive == Graphics::PRIMITIVE::PRIMITIVE_QUADS)
@@ -764,9 +765,9 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 
 				if (colors.size() > 0)
 				{
-					finalColors.push_back(colors[clamp<int>(i + 0, 0, maxColorIndex)]);
-					finalColors.push_back(colors[clamp<int>(i + 1, 0, maxColorIndex)]);
-					finalColors.push_back(colors[clamp<int>(i + 2, 0, maxColorIndex)]);
+					finalColors.push_back(colors[clamp<size_t>(i + 0, 0, maxColorIndex)]);
+					finalColors.push_back(colors[clamp<size_t>(i + 1, 0, maxColorIndex)]);
+					finalColors.push_back(colors[clamp<size_t>(i + 2, 0, maxColorIndex)]);
 				}
 
 				finalVertices.push_back(vertices[i + 0]);
@@ -782,9 +783,9 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 
 				if (colors.size() > 0)
 				{
-					finalColors.push_back(colors[clamp<int>(i + 0, 0, maxColorIndex)]);
-					finalColors.push_back(colors[clamp<int>(i + 2, 0, maxColorIndex)]);
-					finalColors.push_back(colors[clamp<int>(i + 3, 0, maxColorIndex)]);
+					finalColors.push_back(colors[clamp<size_t>(i + 0, 0, maxColorIndex)]);
+					finalColors.push_back(colors[clamp<size_t>(i + 2, 0, maxColorIndex)]);
+					finalColors.push_back(colors[clamp<size_t>(i + 3, 0, maxColorIndex)]);
 				}
 			}
 		}
@@ -817,9 +818,9 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 
 				if (colors.size() > 0)
 				{
-					finalColors.push_back(colors[clamp<int>(0, 0, maxColorIndex)]);
-					finalColors.push_back(colors[clamp<int>(i, 0, maxColorIndex)]);
-					finalColors.push_back(colors[clamp<int>(i - 1, 0, maxColorIndex)]);
+					finalColors.push_back(colors[clamp<size_t>(0, 0, maxColorIndex)]);
+					finalColors.push_back(colors[clamp<size_t>(i, 0, maxColorIndex)]);
+					finalColors.push_back(colors[clamp<size_t>(i - 1, 0, maxColorIndex)]);
 				}
 			}
 		}
@@ -831,7 +832,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 		const bool hasColors = (finalColors.size() > 0);
 		const bool hasTexcoords0 = (finalTexcoords.size() > 0 && finalTexcoords[0].size() > 0);
 
-		const size_t maxColorIndex = finalColors.size() - 1;
+		const size_t maxColorIndex = (hasColors ? finalColors.size() - 1 : 0);
 		const size_t maxTexcoords0Index = (hasTexcoords0 ? finalTexcoords[0].size() - 1 : 0);
 
 		const Vector4 color = Vector4(COLOR_GET_Rf(m_color), COLOR_GET_Gf(m_color), COLOR_GET_Bf(m_color), COLOR_GET_Af(m_color));
@@ -1070,6 +1071,99 @@ std::vector<unsigned char> DirectX11Interface::getScreenshot()
 	return result;
 }
 
+UString DirectX11Interface::getVendor()
+{
+	IDXGIFactory1 *pFactory = NULL;
+	if (SUCCEEDED(m_swapChain->GetParent(__uuidof(IDXGIFactory1), (void**)&pFactory)) && pFactory != NULL)
+	{
+		IDXGIAdapter *adapter = NULL;
+		if (SUCCEEDED(pFactory->EnumAdapters(0, &adapter)) && adapter != NULL)
+		{
+			DXGI_ADAPTER_DESC desc;
+			if (SUCCEEDED(adapter->GetDesc(&desc)))
+			{
+				return UString::format("0x%x", desc.VendorId);
+			}
+			adapter->Release();
+		}
+		pFactory->Release();
+	}
+
+	return "<UNKNOWN>";
+}
+
+UString DirectX11Interface::getModel()
+{
+	IDXGIFactory1 *pFactory = NULL;
+	if (SUCCEEDED(m_swapChain->GetParent(__uuidof(IDXGIFactory1), (void**)&pFactory)) && pFactory != NULL)
+	{
+		IDXGIAdapter *adapter = NULL;
+		if (SUCCEEDED(pFactory->EnumAdapters(0, &adapter)) && adapter != NULL)
+		{
+			DXGI_ADAPTER_DESC desc;
+			if (SUCCEEDED(adapter->GetDesc(&desc)))
+			{
+				const std::wstring description = std::wstring(desc.Description, 128);
+				return UString(description.c_str());
+			}
+			adapter->Release();
+		}
+		pFactory->Release();
+	}
+
+	return "<UNKNOWN>";
+}
+
+UString DirectX11Interface::getVersion()
+{
+	IDXGIFactory1 *pFactory = NULL;
+	if (SUCCEEDED(m_swapChain->GetParent(__uuidof(IDXGIFactory1), (void**)&pFactory)) && pFactory != NULL)
+	{
+		IDXGIAdapter *adapter = NULL;
+		if (SUCCEEDED(pFactory->EnumAdapters(0, &adapter)) && adapter != NULL)
+		{
+			DXGI_ADAPTER_DESC desc;
+			if (SUCCEEDED(adapter->GetDesc(&desc)))
+			{
+				return UString::format("0x%x/%x/%x", desc.DeviceId, desc.SubSysId, desc.Revision);
+			}
+			adapter->Release();
+		}
+		pFactory->Release();
+	}
+
+	return "<UNKNOWN>";
+}
+
+int DirectX11Interface::getVRAMTotal()
+{
+	IDXGIFactory1 *pFactory = NULL;
+	if (SUCCEEDED(m_swapChain->GetParent(__uuidof(IDXGIFactory1), (void**)&pFactory)) && pFactory != NULL)
+	{
+		IDXGIAdapter *adapter = NULL;
+		if (SUCCEEDED(pFactory->EnumAdapters(0, &adapter)) && adapter != NULL)
+		{
+			DXGI_ADAPTER_DESC desc;
+			if (SUCCEEDED(adapter->GetDesc(&desc)))
+			{
+				// NOTE: this value is affected by 32-bit limits, meaning it will cap out at ~3071 MB (or ~3072 MB depending on rounding), which makes sense since we can't address more video memory in a 32-bit process anyway
+				return desc.DedicatedVideoMemory / 1024; // (from bytes to kb)
+			}
+			adapter->Release();
+		}
+		pFactory->Release();
+	}
+
+	return -1;
+}
+
+int DirectX11Interface::getVRAMRemaining()
+{
+	// TODO: https://learn.microsoft.com/en-us/windows/win32/api/dxgi1_4/nf-dxgi1_4-idxgiadapter3-queryvideomemoryinfo
+
+	return -1;
+}
+
 void DirectX11Interface::setVSync(bool vsync)
 {
 	m_bVSync = vsync;
@@ -1235,11 +1329,6 @@ void DirectX11Interface::disableFullscreen()
 
 	m_bIsFullscreen = false;
 	m_bIsFullscreenBorderlessWindowed = false;
-}
-
-void DirectX11Interface::setRenderTargetFrameBuffer()
-{
-	m_deviceContext->OMSetRenderTargets(1, &m_frameBuffer, m_frameBufferDepthStencilView);
 }
 
 Image *DirectX11Interface::createImage(UString filePath, bool mipmapped, bool keepInSystemMemory)

@@ -79,9 +79,9 @@ void WinEnvironment::update()
 
 Graphics *WinEnvironment::createRenderer()
 {
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 
-	if (engine->getArgs().length() > 0 && engine->getArgs().find("dx11") != -1)
+	if (engine->getArgs().length() > 0 && (engine->getArgs().find("dx11") != -1 || engine->getArgs().find("d3d11") != -1))
 		return new DirectX11Interface(m_hwnd);
 
 #endif
@@ -498,7 +498,7 @@ void WinEnvironment::focus()
 
 void WinEnvironment::center()
 {
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 	{
 		DirectX11Interface *dx11 = dynamic_cast<DirectX11Interface*>(engine->getGraphics());
 		if (dx11 != NULL && m_bFullScreen) return;
@@ -561,7 +561,7 @@ void WinEnvironment::enableFullscreen()
 
 	bool isDirectX11Renderer = false;
 
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 	{
 		DirectX11Interface *dx11 = dynamic_cast<DirectX11Interface*>(engine->getGraphics());
 		if (dx11 != NULL)
@@ -622,7 +622,7 @@ void WinEnvironment::disableFullscreen()
 	m_vWindowSize.x = std::abs(rect.right - rect.left);
 	m_vWindowSize.y = std::abs(rect.bottom - rect.top);
 
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 	{
 		DirectX11Interface *dx11 = dynamic_cast<DirectX11Interface*>(engine->getGraphics());
 		if (dx11 != NULL)
@@ -650,7 +650,7 @@ void WinEnvironment::setWindowTitle(UString title)
 
 void WinEnvironment::setWindowPos(int x, int y)
 {
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 	{
 		DirectX11Interface *dx11 = dynamic_cast<DirectX11Interface*>(engine->getGraphics());
 		if (dx11 != NULL && m_bFullScreen) return;
@@ -674,7 +674,7 @@ void WinEnvironment::setWindowSize(int width, int height)
 
 	bool isDirectX11Renderer = false;
 
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 	{
 		DirectX11Interface *dx11 = dynamic_cast<DirectX11Interface*>(engine->getGraphics());
 		if (dx11 != NULL)

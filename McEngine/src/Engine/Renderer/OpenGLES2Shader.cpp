@@ -75,7 +75,7 @@ void OpenGLES2Shader::setUniform1f(UString name, float value)
 	if (id != -1)
 		glUniform1f(id, value);
 	else if (debug_shaders->getBool())
-		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+		debugLog("OpenGLES2Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
 
 void OpenGLES2Shader::setUniform1fv(UString name, int count, float *values)
@@ -85,7 +85,7 @@ void OpenGLES2Shader::setUniform1fv(UString name, int count, float *values)
 	if (id != -1)
 		glUniform1fv(id, count, values);
 	else if (debug_shaders->getBool())
-		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+		debugLog("OpenGLES2Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
 
 void OpenGLES2Shader::setUniform1i(UString name, int value)
@@ -95,7 +95,7 @@ void OpenGLES2Shader::setUniform1i(UString name, int value)
 	if (id != -1)
 		glUniform1i(id, value);
 	else if (debug_shaders->getBool())
-		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+		debugLog("OpenGLES2Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
 
 void OpenGLES2Shader::setUniform2f(UString name, float value1, float value2)
@@ -105,7 +105,7 @@ void OpenGLES2Shader::setUniform2f(UString name, float value1, float value2)
 	if (id != -1)
 		glUniform2f(id, value1, value2);
 	else if (debug_shaders->getBool())
-		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+		debugLog("OpenGLES2Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
 
 void OpenGLES2Shader::setUniform2fv(UString name, int count, float *vectors)
@@ -115,7 +115,7 @@ void OpenGLES2Shader::setUniform2fv(UString name, int count, float *vectors)
 	if (id != -1)
 		glUniform2fv(id, count, (float*)&vectors[0]);
 	else if (debug_shaders->getBool())
-		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+		debugLog("OpenGLES2Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
 
 void OpenGLES2Shader::setUniform3f(UString name, float x, float y, float z)
@@ -125,7 +125,7 @@ void OpenGLES2Shader::setUniform3f(UString name, float x, float y, float z)
 	if (id != -1)
 		glUniform3f(id, x, y, z);
 	else if (debug_shaders->getBool())
-		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+		debugLog("OpenGLES2Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
 
 void OpenGLES2Shader::setUniform3fv(UString name, int count, float *vectors)
@@ -135,7 +135,7 @@ void OpenGLES2Shader::setUniform3fv(UString name, int count, float *vectors)
 	if (id != -1)
 		glUniform3fv(id, count, (float*)&vectors[0]);
 	else if (debug_shaders->getBool())
-		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+		debugLog("OpenGLES2Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
 
 void OpenGLES2Shader::setUniform4f(UString name, float x, float y, float z, float w)
@@ -145,7 +145,7 @@ void OpenGLES2Shader::setUniform4f(UString name, float x, float y, float z, floa
 	if (id != -1)
 		glUniform4f(id, x, y, z, w);
 	else if (debug_shaders->getBool())
-		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+		debugLog("OpenGLES2Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
 
 void OpenGLES2Shader::setUniformMatrix4fv(UString name, Matrix4 &matrix)
@@ -155,7 +155,7 @@ void OpenGLES2Shader::setUniformMatrix4fv(UString name, Matrix4 &matrix)
 	if (id != -1)
 		glUniformMatrix4fv(id, 1, GL_FALSE, matrix.get());
 	else if (debug_shaders->getBool())
-		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+		debugLog("OpenGLES2Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
 
 void OpenGLES2Shader::setUniformMatrix4fv(UString name, float *v)
@@ -165,7 +165,7 @@ void OpenGLES2Shader::setUniformMatrix4fv(UString name, float *v)
 	if (id != -1)
 		glUniformMatrix4fv(id, 1, GL_FALSE, v);
 	else if (debug_shaders->getBool())
-		debugLog("Shader Warning: Can't find uniform %s\n",name.toUtf8());
+		debugLog("OpenGLES2Shader Warning: Can't find uniform %s\n",name.toUtf8());
 }
 
 int OpenGLES2Shader::getAttribLocation(UString name)
@@ -184,14 +184,14 @@ bool OpenGLES2Shader::isActive()
 bool OpenGLES2Shader::compile(UString vertexShader, UString fragmentShader, bool source)
 {
 	// load & compile shaders
-	debugLog("Shader: Compiling %s ...\n", vertexShader.toUtf8());
+	debugLog("OpenGLES2Shader: Compiling %s ...\n", (source ? "vertex source" : vertexShader.toUtf8()));
 	m_iVertexShader = source ? createShaderFromString(vertexShader, GL_VERTEX_SHADER) : createShaderFromFile(vertexShader, GL_VERTEX_SHADER);
-	debugLog("Shader: Compiling %s ...\n", fragmentShader.toUtf8());
+	debugLog("OpenGLES2Shader: Compiling %s ...\n", (source ? "fragment source" : fragmentShader.toUtf8()));
 	m_iFragmentShader = source ? createShaderFromString(fragmentShader, GL_FRAGMENT_SHADER) : createShaderFromFile(fragmentShader, GL_FRAGMENT_SHADER);
 
 	if (m_iVertexShader == 0 || m_iFragmentShader == 0)
 	{
-		engine->showMessageError("Shader Error", "Couldn't createShader()");
+		engine->showMessageError("OpenGLES2Shader Error", "Couldn't createShader()");
 		return false;
 	}
 
@@ -199,7 +199,7 @@ bool OpenGLES2Shader::compile(UString vertexShader, UString fragmentShader, bool
 	m_iProgram = (int)glCreateProgram();
 	if (m_iProgram == 0)
 	{
-		engine->showMessageError("Shader Error", "Couldn't glCreateProgram()");
+		engine->showMessageError("OpenGLES2Shader Error", "Couldn't glCreateProgram()");
 		return false;
 	}
 
@@ -214,7 +214,7 @@ bool OpenGLES2Shader::compile(UString vertexShader, UString fragmentShader, bool
 	glGetProgramiv(m_iProgram, GL_LINK_STATUS, &ret);
 	if (ret == GL_FALSE)
 	{
-		engine->showMessageError("Shader Error", "Couldn't glLinkProgram()");
+		engine->showMessageError("OpenGLES2Shader Error", "Couldn't glLinkProgram()");
 		return false;
 	}
 
@@ -224,7 +224,7 @@ bool OpenGLES2Shader::compile(UString vertexShader, UString fragmentShader, bool
 	glGetProgramiv(m_iProgram, GL_VALIDATE_STATUS, &ret);
 	if (ret == GL_FALSE)
 	{
-		engine->showMessageError("Shader Error", "Couldn't glValidateProgram()");
+		engine->showMessageError("OpenGLES2Shader Error", "Couldn't glValidateProgram()");
 		return false;
 	}
 
@@ -233,11 +233,11 @@ bool OpenGLES2Shader::compile(UString vertexShader, UString fragmentShader, bool
 
 int OpenGLES2Shader::createShaderFromString(UString shaderSource, int shaderType)
 {
-	GLint shader = glCreateShader(shaderType);
+	const GLint shader = glCreateShader(shaderType);
 
 	if (shader == 0)
 	{
-		engine->showMessageError("Shader Compile Error", "Couldn't glCreateShader()");
+		engine->showMessageError("OpenGLES2Shader Error", "Couldn't glCreateShader()");
 		return 0;
 	}
 
@@ -250,18 +250,19 @@ int OpenGLES2Shader::createShaderFromString(UString shaderSource, int shaderType
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &ret);
 	if (ret == GL_FALSE)
 	{
-		debugLog("------------------Shader Compile Error------------------\n");
+		debugLog("------------------OpenGLES2Shader Compile Error------------------\n");
 
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &ret);
 		char *errorLog = new char[ret];
-		glGetShaderInfoLog(shader, ret, &ret, errorLog);
-
-		debugLog(errorLog);
+		{
+			glGetShaderInfoLog(shader, ret, &ret, errorLog);
+			debugLog(errorLog);
+		}
 		delete[] errorLog;
 
-		debugLog("--------------------------------------------------------\n");
+		debugLog("-----------------------------------------------------------------\n");
 
-		engine->showMessageError("Shader Error", "Couldn't glShaderSource() or glCompileShader()");
+		engine->showMessageError("OpenGLES2Shader Error", "Couldn't glShaderSource() or glCompileShader()");
 		return 0;
 	}
 
@@ -274,7 +275,7 @@ int OpenGLES2Shader::createShaderFromFile(UString fileName, int shaderType)
 	std::ifstream inFile(fileName.toUtf8());
 	if (!inFile)
 	{
-		engine->showMessageError("Shader Error", fileName);
+		engine->showMessageError("OpenGLES2Shader Error", fileName);
 		return 0;
 	}
 	std::string line;

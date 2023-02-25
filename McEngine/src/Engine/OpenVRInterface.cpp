@@ -26,7 +26,6 @@
 
 #include "OpenGLRenderTarget.h"
 #include "DirectX11Interface.h"
-#include "DirectX11Image.h"
 
 
 
@@ -238,7 +237,7 @@ OpenVRInterface::OpenVRInterface()
 	if (engine->getArgs().length() > 0 && engine->getArgs().find("novr") != -1)
 		return;
 
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 
 	if (dynamic_cast<DirectX11Interface*>(engine->getGraphics()) != NULL)
 		return;
