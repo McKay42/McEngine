@@ -38,7 +38,7 @@ public:
 
 	std::vector<UString> getOutputDevices();
 
-	inline UString getOutputDevice() const {return m_sCurrentOutputDevice;}
+	inline const UString &getOutputDevice() const {return m_sCurrentOutputDevice;}
 	inline float getVolume() const {return m_fVolume;}
 
 	// ILLEGAL:

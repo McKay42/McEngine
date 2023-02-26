@@ -26,11 +26,32 @@ public:
 	void draw(Graphics *g);
 	void update();
 
+	void incrementInfoBladeDisplayMode();
+	void decrementInfoBladeDisplayMode();
+
+	void addInfoBladeAppTextLine(const UString &text);
+
 	void setProfile(ProfilerProfile *profile);
 
 private:
-	static ConVar *m_vprof_ref;
+	enum INFO_BLADE_DISPLAY_MODE
+	{
+		INFO_BLADE_DISPLAY_MODE_DEFAULT = 0,
 
+		INFO_BLADE_DISPLAY_MODE_GPU_INFO = 1,
+		INFO_BLADE_DISPLAY_MODE_ENGINE_INFO = 2,
+		INFO_BLADE_DISPLAY_MODE_APP_INFO = 3,
+
+		INFO_BLADE_DISPLAY_MODE_COUNT = 4
+	};
+
+	struct TEXT_LINE
+	{
+		UString text;
+		int width;
+	};
+
+private:
 	struct NODE
 	{
 		const ProfilerNode *node;
@@ -51,13 +72,18 @@ private:
 		Color color;
 	};
 
-	void drawStringWithShadow(Graphics *g, const UString string, Color color);
+private:
+	static ConVar *m_vprof_ref;
 
 	static void collectProfilerNodesRecursive(const ProfilerNode *node, int depth, std::vector<NODE> &nodes, SPIKE &spike);
 	static void collectProfilerNodesSpikeRecursive(const ProfilerNode *node, int depth, std::vector<SPIKE> &spikeNodes);
 
 	static int getGraphWidth();
 	static int getGraphHeight();
+
+	static void addTextLine(const UString &text, McFont *font, std::vector<TEXT_LINE> &textLines);
+
+	static void drawStringWithShadow(Graphics *g, McFont *font, const UString &string, Color color);
 
 	int m_iPrevVaoWidth;
 	int m_iPrevVaoHeight;
@@ -80,9 +106,15 @@ private:
 	uint32_t m_spikeIDCounter;
 
 	McFont *m_font;
+	McFont *m_fontConsole;
 	VertexArrayObject *m_lineVao;
 
 	bool m_bScheduledForceRebuildLineVao;
+
+	std::vector<TEXT_LINE> m_textLines;
+	std::vector<UString> m_appTextLines;
 };
+
+extern VisualProfiler *vprof;
 
 #endif

@@ -762,7 +762,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_GETMINMAXINFO:
 			{
 				// NOTE: if rendering via DirectX then don't interfere here, since it handles all window management stuff for us
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 
 				if (g_engine != NULL && dynamic_cast<DirectX11Interface*>(g_engine->getGraphics()) != NULL)
 					return DefWindowProcW(hwnd, msg, wParam, lParam);

@@ -10,7 +10,7 @@
 
 #include "Image.h"
 
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 
 #include "d3d11.h"
 

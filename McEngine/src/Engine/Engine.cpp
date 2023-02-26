@@ -676,6 +676,20 @@ void Engine::onKeyboardKeyDown(KEYCODE keyCode)
 			vprof->setValue(vprof->getBool() ? 0.0f : 1.0f);
 			return;
 		}
+
+		// handle profiler display mode change
+		if (m_keyboard->isControlDown() && keyCode == KEY_TAB)
+		{
+			const ConVar *vprof = convar->getConVarByName("vprof");
+			if (vprof->getBool())
+			{
+				if (m_keyboard->isShiftDown())
+					m_visualProfiler->decrementInfoBladeDisplayMode();
+				else
+					m_visualProfiler->incrementInfoBladeDisplayMode();
+				return;
+			}
+		}
 	}
 
 	m_keyboard->onKeyDown(keyCode);

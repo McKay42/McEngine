@@ -7,7 +7,7 @@
 
 #include "DirectX11Image.h"
 
-#ifdef MCENGINE_FEATURE_DIRECTX
+#ifdef MCENGINE_FEATURE_DIRECTX11
 
 #include "Engine.h"
 #include "ConVar.h"
@@ -58,7 +58,7 @@ void DirectX11Image::init()
 		textureDesc.Height = (UINT)m_iHeight;
 		textureDesc.MipLevels = 1;
 		textureDesc.ArraySize = 1;
-		textureDesc.Format = m_iNumChannels == 4 ? DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM : (m_iNumChannels == 3 ? DXGI_FORMAT_R8_UNORM : (m_iNumChannels == 1 ? DXGI_FORMAT_R8_UNORM : DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM));
+		textureDesc.Format = m_iNumChannels == 4 ? DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM : (m_iNumChannels == 3 ? DXGI_FORMAT::DXGI_FORMAT_R8_UNORM : (m_iNumChannels == 1 ? DXGI_FORMAT::DXGI_FORMAT_R8_UNORM : DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM));
 		textureDesc.SampleDesc.Count = 1;
 		textureDesc.SampleDesc.Quality = 0;
 		textureDesc.Usage = (m_bKeepInSystemMemory ? D3D11_USAGE::D3D11_USAGE_DYNAMIC : D3D11_USAGE::D3D11_USAGE_DEFAULT);
@@ -122,15 +122,15 @@ void DirectX11Image::init()
 	{
 		ZeroMemory(&m_samplerDesc, sizeof(m_samplerDesc));
 
-		m_samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		m_samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-		m_samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-		m_samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+		m_samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		m_samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_CLAMP;
+		m_samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_CLAMP;
+		m_samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_CLAMP;
 		m_samplerDesc.MinLOD = -D3D11_FLOAT32_MAX;
 		m_samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 		m_samplerDesc.MipLODBias = 0.0f;
-		m_samplerDesc.MaxAnisotropy = 1.0f;
-		m_samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		m_samplerDesc.MaxAnisotropy = 1;
+		m_samplerDesc.ComparisonFunc = D3D11_COMPARISON_FUNC::D3D11_COMPARISON_NEVER;
 		m_samplerDesc.BorderColor[0] = 1.0f;
 		m_samplerDesc.BorderColor[1] = 1.0f;
 		m_samplerDesc.BorderColor[2] = 1.0f;
@@ -273,14 +273,14 @@ void DirectX11Image::setFilterMode(Graphics::FILTER_MODE filterMode)
 	{
 	case Graphics::FILTER_MODE::FILTER_MODE_NONE:
 		// TODO: fix with D3D11_FILTER_TYPE or something
-		m_samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+		m_samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_MIN_MAG_MIP_POINT;
 		break;
 	case Graphics::FILTER_MODE::FILTER_MODE_LINEAR:
-		m_samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		m_samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 		break;
 	case Graphics::FILTER_MODE::FILTER_MODE_MIPMAP:
 		// TODO: the name "FILTER_MODE_MIPMAP" is actually bad, should probably be FILTER_MODE_ANISOTROPIC? (i.e. GL_LINEAR_MIPMAP_LINEAR min should be default)
-		m_samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		m_samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 		break;
 	}
 
@@ -294,14 +294,14 @@ void DirectX11Image::setWrapMode(Graphics::WRAP_MODE wrapMode)
 	switch (wrapMode)
 	{
 	case Graphics::WRAP_MODE::WRAP_MODE_CLAMP:
-		m_samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-		m_samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-		m_samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+		m_samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_CLAMP;
+		m_samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_CLAMP;
+		m_samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_CLAMP;
 		break;
 	case Graphics::WRAP_MODE::WRAP_MODE_REPEAT:
-		m_samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-		m_samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-		m_samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		m_samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
+		m_samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
+		m_samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
 		break;
 	}
 

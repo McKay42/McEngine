@@ -185,4 +185,4 @@ void _vprof(UString oldValue, UString newValue)
 	}
 }
 
-ConVar vprof("vprof", false, "enables/disables the visual profiler", _vprof);
+ConVar _vprof_("vprof", false, "enables/disables the visual profiler", _vprof);
