@@ -167,6 +167,8 @@ ConVar fps_max_background_interleaved("fps_max_background_interleaved", 1, "expe
 ConVar fps_unlimited("fps_unlimited", false);
 ConVar fps_unlimited_yield("fps_unlimited_yield", true, "always release rest of timeslice once per frame (call scheduler via sleep(0)), even if unlimited fps are enabled");
 
+ConVar win_mouse_raw_input_buffer("win_mouse_raw_input_buffer", false, "use GetRawInputBuffer() to reduce wndproc event queue overflow stalls on insane mouse usb polling rates above 1000 Hz");
+
 extern ConVar *win_realtimestylus;
 
 
@@ -1333,6 +1335,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	MSG msg;
 	msg.message = WM_NULL;
 	unsigned long tickCounter = 0;
+	UINT currentRawInputBufferNumBytes = 0;
+	unsigned char *currentRawInputBuffer = NULL;
 	while (g_bRunning)
 	{
 		VPROF_MAIN();
@@ -1341,10 +1345,60 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			VPROF_BUDGET("Windows", VPROF_BUDGETGROUP_WNDPROC);
 
-			while (PeekMessageW(&msg, NULL, 0U, 0U, PM_REMOVE) != 0)
+			if (win_mouse_raw_input_buffer.getBool())
 			{
-				TranslateMessage(&msg);
-				DispatchMessageW(&msg);
+				UINT minRawInputBufferNumBytes = 0;
+				UINT hr = GetRawInputBuffer(NULL, &minRawInputBufferNumBytes, sizeof(RAWINPUTHEADER));
+				if (hr != (UINT)-1 && minRawInputBufferNumBytes > 0)
+				{
+					// resize buffer up to 1 MB sanity limit (if we lagspike this could easily be hit, 8000 Hz polling rate will produce ~0.12 MB per second)
+					const UINT numAlignmentBytes = 8;
+					const UINT rawInputBufferNumBytes = clamp<UINT>(minRawInputBufferNumBytes * numAlignmentBytes * 1024, 1, 1024 * 1024);
+					if (currentRawInputBuffer == NULL || currentRawInputBufferNumBytes < rawInputBufferNumBytes)
+					{
+						currentRawInputBufferNumBytes = rawInputBufferNumBytes;
+						{
+							if (currentRawInputBuffer != NULL)
+								delete[] currentRawInputBuffer;
+						}
+						currentRawInputBuffer = new unsigned char[currentRawInputBufferNumBytes];
+					}
+
+					// grab and go through all buffered RAWINPUT events
+					hr = GetRawInputBuffer((RAWINPUT*)currentRawInputBuffer, &currentRawInputBufferNumBytes, sizeof(RAWINPUTHEADER));
+					if (hr != (UINT)-1)
+					{
+						RAWINPUT *currentRawInput = (RAWINPUT*)currentRawInputBuffer;
+						for (; hr>0; hr--) // (hr = number of rawInputs)
+						{
+							if (currentRawInput->header.dwType == RIM_TYPEMOUSE)
+							{
+								const LONG lastX = ((RAWINPUT*)(&((BYTE*)currentRawInput)[numAlignmentBytes]))->data.mouse.lLastX;
+								const LONG lastY = ((RAWINPUT*)(&((BYTE*)currentRawInput)[numAlignmentBytes]))->data.mouse.lLastY;
+								const USHORT usFlags = ((RAWINPUT*)(&((BYTE*)currentRawInput)[numAlignmentBytes]))->data.mouse.usFlags;
+
+								g_engine->onMouseRawMove(lastX, lastY, (usFlags & MOUSE_MOVE_ABSOLUTE), (usFlags & MOUSE_VIRTUAL_DESKTOP));
+							}
+
+							currentRawInput = NEXTRAWINPUTBLOCK(currentRawInput);
+						}
+					}
+				}
+
+				// handle all remaining non-WM_INPUT messages
+				while (PeekMessageW(&msg, NULL, 0U, WM_INPUT - 1, PM_REMOVE) != 0 || PeekMessageW(&msg, NULL, WM_INPUT + 1, 0U, PM_REMOVE) != 0)
+				{
+					TranslateMessage(&msg);
+					DispatchMessageW(&msg);
+				}
+			}
+			else
+			{
+				while (PeekMessageW(&msg, NULL, 0U, 0U, PM_REMOVE) != 0)
+				{
+					TranslateMessage(&msg);
+					DispatchMessageW(&msg);
+				}
 			}
 		}
 

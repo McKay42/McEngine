@@ -431,7 +431,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/bassfx/lib/linux}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/libjpeg/lib/linux}&quot;"/>
 								</option>
-								<option id="gnu.cpp.link.option.flags.1157713283" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-fuse-ld=gold -static-libstdc++ -static-libgcc -Wl,-rpath=." valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1157713283" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-static-libstdc++ -static-libgcc -Wl,-rpath=." valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1901135693" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
