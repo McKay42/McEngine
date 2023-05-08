@@ -14,7 +14,7 @@ CXXFLAGS="-std=c++11 -O3 -Wall -c -fmessage-length=0 -Wno-sign-compare -Wno-unus
 CFLAGS="-O3 -Wall -c -fmessage-length=0"
 
 LDFLAGS=""
-LDFLAGS2=("-fuse-ld=gold" "-static-libstdc++" "-static-libgcc" "-Wl,-rpath=.") # NOTE: -fuse-ld=gold to get rid of weird ".dynsym local symbol at index 2 (>= sh_info of 2)" warning even though it compiles
+LDFLAGS2=("-static-libstdc++" "-static-libgcc" "-Wl,-rpath=.")
 LDLIBS="-ldiscord-rpc -lsteam_api -lcurl -lz -lX11 -lXi -lGL -lGLU -lGLEW -lfreetype -lbass -lbass_fx -lOpenCL -lBulletSoftBody -lBulletDynamics -lBulletCollision -lLinearMath -lenet -lpthread -ljpeg"
 
 
