@@ -36,6 +36,7 @@ Mouse::Mouse() : InputDevice()
 	m_iWheelDeltaVerticalActual = 0;
 	m_iWheelDeltaHorizontalActual = 0;
 
+	m_bSetPosWasCalledLastFrame = false;
 	m_bAbsolute = false;
 	m_bVirtualDesktop = false;
 	m_vOffset = Vector2(0, 0);
@@ -126,7 +127,7 @@ void Mouse::update()
 	// TODO: clean up OS specific handling, specifically all the linux blocks
 
 	// if the operating system cursor is potentially being used or visible in any way, do not interfere with it! (sensitivity, setCursorPos(), etc.)
-	// same goes for a sensitivity of 1 without raw input, it is not necessary to call setPos() in that case
+	// same goes for a sensitivity of 1 without raw input, it is not necessary to call env->setPos() in that case
 
 	McRect windowRect = McRect(0, 0, engine->getScreenWidth(), engine->getScreenHeight());
 	const bool osCursorVisible = env->isCursorVisible() || !env->isCursorInWindow() || !engine->hasFocus();
@@ -227,10 +228,11 @@ void Mouse::update()
 	onPosChange(nextPos);
 
 	// set new os cursor position, but only if the osMousePos is still within the window and the sensitivity is not 1;
-	// raw input ALWAYS needs setPos()
-	// absolute input NEVER needs setPos()
+	// raw input ALWAYS needs env->setPos()
+	// first person games which call engine->getMouse()->setPos() every frame to manually re-center the cursor NEVER need env->setPos()
+	// absolute input NEVER needs env->setPos()
 	// also update prevOsMousePos
-	if (windowRect.contains(osMousePos) && (sensitivityAdjustmentNeeded || mouse_raw_input.getBool()) && !m_bAbsolute && env->getOS() != Environment::OS::OS_LINUX) // HACKHACK: linux hack
+	if (windowRect.contains(osMousePos) && (sensitivityAdjustmentNeeded || mouse_raw_input.getBool()) && !m_bSetPosWasCalledLastFrame && !m_bAbsolute && env->getOS() != Environment::OS::OS_LINUX) // HACKHACK: linux hack
 	{
 		const Vector2 newOsMousePos = m_vPosWithoutOffset;
 
@@ -257,6 +259,8 @@ void Mouse::update()
 	}
 	else
 		m_vPrevOsMousePos = osMousePos;
+
+	m_bSetPosWasCalledLastFrame = false;
 }
 
 void Mouse::addListener(MouseListener *mouseListener, bool insertOnTop)
@@ -419,8 +423,14 @@ void Mouse::onButton5Change(bool button5down)
 
 void Mouse::setPos(Vector2 newPos)
 {
+	m_bSetPosWasCalledLastFrame = true;
+
 	setPosXY(newPos.x, newPos.y);
-	env->setMousePos(m_vPos.x, m_vPos.y);
+	env->setMousePos((int)m_vPos.x, (int)m_vPos.y);
+
+	m_vPrevOsMousePos = m_vPos;
+	m_vPrevOsMousePos.x = (int)m_vPrevOsMousePos.x;
+	m_vPrevOsMousePos.y = (int)m_vPrevOsMousePos.y;
 }
 
 void Mouse::setCursorType(CURSORTYPE cursorType)
