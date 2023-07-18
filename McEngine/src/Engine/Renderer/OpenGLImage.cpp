@@ -54,10 +54,13 @@ void OpenGLImage::init()
 
 #ifdef MCENGINE_FEATURE_OPENGL
 
+		// TODO: wtf, why is this even here? causes texture atlas uv cracks/bleeding on point sampled meshes
+		/*
 		GLfloat maxAnisotropy;
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
 		glGetError(); // clear gl error state (env LIBGL_ALWAYS_SOFTWARE=1 and mesa would break textures otherwise)
+		*/
 
 #endif
 
