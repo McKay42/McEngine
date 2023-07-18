@@ -89,6 +89,7 @@ private:
 	std::vector<MouseListener*> m_listeners;
 
 	// custom
+	bool m_bSetPosWasCalledLastFrame;
 	bool m_bAbsolute;
 	bool m_bVirtualDesktop;
 	Vector2 m_vActualPos;

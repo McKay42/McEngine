@@ -252,7 +252,7 @@ void Camera::updateVectors()
 			m_rotation = tempQuat * m_rotation;
 
 			// pitch
-			tempQuat.fromAxis(m_vXAxis, m_fPitch);
+			tempQuat.fromAxis(m_vXAxis, -m_fPitch);
 			m_rotation = m_rotation * tempQuat;
 
 			m_rotation.normalize();

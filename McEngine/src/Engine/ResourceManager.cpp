@@ -242,6 +242,13 @@ void ResourceManager::update()
 				//	debugLog("Resource Manager: Skipping load() due to async destroy of #%i\n", (i + 1));
 
 				break; // NOTE: only allow 1 work item to finish per frame (avoid stutters for e.g. texture uploads)
+				/*
+				if (reLock)
+				{
+					reLock = false;
+					g_resourceManagerMutex.lock();
+				}
+				*/
 			}
 		}
 
