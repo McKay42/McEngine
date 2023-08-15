@@ -68,6 +68,7 @@ VisualProfiler::VisualProfiler() : CBaseUIElement(0, 0, 0, 0, "")
 	m_lineVao = engine->getResourceManager()->createVertexArrayObject(Graphics::PRIMITIVE::PRIMITIVE_LINES, Graphics::USAGE_TYPE::USAGE_DYNAMIC, true);
 
 	m_bScheduledForceRebuildLineVao = false;
+	m_bRequiresAltShiftKeysToFreeze = false;
 }
 
 VisualProfiler::~VisualProfiler()
@@ -402,9 +403,11 @@ void VisualProfiler::update()
 	CBaseUIElement::update();
 	if (!m_vprof_ref->getBool() || !m_bVisible) return;
 
+	const bool isFrozen = (engine->getKeyboard()->isShiftDown() && (!m_bRequiresAltShiftKeysToFreeze || engine->getKeyboard()->isAltDown()));
+
 	if (debug_vprof.getBool() || vprof_spike.getBool())
 	{
-		if (!engine->getKeyboard()->isShiftDown())
+		if (!isFrozen)
 		{
 			SPIKE spike;
 			{
@@ -552,7 +555,7 @@ void VisualProfiler::update()
 		}
 
 		// regular line update
-		if (!engine->getKeyboard()->isShiftDown())
+		if (!isFrozen)
 		{
 			if (m_lineVao->isReady())
 			{
@@ -631,6 +634,11 @@ void VisualProfiler::setProfile(ProfilerProfile *profile)
 
 		m_bScheduledForceRebuildLineVao = true;
 	}
+}
+
+bool VisualProfiler::isEnabled()
+{
+	return m_vprof_ref->getBool();
 }
 
 void VisualProfiler::collectProfilerNodesRecursive(const ProfilerNode *node, int depth, std::vector<NODE> &nodes, SPIKE &spike)
