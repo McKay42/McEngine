@@ -8,8 +8,6 @@
 #ifndef RESOURCEMANAGER_H
 #define RESOURCEMANAGER_H
 
-#include "cbase.h"
-
 #include "Image.h"
 #include "Font.h"
 #include "Sound.h"
@@ -67,6 +65,8 @@ public:
 	~ResourceManager();
 
 	void update();
+
+	void setNumResourceInitPerFrameLimit(size_t numResourceInitPerFrameLimit) {m_iNumResourceInitPerFrameLimit = numResourceInitPerFrameLimit;}
 
 	void loadResource(Resource *rs) {requestNextLoadUnmanaged(); loadResource(rs, true);}
 	void destroyResource(Resource *rs);
@@ -134,6 +134,7 @@ private:
 	// flags
 	bool m_bNextLoadAsync;
 	std::stack<bool> m_nextLoadUnmanagedStack;
+	size_t m_iNumResourceInitPerFrameLimit;
 
 	// async
 	std::vector<ResourceManagerLoaderThread*> m_threads;
