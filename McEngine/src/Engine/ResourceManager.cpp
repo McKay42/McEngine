@@ -6,6 +6,7 @@
 //===============================================================================//
 
 #include "ResourceManager.h"
+
 #include "Environment.h"
 #include "Engine.h"
 #include "ConVar.h"
@@ -71,6 +72,7 @@ const char *ResourceManager::PATH_DEFAULT_SHADERS = "shaders/";
 ResourceManager::ResourceManager()
 {
 	m_bNextLoadAsync = false;
+	m_iNumResourceInitPerFrameLimit = 1;
 
 	m_loadingWork.reserve(32);
 
@@ -167,6 +169,7 @@ void ResourceManager::update()
 #endif
 	{
 		// handle load finish (and synchronous init())
+		size_t numResourceInitCounter = 0;
 		for (size_t i=0; i<m_loadingWork.size(); i++)
 		{
 			if (m_loadingWork[i].done.atomic.load())
@@ -237,18 +240,21 @@ void ResourceManager::update()
 				//if (!isAsyncDestroy)
 
 				rs->load();
+				numResourceInitCounter++;
 
 				//else if (debug_rm->getBool())
 				//	debugLog("Resource Manager: Skipping load() due to async destroy of #%i\n", (i + 1));
 
-				break; // NOTE: only allow 1 work item to finish per frame (avoid stutters for e.g. texture uploads)
-				/*
-				if (reLock)
+				if (m_iNumResourceInitPerFrameLimit > 0 && numResourceInitCounter >= m_iNumResourceInitPerFrameLimit)
+					break; // NOTE: only allow 1 work item to finish per frame (avoid stutters for e.g. texture uploads)
+				else
 				{
-					reLock = false;
-					g_resourceManagerMutex.lock();
+					if (reLock)
+					{
+						reLock = false;
+						g_resourceManagerMutex.lock();
+					}
 				}
-				*/
 			}
 		}
 

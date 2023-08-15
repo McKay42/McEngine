@@ -23,8 +23,8 @@ public:
 	VisualProfiler();
 	virtual ~VisualProfiler();
 
-	void draw(Graphics *g);
-	void update();
+	virtual void draw(Graphics *g);
+	virtual void update();
 
 	void incrementInfoBladeDisplayMode();
 	void decrementInfoBladeDisplayMode();
@@ -32,6 +32,9 @@ public:
 	void addInfoBladeAppTextLine(const UString &text);
 
 	void setProfile(ProfilerProfile *profile);
+	void setRequiresAltShiftKeysToFreeze(bool requiresAltShiftKeysToFreeze) {m_bRequiresAltShiftKeysToFreeze = requiresAltShiftKeysToFreeze;}
+
+	virtual bool isEnabled();
 
 private:
 	enum INFO_BLADE_DISPLAY_MODE
@@ -110,6 +113,7 @@ private:
 	VertexArrayObject *m_lineVao;
 
 	bool m_bScheduledForceRebuildLineVao;
+	bool m_bRequiresAltShiftKeysToFreeze;
 
 	std::vector<TEXT_LINE> m_textLines;
 	std::vector<UString> m_appTextLines;

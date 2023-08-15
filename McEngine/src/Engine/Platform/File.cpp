@@ -16,7 +16,7 @@
 #endif
 
 ConVar debug_file("debug_file", false);
-ConVar file_size_max("file_size_max", 512, "maximum filesize sanity limit in MB, all files bigger than this are not allowed to load");
+ConVar file_size_max("file_size_max", 1024, "maximum filesize sanity limit in MB, all files bigger than this are not allowed to load");
 
 ConVar *File::debug = &debug_file;
 ConVar *File::size_max = &file_size_max;

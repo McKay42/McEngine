@@ -389,7 +389,7 @@ int SDLEnvironment::getDPI()
 	float dpi = 96.0f;
 	SDL_GetDisplayDPI(displayIndex, NULL, &dpi, NULL);
 
-	return clamp<int>((int)dpi, 96, 96*4); // sanity clamp
+	return clamp<int>((int)dpi, 96, 96*2); // sanity clamp
 }
 
 Vector2 SDLEnvironment::getMousePos()
