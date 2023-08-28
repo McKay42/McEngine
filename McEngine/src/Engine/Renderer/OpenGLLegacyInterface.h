@@ -65,6 +65,8 @@ public:
 
 	// renderer settings
 	virtual void setClipping(bool enabled);
+	virtual void setAlphaTesting(bool enabled);
+	virtual void setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref);
 	virtual void setBlending(bool enabled);
 	virtual void setBlendMode(BLEND_MODE blendMode);
 	virtual void setDepthBuffer(bool enabled);
@@ -101,6 +103,7 @@ protected:
 
 private:
 	static int primitiveToOpenGL(Graphics::PRIMITIVE primitive);
+	static int compareFuncToOpenGL(Graphics::COMPARE_FUNC compareFunc);
 
 	void handleGLErrors();
 

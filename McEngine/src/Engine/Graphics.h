@@ -79,10 +79,25 @@ public:
 		BLEND_MODE_ALPHA,			// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) (default)
 		BLEND_MODE_ADDITIVE,		// glBlendFunc(GL_SRC_ALPHA, GL_ONE)
 		BLEND_MODE_PREMUL_ALPHA,	// glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
-		BLEND_MODE_PREMUL_COLOR,	// glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
+		BLEND_MODE_PREMUL_COLOR		// glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
+	};
+
+	enum class COMPARE_FUNC
+	{
+		COMPARE_FUNC_NEVER,
+		COMPARE_FUNC_LESS,
+		COMPARE_FUNC_EQUAL,
+		COMPARE_FUNC_LESSEQUAL,
+		COMPARE_FUNC_GREATER,
+		COMPARE_FUNC_NOTEQUAL,
+		COMPARE_FUNC_GREATEREQUAL,
+		COMPARE_FUNC_ALWAYS
 	};
 
 public:
+	friend class Engine;
+	friend class OpenVRInterface;
+
 	Graphics();
 	virtual ~Graphics() {}
 
@@ -131,6 +146,8 @@ public:
 
 	// renderer settings
 	virtual void setClipping(bool enabled) = 0;
+	virtual void setAlphaTesting(bool enabled) = 0;
+	virtual void setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref) = 0;
 	virtual void setBlending(bool enabled) = 0;
 	virtual void setBlendMode(BLEND_MODE blendMode) = 0;
 	virtual void setDepthBuffer(bool enabled) = 0;
@@ -209,14 +226,10 @@ protected:
 
 protected:
 	virtual void init() = 0; // must be called after the OS implementation constructor
-	virtual void onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix) = 0; // called if the matrices have changed and need to be applied
+	virtual void onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix) = 0; // called if matrices have changed and need to be (re-)applied/uploaded
 
 	void updateTransform(bool force = false);
-
 	void checkStackLeaks();
-
-	friend class Engine;
-	friend class OpenVRInterface;
 
 	// transforms
 	bool m_bTransformUpToDate;

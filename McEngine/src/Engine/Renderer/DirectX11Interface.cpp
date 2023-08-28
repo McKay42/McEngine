@@ -186,7 +186,7 @@ void DirectX11Interface::init()
 	{
 		m_rasterizerDesc.FillMode = D3D11_FILL_MODE::D3D11_FILL_SOLID;
 		m_rasterizerDesc.CullMode = D3D11_CULL_MODE::D3D11_CULL_NONE;
-		m_rasterizerDesc.FrontCounterClockwise = FALSE;
+		m_rasterizerDesc.FrontCounterClockwise = TRUE;
 		m_rasterizerDesc.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
 		m_rasterizerDesc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
 		m_rasterizerDesc.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
@@ -952,6 +952,16 @@ void DirectX11Interface::setClipping(bool enabled)
 	m_deviceContext->RSSetState(m_rasterizerState);
 }
 
+void DirectX11Interface::setAlphaTesting(bool enabled)
+{
+	// TODO: implement
+}
+
+void DirectX11Interface::setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref)
+{
+	// TODO: implement
+}
+
 void DirectX11Interface::setBlending(bool enabled)
 {
 	m_blendState->Release();
@@ -1392,6 +1402,13 @@ int DirectX11Interface::primitiveToDirectX(Graphics::PRIMITIVE primitive)
 	}
 
 	return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+}
+
+int DirectX11Interface::compareFuncToDirectX(Graphics::COMPARE_FUNC compareFunc)
+{
+	// TODO: implement
+
+	return 0;
 }
 
 #endif
