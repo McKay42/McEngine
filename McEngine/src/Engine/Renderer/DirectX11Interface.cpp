@@ -827,10 +827,10 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	}
 
 	// build directx vertices
+	const bool hasTexcoords0 = (finalTexcoords.size() > 0 && finalTexcoords[0].size() > 0);
 	m_vertices.resize(finalVertices.size());
 	{
 		const bool hasColors = (finalColors.size() > 0);
-		const bool hasTexcoords0 = (finalTexcoords.size() > 0 && finalTexcoords[0].size() > 0);
 
 		const size_t maxColorIndex = (hasColors ? finalColors.size() - 1 : 0);
 		const size_t maxTexcoords0Index = (hasTexcoords0 ? finalTexcoords[0].size() - 1 : 0);
@@ -894,6 +894,8 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	{
 		const UINT stride = sizeof(SimpleVertex);
 		const UINT offset = 0;
+
+		m_shaderTexturedGeneric->setUniform1f("misc", (hasTexcoords0 ? 1.0f : 0.0f));
 
 		m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
 		m_deviceContext->IASetPrimitiveTopology((D3D_PRIMITIVE_TOPOLOGY)primitiveToDirectX(primitive));
