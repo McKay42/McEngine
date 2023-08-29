@@ -30,8 +30,8 @@ public:
 	virtual void bind(unsigned int textureUnit = 0) = 0;
 	virtual void unbind() = 0;
 
-	virtual void setFilterMode(Graphics::FILTER_MODE filterMode) = 0;
-	virtual void setWrapMode(Graphics::WRAP_MODE wrapMode) = 0;
+	virtual void setFilterMode(Graphics::FILTER_MODE filterMode);
+	virtual void setWrapMode(Graphics::WRAP_MODE wrapMode);
 
 	void setPixel(int x, int y, Color color);
 	void setPixels(const char *data, size_t size, TYPE type);
@@ -55,6 +55,8 @@ protected:
 	bool loadRawImage();
 
 	Image::TYPE m_type;
+	Graphics::FILTER_MODE m_filterMode;
+	Graphics::WRAP_MODE m_wrapMode;
 
 	int m_iNumChannels;
 	int m_iWidth;

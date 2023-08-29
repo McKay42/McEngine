@@ -20,8 +20,8 @@ public:
 	virtual void bind(unsigned int textureUnit = 0) {;}
 	virtual void unbind() {;}
 
-	virtual void setFilterMode(Graphics::FILTER_MODE filterMode) {;}
-	virtual void setWrapMode(Graphics::WRAP_MODE wrapMode) {;}
+	virtual void setFilterMode(Graphics::FILTER_MODE filterMode);
+	virtual void setWrapMode(Graphics::WRAP_MODE wrapMode);
 
 private:
 	virtual void init() {m_bReady = true;}
