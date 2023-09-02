@@ -51,6 +51,7 @@ public:
 	const std::vector<Color> &getColors() const {return m_colors;}
 
 	inline unsigned int getNumVertices() const {return m_iNumVertices;}
+	inline bool hasTexcoords() const {return m_bHasTexcoords;}
 
 protected:
 	static int nearestMultipleUp(int number, int multiple);
@@ -72,6 +73,7 @@ protected:
 	std::vector<Color> m_colors;
 
 	unsigned int m_iNumVertices;
+	bool m_bHasTexcoords;
 
 	std::vector<int> m_partialUpdateVertexIndices;
 	std::vector<int> m_partialUpdateColorIndices;
