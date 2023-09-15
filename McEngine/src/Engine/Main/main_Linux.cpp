@@ -447,7 +447,7 @@ int main(int argc, char *argv[])
 		// delay the next frame
 		frameTimer->update();
 		const bool inBackground = /*g_bMinimized ||*/ !g_bHasFocus;
-		if (!fps_unlimited.getBool() || inBackground)
+		if ((!fps_unlimited.getBool() && fps_max.getInt() > 0) || inBackground)
 		{
 			double delayStart = frameTimer->getElapsedTime();
 			double delayTime;

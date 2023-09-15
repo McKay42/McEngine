@@ -107,7 +107,7 @@ void MacOSWrapper::main_objc_after_winproc()
 	// delay the next frame
 	m_frameTimer->update();
 	const bool inBackground = g_bMinimized || !g_bHasFocus;
-	if (!fps_unlimited.getBool() || inBackground)
+	if ((!fps_unlimited.getBool() && fps_max.getInt() > 0) || inBackground)
 	{
 		double delayStart = m_frameTimer->getElapsedTime();
 		double delayTime;
