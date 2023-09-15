@@ -138,6 +138,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 		{
 			///printf("Display Refresh Rate is %i Hz, setting fps_max to %i.\n\n", currentDisplayMode.refresh_rate, currentDisplayMode.refresh_rate);
 			fps_max.setValue(currentDisplayMode.refresh_rate);
+			fps_max.setDefaultFloat(currentDisplayMode.refresh_rate);
 		}
 	}
 
@@ -675,7 +676,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 			frameTimer->update();
 			const bool inBackground = g_bMinimized || !g_bHasFocus;
-			if (!fps_unlimited.getBool() || inBackground)
+			if ((!fps_unlimited.getBool() && fps_max.getInt() > 0) || inBackground)
 			{
 				double delayStart = frameTimer->getElapsedTime();
 				double delayTime;

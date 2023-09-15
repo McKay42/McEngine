@@ -1240,6 +1240,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			float displayFrequency = static_cast<float>(lpDevMode.dmDisplayFrequency);
 			///printf("Display Refresh Rate is %.2f Hz, setting fps_max to %i.\n\n", displayFrequency, (int)displayFrequency);
 			fps_max.setValue((int)displayFrequency);
+			fps_max.setDefaultFloat((int)displayFrequency);
 		}
 	}
 
@@ -1475,7 +1476,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			frameTimer->update();
 
-			if (!fps_unlimited.getBool() || inBackground)
+			if ((!fps_unlimited.getBool() && fps_max.getInt() > 0) || inBackground)
 			{
 				double delayStart = frameTimer->getElapsedTime();
 				double delayTime;

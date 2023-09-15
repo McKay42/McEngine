@@ -186,7 +186,7 @@ void DirectX11Interface::init()
 	{
 		m_rasterizerDesc.FillMode = D3D11_FILL_MODE::D3D11_FILL_SOLID;
 		m_rasterizerDesc.CullMode = D3D11_CULL_MODE::D3D11_CULL_NONE;
-		m_rasterizerDesc.FrontCounterClockwise = FALSE;
+		m_rasterizerDesc.FrontCounterClockwise = TRUE;
 		m_rasterizerDesc.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
 		m_rasterizerDesc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
 		m_rasterizerDesc.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
@@ -827,10 +827,10 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	}
 
 	// build directx vertices
+	const bool hasTexcoords0 = (finalTexcoords.size() > 0 && finalTexcoords[0].size() > 0);
 	m_vertices.resize(finalVertices.size());
 	{
 		const bool hasColors = (finalColors.size() > 0);
-		const bool hasTexcoords0 = (finalTexcoords.size() > 0 && finalTexcoords[0].size() > 0);
 
 		const size_t maxColorIndex = (hasColors ? finalColors.size() - 1 : 0);
 		const size_t maxTexcoords0Index = (hasTexcoords0 ? finalTexcoords[0].size() - 1 : 0);
@@ -895,6 +895,8 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 		const UINT stride = sizeof(SimpleVertex);
 		const UINT offset = 0;
 
+		m_shaderTexturedGeneric->setUniform1f("misc", (hasTexcoords0 ? 1.0f : 0.0f));
+
 		m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
 		m_deviceContext->IASetPrimitiveTopology((D3D_PRIMITIVE_TOPOLOGY)primitiveToDirectX(primitive));
 		m_deviceContext->Draw(m_vertices.size(), numVertexOffset);
@@ -950,6 +952,16 @@ void DirectX11Interface::setClipping(bool enabled)
 	m_rasterizerDesc.ScissorEnable = (enabled ? TRUE : FALSE);
 	m_device->CreateRasterizerState(&m_rasterizerDesc, &m_rasterizerState);
 	m_deviceContext->RSSetState(m_rasterizerState);
+}
+
+void DirectX11Interface::setAlphaTesting(bool enabled)
+{
+	// TODO: implement
+}
+
+void DirectX11Interface::setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref)
+{
+	// TODO: implement
 }
 
 void DirectX11Interface::setBlending(bool enabled)
@@ -1392,6 +1404,13 @@ int DirectX11Interface::primitiveToDirectX(Graphics::PRIMITIVE primitive)
 	}
 
 	return D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+}
+
+int DirectX11Interface::compareFuncToDirectX(Graphics::COMPARE_FUNC compareFunc)
+{
+	// TODO: implement
+
+	return 0;
 }
 
 #endif

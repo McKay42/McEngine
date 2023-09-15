@@ -16,6 +16,7 @@ VertexArrayObject::VertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::US
 	m_bKeepInSystemMemory = keepInSystemMemory;
 
 	m_iNumVertices = 0;
+	m_bHasTexcoords = false;
 
 	m_iDrawRangeFromIndex = -1;
 	m_iDrawRangeToIndex = -1;
@@ -37,6 +38,9 @@ void VertexArrayObject::initAsync()
 void VertexArrayObject::destroy()
 {
 	clear();
+
+	m_iNumVertices = 0;
+	m_bHasTexcoords = false;
 }
 
 void VertexArrayObject::clear()
@@ -53,7 +57,7 @@ void VertexArrayObject::clear()
 	m_partialUpdateVertexIndices = std::vector<int>();
 	m_partialUpdateColorIndices = std::vector<int>();
 
-	// NOTE: do NOT set m_iNumVertices to 0!
+	// NOTE: do NOT set m_iNumVertices to 0! (also don't change m_bHasTexcoords)
 }
 
 void VertexArrayObject::empty()
@@ -70,7 +74,7 @@ void VertexArrayObject::empty()
 	m_partialUpdateVertexIndices.clear();
 	m_partialUpdateColorIndices.clear();
 
-	// NOTE: do NOT set m_iNumVertices to 0!
+	// NOTE: do NOT set m_iNumVertices to 0! (also don't change m_bHasTexcoords)
 }
 
 void VertexArrayObject::addVertex(Vector2 v)
@@ -95,12 +99,14 @@ void VertexArrayObject::addTexcoord(float u, float v, unsigned int textureUnit)
 {
 	updateTexcoordArraySize(textureUnit);
 	m_texcoords[textureUnit].push_back(Vector2(u, v));
+	m_bHasTexcoords = true;
 }
 
 void VertexArrayObject::addTexcoord(Vector2 uv, unsigned int textureUnit)
 {
 	updateTexcoordArraySize(textureUnit);
 	m_texcoords[textureUnit].push_back(uv);
+	m_bHasTexcoords = true;
 }
 
 void VertexArrayObject::addNormal(Vector3 normal)

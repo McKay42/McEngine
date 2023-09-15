@@ -112,9 +112,16 @@ void OpenGLImage::init()
 		m_GLTexture = 0;
 		debugLog("OpenGL Image Error: %i on file %s!\n", GLerror, m_sFilePath.toUtf8());
 		engine->showMessageError("Image Error", UString::format("OpenGL Image error %i on file %s", GLerror, m_sFilePath.toUtf8()));
+		return;
 	}
-	else
-		m_bReady = true;
+
+	m_bReady = true;
+
+	if (m_filterMode != Graphics::FILTER_MODE::FILTER_MODE_LINEAR)
+		setFilterMode(m_filterMode);
+
+	if (m_wrapMode != Graphics::WRAP_MODE::WRAP_MODE_CLAMP)
+		setWrapMode(m_wrapMode);
 }
 
 void OpenGLImage::initAsync()
@@ -174,9 +181,9 @@ void OpenGLImage::unbind()
 
 void OpenGLImage::setFilterMode(Graphics::FILTER_MODE filterMode)
 {
+	Image::setFilterMode(filterMode);
 	if (!m_bReady) return;
 
-	// TODO: calling setFilterMode or setWrapMode before initialization will not persist
 	bind();
 	{
 		switch (filterMode)
@@ -200,9 +207,9 @@ void OpenGLImage::setFilterMode(Graphics::FILTER_MODE filterMode)
 
 void OpenGLImage::setWrapMode(Graphics::WRAP_MODE wrapMode)
 {
+	Image::setWrapMode(wrapMode);
 	if (!m_bReady) return;
 
-	// TODO: calling setFilterMode or setWrapMode before initialization will not persist
 	bind();
 	{
 		switch (wrapMode)

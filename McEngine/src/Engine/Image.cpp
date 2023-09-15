@@ -60,6 +60,8 @@ Image::Image(UString filepath, bool mipmapped, bool keepInSystemMemory) : Resour
 	m_bKeepInSystemMemory = keepInSystemMemory;
 
 	m_type = Image::TYPE::TYPE_PNG;
+	m_filterMode = Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
+	m_wrapMode = Graphics::WRAP_MODE::WRAP_MODE_CLAMP;
 	m_iNumChannels = 4;
 	m_iWidth = 1;
 	m_iHeight = 1;
@@ -74,6 +76,8 @@ Image::Image(int width, int height, bool mipmapped, bool keepInSystemMemory) : R
 	m_bKeepInSystemMemory = keepInSystemMemory;
 
 	m_type = Image::TYPE::TYPE_RGBA;
+	m_filterMode = Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
+	m_wrapMode = Graphics::WRAP_MODE::WRAP_MODE_CLAMP;
 	m_iNumChannels = 4;
 	m_iWidth = width;
 	m_iHeight = height;
@@ -300,6 +304,16 @@ bool Image::loadRawImage()
 	}
 
 	return true;
+}
+
+void Image::setFilterMode(Graphics::FILTER_MODE filterMode)
+{
+	m_filterMode = filterMode;
+}
+
+void Image::setWrapMode(Graphics::WRAP_MODE wrapMode)
+{
+	m_wrapMode = wrapMode;
 }
 
 Color Image::getPixel(int x, int y) const

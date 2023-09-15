@@ -445,8 +445,8 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao)
 
 	updateTransform();
 
-	// HACKHACK: disable texturing for special primitives
-	if (vao->getPrimitive() == Graphics::PRIMITIVE::PRIMITIVE_LINES || vao->getPrimitive() == Graphics::PRIMITIVE::PRIMITIVE_LINE_STRIP)
+	// HACKHACK: disable texturing for special primitives, also for untextured vaos
+	if (vao->getPrimitive() == Graphics::PRIMITIVE::PRIMITIVE_LINES || vao->getPrimitive() == Graphics::PRIMITIVE::PRIMITIVE_LINE_STRIP || !vao->hasTexcoords())
 		glDisable(GL_TEXTURE_2D);
 
 	// if baked, then we can directly draw the buffer
@@ -552,6 +552,19 @@ void OpenGLLegacyInterface::setClipping(bool enabled)
 	}
 	else
 		glDisable(GL_SCISSOR_TEST);
+}
+
+void OpenGLLegacyInterface::setAlphaTesting(bool enabled)
+{
+	if (enabled)
+		glEnable(GL_ALPHA_TEST);
+	else
+		glDisable(GL_ALPHA_TEST);
+}
+
+void OpenGLLegacyInterface::setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref)
+{
+	glAlphaFunc(compareFuncToOpenGL(alphaFunc), ref);
 }
 
 void OpenGLLegacyInterface::setBlending(bool enabled)
@@ -772,6 +785,31 @@ int OpenGLLegacyInterface::primitiveToOpenGL(Graphics::PRIMITIVE primitive)
 	}
 
 	return GL_TRIANGLES;
+}
+
+int OpenGLLegacyInterface::compareFuncToOpenGL(Graphics::COMPARE_FUNC compareFunc)
+{
+	switch (compareFunc)
+	{
+	case Graphics::COMPARE_FUNC::COMPARE_FUNC_NEVER:
+		return GL_NEVER;
+	case Graphics::COMPARE_FUNC::COMPARE_FUNC_LESS:
+		return GL_LESS;
+	case Graphics::COMPARE_FUNC::COMPARE_FUNC_EQUAL:
+		return GL_EQUAL;
+	case Graphics::COMPARE_FUNC::COMPARE_FUNC_LESSEQUAL:
+		return GL_LEQUAL;
+	case Graphics::COMPARE_FUNC::COMPARE_FUNC_GREATER:
+		return GL_GREATER;
+	case Graphics::COMPARE_FUNC::COMPARE_FUNC_NOTEQUAL:
+		return GL_NOTEQUAL;
+	case Graphics::COMPARE_FUNC::COMPARE_FUNC_GREATEREQUAL:
+		return GL_GEQUAL;
+	case Graphics::COMPARE_FUNC::COMPARE_FUNC_ALWAYS:
+		return GL_ALWAYS;
+	}
+
+	return GL_ALWAYS;
 }
 
 void OpenGLLegacyInterface::handleGLErrors()

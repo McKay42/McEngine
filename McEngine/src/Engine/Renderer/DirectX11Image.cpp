@@ -145,6 +145,12 @@ void DirectX11Image::init()
 	}
 
 	m_bReady = true;
+
+	if (m_filterMode != Graphics::FILTER_MODE::FILTER_MODE_LINEAR)
+		setFilterMode(m_filterMode);
+
+	if (m_wrapMode != Graphics::WRAP_MODE::WRAP_MODE_CLAMP)
+		setWrapMode(m_wrapMode);
 }
 
 void DirectX11Image::initAsync()
@@ -265,6 +271,7 @@ void DirectX11Image::createOrUpdateSampler()
 
 void DirectX11Image::setFilterMode(Graphics::FILTER_MODE filterMode)
 {
+	Image::setFilterMode(filterMode);
 	if (!m_bReady) return;
 
 	// TODO: where does D3D11_FILTER_TYPE come into play?
@@ -289,6 +296,7 @@ void DirectX11Image::setFilterMode(Graphics::FILTER_MODE filterMode)
 
 void DirectX11Image::setWrapMode(Graphics::WRAP_MODE wrapMode)
 {
+	Image::setWrapMode(wrapMode);
 	if (!m_bReady) return;
 
 	switch (wrapMode)

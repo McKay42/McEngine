@@ -428,6 +428,16 @@ void SWGraphicsInterface::setClipping(bool enabled)
 	*/
 }
 
+void SWGraphicsInterface::setAlphaTesting(bool enabled)
+{
+	// TODO:
+}
+
+void SWGraphicsInterface::setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref)
+{
+	// TODO:
+}
+
 void SWGraphicsInterface::setBlending(bool enabled)
 {
 	// TODO:
