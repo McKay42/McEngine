@@ -36,6 +36,7 @@ extern int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+	/*
 	// disable IME text input
 	{
 		typedef BOOL (WINAPI *pfnImmDisableIME)(DWORD);
@@ -53,6 +54,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 	}
+	*/
 
 	// if supported (>= Windows Vista), enable DPI awareness so that GetSystemMetrics returns correct values
 	// without this, on e.g. 150% scaling, the screen pixels of a 1080p monitor would be reported by GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN) as only 720p!
@@ -1051,6 +1053,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
+	/*
 	// disable IME text input
 	{
 		typedef BOOL (WINAPI *pfnImmDisableIME)(DWORD);
@@ -1068,6 +1071,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 	}
+	*/
 
 	// enable fancy themed windows controls (v6+), requires McEngine.exe.manifest AND linking to comctl32, for fucks sake
 	// only noticeable in MessageBox()-es and a few other dialogs
