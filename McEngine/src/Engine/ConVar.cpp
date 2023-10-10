@@ -454,6 +454,7 @@ ConVar *ConVarHandler::getConVarByName(UString name, bool warnIfNotFound) const
 
 std::vector<ConVar*> ConVarHandler::getConVarByLetter(UString letters) const
 {
+	std::unordered_set<std::string> matchingConVarNames;
 	std::vector<ConVar*> matchingConVars;
 	{
 		if (letters.length() < 1)
@@ -461,11 +462,36 @@ std::vector<ConVar*> ConVarHandler::getConVarByLetter(UString letters) const
 
 		const std::vector<ConVar*> &convars = getConVarArray();
 
+		// first try matching exactly
 		for (size_t i=0; i<convars.size(); i++)
 		{
 			if (convars[i]->getName().find(letters, 0, letters.length()) == 0)
+			{
+				if (letters.length() > 1)
+					matchingConVarNames.insert(std::string(convars[i]->getName().toUtf8(), convars[i]->getName().lengthUtf8()));
+
 				matchingConVars.push_back(convars[i]);
+			}
 		}
+
+		// then try matching substrings
+		if (letters.length() > 1)
+		{
+			for (size_t i=0; i<convars.size(); i++)
+			{
+				if (convars[i]->getName().find(letters) != -1)
+				{
+					std::string stdName(convars[i]->getName().toUtf8(), convars[i]->getName().lengthUtf8());
+					if (matchingConVarNames.find(stdName) == matchingConVarNames.end())
+					{
+						matchingConVarNames.insert(stdName);
+						matchingConVars.push_back(convars[i]);
+					}
+				}
+			}
+		}
+
+		// (results should be displayed in vector order)
 	}
 	return matchingConVars;
 }
