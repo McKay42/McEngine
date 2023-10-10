@@ -26,11 +26,45 @@
 ConVar showconsolebox("showconsolebox");
 
 ConVar consolebox_animspeed("consolebox_animspeed", 12.0f);
+ConVar consolebox_draw_preview("consolebox_draw_preview", true, "whether the textbox shows the topmost suggestion while typing");
+ConVar consolebox_draw_helptext("consolebox_draw_helptext", true, "whether convar suggestions also draw their helptext");
 
 ConVar console_overlay("console_overlay", true, "should the log overlay always be visible (or only if the console is out)");
 ConVar console_overlay_lines("console_overlay_lines", 6, "max number of lines of text");
 ConVar console_overlay_scale("console_overlay_scale", 1.0f, "log text size multiplier");
-ConVar console_overlay_draw_helptext("console_overlay_draw_helptext", true, "whether convar suggestions also draw their helptext");
+
+class ConsoleBoxTextbox : public CBaseUITextbox
+{
+public:
+	ConsoleBoxTextbox(float xPos, float yPos, float xSize, float ySize, UString name) : CBaseUITextbox(xPos, yPos, xSize, ySize, name)
+	{
+	}
+
+	void setSuggestion(UString suggestion) {m_sSuggestion = suggestion;}
+
+protected:
+	virtual void drawText(Graphics *g)
+	{
+		if (consolebox_draw_preview.getBool())
+		{
+			if (m_sSuggestion.length() > 0 && m_sSuggestion.find(m_sText) == 0)
+			{
+				g->setColor(0xff444444);
+				g->pushTransform();
+				{
+					g->translate((int)(m_vPos.x + m_iTextAddX + m_fTextScrollAddX), (int)(m_vPos.y + m_iTextAddY));
+					g->drawString(m_font, m_sSuggestion);
+				}
+				g->popTransform();
+			}
+		}
+
+		CBaseUITextbox::drawText(g);
+	}
+
+private:
+	UString m_sSuggestion;
+};
 
 class ConsoleBoxSuggestionButton : public CBaseUIButton
 {
@@ -46,7 +80,7 @@ protected:
 	{
 		if (m_font == NULL || m_sText.length() < 1) return;
 
-		if (console_overlay_draw_helptext.getBool())
+		if (consolebox_draw_helptext.getBool())
 		{
 			if (m_sHelpText.length() > 0)
 			{
@@ -85,7 +119,7 @@ ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, "")
 	McFont *font = engine->getResourceManager()->getFont("FONT_DEFAULT");
 	m_logFont = engine->getResourceManager()->getFont("FONT_CONSOLE");
 
-	m_textbox = new CBaseUITextbox(5 * dpiScale, engine->getScreenHeight(), engine->getScreenWidth() - 10 * dpiScale, 26, "consoleboxtextbox");
+	m_textbox = new ConsoleBoxTextbox(5 * dpiScale, engine->getScreenHeight(), engine->getScreenWidth() - 10 * dpiScale, 26, "consoleboxtextbox");
 	{
 		m_textbox->setSizeY(m_textbox->getRelSize().y * dpiScale);
 		m_textbox->setFont(font);
@@ -235,6 +269,7 @@ void ConsoleBox::update()
 	{
 		processCommand(m_textbox->getText());
 		m_textbox->clear();
+		m_textbox->setSuggestion("");
 	}
 
 	if (m_bConsoleAnimateOnce)
@@ -334,6 +369,7 @@ void ConsoleBox::onSuggestionClicked(CBaseUIButton *suggestion)
 	if (temp != NULL && (temp->hasValue() || temp->hasCallbackArgs()))
 		text.append(" ");
 
+	m_textbox->setSuggestion("");
 	m_textbox->setText(text);
 	m_textbox->setCursorPosRight();
 	m_textbox->setActive(true);
@@ -370,6 +406,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 				if (temp != NULL && (temp->hasValue() || temp->hasCallbackArgs()))
 					command.append(" ");
 
+				m_textbox->setSuggestion("");
 				m_textbox->setText(command);
 				m_textbox->setCursorPosRight();
 				m_suggestion->scrollToElement(m_vSuggestionButtons[m_iSelectedSuggestion]);
@@ -403,6 +440,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 				if (temp != NULL && (temp->hasValue() || temp->hasCallbackArgs()))
 					command.append(" ");
 
+				m_textbox->setSuggestion("");
 				m_textbox->setText(command);
 				m_textbox->setCursorPosRight();
 				m_suggestion->scrollToElement(m_vSuggestionButtons[m_iSelectedSuggestion]);
@@ -436,6 +474,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 			if (m_iSelectedHistory > -1 && m_iSelectedHistory < m_commandHistory.size())
 			{
 				UString text = m_commandHistory[m_iSelectedHistory];
+				m_textbox->setSuggestion("");
 				m_textbox->setText(text);
 				m_textbox->setCursorPosRight();
 			}
@@ -452,6 +491,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e)
 			if (m_iSelectedHistory > -1 && m_iSelectedHistory < m_commandHistory.size())
 			{
 				UString text = m_commandHistory[m_iSelectedHistory];
+				m_textbox->setSuggestion("");
 				m_textbox->setText(text);
 				m_textbox->setCursorPosRight();
 			}
@@ -509,7 +549,12 @@ void ConsoleBox::onChar(KeyboardEvent &e)
 		m_suggestion->setVisible(suggestions.size() > 0);
 
 		if (suggestions.size() > 0)
+		{
 			m_suggestion->scrollToElement(m_suggestion->getContainer()->getElements()[0]);
+			m_textbox->setSuggestion(suggestions[0]->getName());
+		}
+		else
+			m_textbox->setSuggestion("");
 
 		m_iSelectedSuggestion = -1;
 	}
