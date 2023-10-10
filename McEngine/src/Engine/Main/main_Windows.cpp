@@ -36,8 +36,8 @@ extern int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	/*
 	// disable IME text input
+	if (strstr(lpCmdLine, "-noime") != NULL)
 	{
 		typedef BOOL (WINAPI *pfnImmDisableIME)(DWORD);
 
@@ -54,10 +54,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 	}
-	*/
 
 	// if supported (>= Windows Vista), enable DPI awareness so that GetSystemMetrics returns correct values
 	// without this, on e.g. 150% scaling, the screen pixels of a 1080p monitor would be reported by GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN) as only 720p!
+	if (strstr(lpCmdLine, "-nodpi") == NULL)
 	{
 		typedef WINBOOL (WINAPI *PSPDA)(void);
 		PSPDA g_SetProcessDPIAware = (PSPDA)GetProcAddress(GetModuleHandle(TEXT("user32.dll")), "SetProcessDPIAware");
@@ -1053,8 +1053,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-	/*
 	// disable IME text input
+	if (strstr(lpCmdLine, "-noime") != NULL)
 	{
 		typedef BOOL (WINAPI *pfnImmDisableIME)(DWORD);
 
@@ -1071,7 +1071,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 	}
-	*/
 
 	// enable fancy themed windows controls (v6+), requires McEngine.exe.manifest AND linking to comctl32, for fucks sake
 	// only noticeable in MessageBox()-es and a few other dialogs
@@ -1085,6 +1084,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// if supported (>= Windows Vista), enable DPI awareness so that GetSystemMetrics returns correct values
 	// without this, on e.g. 150% scaling, the screen pixels of a 1080p monitor would be reported by GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN) as only 720p!
 	// also on even newer systems (>= Windows 8.1) we can get WM_DPICHANGED notified
+	if (strstr(lpCmdLine, "-nodpi") == NULL)
 	{
 		// Windows 8.1+
 		// per-monitor dpi scaling
