@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <stack>
+#include <cstdint>
 
 #include "Matrices.h"
 #include "Vectors.h"
