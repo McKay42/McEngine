@@ -36,6 +36,8 @@ private:
 
 	unsigned int m_iNumTexcoords;
 	unsigned int m_iNumColors;
+
+	unsigned int m_iVertexArray;
 };
 
 #endif
