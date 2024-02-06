@@ -14,7 +14,7 @@
 
 #include "OpenGLHeaders.h"
 
-ConVar r_opengl_legacy_vao_use_vertex_arrays("r_opengl_legacy_vao_use_vertex_arrays", true, "dramatically reduces per-vao draw calls, but may not be compatible with extremely old systems/drivers");
+ConVar r_opengl_legacy_vao_use_vertex_array("r_opengl_legacy_vao_use_vertex_array", false, "dramatically reduces per-vao draw calls, but completely breaks legacy ffp draw calls (vertices work, but texcoords/normals/etc. are NOT in gl_MultiTexCoord0 -> requiring a shader with attributes)");
 
 OpenGLVertexArrayObject::OpenGLVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory) : VertexArrayObject(primitive, usage, keepInSystemMemory)
 {
@@ -97,7 +97,7 @@ void OpenGLVertexArrayObject::init()
 
 	// handle full loads
 
-	if (r_opengl_legacy_vao_use_vertex_arrays.getBool())
+	if (r_opengl_legacy_vao_use_vertex_array.getBool())
 	{
 		// build and bind vertex array
 		glGenVertexArrays(1, &m_iVertexArray);
@@ -105,13 +105,21 @@ void OpenGLVertexArrayObject::init()
 	}
 
 	// build and fill vertex buffer
-	glGenBuffers(1, &m_iVertexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, m_iVertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vector3) * m_vertices.size(), &(m_vertices[0]), usageToOpenGL(m_usage));
-	if (r_opengl_legacy_vao_use_vertex_arrays.getBool())
 	{
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(3, GL_FLOAT, 0, (char*)NULL); // set vertex pointer to vertex buffer
+		glGenBuffers(1, &m_iVertexBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, m_iVertexBuffer);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Vector3) * m_vertices.size(), &(m_vertices[0]), usageToOpenGL(m_usage));
+
+		if (r_opengl_legacy_vao_use_vertex_array.getBool())
+		{
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (char*)NULL);
+		}
+		else
+		{
+			// NOTE: this state will persist engine-wide forever
+			glEnableClientState(GL_VERTEX_ARRAY);
+		}
 	}
 
 	// build and fill texcoord buffer
@@ -122,13 +130,13 @@ void OpenGLVertexArrayObject::init()
 		glGenBuffers(1, &m_iTexcoordBuffer);
 		glBindBuffer(GL_ARRAY_BUFFER, m_iTexcoordBuffer);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Vector2) * m_texcoords[0].size(), &(m_texcoords[0][0]), usageToOpenGL(m_usage));
-		if (r_opengl_legacy_vao_use_vertex_arrays.getBool())
+
+		if (r_opengl_legacy_vao_use_vertex_array.getBool())
 		{
 			if (m_iNumTexcoords > 0)
 			{
-				glClientActiveTexture(GL_TEXTURE0);
-				glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-				glTexCoordPointer(2, GL_FLOAT, 0, (char*)NULL); // set first texcoord pointer to texcoord buffer
+				glEnableVertexAttribArray(1);
+				glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (char*)NULL);
 			}
 		}
 	}
@@ -146,27 +154,20 @@ void OpenGLVertexArrayObject::init()
 		glGenBuffers(1, &m_iColorBuffer);
 		glBindBuffer(GL_ARRAY_BUFFER, m_iColorBuffer);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Color) * m_colors.size(), &(m_colors[0]), usageToOpenGL(m_usage));
-		if (r_opengl_legacy_vao_use_vertex_arrays.getBool())
+
+		if (r_opengl_legacy_vao_use_vertex_array.getBool())
 		{
 			if (m_iNumColors > 0)
 			{
-				glEnableClientState(GL_COLOR_ARRAY);
-				glColorPointer(4, GL_UNSIGNED_BYTE, 0, (char*)NULL); // set color pointer to color buffer
+				glEnableVertexAttribArray(2);
+				glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (char*)NULL);
 			}
 		}
 	}
 
-	if (r_opengl_legacy_vao_use_vertex_arrays.getBool())
+	if (r_opengl_legacy_vao_use_vertex_array.getBool())
 	{
 		glBindVertexArray(0);
-
-		glDisableClientState(GL_VERTEX_ARRAY);
-
-		if (m_iNumTexcoords > 0)
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-
-		if (m_iNumColors > 0)
-			glDisableClientState(GL_COLOR_ARRAY);
 	}
 
 	// free memory
@@ -217,29 +218,29 @@ void OpenGLVertexArrayObject::draw()
 
 	if (start > end || std::abs(end - start) == 0) return;
 
-	if (r_opengl_legacy_vao_use_vertex_arrays.getBool())
+	if (r_opengl_legacy_vao_use_vertex_array.getBool())
 	{
 		// set vao
 		glBindVertexArray(m_iVertexArray);
 
 		// render it
-		glDrawArrays(primitiveToOpenGL(m_primitive), start, end - start);
+		glDrawArrays(primitiveToOpenGL(m_primitive), start, end - start); // (everything is already preconfigured inside the vertexArray)
 	}
 	else
 	{
 		// set vertices
-		glEnableClientState(GL_VERTEX_ARRAY);
 		glBindBuffer(GL_ARRAY_BUFFER, m_iVertexBuffer);
 		glVertexPointer(3, GL_FLOAT, 0, (char*)NULL); // set vertex pointer to vertex buffer
 
 		// set texture0
 		if (m_iNumTexcoords > 0)
 		{
-			glClientActiveTexture(GL_TEXTURE0);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 			glBindBuffer(GL_ARRAY_BUFFER, m_iTexcoordBuffer);
 			glTexCoordPointer(2, GL_FLOAT, 0, (char*)NULL); // set first texcoord pointer to texcoord buffer
 		}
+		else
+			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
 		// set colors
 		if (m_iNumColors > 0)
@@ -248,19 +249,11 @@ void OpenGLVertexArrayObject::draw()
 			glBindBuffer(GL_ARRAY_BUFFER, m_iColorBuffer);
 			glColorPointer(4, GL_UNSIGNED_BYTE, 0, (char*)NULL); // set color pointer to color buffer
 		}
+		else
+			glDisableClientState(GL_COLOR_ARRAY);
 
 		// render it
 		glDrawArrays(primitiveToOpenGL(m_primitive), start, end - start);
-
-		// TODO: this is unnecessary. even enabling all of them every time is theoretically unnecessary, could only be done once on engine startup!
-		// disable everything
-		if (m_iNumColors > 0)
-			glDisableClientState(GL_COLOR_ARRAY);
-
-		if (m_iNumTexcoords > 0)
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-
-		glDisableClientState(GL_VERTEX_ARRAY);
 	}
 }
 
