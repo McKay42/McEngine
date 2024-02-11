@@ -479,14 +479,14 @@ bool OpenVRInterface::initRenderTargets()
 	debugLog("OpenVR: Compositor RenderTarget size = (%i, %i) x %g, final Compositor RenderTarget size = (%i, %i)\n", recommendedRenderTargetWidth, recommendedRenderTargetHeight, m_fCompositorSSMultiplier, finalCompositorRenderTargetWidth, finalCompositorRenderTargetHeight);
 
 	Graphics::MULTISAMPLE_TYPE multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X;
-	if (vr_aa.getInt() > 0)
-		multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_2X;
-	else if (vr_aa.getInt() > 2)
-		multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_4X;
+	if (vr_aa.getInt() > 8)
+		multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_16X;
 	else if (vr_aa.getInt() > 4)
 		multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_8X;
-	else if (vr_aa.getInt() > 8)
-		multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_16X;
+	else if (vr_aa.getInt() > 2)
+		multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_4X;
+	else if (vr_aa.getInt() > 0)
+		multisampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_2X;
 
 	Color clearColor = COLORf(0.0f, vr_background_brightness.getFloat(), vr_background_brightness.getFloat(), vr_background_brightness.getFloat() + (vr_background_brightness.getFloat() > 0.0f ? 0.03f : 0.0f));
 
