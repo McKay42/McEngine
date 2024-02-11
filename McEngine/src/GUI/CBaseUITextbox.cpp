@@ -710,6 +710,8 @@ void CBaseUITextbox::onMouseDownOutside()
 
 	m_bBusy = false;
 	m_bActive = false;
+
+	deselectText();
 }
 
 void CBaseUITextbox::onMouseUpInside()

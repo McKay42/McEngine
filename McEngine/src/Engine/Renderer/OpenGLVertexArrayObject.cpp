@@ -21,9 +21,11 @@ OpenGLVertexArrayObject::OpenGLVertexArrayObject(Graphics::PRIMITIVE primitive, 
 	m_iVertexBuffer = 0;
 	m_iTexcoordBuffer = 0;
 	m_iColorBuffer = 0;
+	m_iNormalBuffer = 0;
 
 	m_iNumTexcoords = 0;
 	m_iNumColors = 0;
+	m_iNumNormals = 0;
 
 	m_iVertexArray = 0;
 }
@@ -97,6 +99,7 @@ void OpenGLVertexArrayObject::init()
 
 	// handle full loads
 
+	unsigned int vertexAttribArrayIndexCounter = 0;
 	if (r_opengl_legacy_vao_use_vertex_array.getBool())
 	{
 		// build and bind vertex array
@@ -112,8 +115,9 @@ void OpenGLVertexArrayObject::init()
 
 		if (r_opengl_legacy_vao_use_vertex_array.getBool())
 		{
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (char*)NULL);
+			glEnableVertexAttribArray(vertexAttribArrayIndexCounter);
+			glVertexAttribPointer(vertexAttribArrayIndexCounter, 3, GL_FLOAT, GL_FALSE, 0, (char*)NULL);
+			vertexAttribArrayIndexCounter++;
 		}
 		else
 		{
@@ -135,8 +139,9 @@ void OpenGLVertexArrayObject::init()
 		{
 			if (m_iNumTexcoords > 0)
 			{
-				glEnableVertexAttribArray(1);
-				glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (char*)NULL);
+				glEnableVertexAttribArray(vertexAttribArrayIndexCounter);
+				glVertexAttribPointer(vertexAttribArrayIndexCounter, 2, GL_FLOAT, GL_FALSE, 0, (char*)NULL);
+				vertexAttribArrayIndexCounter++;
 			}
 		}
 	}
@@ -159,8 +164,29 @@ void OpenGLVertexArrayObject::init()
 		{
 			if (m_iNumColors > 0)
 			{
-				glEnableVertexAttribArray(2);
-				glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (char*)NULL);
+				glEnableVertexAttribArray(vertexAttribArrayIndexCounter);
+				glVertexAttribPointer(vertexAttribArrayIndexCounter, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (char*)NULL);
+				vertexAttribArrayIndexCounter++;
+			}
+		}
+	}
+
+	// build and fill normal buffer
+	if (m_normals.size() > 0)
+	{
+		m_iNumNormals = m_normals.size();
+
+		glGenBuffers(1, &m_iNormalBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, m_iNormalBuffer);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Vector3) * m_normals.size(), &(m_normals[0]), usageToOpenGL(m_usage));
+
+		if (r_opengl_legacy_vao_use_vertex_array.getBool())
+		{
+			if (m_iNumNormals > 0)
+			{
+				glEnableVertexAttribArray(vertexAttribArrayIndexCounter);
+				glVertexAttribPointer(vertexAttribArrayIndexCounter, 3, GL_FLOAT, GL_FALSE, 0, (char*)NULL);
+				vertexAttribArrayIndexCounter++;
 			}
 		}
 	}
@@ -195,12 +221,16 @@ void OpenGLVertexArrayObject::destroy()
 	if (m_iColorBuffer > 0)
 		glDeleteBuffers(1, &m_iColorBuffer);
 
+	if (m_iNormalBuffer > 0)
+		glDeleteBuffers(1, &m_iNormalBuffer);
+
 	if (m_iVertexArray > 0)
 		glDeleteVertexArrays(1, &m_iVertexArray);
 
 	m_iVertexBuffer = 0;
 	m_iTexcoordBuffer = 0;
 	m_iColorBuffer = 0;
+	m_iNormalBuffer = 0;
 
 	m_iVertexArray = 0;
 }
@@ -251,6 +281,16 @@ void OpenGLVertexArrayObject::draw()
 		}
 		else
 			glDisableClientState(GL_COLOR_ARRAY);
+
+		// set normals
+		if (m_iNumNormals > 0)
+		{
+			glEnableClientState(GL_NORMAL_ARRAY);
+			glBindBuffer(GL_ARRAY_BUFFER, m_iNormalBuffer);
+			glNormalPointer(GL_FLOAT, 0, (char*)NULL); // set normal pointer to normal buffer
+		}
+		else
+			glDisableClientState(GL_NORMAL_ARRAY);
 
 		// render it
 		glDrawArrays(primitiveToOpenGL(m_primitive), start, end - start);

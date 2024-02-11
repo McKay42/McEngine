@@ -33,9 +33,11 @@ private:
 	unsigned int m_iVertexBuffer;
 	unsigned int m_iTexcoordBuffer;
 	unsigned int m_iColorBuffer;
+	unsigned int m_iNormalBuffer;
 
 	unsigned int m_iNumTexcoords;
 	unsigned int m_iNumColors;
+	unsigned int m_iNumNormals;
 
 	unsigned int m_iVertexArray;
 };
