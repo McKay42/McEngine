@@ -63,9 +63,9 @@ bool g_bDrawing = false;
 
 bool g_bHasFocus = false; // for fps_max_background
 
-ConVar fps_max("fps_max", 60);
-ConVar fps_max_background("fps_max_background", 30);
-ConVar fps_unlimited("fps_unlimited", false);
+ConVar fps_max("fps_max", 60, FCVAR_NONE);
+ConVar fps_max_background("fps_max_background", 30, FCVAR_NONE);
+ConVar fps_unlimited("fps_unlimited", false, FCVAR_NONE);
 
 Display                 *dpy;
 Window                  root;

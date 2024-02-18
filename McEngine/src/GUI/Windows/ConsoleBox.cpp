@@ -25,13 +25,13 @@
 
 ConVar showconsolebox("showconsolebox");
 
-ConVar consolebox_animspeed("consolebox_animspeed", 12.0f);
-ConVar consolebox_draw_preview("consolebox_draw_preview", true, "whether the textbox shows the topmost suggestion while typing");
-ConVar consolebox_draw_helptext("consolebox_draw_helptext", true, "whether convar suggestions also draw their helptext");
+ConVar consolebox_animspeed("consolebox_animspeed", 12.0f, FCVAR_NONE);
+ConVar consolebox_draw_preview("consolebox_draw_preview", true, FCVAR_NONE, "whether the textbox shows the topmost suggestion while typing");
+ConVar consolebox_draw_helptext("consolebox_draw_helptext", true, FCVAR_NONE, "whether convar suggestions also draw their helptext");
 
-ConVar console_overlay("console_overlay", true, "should the log overlay always be visible (or only if the console is out)");
-ConVar console_overlay_lines("console_overlay_lines", 6, "max number of lines of text");
-ConVar console_overlay_scale("console_overlay_scale", 1.0f, "log text size multiplier");
+ConVar console_overlay("console_overlay", true, FCVAR_NONE, "should the log overlay always be visible (or only if the console is out)");
+ConVar console_overlay_lines("console_overlay_lines", 6, FCVAR_NONE, "max number of lines of text");
+ConVar console_overlay_scale("console_overlay_scale", 1.0f, FCVAR_NONE, "log text size multiplier");
 
 class ConsoleBoxTextbox : public CBaseUITextbox
 {

@@ -13,11 +13,11 @@
 
 #include "AsteroidsUtil.h"
 
-ConVar asteroids_big_asteroid_speed("asteroids_big_asteroid_speed", 40.0f);
-ConVar asteroids_medium_asteroid_speed("asteroids_medium_asteroid_speed", 100.0f);
-ConVar asteroids_small_asteroid_speed("asteroids_small_asteroid_speed", 150.0f);
-ConVar asteroids_asteroid_rotation_speed("asteroids_asteroid_rotation_speed", 50.0f);
-ConVar asteroids_bullet_duration("asteroids_bullet_duration", 3.0f);
+ConVar asteroids_big_asteroid_speed("asteroids_big_asteroid_speed", 40.0f, FCVAR_NONE);
+ConVar asteroids_medium_asteroid_speed("asteroids_medium_asteroid_speed", 100.0f, FCVAR_NONE);
+ConVar asteroids_small_asteroid_speed("asteroids_small_asteroid_speed", 150.0f, FCVAR_NONE);
+ConVar asteroids_asteroid_rotation_speed("asteroids_asteroid_rotation_speed", 50.0f, FCVAR_NONE);
+ConVar asteroids_bullet_duration("asteroids_bullet_duration", 3.0f, FCVAR_NONE);
 
 AsteroidsBody::AsteroidsBody(TYPE type, float positionX, float positionY, float velocityX, float velocityY)
 {

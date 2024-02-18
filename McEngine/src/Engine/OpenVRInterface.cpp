@@ -34,56 +34,56 @@
 // therefore, vr_ss_compositor can only be set ONCE upon application startup (in the app constructor, before the first frame is submitted!)
 // however, vr_ss can be set dynamically because the rendered frame is blit into ANOTHER framebuffer (m_compositorEye)
 
-ConVar vr_bug_workaround_triggerhapticpulse("vr_bug_workaround_triggerhapticpulse", true);
+ConVar vr_bug_workaround_triggerhapticpulse("vr_bug_workaround_triggerhapticpulse", true, FCVAR_NONE);
 
-ConVar vr_ss("vr_ss", 1.3f, "internal engine supersampling factor. the recommended rendertarget size, as reported by OpenVR, is multiplied by this value");
-ConVar vr_ss_compositor("vr_ss_compositor", 1.6f, "external compositor submission texture supersampling factor. the recommended rendertarget size, as reported by OpenVR, is multiplied by this value");
-ConVar vr_compositor_submit_double("vr_compositor_submit_double", false, "use separate submission texture for each eye (trades VRAM for speed/compatibility)");
-ConVar vr_compositor_texture_size_max("vr_compositor_texture_size_max", 4096.0f, "submission texture size is force clamped to less or equal to this value");
-ConVar vr_aa("vr_aa", 2.0f, "antialiasing/multisampling factor. valid values are: 0, 2, 4, 8, 16");
-ConVar vr_nearz("vr_nearz", 0.1f);
-ConVar vr_farz("vr_farz", 300.0f);
+ConVar vr_ss("vr_ss", 1.3f, FCVAR_NONE, "internal engine supersampling factor. the recommended rendertarget size, as reported by OpenVR, is multiplied by this value");
+ConVar vr_ss_compositor("vr_ss_compositor", 1.6f, FCVAR_NONE, "external compositor submission texture supersampling factor. the recommended rendertarget size, as reported by OpenVR, is multiplied by this value");
+ConVar vr_compositor_submit_double("vr_compositor_submit_double", false, FCVAR_NONE, "use separate submission texture for each eye (trades VRAM for speed/compatibility)");
+ConVar vr_compositor_texture_size_max("vr_compositor_texture_size_max", 4096.0f, FCVAR_NONE, "submission texture size is force clamped to less or equal to this value");
+ConVar vr_aa("vr_aa", 2.0f, FCVAR_NONE, "antialiasing/multisampling factor. valid values are: 0, 2, 4, 8, 16");
+ConVar vr_nearz("vr_nearz", 0.1f, FCVAR_NONE);
+ConVar vr_farz("vr_farz", 300.0f, FCVAR_NONE);
 
-ConVar vr_draw_lighthouse_models("vr_draw_lighthouse_models", true);
-ConVar vr_draw_controller_models("vr_draw_controller_models", true);
-ConVar vr_draw_head_model("vr_draw_head_model", true);
-ConVar vr_draw_hmd_to_window("vr_draw_hmd_to_window", true);
-ConVar vr_draw_hmd_to_window_draw_both_eyes("vr_draw_hmd_to_window_draw_both_eyes", true);
-ConVar vr_controller_model_brightness_multiplier("vr_controller_model_brightness_multiplier", 8.0f);
-ConVar vr_background_brightness("vr_background_brightness", 0.1f);
+ConVar vr_draw_lighthouse_models("vr_draw_lighthouse_models", true, FCVAR_NONE);
+ConVar vr_draw_controller_models("vr_draw_controller_models", true, FCVAR_NONE);
+ConVar vr_draw_head_model("vr_draw_head_model", true, FCVAR_NONE);
+ConVar vr_draw_hmd_to_window("vr_draw_hmd_to_window", true, FCVAR_NONE);
+ConVar vr_draw_hmd_to_window_draw_both_eyes("vr_draw_hmd_to_window_draw_both_eyes", true, FCVAR_NONE);
+ConVar vr_controller_model_brightness_multiplier("vr_controller_model_brightness_multiplier", 8.0f, FCVAR_NONE);
+ConVar vr_background_brightness("vr_background_brightness", 0.1f, FCVAR_NONE);
 
-ConVar vr_spectator_mode("vr_spectator_mode", false);
-ConVar vr_spectator_camera_rotation("vr_spectator_camera_rotation", "0 0 0", "rotation of the camera (in degrees): yaw pitch roll");
-ConVar vr_spectator_camera_position("vr_spectator_camera_position", "0 0 0", "position of the camera (in meters): x y z");
-ConVar vr_auto_switch_primary_controller("vr_auto_switch_primary_controller", true);
-ConVar vr_fake_camera_movement("vr_fake_camera_movement", false);
-ConVar vr_fake_controller_movement("vr_fake_controller_movement", false);
+ConVar vr_spectator_mode("vr_spectator_mode", false, FCVAR_NONE);
+ConVar vr_spectator_camera_rotation("vr_spectator_camera_rotation", "0 0 0", FCVAR_NONE, "rotation of the camera (in degrees): yaw pitch roll");
+ConVar vr_spectator_camera_position("vr_spectator_camera_position", "0 0 0", FCVAR_NONE, "position of the camera (in meters): x y z");
+ConVar vr_auto_switch_primary_controller("vr_auto_switch_primary_controller", true, FCVAR_NONE);
+ConVar vr_fake_camera_movement("vr_fake_camera_movement", false, FCVAR_NONE);
+ConVar vr_fake_controller_movement("vr_fake_controller_movement", false, FCVAR_NONE);
 ConVar vr_reset_fake_camera_movement("vr_reset_fake_camera_movement");
-ConVar vr_noclip_walk_speed("vr_noclip_walk_speed", 4.0f);
-ConVar vr_noclip_sprint_speed("vr_noclip_sprint_speed", 20.0f);
-ConVar vr_noclip_crouch_speed("vr_noclip_crouch_speed", 1.0f);
-ConVar vr_mousespeed("vr_mousespeed", 0.18f);
+ConVar vr_noclip_walk_speed("vr_noclip_walk_speed", 4.0f, FCVAR_NONE);
+ConVar vr_noclip_sprint_speed("vr_noclip_sprint_speed", 20.0f, FCVAR_NONE);
+ConVar vr_noclip_crouch_speed("vr_noclip_crouch_speed", 1.0f, FCVAR_NONE);
+ConVar vr_mousespeed("vr_mousespeed", 0.18f, FCVAR_NONE);
 
-ConVar vr_console_overlay("vr_console_overlay", false);
-ConVar vr_console_overlay_x("vr_console_overlay_x", -0.3f);
-ConVar vr_console_overlay_y("vr_console_overlay_y", 0.2f);
-ConVar vr_console_overlay_z("vr_console_overlay_z", 0.75f);
+ConVar vr_console_overlay("vr_console_overlay", false, FCVAR_NONE);
+ConVar vr_console_overlay_x("vr_console_overlay_x", -0.3f, FCVAR_NONE);
+ConVar vr_console_overlay_y("vr_console_overlay_y", 0.2f, FCVAR_NONE);
+ConVar vr_console_overlay_z("vr_console_overlay_z", 0.75f, FCVAR_NONE);
 
 ConVar vr_showkeyboard("vr_showkeyboard");
 ConVar vr_hidekeyboard("vr_hidekeyboard");
 
-ConVar vr_debug_controllers("vr_debug_controllers", false);
+ConVar vr_debug_controllers("vr_debug_controllers", false, FCVAR_NONE);
 
-ConVar vr_debug_rendermodel_name("vr_debug_rendermodel_name", "generic_hmd");
-ConVar vr_debug_rendermodel_scale("vr_debug_rendermodel_scale", 1.0f);
-ConVar vr_debug_rendermodel_component_name("vr_debug_rendermodel_component_name", "button");
+ConVar vr_debug_rendermodel_name("vr_debug_rendermodel_name", "generic_hmd", FCVAR_NONE);
+ConVar vr_debug_rendermodel_scale("vr_debug_rendermodel_scale", 1.0f, FCVAR_NONE);
+ConVar vr_debug_rendermodel_component_name("vr_debug_rendermodel_component_name", "button", FCVAR_NONE);
 
-ConVar vr_head_rendermodel_name("vr_head_rendermodel_name", "generic_hmd", "name of the model to use for the hmd in spectator mode, see /<Steam>/steamapps/common/SteamVR/resources/rendermodels/ for all available models");
-ConVar vr_head_rendermodel_scale("vr_head_rendermodel_scale", 1.0f);
-ConVar vr_head_rendermodel_brightness("vr_head_rendermodel_brightness", 1.5f);
+ConVar vr_head_rendermodel_name("vr_head_rendermodel_name", "generic_hmd", FCVAR_NONE, "name of the model to use for the hmd in spectator mode, see /<Steam>/steamapps/common/SteamVR/resources/rendermodels/ for all available models");
+ConVar vr_head_rendermodel_scale("vr_head_rendermodel_scale", 1.0f, FCVAR_NONE);
+ConVar vr_head_rendermodel_brightness("vr_head_rendermodel_brightness", 1.5f, FCVAR_NONE);
 /*
-ConVar vr_head_image_scale("vr_head_image_scale", 0.55f);
-ConVar vr_head_translation("vr_head_translation", -0.12f);
+ConVar vr_head_image_scale("vr_head_image_scale", 0.55f, FCVAR_NONE);
+ConVar vr_head_translation("vr_head_translation", -0.12f, FCVAR_NONE);
 */
 
 OpenVRInterface *openvr = NULL;

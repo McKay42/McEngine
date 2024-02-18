@@ -1233,6 +1233,6 @@ void WinEnvironment::bluescreen()
 		pNtRaiseHardError(STATUS_FLOAT_MULTIPLE_FAULTS, 0, 0, 0, 6, &uResp);
     }
 }
-ConVar _bluescreen_("bluescreen", WinEnvironment::bluescreen);
+ConVar _bluescreen_("bluescreen", FCVAR_NONE, WinEnvironment::bluescreen);
 
 #endif

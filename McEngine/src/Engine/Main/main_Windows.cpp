@@ -162,14 +162,14 @@ __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001; // http://develope
 __declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001; // https://community.amd.com/thread/169965
 }
 
-ConVar fps_max("fps_max", 60.0f, "framerate limiter, foreground");
-ConVar fps_max_yield("fps_max_yield", true, "always release rest of timeslice once per frame (call scheduler via sleep(0))");
-ConVar fps_max_background("fps_max_background", 30.0f, "framerate limiter, background");
-ConVar fps_max_background_interleaved("fps_max_background_interleaved", 1, "experimental, update normally but only draw every n-th frame");
-ConVar fps_unlimited("fps_unlimited", false);
-ConVar fps_unlimited_yield("fps_unlimited_yield", true, "always release rest of timeslice once per frame (call scheduler via sleep(0)), even if unlimited fps are enabled");
+ConVar fps_max("fps_max", 60.0f, FCVAR_NONE, "framerate limiter, foreground");
+ConVar fps_max_yield("fps_max_yield", true, FCVAR_NONE, "always release rest of timeslice once per frame (call scheduler via sleep(0))");
+ConVar fps_max_background("fps_max_background", 30.0f, FCVAR_NONE, "framerate limiter, background");
+ConVar fps_max_background_interleaved("fps_max_background_interleaved", 1, FCVAR_NONE, "experimental, update normally but only draw every n-th frame");
+ConVar fps_unlimited("fps_unlimited", false, FCVAR_NONE);
+ConVar fps_unlimited_yield("fps_unlimited_yield", true, FCVAR_NONE, "always release rest of timeslice once per frame (call scheduler via sleep(0)), even if unlimited fps are enabled");
 
-ConVar win_mouse_raw_input_buffer("win_mouse_raw_input_buffer", false, "use GetRawInputBuffer() to reduce wndproc event queue overflow stalls on insane mouse usb polling rates above 1000 Hz");
+ConVar win_mouse_raw_input_buffer("win_mouse_raw_input_buffer", false, FCVAR_NONE, "use GetRawInputBuffer() to reduce wndproc event queue overflow stalls on insane mouse usb polling rates above 1000 Hz");
 
 extern ConVar *win_realtimestylus;
 

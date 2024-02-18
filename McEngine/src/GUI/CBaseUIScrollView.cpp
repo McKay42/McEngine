@@ -18,12 +18,12 @@
 
 #include "CBaseUIContainer.h"
 
-ConVar ui_scrollview_resistance("ui_scrollview_resistance", 5.0f, "how many pixels you have to pull before you start scrolling");
-ConVar ui_scrollview_scrollbarwidth("ui_scrollview_scrollbarwidth", 15.0f);
-ConVar ui_scrollview_kinetic_energy_multiplier("ui_scrollview_kinetic_energy_multiplier", 24.0f, "afterscroll delta multiplier");
-ConVar ui_scrollview_kinetic_approach_time("ui_scrollview_kinetic_approach_time", 0.075f, "approach target afterscroll delta over this duration");
-ConVar ui_scrollview_mousewheel_multiplier("ui_scrollview_mousewheel_multiplier", 3.5f);
-ConVar ui_scrollview_mousewheel_overscrollbounce("ui_scrollview_mousewheel_overscrollbounce", true);
+ConVar ui_scrollview_resistance("ui_scrollview_resistance", 5.0f, FCVAR_NONE, "how many pixels you have to pull before you start scrolling");
+ConVar ui_scrollview_scrollbarwidth("ui_scrollview_scrollbarwidth", 15.0f, FCVAR_NONE);
+ConVar ui_scrollview_kinetic_energy_multiplier("ui_scrollview_kinetic_energy_multiplier", 24.0f, FCVAR_NONE, "afterscroll delta multiplier");
+ConVar ui_scrollview_kinetic_approach_time("ui_scrollview_kinetic_approach_time", 0.075f, FCVAR_NONE, "approach target afterscroll delta over this duration");
+ConVar ui_scrollview_mousewheel_multiplier("ui_scrollview_mousewheel_multiplier", 3.5f, FCVAR_NONE);
+ConVar ui_scrollview_mousewheel_overscrollbounce("ui_scrollview_mousewheel_overscrollbounce", true, FCVAR_NONE);
 
 CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float ySize, UString name) : CBaseUIElement(xPos, yPos, xSize, ySize, name)
 {

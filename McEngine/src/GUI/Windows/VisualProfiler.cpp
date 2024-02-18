@@ -19,19 +19,19 @@
 
 #include <string.h>
 
-ConVar vprof_graph("vprof_graph", true, "whether to draw the graph when the overlay is enabled");
-ConVar vprof_graph_height("vprof_graph_height", 250.0f);
-ConVar vprof_graph_width("vprof_graph_width", 800.0f);
-ConVar vprof_graph_margin("vprof_graph_margin", 40.0f);
-ConVar vprof_graph_range_max("vprof_graph_range_max", 16.666666f, "max value of the y-axis in milliseconds");
-ConVar vprof_graph_alpha("vprof_graph_alpha", 1.0f, "line opacity");
-ConVar vprof_graph_draw_overhead("vprof_graph_draw_overhead", false, "whether to draw the profiling overhead time in white (usually negligible)");
+ConVar vprof_graph("vprof_graph", true, FCVAR_NONE, "whether to draw the graph when the overlay is enabled");
+ConVar vprof_graph_height("vprof_graph_height", 250.0f, FCVAR_NONE);
+ConVar vprof_graph_width("vprof_graph_width", 800.0f, FCVAR_NONE);
+ConVar vprof_graph_margin("vprof_graph_margin", 40.0f, FCVAR_NONE);
+ConVar vprof_graph_range_max("vprof_graph_range_max", 16.666666f, FCVAR_NONE, "max value of the y-axis in milliseconds");
+ConVar vprof_graph_alpha("vprof_graph_alpha", 1.0f, FCVAR_NONE, "line opacity");
+ConVar vprof_graph_draw_overhead("vprof_graph_draw_overhead", false, FCVAR_NONE, "whether to draw the profiling overhead time in white (usually negligible)");
 
-ConVar vprof_spike("vprof_spike", 0, "measure and display largest spike details (1 = small info, 2 = extended info)");
+ConVar vprof_spike("vprof_spike", 0, FCVAR_NONE, "measure and display largest spike details (1 = small info, 2 = extended info)");
 
-ConVar vprof_display_mode("vprof_display_mode", 0, "which info blade to show on the top right (gpu/engine/app/etc. info), use CTRL + TAB to cycle through, 0 = disabled");
+ConVar vprof_display_mode("vprof_display_mode", 0, FCVAR_NONE, "which info blade to show on the top right (gpu/engine/app/etc. info), use CTRL + TAB to cycle through, 0 = disabled");
 
-ConVar debug_vprof("debug_vprof", false);
+ConVar debug_vprof("debug_vprof", false, FCVAR_NONE);
 
 ConVar *VisualProfiler::m_vprof_ref = NULL;
 

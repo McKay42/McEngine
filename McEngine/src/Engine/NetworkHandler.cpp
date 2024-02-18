@@ -21,30 +21,30 @@
 #define MC_PROTOCOL_VERSION 1
 #define MC_PROTOCOL_TIMEOUT 10000
 
-ConVar _name_("name", "McKay");
+ConVar _name_("name", "McKay", FCVAR_NONE);
 
 #ifdef MCENGINE_FEATURE_NETWORKING
 
 ConVar _connect_("connect");
-ConVar connect_duration("connect_duration", 5.0f, "Time in seconds to wait for a response from the server when trying to connect");
+ConVar connect_duration("connect_duration", 5.0f, FCVAR_NONE, "Time in seconds to wait for a response from the server when trying to connect");
 ConVar _disconnect_("disconnect");
-ConVar disconnect_duration("disconnect_duration", 3.0f, "Time in seconds to wait for a gentle disconnect before dropping the connection");
+ConVar disconnect_duration("disconnect_duration", 3.0f, FCVAR_NONE, "Time in seconds to wait for a gentle disconnect before dropping the connection");
 
 ConVar _host_("host");
 ConVar _stop_("stop");
-ConVar host_port("host_port", 7777.0f);
-ConVar host_max_clients("host_max_clients", 16.0f);
+ConVar host_port("host_port", 7777.0f, FCVAR_NONE);
+ConVar host_max_clients("host_max_clients", 16.0f, FCVAR_NONE);
 ConVar _status_("status");
 
-ConVar debug_network("debug_network", false);
-ConVar debug_network_time("debug_network_time", false);
+ConVar debug_network("debug_network", false, FCVAR_NONE);
+ConVar debug_network_time("debug_network_time", false, FCVAR_NONE);
 
-ConVar _name_admin_("name_admin", "ADMIN");
+ConVar _name_admin_("name_admin", "ADMIN", FCVAR_NONE);
 ConVar _say_("say");
 ConVar _kick_("kick");
 
-ConVar cl_cmdrate("cl_cmdrate", 66.0f, "How many client update packets are sent to the server per second");
-ConVar cl_updaterate("cl_updaterate", 66.0f, "How many snapshots/updates/deltas are requested from the server per second");
+ConVar cl_cmdrate("cl_cmdrate", 66.0f, FCVAR_NONE, "How many client update packets are sent to the server per second");
+ConVar cl_updaterate("cl_updaterate", 66.0f, FCVAR_NONE, "How many snapshots/updates/deltas are requested from the server per second");
 
 #endif
 
@@ -148,8 +148,8 @@ UString NetworkHandler::httpGet(UString url, long timeout, long connectTimeout)
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
 
 		// HACKHACK: TODO: aaaaaaaaaaaaaaaaaaaaaaaaaa
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+		//curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+		//curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlStringWriteCallback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &curlReadBuffer);
@@ -189,8 +189,8 @@ std::string NetworkHandler::httpDownload(UString url, long timeout, long connect
 		curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "deflate");
 
 		// HACKHACK: TODO: aaaaaaaaaaaaaaaaaaaaaaaaaa
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+		//curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+		//curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
 		std::stringstream curlWriteBuffer(std::stringstream::in | std::stringstream::out | std::stringstream::binary);
 
@@ -1327,3 +1327,14 @@ bool NetworkHandler::isServer() const
 
 #endif
 }
+
+
+
+/*
+void _httpget(UString args)
+{
+	UString response = engine->getNetworkHandler()->httpGet(args);
+	debugLog("response = %s", response.toUtf8());
+}
+ConVar _httpget_("httpget", _httpget);
+*/

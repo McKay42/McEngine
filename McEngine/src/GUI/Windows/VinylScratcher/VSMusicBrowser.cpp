@@ -18,7 +18,7 @@
 #include "CBaseUIButton.h"
 #include "CBaseUIScrollView.h"
 
-ConVar vs_browser_animspeed("vs_browser_animspeed", 0.15f);
+ConVar vs_browser_animspeed("vs_browser_animspeed", 0.15f, FCVAR_NONE);
 
 
 
