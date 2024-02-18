@@ -11,15 +11,15 @@
 #include "ConVar.h"
 #include "Camera.h"
 
-ConVar r_3dscene_zn("r_3dscene_zn", 5.0f, FCVAR_NONE);
-ConVar r_3dscene_zf("r_3dscene_zf", 5000.0f, FCVAR_NONE);
+ConVar r_3dscene_zn("r_3dscene_zn", 5.0f, FCVAR_CHEAT);
+ConVar r_3dscene_zf("r_3dscene_zf", 5000.0f, FCVAR_CHEAT);
 
-ConVar _r_globaloffset_x("r_globaloffset_x", 0.0f, FCVAR_NONE);
-ConVar _r_globaloffset_y("r_globaloffset_y", 0.0f, FCVAR_NONE);
-ConVar _r_debug_disable_cliprect("r_debug_disable_cliprect", false, FCVAR_NONE);
-ConVar _r_debug_disable_3dscene("r_debug_disable_3dscene", false, FCVAR_NONE);
+ConVar _r_globaloffset_x("r_globaloffset_x", 0.0f, FCVAR_CHEAT);
+ConVar _r_globaloffset_y("r_globaloffset_y", 0.0f, FCVAR_CHEAT);
+ConVar _r_debug_disable_cliprect("r_debug_disable_cliprect", false, FCVAR_CHEAT);
+ConVar _r_debug_disable_3dscene("r_debug_disable_3dscene", false, FCVAR_CHEAT);
 ConVar _r_debug_flush_drawstring("r_debug_flush_drawstring", false, FCVAR_NONE);
-ConVar _r_debug_drawimage("r_debug_drawimage", false, FCVAR_NONE);
+ConVar _r_debug_drawimage("r_debug_drawimage", false, FCVAR_CHEAT);
 
 ConVar *Graphics::r_globaloffset_x = &_r_globaloffset_x;
 ConVar *Graphics::r_globaloffset_y = &_r_globaloffset_y;
@@ -288,5 +288,5 @@ void _mat_wireframe(UString oldValue, UString newValue)
 	engine->getGraphics()->setWireframe(newValue.toFloat() > 0.0f);
 }
 
-ConVar _mat_wireframe_("mat_wireframe", false, FCVAR_NONE, _mat_wireframe);
+ConVar _mat_wireframe_("mat_wireframe", false, FCVAR_CHEAT, _mat_wireframe);
 ConVar _vsync_("vsync", false, FCVAR_NONE, _vsync);

@@ -90,7 +90,7 @@ public:
 
 void _version(void);
 void _host_timescale_( UString oldValue, UString newValue );
-ConVar host_timescale("host_timescale", 1.0f, FCVAR_NONE, "Scale by which the engine measures elapsed time, affects engine->getTime()", _host_timescale_);
+ConVar host_timescale("host_timescale", 1.0f, FCVAR_CHEAT, "Scale by which the engine measures elapsed time, affects engine->getTime()", _host_timescale_);
 void _host_timescale_( UString oldValue, UString newValue )
 {
 	if (newValue.toFloat() < 0.01f)

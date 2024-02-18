@@ -12,7 +12,7 @@
 #include "Environment.h"
 #include "ResourceManager.h"
 
-ConVar debug_mouse("debug_mouse", false, FCVAR_NONE);
+ConVar debug_mouse("debug_mouse", false, FCVAR_CHEAT);
 
 ConVar mouse_sensitivity("mouse_sensitivity", 1.0f, FCVAR_NONE);
 ConVar mouse_raw_input("mouse_raw_input", false, FCVAR_NONE);
