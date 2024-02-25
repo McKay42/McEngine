@@ -647,7 +647,8 @@ static void _help(UString args)
 
 	if (args.length() < 1)
 	{
-		debugLog("Usage:  help <cvarname>\nTo get a list of all available commands, type \"listcommands\".\n");
+		debugLog("Usage:  help <cvarname>\n");
+		debugLog("To get a list of all available commands, type \"listcommands\".\n");
 		return;
 	}
 
