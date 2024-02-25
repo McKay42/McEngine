@@ -396,8 +396,15 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					break;
 
 				case SDL_MOUSEMOTION:
-					if (isRawInputEnabled)
-						g_engine->onMouseRawMove(e.motion.xrel, e.motion.yrel);
+					{
+						if (isDebugSdl)
+							debugLog("SDL_MOUSEMOTION: xrel = %i, yrel = %i\n", (int)e.motion.xrel, (int)e.motion.yrel);
+
+						environment->setWasLastMouseInputTouch(false);
+
+						if (isRawInputEnabled)
+							g_engine->onMouseRawMove(e.motion.xrel, e.motion.yrel);
+					}
 					break;
 
 				// touch mouse
@@ -406,6 +413,8 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					{
 						if (isDebugSdl)
 							debugLog("SDL_FINGERDOWN: touchId = %i, fingerId = %i, x = %f, y = %f\n", (int)e.tfinger.touchId, (int)e.tfinger.fingerId, e.tfinger.x, e.tfinger.y);
+
+						environment->setWasLastMouseInputTouch(true);
 
 						currentTouchId = e.tfinger.touchId;
 
@@ -454,6 +463,8 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 						if (isDebugSdl)
 							debugLog("SDL_FINGERUP: touchId = %i, fingerId = %i, x = %f, y = %f\n", (int)e.tfinger.touchId, (int)e.tfinger.fingerId, e.tfinger.x, e.tfinger.y);
 
+						environment->setWasLastMouseInputTouch(true);
+
 						currentTouchId = e.tfinger.touchId;
 
 						// NOTE: also removes the finger from the touchingFingerIds list
@@ -480,6 +491,8 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					{
 						if (isDebugSdl)
 							debugLog("SDL_FINGERMOTION: touchId = %i, fingerId = %i, x = %f, y = %f, dx = %f, dy = %f\n", (int)e.tfinger.touchId, (int)e.tfinger.fingerId, e.tfinger.x, e.tfinger.y, e.tfinger.dx, e.tfinger.dy);
+
+						environment->setWasLastMouseInputTouch(true);
 
 						currentTouchId = e.tfinger.touchId;
 
@@ -550,7 +563,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 						g_engine->onKeyboardKeyDown(SDL_SCANCODE_V);
 					else if ((env->getOS() == Environment::OS::OS_HORIZON ? e.jbutton.button == 11 : e.jbutton.button == 6)) // KEY_MINUS/KEY_SELECT
 						g_engine->onKeyboardKeyDown(SDL_SCANCODE_F1);
-					else if ((env->getOS() == Environment::OS::OS_HORIZON ? e.jbutton.button == 4 : e.jbutton.button == 8)) // left stick press
+					else if ((env->getOS() == Environment::OS::OS_HORIZON ? e.jbutton.button == 4 : e.jbutton.button == 9)) // left stick press
 					{
 						// toggle options (CTRL + O)
 						g_engine->onKeyboardKeyDown(SDL_SCANCODE_LCTRL);
@@ -558,7 +571,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 						g_engine->onKeyboardKeyUp(SDL_SCANCODE_LCTRL);
 						g_engine->onKeyboardKeyUp(SDL_SCANCODE_O);
 					}
-					else if ((env->getOS() == Environment::OS::OS_HORIZON ? e.jbutton.button == 5 : e.jbutton.button == 9)) // right stick press
+					else if ((env->getOS() == Environment::OS::OS_HORIZON ? e.jbutton.button == 5 : e.jbutton.button == 10)) // right stick press
 					{
 						if (xDown)
 						{
@@ -751,6 +764,8 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					mousePos += joystickDelta;
 					mousePos.x = clamp<float>(mousePos.x, 0.0f, g_engine->getScreenSize().x - 1);
 					mousePos.y = clamp<float>(mousePos.y, 0.0f, g_engine->getScreenSize().y - 1);
+
+					environment->setWasLastMouseInputTouch(false);
 
 					environment->setMousePos(mousePos.x, mousePos.y);
 					g_engine->getMouse()->onPosChange(mousePos);

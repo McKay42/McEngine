@@ -47,6 +47,7 @@ public:
 	void setScale(Vector2 scale) {m_vScale = scale;}
 
 	inline Vector2 getPos() const {return m_vPos;}
+	inline Vector2 getActualPos() const {return m_vActualPos;}
 	inline Vector2 getDelta() const {return m_vDelta;}
 	inline Vector2 getRawDelta() const {return m_vRawDelta;}
 	inline Vector2 getOffset() const {return m_vOffset;}

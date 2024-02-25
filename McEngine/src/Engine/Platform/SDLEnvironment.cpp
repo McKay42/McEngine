@@ -10,6 +10,7 @@
 #ifdef MCENGINE_FEATURE_SDL
 
 #include "Engine.h"
+#include "Mouse.h"
 #include "ConVar.h"
 
 #include "NullGraphicsInterface.h"
@@ -31,6 +32,8 @@ SDLEnvironment::SDLEnvironment(SDL_Window *window) : Environment()
 	m_bCursorVisible = true;
 	m_bCursorClipped = false;
 	m_cursorType = CURSORTYPE::CURSOR_NORMAL;
+
+	m_bWasLastMouseInputTouch = false;
 
 	m_sPrevClipboardTextSDL = NULL;
 
@@ -394,6 +397,11 @@ int SDLEnvironment::getDPI()
 
 Vector2 SDLEnvironment::getMousePos()
 {
+	// HACKHACK: workaround, we don't want any finger besides the first initial finger changing the position
+	// NOTE: on the Steam Deck, even with "Touchscreen Native Support" enabled, SDL_GetMouseState() will always return the most recent touch position, which we do not want
+	if (m_bWasLastMouseInputTouch)
+		return engine->getMouse()->getActualPos(); // so instead, we return our own which is always guaranteed to be the first finger position (and no other fingers)
+
 	int mouseX = 0;
 	int mouseY = 0;
 
