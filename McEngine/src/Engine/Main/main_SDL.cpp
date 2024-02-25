@@ -345,7 +345,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 				// mouse
 				case SDL_MOUSEBUTTONDOWN:
-					if (!(isSteamDeck && isGamescope && environment->wasLastMouseInputTouch())) // HACKHACK: Steam Deck workaround (sends mouse events even though native touchscreen support is enabled)
+					if (!(isSteamDeck && environment->wasLastMouseInputTouch())) // HACKHACK: Steam Deck workaround (sends mouse events even though native touchscreen support is enabled)
 					{
 						switch (e.button.button)
 						{
@@ -370,7 +370,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					break;
 
 				case SDL_MOUSEBUTTONUP:
-					if (!(isSteamDeck && isGamescope && environment->wasLastMouseInputTouch())) // HACKHACK: Steam Deck workaround (sends mouse events even though native touchscreen support is enabled)
+					if (!(isSteamDeck && environment->wasLastMouseInputTouch())) // HACKHACK: Steam Deck workaround (sends mouse events even though native touchscreen support is enabled)
 					{
 						switch (e.button.button)
 						{
@@ -402,7 +402,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					break;
 
 				case SDL_MOUSEMOTION:
-					if (!(isSteamDeck && isGamescope && environment->wasLastMouseInputTouch())) // HACKHACK: Steam Deck workaround (sends mouse events even though native touchscreen support is enabled)
+					if (!(isSteamDeck && environment->wasLastMouseInputTouch())) // HACKHACK: Steam Deck workaround (sends mouse events even though native touchscreen support is enabled)
 					{
 						if (isDebugSdl)
 							debugLog("SDL_MOUSEMOTION: xrel = %i, yrel = %i, which = %i\n", (int)e.motion.xrel, (int)e.motion.yrel, (int)e.motion.which);
