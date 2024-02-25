@@ -345,46 +345,52 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 				// mouse
 				case SDL_MOUSEBUTTONDOWN:
-					switch (e.button.button)
+					if (!(isSteamDeck && isGamescope && environment->wasLastMouseInputTouch())) // HACKHACK: Steam Deck workaround (sends mouse events even though native touchscreen support is enabled)
 					{
-					case SDL_BUTTON_LEFT:
-						g_engine->onMouseLeftChange(true);
-						break;
-					case SDL_BUTTON_MIDDLE:
-						g_engine->onMouseMiddleChange(true);
-						break;
-					case SDL_BUTTON_RIGHT:
-						g_engine->onMouseRightChange(true);
-						break;
+						switch (e.button.button)
+						{
+						case SDL_BUTTON_LEFT:
+							g_engine->onMouseLeftChange(true);
+							break;
+						case SDL_BUTTON_MIDDLE:
+							g_engine->onMouseMiddleChange(true);
+							break;
+						case SDL_BUTTON_RIGHT:
+							g_engine->onMouseRightChange(true);
+							break;
 
-					case SDL_BUTTON_X1:
-						g_engine->onMouseButton4Change(true);
-						break;
-					case SDL_BUTTON_X2:
-						g_engine->onMouseButton5Change(true);
-						break;
+						case SDL_BUTTON_X1:
+							g_engine->onMouseButton4Change(true);
+							break;
+						case SDL_BUTTON_X2:
+							g_engine->onMouseButton5Change(true);
+							break;
+						}
 					}
 					break;
 
 				case SDL_MOUSEBUTTONUP:
-					switch (e.button.button)
+					if (!(isSteamDeck && isGamescope && environment->wasLastMouseInputTouch())) // HACKHACK: Steam Deck workaround (sends mouse events even though native touchscreen support is enabled)
 					{
-					case SDL_BUTTON_LEFT:
-						g_engine->onMouseLeftChange(false);
-						break;
-					case SDL_BUTTON_MIDDLE:
-						g_engine->onMouseMiddleChange(false);
-						break;
-					case SDL_BUTTON_RIGHT:
-						g_engine->onMouseRightChange(false);
-						break;
+						switch (e.button.button)
+						{
+						case SDL_BUTTON_LEFT:
+							g_engine->onMouseLeftChange(false);
+							break;
+						case SDL_BUTTON_MIDDLE:
+							g_engine->onMouseMiddleChange(false);
+							break;
+						case SDL_BUTTON_RIGHT:
+							g_engine->onMouseRightChange(false);
+							break;
 
-					case SDL_BUTTON_X1:
-						g_engine->onMouseButton4Change(false);
-						break;
-					case SDL_BUTTON_X2:
-						g_engine->onMouseButton5Change(false);
-						break;
+						case SDL_BUTTON_X1:
+							g_engine->onMouseButton4Change(false);
+							break;
+						case SDL_BUTTON_X2:
+							g_engine->onMouseButton5Change(false);
+							break;
+						}
 					}
 					break;
 
@@ -396,9 +402,10 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					break;
 
 				case SDL_MOUSEMOTION:
+					if (!(isSteamDeck && isGamescope && environment->wasLastMouseInputTouch())) // HACKHACK: Steam Deck workaround (sends mouse events even though native touchscreen support is enabled)
 					{
 						if (isDebugSdl)
-							debugLog("SDL_MOUSEMOTION: xrel = %i, yrel = %i\n", (int)e.motion.xrel, (int)e.motion.yrel);
+							debugLog("SDL_MOUSEMOTION: xrel = %i, yrel = %i, which = %i\n", (int)e.motion.xrel, (int)e.motion.yrel, (int)e.motion.which);
 
 						if (e.motion.which != SDL_TOUCH_MOUSEID)
 						{
@@ -433,12 +440,11 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 						if (!isFingerIdAlreadyTouching || isSteamDeckDoubletouchWorkaroundEnabled)
 						{
-							if (!isFingerIdAlreadyTouching)
-								touchingFingerIds.push_back(e.tfinger.fingerId);
+							touchingFingerIds.push_back(e.tfinger.fingerId);
 
 							if (!isSteamDeckDoubletouchWorkaroundEnabled || isFingerIdAlreadyTouching)
 							{
-								if (touchingFingerIds.size() < 2)
+								if (touchingFingerIds.size() < (isSteamDeckDoubletouchWorkaroundEnabled ? 3 : 2))
 								{
 									mousePos = Vector2(e.tfinger.x, e.tfinger.y) * g_engine->getScreenSize();
 									environment->setMousePos(mousePos.x, mousePos.y);
@@ -472,13 +478,37 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 						// NOTE: also removes the finger from the touchingFingerIds list
 						bool wasFingerIdAlreadyTouching = false;
-						for (size_t i=0; i<touchingFingerIds.size(); i++)
 						{
-							if (touchingFingerIds[i] == e.tfinger.fingerId)
+							size_t numFingerIdTouches = 0;
+							for (size_t i=0; i<touchingFingerIds.size(); i++)
 							{
-								wasFingerIdAlreadyTouching = true;
-								touchingFingerIds.erase(touchingFingerIds.begin() + i);
-								break;
+								if (touchingFingerIds[i] == e.tfinger.fingerId)
+								{
+									wasFingerIdAlreadyTouching = true;
+									numFingerIdTouches++;
+
+									if (isSteamDeckDoubletouchWorkaroundEnabled)
+										continue;
+
+									touchingFingerIds.erase(touchingFingerIds.begin() + i);
+									i--;
+								}
+							}
+
+							if (isSteamDeckDoubletouchWorkaroundEnabled)
+							{
+								// cleanup on "last" release (the second one)
+								if (numFingerIdTouches > 1)
+								{
+									for (size_t i=0; i<touchingFingerIds.size(); i++)
+									{
+										if (touchingFingerIds[i] == e.tfinger.fingerId)
+										{
+											touchingFingerIds.erase(touchingFingerIds.begin() + i);
+											i--;
+										}
+									}
+								}
 							}
 						}
 
