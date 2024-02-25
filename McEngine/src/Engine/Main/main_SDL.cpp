@@ -400,10 +400,13 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 						if (isDebugSdl)
 							debugLog("SDL_MOUSEMOTION: xrel = %i, yrel = %i\n", (int)e.motion.xrel, (int)e.motion.yrel);
 
-						environment->setWasLastMouseInputTouch(false);
+						if (e.motion.which != SDL_TOUCH_MOUSEID)
+						{
+							environment->setWasLastMouseInputTouch(false);
 
-						if (isRawInputEnabled)
-							g_engine->onMouseRawMove(e.motion.xrel, e.motion.yrel);
+							if (isRawInputEnabled)
+								g_engine->onMouseRawMove(e.motion.xrel, e.motion.yrel);
+						}
 					}
 					break;
 
