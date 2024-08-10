@@ -13,7 +13,8 @@
 class NullShader : public Shader
 {
 public:
-	NullShader(UString vertexShader, UString fragmentShader, bool source) : Shader() {;}
+	NullShader(UString shader, bool source) {;}
+	NullShader(UString vertexShader, UString fragmentShader, bool source) : Shader() {;} // DEPRECATED
 	virtual ~NullShader() {destroy();}
 
 	virtual void enable() {;}

@@ -179,7 +179,7 @@ void DirectX11Interface::init()
 			pFactory->Release();
 		}
 		else
-			engine->showMessageError("DirectX Error", "Couldn't GetParent()!");
+			engine->showMessageWarning("DirectX Error", "Couldn't m_swapChain->GetParent()!\nThe window may behave weirdly.");
 	}
 
 	// default rasterizer settings
@@ -248,6 +248,19 @@ void DirectX11Interface::init()
 
 	// create default shader
 	UString vertexShader =
+		"###DirectX11Interface::VertexShader#############################################################################################\n"
+		"\n"
+		"##D3D11_INPUT_ELEMENT_DESC::VS_INPUT::POSITION::DXGI_FORMAT_R32G32B32_FLOAT::D3D11_INPUT_PER_VERTEX_DATA\n"
+		"##D3D11_INPUT_ELEMENT_DESC::VS_INPUT::COLOR0::DXGI_FORMAT_R32G32B32A32_FLOAT::D3D11_INPUT_PER_VERTEX_DATA\n"
+		"##D3D11_INPUT_ELEMENT_DESC::VS_INPUT::TEXCOORD0::DXGI_FORMAT_R32G32_FLOAT::D3D11_INPUT_PER_VERTEX_DATA\n"
+		"\n"
+		"##D3D11_BUFFER_DESC::D3D11_BIND_CONSTANT_BUFFER::ModelViewProjectionConstantBuffer::mvp::float4x4\n"
+		//"##D3D11_BUFFER_DESC::D3D11_BIND_CONSTANT_BUFFER::ModelViewProjectionConstantBuffer::world::float4x4\n"
+		//"##D3D11_BUFFER_DESC::D3D11_BIND_CONSTANT_BUFFER::ModelViewProjectionConstantBuffer::view::float4x4\n"
+		//"##D3D11_BUFFER_DESC::D3D11_BIND_CONSTANT_BUFFER::ModelViewProjectionConstantBuffer::projection::float4x4\n"
+		"##D3D11_BUFFER_DESC::D3D11_BIND_CONSTANT_BUFFER::ModelViewProjectionConstantBuffer::col::float4\n"
+		"##D3D11_BUFFER_DESC::D3D11_BIND_CONSTANT_BUFFER::ModelViewProjectionConstantBuffer::misc::float4\n"
+		"\n"
 		"cbuffer ModelViewProjectionConstantBuffer : register(b0)\n"
 		"{\n"
 		"	float4x4 mvp;		// world matrix for object\n"
@@ -257,6 +270,7 @@ void DirectX11Interface::init()
 		"	float4 col;			// global color\n"
 		"	float4 misc;		// misc params. [0] = textured or flat, [1] = vertex colors\n"
 		"};\n"
+		"\n"
 		"struct VS_INPUT\n"
 		"{\n"
 		"	float4 pos	: POSITION;\n"
@@ -274,7 +288,7 @@ void DirectX11Interface::init()
 		"\n"
 		"VS_OUTPUT vsmain(in VS_INPUT In)\n"
 		"{\n"
-		"	VS_OUTPUT Out;"
+		"	VS_OUTPUT Out;\n"
 		"	In.pos.w = 1.0f;\n"
 		"	Out.pos = mul(In.pos, mvp);\n"
 		//"	Out.pos.z = (Out.pos.z + Out.pos.w)/2.0f;\n" // TODO: not sure if necessary to compensate clip space range here, no artifacts so far (OpenGL NDC z from -1 to 1, DirectX NDC z from 0 to 1)
@@ -285,12 +299,14 @@ void DirectX11Interface::init()
 		"}\n";
 
 	UString pixelShader =
+		"###DirectX11Interface::PixelShader##############################################################################################\n"
+		"\n"
 		"Texture2D tex2D;\n"
 		"SamplerState samplerState\n"
 		"{\n"
-		"	Filter = MIN_MAG_MIP_LINEAR;"
-		"	AddressU = Clamp;"
-		"	AddressV = Clamp;"
+		"	Filter = MIN_MAG_MIP_LINEAR;\n"
+		"	AddressU = Clamp;\n"
+		"	AddressV = Clamp;\n"
 		"};\n"
 		"\n"
 		"struct PS_INPUT\n"
@@ -324,6 +340,13 @@ void DirectX11Interface::init()
 	m_shaderTexturedGeneric = (DirectX11Shader*)createShaderFromSource(vertexShader, pixelShader);
 	m_shaderTexturedGeneric->load();
 
+	if (!m_shaderTexturedGeneric->isReady())
+	{
+		engine->showMessageErrorFatal("DirectX Error", "Failed to create default shader!\nThe engine will quit now.");
+		engine->shutdown();
+		return;
+	}
+
 	// default vertexbuffer
 	{
 		m_vertexBufferDesc.Usage = D3D11_USAGE::D3D11_USAGE_DYNAMIC;
@@ -334,7 +357,11 @@ void DirectX11Interface::init()
 		m_vertexBufferDesc.StructureByteStride = 0;
 	}
 	if (FAILED(m_device->CreateBuffer(&m_vertexBufferDesc, NULL, &m_vertexBuffer)))
-		engine->showMessageError("DirectX Error", "Couldn't CreateBuffer()!");
+	{
+		engine->showMessageErrorFatal("DirectX Error", "Failed to create default vertex buffer!\nThe engine will quit now.");
+		engine->shutdown();
+		return;
+	}
 
 	onResolutionChange(m_vResolution); // force build swapchain rendertarget view
 
@@ -956,12 +983,12 @@ void DirectX11Interface::setClipping(bool enabled)
 
 void DirectX11Interface::setAlphaTesting(bool enabled)
 {
-	// TODO: implement
+	// TODO: implement in default shader
 }
 
 void DirectX11Interface::setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref)
 {
-	// TODO: implement
+	// TODO: implement in default shader
 }
 
 void DirectX11Interface::setBlending(bool enabled)
@@ -1159,7 +1186,7 @@ int DirectX11Interface::getVRAMTotal()
 			if (SUCCEEDED(adapter->GetDesc(&desc)))
 			{
 				// NOTE: this value is affected by 32-bit limits, meaning it will cap out at ~3071 MB (or ~3072 MB depending on rounding), which makes sense since we can't address more video memory in a 32-bit process anyway
-				return desc.DedicatedVideoMemory / 1024; // (from bytes to kb)
+				return (desc.DedicatedVideoMemory / 1024); // (from bytes to kb)
 			}
 			adapter->Release();
 		}
@@ -1366,6 +1393,16 @@ Shader *DirectX11Interface::createShaderFromFile(UString vertexShaderFilePath, U
 Shader *DirectX11Interface::createShaderFromSource(UString vertexShader, UString fragmentShader)
 {
 	return new DirectX11Shader(vertexShader, fragmentShader, true);
+}
+
+Shader *DirectX11Interface::createShaderFromFile(UString shaderFilePath)
+{
+	return new DirectX11Shader(shaderFilePath, false);
+}
+
+Shader *DirectX11Interface::createShaderFromSource(UString shaderSource)
+{
+	return new DirectX11Shader(shaderSource, true);
 }
 
 VertexArrayObject *DirectX11Interface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)

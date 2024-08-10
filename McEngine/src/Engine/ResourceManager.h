@@ -91,11 +91,17 @@ public:
 	Sound *loadSound(UString filepath, UString resourceName, bool stream = false, bool threeD = false, bool loop = false, bool prescan = false);
 	Sound *loadSoundAbs(UString filepath, UString resourceName, bool stream = false, bool threeD = false, bool loop = false, bool prescan = false);
 
+	// shaders (DEPRECATED)
+	Shader *loadShader(UString vertexShaderFilePath, UString fragmentShaderFilePath, UString resourceName);	// DEPRECATED
+	Shader *loadShader(UString vertexShaderFilePath, UString fragmentShaderFilePath);						// DEPRECATED
+	Shader *createShader(UString vertexShader, UString fragmentShader, UString resourceName);				// DEPRECATED
+	Shader *createShader(UString vertexShader, UString fragmentShader);										// DEPRECATED
+
 	// shaders
-	Shader *loadShader(UString vertexShaderFilePath, UString fragmentShaderFilePath, UString resourceName);
-	Shader *loadShader(UString vertexShaderFilePath, UString fragmentShaderFilePath);
-	Shader *createShader(UString vertexShader, UString fragmentShader, UString resourceName);
-	Shader *createShader(UString vertexShader, UString fragmentShader);
+	Shader *loadShader2(UString shaderFilePath, UString resourceName);
+	Shader *loadShader2(UString shaderFilePath);
+	Shader *createShader2(UString shaderSource, UString resourceName);
+	Shader *createShader2(UString shaderSource);
 
 	// rendertargets
 	RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);

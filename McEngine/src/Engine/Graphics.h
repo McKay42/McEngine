@@ -176,8 +176,10 @@ public:
 	virtual Image *createImage(UString filePath, bool mipmapped, bool keepInSystemMemory) = 0;
 	virtual Image *createImage(int width, int height, bool mipmapped, bool keepInSystemMemory) = 0;
 	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType) = 0;
-	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath) = 0;
-	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader) = 0;
+	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath) = 0;	// DEPRECATED
+	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader) = 0;				// DEPRECATED
+	virtual Shader *createShaderFromFile(UString shaderFilePath) = 0;
+	virtual Shader *createShaderFromSource(UString shaderSource) = 0;
 	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory) = 0;
 
 public:

@@ -815,6 +815,16 @@ Shader *OpenGL3Interface::createShaderFromSource(UString vertexShader, UString f
 	return new OpenGLShader(vertexShader, fragmentShader, true);
 }
 
+Shader *OpenGL3Interface::createShaderFromFile(UString shaderFilePath)
+{
+	return new OpenGLShader(shaderFilePath, false);
+}
+
+Shader *OpenGL3Interface::createShaderFromSource(UString shaderSource)
+{
+	return new OpenGLShader(shaderSource, true);
+}
+
 VertexArrayObject *OpenGL3Interface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
 	return new OpenGL3VertexArrayObject(primitive, usage, keepInSystemMemory);

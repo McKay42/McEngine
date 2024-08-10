@@ -14,8 +14,26 @@
 
 #include "OpenGLHeaders.h"
 
+#include "OpenGLLegacyInterface.h"
+#include "OpenGL3Interface.h"
+
+OpenGLShader::OpenGLShader(UString shader, bool source)
+{
+	m_bIsShader2 = true;
+	m_sVsh = shader;
+	m_bSource = source;
+
+	m_iProgram = 0;
+	m_iVertexShader = 0;
+	m_iFragmentShader = 0;
+
+	m_iProgramBackup = 0;
+}
+
 OpenGLShader::OpenGLShader(UString vertexShader, UString fragmentShader, bool source) : Shader()
 {
+	m_bIsShader2 = false;
+
 	m_sVsh = vertexShader;
 	m_sFsh = fragmentShader;
 	m_bSource = source;
@@ -29,7 +47,34 @@ OpenGLShader::OpenGLShader(UString vertexShader, UString fragmentShader, bool so
 
 void OpenGLShader::init()
 {
-	m_bReady = compile(m_sVsh, m_sFsh, m_bSource);
+	if (m_bIsShader2)
+	{
+		UString graphicsInterfaceAndVertexShaderTypePrefix;
+		UString graphicsInterfaceAndFragmentShaderTypePrefix;
+		{
+			const OpenGLLegacyInterface *legacy = dynamic_cast<OpenGLLegacyInterface*>(engine->getGraphics());
+			const OpenGL3Interface *gl3 = dynamic_cast<OpenGL3Interface*>(engine->getGraphics());
+
+			if (legacy != NULL)
+			{
+				graphicsInterfaceAndVertexShaderTypePrefix = "OpenGLLegacyInterface::VertexShader";
+				graphicsInterfaceAndFragmentShaderTypePrefix = "OpenGLLegacyInterface::FragmentShader";
+			}
+			else if (gl3 != NULL)
+			{
+				graphicsInterfaceAndVertexShaderTypePrefix = "OpenGL3Interface::VertexShader";
+				graphicsInterfaceAndFragmentShaderTypePrefix = "OpenGL3Interface::FragmentShader";
+			}
+			else
+				engine->showMessageErrorFatal("OpenGLShader Error", "Missing implementation for active graphics interface");
+		}
+		SHADER_PARSE_RESULT parsedVertexShader = parseShaderFromFileOrString(graphicsInterfaceAndVertexShaderTypePrefix, m_sVsh, m_bSource);
+		SHADER_PARSE_RESULT parsedFragmentShader = parseShaderFromFileOrString(graphicsInterfaceAndFragmentShaderTypePrefix, m_sVsh, m_bSource);
+
+		m_bReady = compile(parsedVertexShader.source, parsedFragmentShader.source, true);
+	}
+	else
+		m_bReady = compile(m_sVsh, m_sFsh, m_bSource);
 }
 
 void OpenGLShader::initAsync()

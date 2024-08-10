@@ -608,6 +608,64 @@ Shader *ResourceManager::createShader(UString vertexShader, UString fragmentShad
 	return shader;
 }
 
+Shader *ResourceManager::loadShader2(UString shaderFilePath, UString resourceName)
+{
+	// check if it already exists
+	if (resourceName.length() > 0)
+	{
+		Resource *temp = checkIfExistsAndHandle(resourceName);
+		if (temp != NULL)
+			return dynamic_cast<Shader*>(temp);
+	}
+
+	// create instance and load it
+	shaderFilePath.insert(0, PATH_DEFAULT_SHADERS);
+	Shader *shader = engine->getGraphics()->createShaderFromFile(shaderFilePath);
+	shader->setName(resourceName);
+
+	loadResource(shader, true);
+
+	return shader;
+}
+
+Shader *ResourceManager::loadShader2(UString shaderFilePath)
+{
+	shaderFilePath.insert(0, PATH_DEFAULT_SHADERS);
+	Shader *shader = engine->getGraphics()->createShaderFromFile(shaderFilePath);
+
+	loadResource(shader, true);
+
+	return shader;
+}
+
+Shader *ResourceManager::createShader2(UString shaderSource, UString resourceName)
+{
+	// check if it already exists
+	if (resourceName.length() > 0)
+	{
+		Resource *temp = checkIfExistsAndHandle(resourceName);
+		if (temp != NULL)
+			return dynamic_cast<Shader*>(temp);
+	}
+
+	// create instance and load it
+	Shader *shader = engine->getGraphics()->createShaderFromSource(shaderSource);
+	shader->setName(resourceName);
+
+	loadResource(shader, true);
+
+	return shader;
+}
+
+Shader *ResourceManager::createShader2(UString shaderSource)
+{
+	Shader *shader = engine->getGraphics()->createShaderFromSource(shaderSource);
+
+	loadResource(shader, true);
+
+	return shader;
+}
+
 RenderTarget *ResourceManager::createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
 {
 	RenderTarget *rt = engine->getGraphics()->createRenderTarget(x, y, width, height, multiSampleType);

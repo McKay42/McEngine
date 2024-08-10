@@ -752,6 +752,16 @@ Shader *OpenGLLegacyInterface::createShaderFromSource(UString vertexShader, UStr
 	return new OpenGLShader(vertexShader, fragmentShader, true);
 }
 
+Shader *OpenGLLegacyInterface::createShaderFromFile(UString shaderFilePath)
+{
+	return new OpenGLShader(shaderFilePath, false);
+}
+
+Shader *OpenGLLegacyInterface::createShaderFromSource(UString shaderSource)
+{
+	return new OpenGLShader(shaderSource, true);
+}
+
 VertexArrayObject *OpenGLLegacyInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
 	return new OpenGLVertexArrayObject(primitive, usage, keepInSystemMemory);

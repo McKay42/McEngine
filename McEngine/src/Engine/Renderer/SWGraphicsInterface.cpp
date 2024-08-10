@@ -564,6 +564,16 @@ Shader *SWGraphicsInterface::createShaderFromSource(UString vertexShader, UStrin
 	return new SWShader(vertexShader, fragmentShader, true);
 }
 
+Shader *SWGraphicsInterface::createShaderFromFile(UString shaderFilePath)
+{
+	return new SWShader(shaderFilePath, false);
+}
+
+Shader *SWGraphicsInterface::createShaderFromSource(UString shaderSource)
+{
+	return new SWShader(shaderSource, true);
+}
+
 VertexArrayObject *SWGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
 	return new VertexArrayObject(primitive, usage, true); // NOTE: always keep in system memory

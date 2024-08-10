@@ -38,6 +38,16 @@ Shader *NullGraphicsInterface::createShaderFromSource(UString vertexShader, UStr
 	return new NullShader(vertexShader, fragmentShader, true);
 }
 
+Shader *NullGraphicsInterface::createShaderFromFile(UString shaderFilePath)
+{
+	return new NullShader(shaderFilePath, false);
+}
+
+Shader *NullGraphicsInterface::createShaderFromSource(UString shaderSource)
+{
+	return new NullShader(shaderSource, true);
+}
+
 VertexArrayObject *NullGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
 	return new VertexArrayObject(primitive, usage, keepInSystemMemory);

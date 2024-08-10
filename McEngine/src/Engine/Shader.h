@@ -39,6 +39,15 @@ protected:
 	virtual void init() = 0;
 	virtual void initAsync() = 0;
 	virtual void destroy() = 0;
+
+protected:
+	struct SHADER_PARSE_RESULT
+	{
+		UString source;
+		std::vector<UString> descs;
+	};
+
+	SHADER_PARSE_RESULT parseShaderFromFileOrString(UString graphicsInterfaceAndShaderTypePrefix, UString shaderSourceOrFilePath, bool source);
 };
 
 #endif
