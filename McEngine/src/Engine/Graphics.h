@@ -188,6 +188,7 @@ public:
 	// matrices & transforms
 	void pushTransform();
 	void popTransform();
+	void forceUpdateTransform();
 
 	// 2D
 	// TODO: rename these to translate2D() etc.
@@ -211,6 +212,7 @@ public:
 
 	Matrix4 getWorldMatrix();
 	Matrix4 getProjectionMatrix();
+	inline Matrix4 getMVP() const {return m_MP;}
 
 	// 3d gui scenes
 	void push3DScene(McRect region);
@@ -238,6 +240,9 @@ protected:
 	bool m_bTransformUpToDate;
 	std::stack<Matrix4> m_worldTransformStack;
 	std::stack<Matrix4> m_projectionTransformStack;
+	Matrix4 m_projectionMatrix;
+	Matrix4 m_worldMatrix;
+	Matrix4 m_MP;
 
 	// 3d gui scenes
 	bool m_bIs3dScene;

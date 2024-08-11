@@ -225,21 +225,28 @@ void Graphics::offset3DScene(float x, float y, float z)
 	m_v3dSceneOffset = Vector3(x,y,z);
 }
 
+void Graphics::forceUpdateTransform()
+{
+	updateTransform();
+}
+
 void Graphics::updateTransform(bool force)
 {
 	if (!m_bTransformUpToDate || force)
 	{
-		Matrix4 worldMatrixTemp = m_worldTransformStack.top();
-		Matrix4 projectionMatrixTemp = m_projectionTransformStack.top();
+		m_worldMatrix = m_worldTransformStack.top();
+		m_projectionMatrix = m_projectionTransformStack.top();
 
 		// HACKHACK: 3d gui scenes
 		if (m_bIs3dScene)
 		{
-			worldMatrixTemp = m_3dSceneWorldMatrix * m_worldTransformStack.top();
-			projectionMatrixTemp = m_3dSceneProjectionMatrix;
+			m_worldMatrix = m_3dSceneWorldMatrix * m_worldTransformStack.top();
+			m_projectionMatrix = m_3dSceneProjectionMatrix;
 		}
 
-		onTransformUpdate(projectionMatrixTemp, worldMatrixTemp);
+		m_MP = m_projectionMatrix * m_worldMatrix;
+
+		onTransformUpdate(m_projectionMatrix, m_worldMatrix);
 
 		m_bTransformUpToDate = true;
 	}

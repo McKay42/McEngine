@@ -1412,14 +1412,11 @@ VertexArrayObject *DirectX11Interface::createVertexArrayObject(Graphics::PRIMITI
 
 void DirectX11Interface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix)
 {
-	m_projectionMatrix = projectionMatrix;
-	m_worldMatrix = worldMatrix;
-
 	// NOTE: convert from OpenGL coordinate space
 	static Matrix4 zflip = Matrix4().scale(1, 1, -1);
 
-	m_MP = m_projectionMatrix * m_worldMatrix * zflip;
-	m_shaderTexturedGeneric->setUniformMatrix4fv("mvp", m_MP);
+	Matrix4 mvp = m_MP * zflip;
+	m_shaderTexturedGeneric->setUniformMatrix4fv("mvp", mvp);
 }
 
 int DirectX11Interface::primitiveToDirectX(Graphics::PRIMITIVE primitive)

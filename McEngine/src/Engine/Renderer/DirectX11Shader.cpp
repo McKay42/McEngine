@@ -320,13 +320,25 @@ void DirectX11Shader::destroy()
 	m_constantBuffers.clear();
 
 	if (m_inputLayout != NULL)
+	{
 		m_inputLayout->Release();
+		m_inputLayout = NULL;
+	}
 
 	if (m_vs != NULL)
+	{
 		m_vs->Release();
+		m_vs = NULL;
+	}
 
 	if (m_ps != NULL)
+	{
 		m_ps->Release();
+		m_ps = NULL;
+	}
+
+	m_inputDescs.clear();
+	m_bindDescs.clear();
 
 	m_uniformLocationCache.clear();
 }

@@ -90,7 +90,7 @@ public:
 	virtual Shader *createShaderFromSource(UString shaderSource);
 	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory);
 
-	// ILLEGAL:
+	// matrices & transforms
 	void forceUpdateTransform();
 
 	inline const int getShaderGenericAttribPosition() const {return m_iShaderTexturedGenericAttribPosition;}
@@ -101,7 +101,7 @@ public:
 	inline const int getVBOTexcoords() const {return m_iVBOTexcoords;}
 	inline const int getVBOTexcolors() const {return m_iVBOTexcolors;}
 
-	Matrix4 getMVP() const {return m_MP;}
+	inline Matrix4 getMVP() const {return m_MP;}
 
 protected:
 	virtual void init();

@@ -156,10 +156,6 @@ private:
 	ID3D11BlendState *m_blendState;
 	D3D11_BLEND_DESC m_blendDesc;
 
-	Matrix4 m_projectionMatrix;
-	Matrix4 m_worldMatrix;
-	Matrix4 m_MP;
-
 	DirectX11Shader *m_shaderTexturedGeneric;
 
 	std::vector<SimpleVertex> m_vertices;
