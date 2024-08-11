@@ -189,6 +189,12 @@ void DirectX11Shader::init()
 							bindDescLine.variableType = bufferVariableType;
 							if (bufferVariableType == "float")
 								bindDescLine.variableBytes = 1*4;
+							else if (bufferVariableType == "int")
+								bindDescLine.variableBytes = 1*4;
+							else if (bufferVariableType == "float2")
+								bindDescLine.variableBytes = 2*4;
+							else if (bufferVariableType == "float3")
+								bindDescLine.variableBytes = 3*4;
 							else if (bufferVariableType == "float4")
 								bindDescLine.variableBytes = 4*4;
 							else if (bufferVariableType == "float4x4")
