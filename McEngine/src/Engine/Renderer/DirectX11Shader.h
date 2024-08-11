@@ -102,6 +102,7 @@ private:
 	ID3D11VertexShader *m_prevVS;
 	ID3D11PixelShader *m_prevPS;
 	ID3D11InputLayout *m_prevInputLayout;
+	std::vector<ID3D11Buffer*> m_prevConstantBuffers;
 
 	std::vector<INPUT_DESC> m_inputDescs;
 	std::vector<BIND_DESC> m_bindDescs;

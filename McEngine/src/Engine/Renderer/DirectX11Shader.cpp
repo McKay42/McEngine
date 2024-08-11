@@ -23,6 +23,8 @@
 
 //#define MCENGINE_D3D11_CREATE_SHADER_DEBUG
 
+#define MCENGINE_D3D11_SHADER_MAX_NUM_CONSTANT_BUFFERS 9
+
 DirectX11Shader::CACHE_ENTRY DirectX11Shader::invalidCacheEntry {-1};
 
 DirectX11Shader::DirectX11Shader(UString shader, bool source)
@@ -37,6 +39,10 @@ DirectX11Shader::DirectX11Shader(UString shader, bool source)
 	m_prevVS = NULL;
 	m_prevPS = NULL;
 	m_prevInputLayout = NULL;
+	for (int i=0; i<MCENGINE_D3D11_SHADER_MAX_NUM_CONSTANT_BUFFERS; i++)
+	{
+		m_prevConstantBuffers.push_back(NULL);
+	}
 }
 
 DirectX11Shader::DirectX11Shader(UString vertexShader, UString fragmentShader, bool source)
@@ -52,6 +58,10 @@ DirectX11Shader::DirectX11Shader(UString vertexShader, UString fragmentShader, b
 	m_prevVS = NULL;
 	m_prevPS = NULL;
 	m_prevInputLayout = NULL;
+	for (int i=0; i<MCENGINE_D3D11_SHADER_MAX_NUM_CONSTANT_BUFFERS; i++)
+	{
+		m_prevConstantBuffers.push_back(NULL);
+	}
 }
 
 void DirectX11Shader::init()
@@ -349,10 +359,14 @@ void DirectX11Shader::enable()
 
 	DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
 
+	// backup
 	// HACKHACK: slow af
-	dx11->getDeviceContext()->IAGetInputLayout(&m_prevInputLayout); // backup
-	dx11->getDeviceContext()->VSGetShader(&m_prevVS, NULL, NULL); // backup
-	dx11->getDeviceContext()->PSGetShader(&m_prevPS, NULL, NULL); // backup
+	{
+		dx11->getDeviceContext()->IAGetInputLayout(&m_prevInputLayout);
+		dx11->getDeviceContext()->VSGetShader(&m_prevVS, NULL, NULL);
+		dx11->getDeviceContext()->PSGetShader(&m_prevPS, NULL, NULL);
+		dx11->getDeviceContext()->VSGetConstantBuffers(0, (UINT)m_prevConstantBuffers.size(), &m_prevConstantBuffers[0]);
+	}
 
 	dx11->getDeviceContext()->IASetInputLayout(m_inputLayout);
 	dx11->getDeviceContext()->VSSetShader(m_vs, NULL, 0);
@@ -367,29 +381,51 @@ void DirectX11Shader::disable()
 
 	DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
 
+	// restore
 	// HACKHACK: slow af
-	dx11->getDeviceContext()->IASetInputLayout(m_prevInputLayout); // restore
-	dx11->getDeviceContext()->VSSetShader(m_prevVS, NULL, 0); // restore
-	dx11->getDeviceContext()->PSSetShader(m_prevPS, NULL, 0); // restore
-
-	// refcount
 	{
-		if (m_prevInputLayout != NULL)
+		UINT numPrevConstantBuffers = 0;
+		for (size_t i=0; i<m_prevConstantBuffers.size(); i++)
 		{
-			m_prevInputLayout->Release();
-			m_prevInputLayout = NULL;
+			if (m_prevConstantBuffers[i] != NULL)
+				numPrevConstantBuffers++;
+			else
+				break;
 		}
 
-		if (m_prevVS != NULL)
-		{
-			m_prevVS->Release();
-			m_prevVS = NULL;
-		}
+		dx11->getDeviceContext()->IASetInputLayout(m_prevInputLayout);
+		dx11->getDeviceContext()->VSSetShader(m_prevVS, NULL, 0);
+		dx11->getDeviceContext()->PSSetShader(m_prevPS, NULL, 0);
+		dx11->getDeviceContext()->VSSetConstantBuffers(0, numPrevConstantBuffers, &m_prevConstantBuffers[0]);
 
-		if (m_prevPS != NULL)
+		// refcount
 		{
-			m_prevPS->Release();
-			m_prevPS = NULL;
+			if (m_prevInputLayout != NULL)
+			{
+				m_prevInputLayout->Release();
+				m_prevInputLayout = NULL;
+			}
+
+			if (m_prevVS != NULL)
+			{
+				m_prevVS->Release();
+				m_prevVS = NULL;
+			}
+
+			if (m_prevPS != NULL)
+			{
+				m_prevPS->Release();
+				m_prevPS = NULL;
+			}
+
+			for (size_t i=0; i<m_prevConstantBuffers.size(); i++)
+			{
+				if (m_prevConstantBuffers[i] != NULL)
+				{
+					m_prevConstantBuffers[i]->Release();
+					m_prevConstantBuffers[i] = NULL;
+				}
+			}
 		}
 	}
 }
