@@ -243,7 +243,11 @@ void DirectX11RenderTarget::enable()
 {
 	if (!m_bReady) return;
 
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->OMGetRenderTargets(1, &m_prevRenderTargetView, &m_prevDepthStencilView); // backup
+	// backup
+	// HACKHACK: slow af
+	{
+		((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->OMGetRenderTargets(1, &m_prevRenderTargetView, &m_prevDepthStencilView);
+	}
 
 	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
 
@@ -265,20 +269,24 @@ void DirectX11RenderTarget::disable()
 {
 	if (!m_bReady) return;
 
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->OMSetRenderTargets(1, &m_prevRenderTargetView, m_prevDepthStencilView); // restore
-
-	// refcount
+	// restore
+	// HACKHACK: slow af
 	{
-		if (m_prevRenderTargetView != NULL)
-		{
-			m_prevRenderTargetView->Release();
-			m_prevRenderTargetView = NULL;
-		}
+		((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->OMSetRenderTargets(1, &m_prevRenderTargetView, m_prevDepthStencilView);
 
-		if (m_prevDepthStencilView != NULL)
+		// refcount
 		{
-			m_prevDepthStencilView->Release();
-			m_prevDepthStencilView = NULL;
+			if (m_prevRenderTargetView != NULL)
+			{
+				m_prevRenderTargetView->Release();
+				m_prevRenderTargetView = NULL;
+			}
+
+			if (m_prevDepthStencilView != NULL)
+			{
+				m_prevDepthStencilView->Release();
+				m_prevDepthStencilView = NULL;
+			}
 		}
 	}
 }
@@ -289,7 +297,11 @@ void DirectX11RenderTarget::bind(unsigned int textureUnit)
 
 	m_iTextureUnitBackup = textureUnit;
 
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSGetShaderResources(textureUnit, 1, &m_prevShaderResourceView); // backup
+	// backup
+	// HACKHACK: slow af
+	{
+		((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSGetShaderResources(textureUnit, 1, &m_prevShaderResourceView);
+	}
 
 	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShaderResources(textureUnit, 1, &m_shaderResourceView);
 
@@ -301,14 +313,18 @@ void DirectX11RenderTarget::unbind()
 {
 	if (!m_bReady) return;
 
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShaderResources(m_iTextureUnitBackup, 1, &m_prevShaderResourceView); // restore
-
-	// refcount
+	// restore
+	// HACKHACK: slow af
 	{
-		if (m_prevShaderResourceView != NULL)
+		((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShaderResources(m_iTextureUnitBackup, 1, &m_prevShaderResourceView);
+
+		// refcount
 		{
-			m_prevShaderResourceView->Release();
-			m_prevShaderResourceView = NULL;
+			if (m_prevShaderResourceView != NULL)
+			{
+				m_prevShaderResourceView->Release();
+				m_prevShaderResourceView = NULL;
+			}
 		}
 	}
 }

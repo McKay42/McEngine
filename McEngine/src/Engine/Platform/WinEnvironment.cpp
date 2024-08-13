@@ -81,7 +81,7 @@ Graphics *WinEnvironment::createRenderer()
 {
 #ifdef MCENGINE_FEATURE_DIRECTX11
 
-	if (engine->getArgs().length() > 0 && (engine->getArgs().find("dx11") != -1 || engine->getArgs().find("d3d11") != -1))
+	if (engine->getArgs().length() > 0 && (engine->getArgs().find("-dx11") != -1 || engine->getArgs().find("-d3d11") != -1 || engine->getArgs().find("-directx11") != -1 || engine->getArgs().find("-direct3d11") != -1))
 		return new DirectX11Interface(m_hwnd);
 
 #endif

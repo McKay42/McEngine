@@ -22,7 +22,6 @@
 #include <sstream>
 
 //#define MCENGINE_D3D11_CREATE_SHADER_DEBUG
-
 #define MCENGINE_D3D11_SHADER_MAX_NUM_CONSTANT_BUFFERS 9
 
 DirectX11Shader::CACHE_ENTRY DirectX11Shader::invalidCacheEntry {-1};

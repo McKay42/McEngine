@@ -73,7 +73,7 @@ public:
 
 	// renderer actions
 	virtual void flush() {;}
-	virtual std::vector<unsigned char> getScreenshot() {return std::vector<unsigned char>();}
+	virtual std::vector<unsigned char> getScreenshot() {std::vector<unsigned char> temp; temp.resize((size_t)m_vResolution.x * (size_t)m_vResolution.y * 3); return temp;} // RGB
 
 	// renderer info
 	virtual Vector2 getResolution() const {return m_vResolution;}

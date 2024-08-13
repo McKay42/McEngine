@@ -363,7 +363,7 @@ void DirectX11Interface::init()
 		return;
 	}
 
-	onResolutionChange(m_vResolution); // force build swapchain rendertarget view
+	onResolutionChange(m_vResolution); // NOTE: force build swapchain rendertarget view
 
 	m_bReady = true;
 }
@@ -1100,12 +1100,68 @@ std::vector<unsigned char> DirectX11Interface::getScreenshot()
 {
 	std::vector<unsigned char> result;
 	{
-		result.push_back(0);
-		result.push_back(0);
-		result.push_back(0);
-		result.push_back(0);
+		bool success = false;
+		{
+			ID3D11Texture2D *backBuffer = NULL;
+			if (SUCCEEDED(m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBuffer)) && backBuffer != NULL)
+			{
+				D3D11_TEXTURE2D_DESC backBufferDesc;
+				backBuffer->GetDesc(&backBufferDesc);
+				{
+					backBufferDesc.Usage = D3D11_USAGE_STAGING;
+					backBufferDesc.BindFlags = 0;
+					backBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+				}
+				ID3D11Texture2D *tempTexture2D = NULL;
+				if (SUCCEEDED(m_device->CreateTexture2D(&backBufferDesc, NULL, &tempTexture2D)) && tempTexture2D != NULL)
+				{
+					D3D11_TEXTURE2D_DESC tempTexture2DDesc;
+					tempTexture2D->GetDesc(&tempTexture2DDesc);
+					m_deviceContext->CopyResource(tempTexture2D, backBuffer);
+					{
+						D3D11_MAPPED_SUBRESOURCE mappedResource;
+						ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+						if (SUCCEEDED(m_deviceContext->Map(tempTexture2D, 0, D3D11_MAP_READ, 0, &mappedResource)))
+						{
+							success = true;
+							result.reserve(tempTexture2DDesc.Width * tempTexture2DDesc.Height * 3); // RGB
+							{
+								const UINT numPixelBytes = 4; // RGBA
+								const UINT numRowBytes = mappedResource.RowPitch / sizeof(unsigned char);
+								for (UINT y=0; y<tempTexture2DDesc.Height; y++)
+								{
+									for (UINT x=0; x<tempTexture2DDesc.Width; x++)
+									{
+										unsigned char r = (unsigned char)(((unsigned char*)mappedResource.pData)[y*numRowBytes + x*numPixelBytes + 0]); // RGBA
+										unsigned char g = (unsigned char)(((unsigned char*)mappedResource.pData)[y*numRowBytes + x*numPixelBytes + 1]);
+										unsigned char b = (unsigned char)(((unsigned char*)mappedResource.pData)[y*numRowBytes + x*numPixelBytes + 2]);
+										//unsigned char a = (unsigned char)(((unsigned char*)mappedResource.pData)[y*numRowBytes + x*numPixelBytes + 3]);
 
-		// TODO: screenshot support
+										result.push_back(r);
+										result.push_back(g);
+										result.push_back(b);
+									}
+								}
+							}
+							m_deviceContext->Unmap(tempTexture2D, 0);
+						}
+					}
+					tempTexture2D->Release();
+				}
+				backBuffer->Release();
+			}
+		}
+
+		if (!success)
+		{
+			const int numExpectedPixels = (int)(m_vResolution.x) * (int)(m_vResolution.y);
+			for (int i=0; i<numExpectedPixels; i++)
+			{
+				result.push_back(0);
+				result.push_back(0);
+				result.push_back(0);
+			}
+		}
 	}
 	return result;
 }
