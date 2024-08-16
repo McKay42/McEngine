@@ -102,7 +102,7 @@ void OpenGLES2Interface::init()
 								"\n";
 
 	UString texturedGenericP =	"#version 100\n"
-								"precision mediump float;\n"
+								"precision highp float;\n"
 								"\n"
 								"varying vec2 texcoords;\n"
 								"varying vec4 texcolor;\n"
@@ -702,6 +702,16 @@ Shader *OpenGLES2Interface::createShaderFromFile(UString vertexShaderFilePath, U
 Shader *OpenGLES2Interface::createShaderFromSource(UString vertexShader, UString fragmentShader)
 {
 	return new OpenGLES2Shader(vertexShader, fragmentShader, true);
+}
+
+Shader *OpenGLES2Interface::createShaderFromFile(UString shaderFilePath)
+{
+	return new OpenGLES2Shader(shaderFilePath, false);
+}
+
+Shader *OpenGLES2Interface::createShaderFromSource(UString shaderSource)
+{
+	return new OpenGLES2Shader(shaderSource, true);
 }
 
 VertexArrayObject *OpenGLES2Interface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)

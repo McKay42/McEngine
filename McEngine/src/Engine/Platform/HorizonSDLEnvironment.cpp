@@ -23,8 +23,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-ConVar horizon_snd_chunk_size_docked("horizon_snd_chunk_size_docked", 512);
-ConVar horizon_snd_chunk_size_undocked("horizon_snd_chunk_size_undocked", 256);
+ConVar horizon_snd_chunk_size_docked("horizon_snd_chunk_size_docked", 512, FCVAR_NONE);
+ConVar horizon_snd_chunk_size_undocked("horizon_snd_chunk_size_undocked", 256, FCVAR_NONE);
 
 // HACKHACK: manual keyboard/mouse handling from sdl internals, until audio gets fixed, see https://github.com/devkitPro/SDL/commit/b91efb18a1a4752c03d56594b079aa804fe4e9ea
 // audio was broken here: https://github.com/devkitPro/SDL/commit/51d12c191cdc7eb2ea7acca3daaf5e714b436128

@@ -16,7 +16,7 @@
 #include "CBaseUIContainer.h"
 #include "CBaseUIButton.h"
 
-ConVar vs_percent("vs_percent", 0.0f);
+ConVar vs_percent("vs_percent", 0.0f, FCVAR_NONE);
 
 
 

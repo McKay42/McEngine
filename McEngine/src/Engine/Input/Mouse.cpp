@@ -12,16 +12,17 @@
 #include "Environment.h"
 #include "ResourceManager.h"
 
-ConVar debug_mouse("debug_mouse", false);
+ConVar debug_mouse("debug_mouse", false, FCVAR_CHEAT);
+ConVar debug_mouse_clicks("debug_mouse_clicks", false, FCVAR_NONE);
 
-ConVar mouse_sensitivity("mouse_sensitivity", 1.0f);
-ConVar mouse_raw_input("mouse_raw_input", false);
-ConVar mouse_raw_input_absolute_to_window("mouse_raw_input_absolute_to_window", false);
-ConVar mouse_fakelag("mouse_fakelag", 0.000f, "delay all mouse movement by this many seconds (e.g. 0.1 = 100 ms delay)");
+ConVar mouse_sensitivity("mouse_sensitivity", 1.0f, FCVAR_NONE);
+ConVar mouse_raw_input("mouse_raw_input", false, FCVAR_NONE);
+ConVar mouse_raw_input_absolute_to_window("mouse_raw_input_absolute_to_window", false, FCVAR_NONE);
+ConVar mouse_fakelag("mouse_fakelag", 0.000f, FCVAR_NONE, "delay all mouse movement by this many seconds (e.g. 0.1 = 100 ms delay)");
 
-ConVar tablet_sensitivity_ignore("tablet_sensitivity_ignore", false);
+ConVar tablet_sensitivity_ignore("tablet_sensitivity_ignore", false, FCVAR_NONE);
 
-ConVar win_ink_workaround("win_ink_workaround", false);
+ConVar win_ink_workaround("win_ink_workaround", false, FCVAR_NONE);
 
 Mouse::Mouse() : InputDevice()
 {
@@ -373,6 +374,9 @@ void Mouse::onWheelHorizontal(int delta)
 
 void Mouse::onLeftChange(bool leftDown)
 {
+	if (debug_mouse_clicks.getBool())
+		debugLog("Mouse::onLeftChange( %i )\n", (int)leftDown);
+
 	m_bMouseLeftDown = leftDown;
 
 	for (size_t i=0; i<m_listeners.size(); i++)
@@ -383,6 +387,9 @@ void Mouse::onLeftChange(bool leftDown)
 
 void Mouse::onMiddleChange(bool middleDown)
 {
+	if (debug_mouse_clicks.getBool())
+		debugLog("Mouse::onMiddleChange( %i )\n", (int)middleDown);
+
 	m_bMouseMiddleDown = middleDown;
 
 	for (size_t i=0; i<m_listeners.size(); i++)
@@ -393,6 +400,9 @@ void Mouse::onMiddleChange(bool middleDown)
 
 void Mouse::onRightChange(bool rightDown)
 {
+	if (debug_mouse_clicks.getBool())
+		debugLog("Mouse::onRightChange( %i )\n", (int)rightDown);
+
 	m_bMouseRightDown = rightDown;
 
 	for (size_t i=0; i<m_listeners.size(); i++)
@@ -403,6 +413,9 @@ void Mouse::onRightChange(bool rightDown)
 
 void Mouse::onButton4Change(bool button4down)
 {
+	if (debug_mouse_clicks.getBool())
+		debugLog("Mouse::onButton4Change( %i )\n", (int)button4down);
+
 	m_bMouse4Down = button4down;
 
 	for (size_t i=0; i<m_listeners.size(); i++)
@@ -413,6 +426,9 @@ void Mouse::onButton4Change(bool button4down)
 
 void Mouse::onButton5Change(bool button5down)
 {
+	if (debug_mouse_clicks.getBool())
+		debugLog("Mouse::onButton5Change( %i )\n", (int)button5down);
+
 	m_bMouse5Down = button5down;
 
 	for (size_t i=0; i<m_listeners.size(); i++)

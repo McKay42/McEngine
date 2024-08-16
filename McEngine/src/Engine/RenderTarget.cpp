@@ -11,7 +11,7 @@
 
 #include "VertexArrayObject.h"
 
-ConVar _debug_rt("debug_rt", false, "draws all rendertargets with a translucent green background");
+ConVar _debug_rt("debug_rt", false, FCVAR_CHEAT, "draws all rendertargets with a translucent green background");
 
 ConVar *RenderTarget::debug_rt = &_debug_rt;
 

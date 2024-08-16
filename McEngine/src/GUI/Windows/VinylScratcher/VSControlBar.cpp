@@ -17,9 +17,9 @@
 #include "CBaseUICheckbox.h"
 #include "CBaseUISlider.h"
 
-ConVar vs_repeat("vs_repeat", false);
-ConVar vs_shuffle("vs_shuffle", false);
-ConVar vs_volume("vs_volume", 1.0f);
+ConVar vs_repeat("vs_repeat", false, FCVAR_NONE);
+ConVar vs_shuffle("vs_shuffle", false, FCVAR_NONE);
+ConVar vs_volume("vs_volume", 1.0f, FCVAR_NONE);
 
 
 

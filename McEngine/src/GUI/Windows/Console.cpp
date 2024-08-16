@@ -29,7 +29,7 @@
 
 #define CONSOLE_BORDER 6
 
-ConVar _console_logging("console_logging", true);
+ConVar _console_logging("console_logging", true, FCVAR_NONE);
 ConVar _clear("clear");
 
 std::vector<UString> Console::g_commandQueue;
@@ -156,6 +156,9 @@ void Console::processCommand(UString command)
 		return;
 	}
 
+	if (var->isFlagSet(FCVAR_CHEAT) && !ConVars::sv_cheats.getBool())
+		return;
+
 	// set new value (this handles all callbacks internally)
 	if (commandValue.length() > 0)
 		var->setValue(commandValue);
@@ -181,6 +184,8 @@ void Console::processCommand(UString command)
 			{
 				logMessage.append(UString::format(" = %s ( def. \"%s\" , ", var->getString().toUtf8(), var->getDefaultString().toUtf8()));
 				logMessage.append(ConVar::typeToString(var->getType()));
+				logMessage.append(", ");
+				logMessage.append(ConVarHandler::flagsToString(var->getFlags()));
 				logMessage.append(" )");
 			}
 
@@ -350,6 +355,6 @@ void _fizzbuzz(void)
 	}
 }
 
-ConVar _exec_("exec", _exec);
-ConVar _echo_("echo", _echo);
-ConVar _fizzbuzz_("fizzbuzz", _fizzbuzz);
+ConVar _exec_("exec", FCVAR_NONE, _exec);
+ConVar _echo_("echo", FCVAR_NONE, _echo);
+ConVar _fizzbuzz_("fizzbuzz", FCVAR_NONE, _fizzbuzz);

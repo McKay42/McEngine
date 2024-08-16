@@ -86,7 +86,7 @@ void DirectX11Image::init()
 	}
 	else
 	{
-		// upload data to existing texture
+		// upload new/overwrite data to already existing texture
 		// TODO: Map(), upload m_rawImage, Unmap()
 	}
 
@@ -162,8 +162,7 @@ void DirectX11Image::initAsync()
 
 		m_bAsyncReady = loadRawImage();
 
-		// rewrite all non-4-channels-per-pixel formats, because directx doesn't have any fucking 24bpp formats ffs
-		// TODO: optimize this
+		// rewrite all non-4-channels-per-pixel formats, because directx11 doesn't have any fucking 24bpp formats ffs
 		if (m_bAsyncReady)
 		{
 			const int numTargetChannels = 4;
@@ -172,36 +171,46 @@ void DirectX11Image::initAsync()
 			if (numMissingChannels > 0)
 			{
 				std::vector<unsigned char> newRawImage;
-				newRawImage.reserve(m_iWidth*m_iHeight*numTargetChannels);
-
-				for (size_t i=0; i<m_rawImage.size(); i+=m_iNumChannels) // for every pixel
+				newRawImage.reserve(m_iWidth * m_iHeight * numTargetChannels);
 				{
-					// add original data
-					for (int p=0; p<m_iNumChannels; p++)
-					{
-						newRawImage.push_back(m_rawImage[i + p]);
-					}
-
-					// add padded data
 					if (m_iNumChannels == 1)
 					{
-						newRawImage.push_back(m_rawImage[i + 0]);	// G
-						newRawImage.push_back(m_rawImage[i + 0]);	// B
-						newRawImage.push_back(0xff);				// A
+						for (size_t c=0; c<m_rawImage.size(); c+=(size_t)m_iNumChannels)
+						{
+							newRawImage.push_back(m_rawImage[c + 0]);	// R
+							newRawImage.push_back(m_rawImage[c + 0]);	// G
+							newRawImage.push_back(m_rawImage[c + 0]);	// B
+							newRawImage.push_back(0xff);				// A
+						}
 					}
 					else if (m_iNumChannels == 3)
 					{
-						newRawImage.push_back(0xff);				// A
+						for (size_t c=0; c<m_rawImage.size(); c+=(size_t)m_iNumChannels)
+						{
+							newRawImage.push_back(m_rawImage[c + 0]);	// R
+							newRawImage.push_back(m_rawImage[c + 1]);	// G
+							newRawImage.push_back(m_rawImage[c + 2]);	// B
+							newRawImage.push_back(0xff);				// A
+						}
 					}
 					else
 					{
-						for (int m=0; m<numMissingChannels; m++)
+						for (size_t c=0; c<m_rawImage.size(); c+=(size_t)m_iNumChannels)
 						{
-							newRawImage.push_back(0xff);			// B, A
+							// add original data
+							for (int p=0; p<m_iNumChannels; p++)
+							{
+								newRawImage.push_back(m_rawImage[c + p]);
+							}
+
+							// add padded data
+							for (int m=0; m<numMissingChannels; m++)
+							{
+								newRawImage.push_back(0xff);
+							}
 						}
 					}
 				}
-
 				m_rawImage = std::move(newRawImage);
 				m_iNumChannels = numTargetChannels;
 			}
@@ -232,10 +241,13 @@ void DirectX11Image::bind(unsigned int textureUnit)
 
 	m_iTextureUnitBackup = textureUnit;
 
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSGetShaderResources(textureUnit, 1, &m_prevShaderResourceView); // backup
+	// backup
+	// HACKHACK: slow af
+	{
+		((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSGetShaderResources(textureUnit, 1, &m_prevShaderResourceView);
+	}
 
 	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShaderResources(textureUnit, 1, &m_shaderResourceView);
-
 	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetSamplers(textureUnit, 1, &m_samplerState);
 
 	// HACKHACK: TEMP:
@@ -246,14 +258,18 @@ void DirectX11Image::unbind()
 {
 	if (!m_bReady) return;
 
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShaderResources(m_iTextureUnitBackup, 1, &m_prevShaderResourceView); // restore
-
-	// refcount
+	// restore
+	// HACKHACK: slow af
 	{
-		if (m_prevShaderResourceView != NULL)
+		((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShaderResources(m_iTextureUnitBackup, 1, &m_prevShaderResourceView);
+
+		// refcount
 		{
-			m_prevShaderResourceView->Release();
-			m_prevShaderResourceView = NULL;
+			if (m_prevShaderResourceView != NULL)
+			{
+				m_prevShaderResourceView->Release();
+				m_prevShaderResourceView = NULL;
+			}
 		}
 	}
 }

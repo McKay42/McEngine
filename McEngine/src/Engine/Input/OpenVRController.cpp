@@ -10,7 +10,7 @@
 #include "Engine.h"
 #include "ConVar.h"
 
-ConVar steamvr_hapticpulse_bug_workaround("steamvr_hapticpulse_bug_workaround", false);
+ConVar steamvr_hapticpulse_bug_workaround("steamvr_hapticpulse_bug_workaround", false, FCVAR_NONE);
 
 bool OpenVRController::STEAMVR_BUG_WORKAROUND_FLIPFLOP = false;
 

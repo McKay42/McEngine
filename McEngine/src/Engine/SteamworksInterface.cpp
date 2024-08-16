@@ -22,8 +22,8 @@
 
 SteamworksInterface *steam = NULL;
 
-ConVar debug_steam("debug_steam", false);
-ConVar steam_timeout("steam_timeout", 15.0f, "timeout in seconds for some steamworks API calls");
+ConVar debug_steam("debug_steam", false, FCVAR_NONE);
+ConVar steam_timeout("steam_timeout", 15.0f, FCVAR_NONE, "timeout in seconds for some steamworks API calls");
 
 #ifdef MCENGINE_FEATURE_STEAMWORKS
 

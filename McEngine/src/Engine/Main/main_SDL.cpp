@@ -53,16 +53,43 @@ bool g_bHasFocus = true; // for fps_max_background
 
 SDL_Window *g_window = NULL;
 
-ConVar fps_max("fps_max", 60.0f, "framerate limiter, foreground");
-ConVar fps_max_yield("fps_max_yield", true, "always release rest of timeslice once per frame (call scheduler via sleep(0))");
-ConVar fps_max_background("fps_max_background", 30.0f, "framerate limiter, background");
-ConVar fps_unlimited("fps_unlimited", false);
-ConVar fps_unlimited_yield("fps_unlimited_yield", true, "always release rest of timeslice once per frame (call scheduler via sleep(0)), even if unlimited fps are enabled");
+ConVar fps_max("fps_max", 60.0f, FCVAR_NONE, "framerate limiter, foreground");
+ConVar fps_max_yield("fps_max_yield", true, FCVAR_NONE, "always release rest of timeslice once per frame (call scheduler via sleep(0))");
+ConVar fps_max_background("fps_max_background", 30.0f, FCVAR_NONE, "framerate limiter, background");
+ConVar fps_unlimited("fps_unlimited", false, FCVAR_NONE);
+ConVar fps_unlimited_yield("fps_unlimited_yield", true, FCVAR_NONE, "always release rest of timeslice once per frame (call scheduler via sleep(0)), even if unlimited fps are enabled");
 
-ConVar sdl_joystick_mouse_sensitivity("sdl_joystick_mouse_sensitivity", 1.0f);
-ConVar sdl_joystick0_deadzone("sdl_joystick0_deadzone", 0.3f);
-ConVar sdl_joystick_zl_threshold("sdl_joystick_zl_threshold", -0.5f);
-ConVar sdl_joystick_zr_threshold("sdl_joystick_zr_threshold", -0.5f);
+ConVar sdl_joystick_mouse_sensitivity("sdl_joystick_mouse_sensitivity", 1.0f, FCVAR_NONE);
+ConVar sdl_joystick0_deadzone("sdl_joystick0_deadzone", 0.3f, FCVAR_NONE);
+ConVar sdl_joystick_zl_threshold("sdl_joystick_zl_threshold", -0.5f, FCVAR_NONE);
+ConVar sdl_joystick_zr_threshold("sdl_joystick_zr_threshold", -0.5f, FCVAR_NONE);
+
+ConVar sdl_steamdeck_starttextinput_workaround("sdl_steamdeck_starttextinput_workaround", true, FCVAR_NONE, "currently used to fix an SDL2 bug on the Steam Deck (fixes USB/touch keyboard textual input not working under gamescope), see https://github.com/libsdl-org/SDL/issues/8561");
+ConVar sdl_steamdeck_doubletouch_workaround("sdl_steamdeck_doubletouch_workaround", true, FCVAR_NONE, "currently used to fix a Valve/SDL2 bug on the Steam Deck (fixes \"Touchscreen Native Support\" firing 4 events for one single touch under gamescope, i.e. DOWN/UP/DOWN/UP instead of just DOWN/UP)");
+
+ConVar debug_sdl("debug_sdl", false, FCVAR_NONE);
+
+static bool isSteamDeckInt()
+{
+	const char *steamDeck = std::getenv("SteamDeck");
+	if (steamDeck != NULL)
+	{
+		const std::string stdSteamDeck(steamDeck);
+		return (stdSteamDeck == "1");
+	}
+	return false;
+}
+
+static bool isGamescopeInt()
+{
+	const char *xdgCurrentDesktop = std::getenv("XDG_CURRENT_DESKTOP");
+	if (xdgCurrentDesktop != NULL)
+	{
+		const std::string stdXdgCurrentDesktop(xdgCurrentDesktop);
+		return (stdXdgCurrentDesktop == "gamescope");
+	}
+	return false;
+}
 
 int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 {
@@ -198,8 +225,16 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 	deltaTimer->update();
 
 	// custom
+	const bool isSteamDeck = isSteamDeckInt();
+	const bool isGamescope = isGamescopeInt();
+
+	if (isSteamDeck && isGamescope && sdl_steamdeck_starttextinput_workaround.getBool())
+		SDL_StartTextInput();
+
 	Vector2 mousePos;
 	ConVar *mouse_raw_input_ref = convar->getConVarByName("mouse_raw_input");
+	std::vector<SDL_FingerID> touchingFingerIds;
+	SDL_TouchID currentTouchId = 0;
 
 	// main loop
 	SDL_Event e;
@@ -220,6 +255,12 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 		{
 			VPROF_BUDGET("SDL", VPROF_BUDGETGROUP_WNDPROC);
 
+			// sanity, ensure any lost SDL_FINGERUP events (even though this should be impossible) don't kill cursor movement for the rest of the session
+			{
+				if (SDL_GetNumTouchFingers(currentTouchId) < 1)
+					touchingFingerIds.clear();
+			}
+
 			// handle automatic raw input toggling
 			{
 				const bool isRawInputActuallyEnabled = (SDL_GetRelativeMouseMode() == SDL_TRUE);
@@ -231,6 +272,8 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 			}
 
 			const bool isRawInputEnabled = (SDL_GetRelativeMouseMode() == SDL_TRUE);
+			const bool isSteamDeckDoubletouchWorkaroundEnabled = (isSteamDeck && isGamescope && sdl_steamdeck_doubletouch_workaround.getBool());
+			const bool isDebugSdl = debug_sdl.getBool();
 
 			while (SDL_PollEvent(&e) != 0)
 			{
@@ -302,46 +345,52 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 
 				// mouse
 				case SDL_MOUSEBUTTONDOWN:
-					switch (e.button.button)
+					if (!(isSteamDeck && environment->wasLastMouseInputTouch())) // HACKHACK: Steam Deck workaround (sends mouse events even though native touchscreen support is enabled)
 					{
-					case SDL_BUTTON_LEFT:
-						g_engine->onMouseLeftChange(true);
-						break;
-					case SDL_BUTTON_MIDDLE:
-						g_engine->onMouseMiddleChange(true);
-						break;
-					case SDL_BUTTON_RIGHT:
-						g_engine->onMouseRightChange(true);
-						break;
+						switch (e.button.button)
+						{
+						case SDL_BUTTON_LEFT:
+							g_engine->onMouseLeftChange(true);
+							break;
+						case SDL_BUTTON_MIDDLE:
+							g_engine->onMouseMiddleChange(true);
+							break;
+						case SDL_BUTTON_RIGHT:
+							g_engine->onMouseRightChange(true);
+							break;
 
-					case SDL_BUTTON_X1:
-						g_engine->onMouseButton4Change(true);
-						break;
-					case SDL_BUTTON_X2:
-						g_engine->onMouseButton5Change(true);
-						break;
+						case SDL_BUTTON_X1:
+							g_engine->onMouseButton4Change(true);
+							break;
+						case SDL_BUTTON_X2:
+							g_engine->onMouseButton5Change(true);
+							break;
+						}
 					}
 					break;
 
 				case SDL_MOUSEBUTTONUP:
-					switch (e.button.button)
+					if (!(isSteamDeck && environment->wasLastMouseInputTouch())) // HACKHACK: Steam Deck workaround (sends mouse events even though native touchscreen support is enabled)
 					{
-					case SDL_BUTTON_LEFT:
-						g_engine->onMouseLeftChange(false);
-						break;
-					case SDL_BUTTON_MIDDLE:
-						g_engine->onMouseMiddleChange(false);
-						break;
-					case SDL_BUTTON_RIGHT:
-						g_engine->onMouseRightChange(false);
-						break;
+						switch (e.button.button)
+						{
+						case SDL_BUTTON_LEFT:
+							g_engine->onMouseLeftChange(false);
+							break;
+						case SDL_BUTTON_MIDDLE:
+							g_engine->onMouseMiddleChange(false);
+							break;
+						case SDL_BUTTON_RIGHT:
+							g_engine->onMouseRightChange(false);
+							break;
 
-					case SDL_BUTTON_X1:
-						g_engine->onMouseButton4Change(false);
-						break;
-					case SDL_BUTTON_X2:
-						g_engine->onMouseButton5Change(false);
-						break;
+						case SDL_BUTTON_X1:
+							g_engine->onMouseButton4Change(false);
+							break;
+						case SDL_BUTTON_X2:
+							g_engine->onMouseButton5Change(false);
+							break;
+						}
 					}
 					break;
 
@@ -353,55 +402,152 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					break;
 
 				case SDL_MOUSEMOTION:
-					if (isRawInputEnabled)
-						g_engine->onMouseRawMove(e.motion.xrel, e.motion.yrel);
+					if (!(isSteamDeck && environment->wasLastMouseInputTouch())) // HACKHACK: Steam Deck workaround (sends mouse events even though native touchscreen support is enabled)
+					{
+						if (isDebugSdl)
+							debugLog("SDL_MOUSEMOTION: xrel = %i, yrel = %i, which = %i\n", (int)e.motion.xrel, (int)e.motion.yrel, (int)e.motion.which);
+
+						if (e.motion.which != SDL_TOUCH_MOUSEID)
+						{
+							environment->setWasLastMouseInputTouch(false);
+
+							if (isRawInputEnabled)
+								g_engine->onMouseRawMove(e.motion.xrel, e.motion.yrel);
+						}
+					}
 					break;
 
 				// touch mouse
 				// NOTE: sometimes when quickly tapping with two fingers, events will get lost (due to the touchscreen believing that it was one finger which moved very quickly, instead of 2 tapping fingers)
 				case SDL_FINGERDOWN:
-					if (e.tfinger.fingerId == 0)
 					{
-						mousePos = Vector2(e.tfinger.x, e.tfinger.y) * g_engine->getScreenSize();
-						environment->setMousePos(mousePos.x, mousePos.y);
-						g_engine->getMouse()->onPosChange(mousePos);
+						if (isDebugSdl)
+							debugLog("SDL_FINGERDOWN: touchId = %i, fingerId = %i, x = %f, y = %f\n", (int)e.tfinger.touchId, (int)e.tfinger.fingerId, e.tfinger.x, e.tfinger.y);
 
-						if (g_engine->getMouse()->isLeftDown())
-							g_engine->onMouseLeftChange(false);
+						environment->setWasLastMouseInputTouch(true);
 
-						g_engine->onMouseLeftChange(true);
-					}
-					else if (e.tfinger.fingerId == 1)
-					{
-						if (g_engine->getMouse()->isLeftDown())
-							g_engine->onMouseLeftChange(false);
+						currentTouchId = e.tfinger.touchId;
 
-						g_engine->onMouseLeftChange(true);
-					}
-					else if (e.tfinger.fingerId == 2)
-					{
-						if (g_engine->getMouse()->isLeftDown())
-							g_engine->onMouseLeftChange(false);
+						bool isFingerIdAlreadyTouching = false;
+						for (const SDL_FingerID &touchingFingerId : touchingFingerIds)
+						{
+							if (touchingFingerId == e.tfinger.fingerId)
+							{
+								isFingerIdAlreadyTouching = true;
+								break;
+							}
+						}
 
-						g_engine->onMouseLeftChange(true);
+						if (!isFingerIdAlreadyTouching || isSteamDeckDoubletouchWorkaroundEnabled)
+						{
+							touchingFingerIds.push_back(e.tfinger.fingerId);
+
+							if (!isSteamDeckDoubletouchWorkaroundEnabled || isFingerIdAlreadyTouching)
+							{
+								if (touchingFingerIds.size() < (isSteamDeckDoubletouchWorkaroundEnabled ? 3 : 2))
+								{
+									mousePos = Vector2(e.tfinger.x, e.tfinger.y) * g_engine->getScreenSize();
+									environment->setMousePos(mousePos.x, mousePos.y);
+									g_engine->getMouse()->onPosChange(mousePos);
+
+									if (g_engine->getMouse()->isLeftDown())
+										g_engine->onMouseLeftChange(false);
+
+									g_engine->onMouseLeftChange(true);
+								}
+								else
+								{
+									if (g_engine->getMouse()->isLeftDown())
+										g_engine->onMouseLeftChange(false);
+
+									g_engine->onMouseLeftChange(true);
+								}
+							}
+						}
 					}
 					break;
 
 				case SDL_FINGERUP:
-					if (e.tfinger.fingerId == 0)
-						g_engine->onMouseLeftChange(false);
-					//else if (e.tfinger.fingerId == 1)
-					//	g_engine->onMouseRightChange(false);
-					//else if (e.tfinger.fingerId == 2)
-					//	g_engine->onMouseLeftChange(false);
+					{
+						if (isDebugSdl)
+							debugLog("SDL_FINGERUP: touchId = %i, fingerId = %i, x = %f, y = %f\n", (int)e.tfinger.touchId, (int)e.tfinger.fingerId, e.tfinger.x, e.tfinger.y);
+
+						environment->setWasLastMouseInputTouch(true);
+
+						currentTouchId = e.tfinger.touchId;
+
+						// NOTE: also removes the finger from the touchingFingerIds list
+						bool wasFingerIdAlreadyTouching = false;
+						{
+							size_t numFingerIdTouches = 0;
+							for (size_t i=0; i<touchingFingerIds.size(); i++)
+							{
+								if (touchingFingerIds[i] == e.tfinger.fingerId)
+								{
+									wasFingerIdAlreadyTouching = true;
+									numFingerIdTouches++;
+
+									if (isSteamDeckDoubletouchWorkaroundEnabled)
+										continue;
+
+									touchingFingerIds.erase(touchingFingerIds.begin() + i);
+									i--;
+								}
+							}
+
+							if (isSteamDeckDoubletouchWorkaroundEnabled)
+							{
+								// cleanup on "last" release (the second one)
+								if (numFingerIdTouches > 1)
+								{
+									for (size_t i=0; i<touchingFingerIds.size(); i++)
+									{
+										if (touchingFingerIds[i] == e.tfinger.fingerId)
+										{
+											touchingFingerIds.erase(touchingFingerIds.begin() + i);
+											i--;
+										}
+									}
+								}
+							}
+						}
+
+						if (wasFingerIdAlreadyTouching)
+						{
+							if (e.tfinger.fingerId == touchingFingerIds[0])
+								g_engine->onMouseLeftChange(false);
+						}
+					}
 					break;
 
 				case SDL_FINGERMOTION:
-					if (e.tfinger.fingerId == 0)
 					{
-						mousePos = Vector2(e.tfinger.x, e.tfinger.y) * g_engine->getScreenSize();
-						environment->setMousePos(mousePos.x, mousePos.y);
-						g_engine->getMouse()->onPosChange(mousePos);
+						if (isDebugSdl)
+							debugLog("SDL_FINGERMOTION: touchId = %i, fingerId = %i, x = %f, y = %f, dx = %f, dy = %f\n", (int)e.tfinger.touchId, (int)e.tfinger.fingerId, e.tfinger.x, e.tfinger.y, e.tfinger.dx, e.tfinger.dy);
+
+						environment->setWasLastMouseInputTouch(true);
+
+						currentTouchId = e.tfinger.touchId;
+
+						bool isFingerIdTouching = false;
+						for (size_t i=0; i<touchingFingerIds.size(); i++)
+						{
+							if (touchingFingerIds[i] == e.tfinger.fingerId)
+							{
+								isFingerIdTouching = true;
+								break;
+							}
+						}
+
+						if (isFingerIdTouching)
+						{
+							if (e.tfinger.fingerId == touchingFingerIds[0])
+							{
+								mousePos = Vector2(e.tfinger.x, e.tfinger.y) * g_engine->getScreenSize();
+								environment->setMousePos(mousePos.x, mousePos.y);
+								g_engine->getMouse()->onPosChange(mousePos);
+							}
+						}
 					}
 					break;
 
@@ -410,7 +556,9 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 #ifdef MCENGINE_SDL_JOYSTICK
 
 				case SDL_JOYBUTTONDOWN:
-					//debugLog("joybuttondown: %i button %i down\n", (int)e.jbutton.which, (int)e.jbutton.button);
+					if (isDebugSdl)
+						debugLog("SDL_JOYBUTTONDOWN: joystickId = %i, button = %i\n", (int)e.jbutton.which, (int)e.jbutton.button);
+
 					if (e.jbutton.button == 0) // KEY_A
 					{
 						g_engine->onMouseLeftChange(true);
@@ -448,7 +596,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 						g_engine->onKeyboardKeyDown(SDL_SCANCODE_V);
 					else if ((env->getOS() == Environment::OS::OS_HORIZON ? e.jbutton.button == 11 : e.jbutton.button == 6)) // KEY_MINUS/KEY_SELECT
 						g_engine->onKeyboardKeyDown(SDL_SCANCODE_F1);
-					else if ((env->getOS() == Environment::OS::OS_HORIZON ? e.jbutton.button == 4 : e.jbutton.button == 8)) // left stick press
+					else if ((env->getOS() == Environment::OS::OS_HORIZON ? e.jbutton.button == 4 : e.jbutton.button == 9)) // left stick press
 					{
 						// toggle options (CTRL + O)
 						g_engine->onKeyboardKeyDown(SDL_SCANCODE_LCTRL);
@@ -456,7 +604,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 						g_engine->onKeyboardKeyUp(SDL_SCANCODE_LCTRL);
 						g_engine->onKeyboardKeyUp(SDL_SCANCODE_O);
 					}
-					else if ((env->getOS() == Environment::OS::OS_HORIZON ? e.jbutton.button == 5 : e.jbutton.button == 9)) // right stick press
+					else if ((env->getOS() == Environment::OS::OS_HORIZON ? e.jbutton.button == 5 : e.jbutton.button == 10)) // right stick press
 					{
 						if (xDown)
 						{
@@ -649,6 +797,8 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 					mousePos += joystickDelta;
 					mousePos.x = clamp<float>(mousePos.x, 0.0f, g_engine->getScreenSize().x - 1);
 					mousePos.y = clamp<float>(mousePos.y, 0.0f, g_engine->getScreenSize().y - 1);
+
+					environment->setWasLastMouseInputTouch(false);
 
 					environment->setMousePos(mousePos.x, mousePos.y);
 					g_engine->getMouse()->onPosChange(mousePos);

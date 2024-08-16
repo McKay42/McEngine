@@ -13,7 +13,8 @@
 class SWShader : public Shader
 {
 public:
-	SWShader(UString vertexShader, UString fragmentShader, bool source);
+	SWShader(UString shader, bool source);
+	SWShader(UString vertexShader, UString fragmentShader, bool source); // DEPRECATED
 	virtual ~SWShader() {destroy();}
 
 	virtual void enable();

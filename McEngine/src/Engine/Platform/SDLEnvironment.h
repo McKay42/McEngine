@@ -107,6 +107,8 @@ public:
 	// ILLEGAL:
 	void setWindow(SDL_Window *window) {m_window = window;}
 	inline SDL_Window *getWindow() {return m_window;}
+	void setWasLastMouseInputTouch(bool wasLastMouseInputTouch) {m_bWasLastMouseInputTouch = wasLastMouseInputTouch;}
+	inline bool wasLastMouseInputTouch() const {return m_bWasLastMouseInputTouch;}
 
 protected:
 	SDL_Window *m_window;
@@ -127,6 +129,9 @@ private:
 	bool m_bCursorClipped;
 	McRect m_cursorClip;
 	CURSORTYPE m_cursorType;
+
+	// touch
+	bool m_bWasLastMouseInputTouch;
 
 	// clipboard
 	const char *m_sPrevClipboardTextSDL;

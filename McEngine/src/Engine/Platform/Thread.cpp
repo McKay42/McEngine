@@ -58,7 +58,7 @@ private:
 
 #endif
 
-ConVar debug_thread("debug_thread", false);
+ConVar debug_thread("debug_thread", false, FCVAR_NONE);
 
 ConVar *McThread::debug = &debug_thread;
 

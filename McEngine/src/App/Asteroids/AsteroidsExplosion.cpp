@@ -13,10 +13,10 @@
 
 #include "AsteroidsUtil.h"
 
-ConVar asteroids_explosion_num_particles("asteroids_explosion_num_particles", 20);
-ConVar asteroids_explosion_particle_min_speed("asteroids_explosion_particle_min_speed", 100.0f);
-ConVar asteroids_explosion_particle_max_speed("asteroids_particle_max_speed", 200.0f);
-ConVar asteroids_explosion_particle_duration("asteroids_explosion_particle_duration", 1.0f);
+ConVar asteroids_explosion_num_particles("asteroids_explosion_num_particles", 20, FCVAR_NONE);
+ConVar asteroids_explosion_particle_min_speed("asteroids_explosion_particle_min_speed", 100.0f, FCVAR_NONE);
+ConVar asteroids_explosion_particle_max_speed("asteroids_particle_max_speed", 200.0f, FCVAR_NONE);
+ConVar asteroids_explosion_particle_duration("asteroids_explosion_particle_duration", 1.0f, FCVAR_NONE);
 
 AsteroidsExplosion::AsteroidsExplosion(float x, float y, float radius)
 {

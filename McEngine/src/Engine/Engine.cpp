@@ -90,7 +90,7 @@ public:
 
 void _version(void);
 void _host_timescale_( UString oldValue, UString newValue );
-ConVar host_timescale("host_timescale", 1.0f, "Scale by which the engine measures elapsed time, affects engine->getTime()", _host_timescale_);
+ConVar host_timescale("host_timescale", 1.0f, FCVAR_CHEAT, "Scale by which the engine measures elapsed time, affects engine->getTime()", _host_timescale_);
 void _host_timescale_( UString oldValue, UString newValue )
 {
 	if (newValue.toFloat() < 0.01f)
@@ -99,13 +99,13 @@ void _host_timescale_( UString oldValue, UString newValue )
 		host_timescale.setValue(1.0f);
 	}
 }
-ConVar epilepsy("epilepsy", false);
-ConVar debug_engine("debug_engine", false);
-ConVar minimize_on_focus_lost_if_fullscreen("minimize_on_focus_lost_if_fullscreen", true);
-ConVar minimize_on_focus_lost_if_borderless_windowed_fullscreen("minimize_on_focus_lost_if_borderless_windowed_fullscreen", false);
-ConVar _win_realtimestylus("win_realtimestylus", false, "if compiled on Windows, enables native RealTimeStylus support for tablet clicks");
-ConVar _win_processpriority("win_processpriority", 0, "if compiled on Windows, sets the main process priority (0 = normal, 1 = high)");
-ConVar _win_disable_windows_key("win_disable_windows_key", false, "if compiled on Windows, set to 0/1 to disable/enable all windows keys via low level keyboard hook");
+ConVar epilepsy("epilepsy", false, FCVAR_NONE);
+ConVar debug_engine("debug_engine", false, FCVAR_NONE);
+ConVar minimize_on_focus_lost_if_fullscreen("minimize_on_focus_lost_if_fullscreen", true, FCVAR_NONE);
+ConVar minimize_on_focus_lost_if_borderless_windowed_fullscreen("minimize_on_focus_lost_if_borderless_windowed_fullscreen", false, FCVAR_NONE);
+ConVar _win_realtimestylus("win_realtimestylus", false, FCVAR_NONE, "if compiled on Windows, enables native RealTimeStylus support for tablet clicks");
+ConVar _win_processpriority("win_processpriority", 0, FCVAR_NONE, "if compiled on Windows, sets the main process priority (0 = normal, 1 = high)");
+ConVar _win_disable_windows_key("win_disable_windows_key", false, FCVAR_NONE, "if compiled on Windows, set to 0/1 to disable/enable all windows keys via low level keyboard hook");
 
 ConVar *win_realtimestylus = &_win_realtimestylus; // extern
 
@@ -1035,20 +1035,20 @@ void _dpiinfo(void)
 	debugLog("env->getDPI() = %i, env->getDPIScale() = %f\n", env->getDPI(), env->getDPIScale());
 }
 
-ConVar _exit_("exit", _exit);
-ConVar _shutdown_("shutdown", _exit);
-ConVar _restart_("restart", _restart);
-ConVar _printsize_("printsize", _printsize);
-ConVar _fullscreen_("fullscreen", _fullscreen);
-ConVar _borderless_("borderless", _borderless);
-ConVar _windowed_("windowed", _windowed);
-ConVar _minimize_("minimize", _minimize);
-ConVar _maximize_("maximize", _maximize);
-ConVar _resizable_toggle_("resizable_toggle", _toggleresizable);
-ConVar _focus_("focus", _focus);
-ConVar _center_("center", _center);
-ConVar _version_("version", _version);
-ConVar _corporeal_("debug_ghost", false, _debugCorporeal);
-ConVar _errortest_("errortest", _errortest);
-ConVar _crash_("crash", _crash);
-ConVar _dpiinfo_("dpiinfo", _dpiinfo);
+ConVar _exit_("exit", FCVAR_NONE, _exit);
+ConVar _shutdown_("shutdown", FCVAR_NONE, _exit);
+ConVar _restart_("restart", FCVAR_NONE, _restart);
+ConVar _printsize_("printsize", FCVAR_NONE, _printsize);
+ConVar _fullscreen_("fullscreen", FCVAR_NONE, _fullscreen);
+ConVar _borderless_("borderless", FCVAR_NONE, _borderless);
+ConVar _windowed_("windowed", FCVAR_NONE, _windowed);
+ConVar _minimize_("minimize", FCVAR_NONE, _minimize);
+ConVar _maximize_("maximize", FCVAR_NONE, _maximize);
+ConVar _resizable_toggle_("resizable_toggle", FCVAR_NONE, _toggleresizable);
+ConVar _focus_("focus", FCVAR_NONE, _focus);
+ConVar _center_("center", FCVAR_NONE, _center);
+ConVar _version_("version", FCVAR_NONE, _version);
+ConVar _corporeal_("debug_ghost", FCVAR_NONE, false, _debugCorporeal);
+ConVar _errortest_("errortest", FCVAR_NONE, _errortest);
+ConVar _crash_("crash", FCVAR_NONE, _crash);
+ConVar _dpiinfo_("dpiinfo", FCVAR_NONE, _dpiinfo);

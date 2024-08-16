@@ -15,7 +15,8 @@
 class OpenGLES2Shader : public Shader
 {
 public:
-	OpenGLES2Shader(UString vertexShader, UString fragmentShader, bool source);
+	OpenGLES2Shader(UString shader, bool source);
+	OpenGLES2Shader(UString vertexShader, UString fragmentShader, bool source); // DEPRECATED
 	virtual ~OpenGLES2Shader() {destroy();}
 
 	virtual void enable();

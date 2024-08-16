@@ -107,20 +107,20 @@ DWORD CALLBACK OutputWasapiProc(void *buffer, DWORD length, void *user)
 
 
 
-ConVar snd_output_device("snd_output_device", "Default");
+ConVar snd_output_device("snd_output_device", "Default", FCVAR_NONE);
 ConVar snd_restart("snd_restart");
-ConVar win_snd_fallback_dsound("win_snd_fallback_dsound", false, "use DirectSound instead of WASAPI");
+ConVar win_snd_fallback_dsound("win_snd_fallback_dsound", false, FCVAR_NONE, "use DirectSound instead of WASAPI");
 
-ConVar snd_freq("snd_freq", 44100, "output sampling rate in Hz");
-ConVar snd_updateperiod("snd_updateperiod", 10, "BASS_CONFIG_UPDATEPERIOD length in milliseconds");
-ConVar snd_dev_period("snd_dev_period", 10, "BASS_CONFIG_DEV_PERIOD length in milliseconds, or if negative then in samples");
-ConVar snd_dev_buffer("snd_dev_buffer", 30, "BASS_CONFIG_DEV_BUFFER length in milliseconds");
-ConVar snd_chunk_size("snd_chunk_size", 256, "only used in horizon builds with sdl mixer audio");
+ConVar snd_freq("snd_freq", 44100, FCVAR_NONE, "output sampling rate in Hz");
+ConVar snd_updateperiod("snd_updateperiod", 10, FCVAR_NONE, "BASS_CONFIG_UPDATEPERIOD length in milliseconds");
+ConVar snd_dev_period("snd_dev_period", 10, FCVAR_NONE, "BASS_CONFIG_DEV_PERIOD length in milliseconds, or if negative then in samples");
+ConVar snd_dev_buffer("snd_dev_buffer", 30, FCVAR_NONE, "BASS_CONFIG_DEV_BUFFER length in milliseconds");
+ConVar snd_chunk_size("snd_chunk_size", 256, FCVAR_NONE, "only used in horizon builds with sdl mixer audio");
 
-ConVar snd_restrict_play_frame("snd_restrict_play_frame", true, "only allow one new channel per frame for overlayable sounds (prevents lag and earrape)");
-ConVar snd_change_check_interval("snd_change_check_interval", 0.0f, "check for output device changes every this many seconds. 0 = disabled (default)");
+ConVar snd_restrict_play_frame("snd_restrict_play_frame", true, FCVAR_NONE, "only allow one new channel per frame for overlayable sounds (prevents lag and earrape)");
+ConVar snd_change_check_interval("snd_change_check_interval", 0.0f, FCVAR_NONE, "check for output device changes every this many seconds. 0 = disabled (default)");
 
-///ConVar snd_async("snd_async", true, "play sounds on separate thread (e.g. removes BASS_ChannelPlay() ~0.3 ms blocking delay from main thread)");
+///ConVar snd_async("snd_async", true, FCVAR_NONE, "play sounds on separate thread (e.g. removes BASS_ChannelPlay() ~0.3 ms blocking delay from main thread)");
 
 
 
@@ -130,10 +130,10 @@ void _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE(UString oldValue, UString newValue);
 void _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE(UString oldValue, UString newValue);
 void _WIN_SND_WASAPI_EXCLUSIVE_CHANGE(UString oldValue, UString newValue);
 
-ConVar win_snd_wasapi_buffer_size("win_snd_wasapi_buffer_size", 0.011f, "buffer size/length in seconds (e.g. 0.011 = 11 ms), directly responsible for audio delay and crackling", _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE);
-ConVar win_snd_wasapi_period_size("win_snd_wasapi_period_size", 0.0f, "interval between OutputWasapiProc calls in seconds (e.g. 0.016 = 16 ms) (0 = use default)", _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE);
-ConVar win_snd_wasapi_exclusive("win_snd_wasapi_exclusive", true, "whether to use exclusive device mode to further reduce latency", _WIN_SND_WASAPI_EXCLUSIVE_CHANGE);
-ConVar win_snd_wasapi_shared_volume_affects_device("win_snd_wasapi_shared_volume_affects_device", false, "if in shared mode, whether to affect device volume globally or use separate session volume (default)");
+ConVar win_snd_wasapi_buffer_size("win_snd_wasapi_buffer_size", 0.011f, FCVAR_NONE, "buffer size/length in seconds (e.g. 0.011 = 11 ms), directly responsible for audio delay and crackling", _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE);
+ConVar win_snd_wasapi_period_size("win_snd_wasapi_period_size", 0.0f, FCVAR_NONE, "interval between OutputWasapiProc calls in seconds (e.g. 0.016 = 16 ms) (0 = use default)", _WIN_SND_WASAPI_PERIOD_SIZE_CHANGE);
+ConVar win_snd_wasapi_exclusive("win_snd_wasapi_exclusive", true, FCVAR_NONE, "whether to use exclusive device mode to further reduce latency", _WIN_SND_WASAPI_EXCLUSIVE_CHANGE);
+ConVar win_snd_wasapi_shared_volume_affects_device("win_snd_wasapi_shared_volume_affects_device", false, FCVAR_NONE, "if in shared mode, whether to affect device volume globally or use separate session volume (default)");
 
 void _WIN_SND_WASAPI_BUFFER_SIZE_CHANGE(UString oldValue, UString newValue)
 {
@@ -1140,4 +1140,4 @@ void _volume(UString oldValue, UString newValue)
 	engine->getSound()->setVolume(newValue.toFloat());
 }
 
-ConVar _volume_("volume", 1.0f, _volume);
+ConVar _volume_("volume", 1.0f, FCVAR_NONE, _volume);

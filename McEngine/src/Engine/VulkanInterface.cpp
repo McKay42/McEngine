@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-ConVar _debug_vulkan("debug_vulkan", false);
+ConVar _debug_vulkan("debug_vulkan", false, FCVAR_NONE);
 
 VulkanInterface *vulkan = NULL;
 

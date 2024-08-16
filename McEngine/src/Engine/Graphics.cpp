@@ -11,15 +11,15 @@
 #include "ConVar.h"
 #include "Camera.h"
 
-ConVar r_3dscene_zn("r_3dscene_zn", 5.0f);
-ConVar r_3dscene_zf("r_3dscene_zf", 5000.0f);
+ConVar r_3dscene_zn("r_3dscene_zn", 5.0f, FCVAR_CHEAT);
+ConVar r_3dscene_zf("r_3dscene_zf", 5000.0f, FCVAR_CHEAT);
 
-ConVar _r_globaloffset_x("r_globaloffset_x", 0.0f);
-ConVar _r_globaloffset_y("r_globaloffset_y", 0.0f);
-ConVar _r_debug_disable_cliprect("r_debug_disable_cliprect", false);
-ConVar _r_debug_disable_3dscene("r_debug_disable_3dscene", false);
-ConVar _r_debug_flush_drawstring("r_debug_flush_drawstring", false);
-ConVar _r_debug_drawimage("r_debug_drawimage", false);
+ConVar _r_globaloffset_x("r_globaloffset_x", 0.0f, FCVAR_CHEAT);
+ConVar _r_globaloffset_y("r_globaloffset_y", 0.0f, FCVAR_CHEAT);
+ConVar _r_debug_disable_cliprect("r_debug_disable_cliprect", false, FCVAR_CHEAT);
+ConVar _r_debug_disable_3dscene("r_debug_disable_3dscene", false, FCVAR_CHEAT);
+ConVar _r_debug_flush_drawstring("r_debug_flush_drawstring", false, FCVAR_NONE);
+ConVar _r_debug_drawimage("r_debug_drawimage", false, FCVAR_CHEAT);
 
 ConVar *Graphics::r_globaloffset_x = &_r_globaloffset_x;
 ConVar *Graphics::r_globaloffset_y = &_r_globaloffset_y;
@@ -225,21 +225,28 @@ void Graphics::offset3DScene(float x, float y, float z)
 	m_v3dSceneOffset = Vector3(x,y,z);
 }
 
+void Graphics::forceUpdateTransform()
+{
+	updateTransform();
+}
+
 void Graphics::updateTransform(bool force)
 {
 	if (!m_bTransformUpToDate || force)
 	{
-		Matrix4 worldMatrixTemp = m_worldTransformStack.top();
-		Matrix4 projectionMatrixTemp = m_projectionTransformStack.top();
+		m_worldMatrix = m_worldTransformStack.top();
+		m_projectionMatrix = m_projectionTransformStack.top();
 
 		// HACKHACK: 3d gui scenes
 		if (m_bIs3dScene)
 		{
-			worldMatrixTemp = m_3dSceneWorldMatrix * m_worldTransformStack.top();
-			projectionMatrixTemp = m_3dSceneProjectionMatrix;
+			m_worldMatrix = m_3dSceneWorldMatrix * m_worldTransformStack.top();
+			m_projectionMatrix = m_3dSceneProjectionMatrix;
 		}
 
-		onTransformUpdate(projectionMatrixTemp, worldMatrixTemp);
+		m_MP = m_projectionMatrix * m_worldMatrix;
+
+		onTransformUpdate(m_projectionMatrix, m_worldMatrix);
 
 		m_bTransformUpToDate = true;
 	}
@@ -288,5 +295,5 @@ void _mat_wireframe(UString oldValue, UString newValue)
 	engine->getGraphics()->setWireframe(newValue.toFloat() > 0.0f);
 }
 
-ConVar _mat_wireframe_("mat_wireframe", false, _mat_wireframe);
-ConVar _vsync_("vsync", false, _vsync);
+ConVar _mat_wireframe_("mat_wireframe", false, FCVAR_CHEAT, _mat_wireframe);
+ConVar _vsync_("vsync", false, FCVAR_NONE, _vsync);

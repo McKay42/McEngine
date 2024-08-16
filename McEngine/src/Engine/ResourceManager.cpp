@@ -44,11 +44,11 @@ public:
 #endif
 };
 
-ConVar rm_numthreads("rm_numthreads", 3, "how many parallel resource loader threads are spawned once on startup (!), and subsequently used during runtime");
-ConVar rm_warnings("rm_warnings", false);
-ConVar rm_debug_async_delay("rm_debug_async_delay", 0.0f);
-ConVar rm_interrupt_on_destroy("rm_interrupt_on_destroy", true);
-ConVar debug_rm_("debug_rm", false);
+ConVar rm_numthreads("rm_numthreads", 3, FCVAR_NONE, "how many parallel resource loader threads are spawned once on startup (!), and subsequently used during runtime");
+ConVar rm_warnings("rm_warnings", false, FCVAR_NONE);
+ConVar rm_debug_async_delay("rm_debug_async_delay", 0.0f, FCVAR_CHEAT);
+ConVar rm_interrupt_on_destroy("rm_interrupt_on_destroy", true, FCVAR_CHEAT);
+ConVar debug_rm_("debug_rm", false, FCVAR_NONE);
 
 ConVar *ResourceManager::debug_rm = &debug_rm_;
 
@@ -602,6 +602,64 @@ Shader *ResourceManager::createShader(UString vertexShader, UString fragmentShad
 Shader *ResourceManager::createShader(UString vertexShader, UString fragmentShader)
 {
 	Shader *shader = engine->getGraphics()->createShaderFromSource(vertexShader, fragmentShader);
+
+	loadResource(shader, true);
+
+	return shader;
+}
+
+Shader *ResourceManager::loadShader2(UString shaderFilePath, UString resourceName)
+{
+	// check if it already exists
+	if (resourceName.length() > 0)
+	{
+		Resource *temp = checkIfExistsAndHandle(resourceName);
+		if (temp != NULL)
+			return dynamic_cast<Shader*>(temp);
+	}
+
+	// create instance and load it
+	shaderFilePath.insert(0, PATH_DEFAULT_SHADERS);
+	Shader *shader = engine->getGraphics()->createShaderFromFile(shaderFilePath);
+	shader->setName(resourceName);
+
+	loadResource(shader, true);
+
+	return shader;
+}
+
+Shader *ResourceManager::loadShader2(UString shaderFilePath)
+{
+	shaderFilePath.insert(0, PATH_DEFAULT_SHADERS);
+	Shader *shader = engine->getGraphics()->createShaderFromFile(shaderFilePath);
+
+	loadResource(shader, true);
+
+	return shader;
+}
+
+Shader *ResourceManager::createShader2(UString shaderSource, UString resourceName)
+{
+	// check if it already exists
+	if (resourceName.length() > 0)
+	{
+		Resource *temp = checkIfExistsAndHandle(resourceName);
+		if (temp != NULL)
+			return dynamic_cast<Shader*>(temp);
+	}
+
+	// create instance and load it
+	Shader *shader = engine->getGraphics()->createShaderFromSource(shaderSource);
+	shader->setName(resourceName);
+
+	loadResource(shader, true);
+
+	return shader;
+}
+
+Shader *ResourceManager::createShader2(UString shaderSource)
+{
+	Shader *shader = engine->getGraphics()->createShaderFromSource(shaderSource);
 
 	loadResource(shader, true);
 

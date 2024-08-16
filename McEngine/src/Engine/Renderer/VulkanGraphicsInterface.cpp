@@ -298,6 +298,16 @@ Shader *VulkanGraphicsInterface::createShaderFromSource(UString vertexShader, US
 	return new NullShader(vertexShader, fragmentShader, true);
 }
 
+Shader *VulkanGraphicsInterface::createShaderFromFile(UString shaderFilePath)
+{
+	return new NullShader(shaderFilePath, false);
+}
+
+Shader *VulkanGraphicsInterface::createShaderFromSource(UString shaderSource)
+{
+	return new NullShader(shaderSource, true);
+}
+
 VertexArrayObject *VulkanGraphicsInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
 {
 	return new VertexArrayObject(primitive, usage, keepInSystemMemory);

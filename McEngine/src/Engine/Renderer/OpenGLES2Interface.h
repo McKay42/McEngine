@@ -84,11 +84,13 @@ public:
 	virtual Image *createImage(UString filePath, bool mipmapped, bool keepInSystemMemory);
 	virtual Image *createImage(int width, int height, bool mipmapped, bool keepInSystemMemory);
 	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
-	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);
-	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
+	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);	// DEPRECATED
+	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);				// DEPRECATED
+	virtual Shader *createShaderFromFile(UString shaderFilePath);
+	virtual Shader *createShaderFromSource(UString shaderSource);
 	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory);
 
-	// ILLEGAL:
+	// matrices & transforms
 	void forceUpdateTransform();
 
 	inline const int getShaderGenericAttribPosition() const {return m_iShaderTexturedGenericAttribPosition;}
@@ -99,7 +101,7 @@ public:
 	inline const int getVBOTexcoords() const {return m_iVBOTexcoords;}
 	inline const int getVBOTexcolors() const {return m_iVBOTexcolors;}
 
-	Matrix4 getMVP() const {return m_MP;}
+	inline Matrix4 getMVP() const {return m_MP;}
 
 protected:
 	virtual void init();

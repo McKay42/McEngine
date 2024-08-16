@@ -22,13 +22,14 @@ public:
 
 	void draw();
 
-private:
-	static int primitiveToDirectX(Graphics::PRIMITIVE primitive);
-	static int usageToDirectX(Graphics::USAGE_TYPE usage);
-
+protected:
 	virtual void init();
 	virtual void initAsync();
 	virtual void destroy();
+
+private:
+	static int primitiveToDirectX(Graphics::PRIMITIVE primitive);
+	static int usageToDirectX(Graphics::USAGE_TYPE usage);
 
 	ID3D11Buffer *m_vertexBuffer;
 

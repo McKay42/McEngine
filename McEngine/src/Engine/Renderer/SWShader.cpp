@@ -7,6 +7,11 @@
 
 #include "SWShader.h"
 
+SWShader::SWShader(UString shader, bool source)
+{
+	// TODO:
+}
+
 SWShader::SWShader(UString vertexShader, UString fragmentShader, bool source)
 {
 	// TODO:

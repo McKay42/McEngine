@@ -19,16 +19,16 @@
 
 #include "AsteroidsUtil.h"
 
-ConVar asteroids_ship_rotation_speed("asteroids_ship_rotation_speed", 200.0f);
-ConVar asteroids_ship_acceleration("asteroids_ship_acceleration", 30.0f);
-ConVar asteroids_ship_max_speed("asteroids_ship_max_speed", 250.0f);
-ConVar asteroids_ship_dampening_factor("asteroids_ship_dampening_factor", 1.0f);
+ConVar asteroids_ship_rotation_speed("asteroids_ship_rotation_speed", 200.0f, FCVAR_NONE);
+ConVar asteroids_ship_acceleration("asteroids_ship_acceleration", 30.0f, FCVAR_NONE);
+ConVar asteroids_ship_max_speed("asteroids_ship_max_speed", 250.0f, FCVAR_NONE);
+ConVar asteroids_ship_dampening_factor("asteroids_ship_dampening_factor", 1.0f, FCVAR_NONE);
 
-ConVar asteroids_bullet_speed("asteroids_bullet_speed", 400.0f);
-ConVar asteroids_min_num_asteroids("asteroids_min_num_asteroids", 4);
-ConVar asteroids_invulnerability_period("asteroids_invulnerability_period", 2.5f);
-ConVar asteroids_respawn_delay("asteroids_respawn_delay", 1.0f);
-ConVar asteroids_bomb_delay("asteroids_bomb_delay", 5.0f);
+ConVar asteroids_bullet_speed("asteroids_bullet_speed", 400.0f, FCVAR_NONE);
+ConVar asteroids_min_num_asteroids("asteroids_min_num_asteroids", 4, FCVAR_NONE);
+ConVar asteroids_invulnerability_period("asteroids_invulnerability_period", 2.5f, FCVAR_NONE);
+ConVar asteroids_respawn_delay("asteroids_respawn_delay", 1.0f, FCVAR_NONE);
+ConVar asteroids_bomb_delay("asteroids_bomb_delay", 5.0f, FCVAR_NONE);
 
 Asteroids::Asteroids()
 {

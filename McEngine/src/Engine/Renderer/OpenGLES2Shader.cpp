@@ -14,6 +14,22 @@
 
 #include "OpenGLHeaders.h"
 
+OpenGLES2Shader::OpenGLES2Shader(UString shader, bool source)
+{
+	SHADER_PARSE_RESULT parsedVertexShader = parseShaderFromFileOrString("OpenGLES2Interface::VertexShader", shader, source);
+	SHADER_PARSE_RESULT parsedFragmentShader = parseShaderFromFileOrString("OpenGLES2Interface::FragmentShader", shader, source);
+
+	m_sVsh = parsedVertexShader.source;
+	m_sFsh = parsedFragmentShader.source;
+	m_bSource = true;
+
+	m_iProgram = 0;
+	m_iVertexShader = 0;
+	m_iFragmentShader = 0;
+
+	m_iProgramBackup = 0;
+}
+
 OpenGLES2Shader::OpenGLES2Shader(UString vertexShader, UString fragmentShader, bool source) : Shader()
 {
 	m_sVsh = vertexShader;

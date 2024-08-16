@@ -17,7 +17,8 @@
 class DirectX11Shader : public Shader
 {
 public:
-	DirectX11Shader(UString vertexShader, UString fragmentShader, bool source);
+	DirectX11Shader(UString shader, bool source);
+	DirectX11Shader(UString vertexShader, UString fragmentShader, bool source); // DEPRECATED
 	virtual ~DirectX11Shader() {destroy();}
 
 	virtual void enable();
@@ -35,21 +36,60 @@ public:
 	virtual void setUniformMatrix4fv(UString name, float *v);
 
 private:
-	// TODO: extract this into public functions
-	// NOTE: "If the bind flag is D3D11_BIND_CONSTANT_BUFFER, you must set the ByteWidth value in multiples of 16, and less than or equal to D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT."
-	struct MatrixBufferType
+	struct INPUT_DESC_LINE
 	{
-		float mvp[4*4];
-		float col[4];
-		float misc[4]; // [0] = textured
+		UString type;								// e.g. "VS_INPUT"
+		UString dataType;							// e.g. "POSITION", "COLOR0", "TEXCOORD0", etc.
+		DXGI_FORMAT dxgiFormat;						// e.g. DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, etc.
+		int dxgiFormatBytes;						// e.g. "DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT" -> 12, etc.
+		D3D11_INPUT_CLASSIFICATION classification;	// e.g. D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA, D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_INSTANCE_DATA
 	};
 
+	struct BIND_DESC_LINE
+	{
+		UString type;				// e.g. "D3D11_BUFFER_DESC"
+		D3D11_BIND_FLAG bindFlag;	// e.g. D3D11_BIND_FLAG::D3D11_BIND_CONSTANT_BUFFER
+		UString name;				// e.g. "ModelViewProjectionConstantBuffer"
+		UString variableName;		// e.g. "mvp", "col", "misc", etc.
+		UString variableType;		// e.g. "float4x4", "float4", "float3", "float2", "float", etc.
+		int variableBytes;			// e.g. 16 -> "float4x4", 4 -> "float4", 3 -> "float3, 2 -> "float2", 1 -> "float", etc.
+	};
+
+	struct INPUT_DESC
+	{
+		UString type; // INPUT_DESC_LINE::type
+		std::vector<INPUT_DESC_LINE> lines;
+	};
+
+	struct BIND_DESC
+	{
+		UString name; // BIND_DESC_LINE::name
+		std::vector<BIND_DESC_LINE> lines;
+		std::vector<float> floats;
+	};
+
+private:
+	struct CACHE_ENTRY
+	{
+		int bindIndex; // into m_bindDescs[bindIndex] and m_constantBuffers[bindIndex]
+		int offsetBytes;
+	};
+
+protected:
 	virtual void init();
 	virtual void initAsync();
 	virtual void destroy();
 
-	bool compile(UString vertexShader, UString fragmentShader, bool source);
+	bool compile(UString vertexShader, UString fragmentShader);
 
+	void setUniform(const UString &name, void *src, size_t numBytes);
+
+	const CACHE_ENTRY getAndCacheUniformLocation(const UString &name);
+
+private:
+	static CACHE_ENTRY invalidCacheEntry;
+
+	UString m_sShader;
 	UString m_sVsh, m_sFsh;
 
 	bool m_bSource;
@@ -57,13 +97,18 @@ private:
 	ID3D11VertexShader *m_vs;
 	ID3D11PixelShader *m_ps;
 	ID3D11InputLayout *m_inputLayout;
-	ID3D11Buffer *m_constantBuffer;
+	std::vector<ID3D11Buffer*> m_constantBuffers;
 
 	ID3D11VertexShader *m_prevVS;
 	ID3D11PixelShader *m_prevPS;
 	ID3D11InputLayout *m_prevInputLayout;
+	std::vector<ID3D11Buffer*> m_prevConstantBuffers;
 
-	MatrixBufferType m_constants;
+	std::vector<INPUT_DESC> m_inputDescs;
+	std::vector<BIND_DESC> m_bindDescs;
+
+	std::unordered_map<std::string, CACHE_ENTRY> m_uniformLocationCache;
+	std::string m_sTempStringBuffer;
 };
 
 #endif

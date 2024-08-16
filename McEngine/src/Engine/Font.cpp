@@ -19,8 +19,8 @@
 #include <ftoutln.h>
 #include <fttrigon.h>
 
-ConVar r_drawstring_max_string_length("r_drawstring_max_string_length", 65536, "maximum number of characters per call, sanity/memory buffer limit");
-ConVar r_debug_drawstring_unbind("r_debug_drawstring_unbind", false);
+ConVar r_drawstring_max_string_length("r_drawstring_max_string_length", 65536, FCVAR_CHEAT, "maximum number of characters per call, sanity/memory buffer limit");
+ConVar r_debug_drawstring_unbind("r_debug_drawstring_unbind", false, FCVAR_NONE);
 
 static void renderFTGlyphToTextureAtlas(FT_Library library, FT_Face face, wchar_t ch, TextureAtlas *textureAtlas, bool antialiasing, std::unordered_map<wchar_t, McFont::GLYPH_METRICS> *glyphMetrics);
 static unsigned char *unpackMonoBitmap(FT_Bitmap bitmap);

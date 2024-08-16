@@ -15,7 +15,8 @@
 class OpenGLShader : public Shader
 {
 public:
-	OpenGLShader(UString vertexShader, UString fragmentShader, bool source);
+	OpenGLShader(UString shader, bool source);
+	OpenGLShader(UString vertexShader, UString fragmentShader, bool source); // DEPRECATED
 	virtual ~OpenGLShader() {destroy();}
 
 	virtual void enable();
@@ -41,11 +42,16 @@ private:
 	virtual void initAsync();
 	virtual void destroy();
 
+private:
 	bool compile(UString vertexShader, UString fragmentShader, bool source);
 	int createShaderFromString(UString shaderSource, int shaderType);
 	int createShaderFromFile(UString fileName, int shaderType);
 
-	UString m_sVsh, m_sFsh;
+private:
+	bool m_bIsShader2;
+
+	UString m_sVsh;
+	UString m_sFsh;
 
 	bool m_bSource;
 	int m_iVertexShader;

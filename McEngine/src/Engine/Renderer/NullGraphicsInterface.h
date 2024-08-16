@@ -73,7 +73,7 @@ public:
 
 	// renderer actions
 	virtual void flush() {;}
-	virtual std::vector<unsigned char> getScreenshot() {return std::vector<unsigned char>();}
+	virtual std::vector<unsigned char> getScreenshot() {std::vector<unsigned char> temp; temp.resize((size_t)m_vResolution.x * (size_t)m_vResolution.y * 3); return temp;} // RGB
 
 	// renderer info
 	virtual Vector2 getResolution() const {return m_vResolution;}
@@ -90,8 +90,10 @@ public:
 	virtual Image *createImage(UString filePath, bool mipmapped, bool keepInSystemMemory);
 	virtual Image *createImage(int width, int height, bool mipmapped, bool keepInSystemMemory);
 	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
-	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);
-	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
+	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);	// DEPRECATED
+	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);				// DEPRECATED
+	virtual Shader *createShaderFromFile(UString shaderFilePath);
+	virtual Shader *createShaderFromSource(UString shaderSource);
 	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory);
 
 protected:

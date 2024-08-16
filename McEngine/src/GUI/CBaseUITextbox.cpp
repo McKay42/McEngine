@@ -20,8 +20,8 @@
 #include "ResourceManager.h"
 #include "ConVar.h"
 
-ConVar ui_textbox_caret_blink_time("ui_textbox_caret_blink_time", 0.5f);
-ConVar ui_textbox_text_offset_x("ui_textbox_text_offset_x", 3);
+ConVar ui_textbox_caret_blink_time("ui_textbox_caret_blink_time", 0.5f, FCVAR_NONE);
+ConVar ui_textbox_text_offset_x("ui_textbox_text_offset_x", 3, FCVAR_NONE);
 
 CBaseUITextbox::CBaseUITextbox(float xPos, float yPos, float xSize, float ySize, UString name) : CBaseUIElement(xPos, yPos, xSize, ySize, name)
 {

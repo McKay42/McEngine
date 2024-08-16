@@ -103,8 +103,10 @@ public:
 	virtual Image *createImage(UString filePath, bool mipmapped, bool keepInSystemMemory);
 	virtual Image *createImage(int width, int height, bool mipmapped, bool keepInSystemMemory);
 	virtual RenderTarget *createRenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
-	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);
-	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);
+	virtual Shader *createShaderFromFile(UString vertexShaderFilePath, UString fragmentShaderFilePath);	// DEPRECATED
+	virtual Shader *createShaderFromSource(UString vertexShader, UString fragmentShader);				// DEPRECATED
+	virtual Shader *createShaderFromFile(UString shaderFilePath);
+	virtual Shader *createShaderFromSource(UString shaderSource);
 	virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory);
 
 	// ILLEGAL:
@@ -153,10 +155,6 @@ private:
 
 	ID3D11BlendState *m_blendState;
 	D3D11_BLEND_DESC m_blendDesc;
-
-	Matrix4 m_projectionMatrix;
-	Matrix4 m_worldMatrix;
-	Matrix4 m_MP;
 
 	DirectX11Shader *m_shaderTexturedGeneric;
 
