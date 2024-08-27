@@ -40,7 +40,7 @@ FrameworkTest::FrameworkTest()
 	m_testButton = new FrameworkTestButton(300, 600, 200, 25, "CBaseUIButton", "CBaseUIButton");
 
 	// load resource
-	engine->getResourceManager()->loadImage("block.png", "TESTIMAGE");
+	engine->getResourceManager()->loadImage("testimage.png", "TESTIMAGE");
 }
 
 FrameworkTest::~FrameworkTest()
