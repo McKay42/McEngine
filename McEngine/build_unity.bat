@@ -190,13 +190,13 @@ goto BUILD_SUCCEEDED
 
 
 :BUILD_FAILED
-echo [91mBuild Failed. (took %secs% second(s))[0m
+echo [91mBuild Failed. (took %mins%:%secs%)[0m
 if /i "%comspec% /c ``%~0` `" equ "%cmdcmdline:"=`%" pause
 exit /b %ERRORLEVEL%
 
 
 
 :BUILD_SUCCEEDED
-echo [92mBuild Finished. (took %secs% second(s))[0m
+echo [92mBuild Finished. (took %mins%:%secs%)[0m
 if /i "%comspec% /c ``%~0` `" equ "%cmdcmdline:"=`%" pause
 exit /b 0
