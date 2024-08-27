@@ -823,6 +823,10 @@ bool Sound::isPlaying()
 
 	return (m_bStream ? Mix_PlayingMusic() && !Mix_PausedMusic() : Mix_Playing(m_HCHANNEL) && !Mix_Paused(m_HCHANNEL));
 
+#else
+	
+	return false;
+	
 #endif
 }
 
@@ -840,6 +844,10 @@ bool Sound::isFinished()
 
 	return (m_bStream ? !Mix_PlayingMusic() && !Mix_PausedMusic() : !Mix_Playing(m_HCHANNEL) && !Mix_Paused(m_HCHANNEL));
 
+#else
+	
+	return false;
+	
 #endif
 }
 
