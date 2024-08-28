@@ -635,34 +635,46 @@ void OpenGLES2Interface::setWireframe(bool enabled)
 
 int OpenGLES2Interface::getVRAMTotal()
 {
-	int nvidiaMemory = -1;
-	int atiMemory = -1;
+	int nvidiaMemory[4];
+	int atiMemory[4];
+	
+	for (int i=0; i<4; i++)
+	{
+		nvidiaMemory[i] = -1;
+		atiMemory[i] = -1;
+	}
 
-	glGetIntegerv(GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &nvidiaMemory);
-	glGetIntegerv(TEXTURE_FREE_MEMORY_ATI, &atiMemory);
+	glGetIntegerv(GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, nvidiaMemory);
+	glGetIntegerv(TEXTURE_FREE_MEMORY_ATI, atiMemory);
 
 	glGetError(); // clear error state
 
-	if (nvidiaMemory < 1)
-		return atiMemory;
+	if (nvidiaMemory[0] < 1)
+		return atiMemory[0];
 	else
-		return nvidiaMemory;
+		return nvidiaMemory[0];
 }
 
 int OpenGLES2Interface::getVRAMRemaining()
 {
-	int nvidiaMemory = -1;
-	int atiMemory = -1;
+	int nvidiaMemory[4];
+	int atiMemory[4];
+	
+	for (int i=0; i<4; i++)
+	{
+		nvidiaMemory[i] = -1;
+		atiMemory[i] = -1;
+	}
 
-	glGetIntegerv(GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &nvidiaMemory);
-	glGetIntegerv(TEXTURE_FREE_MEMORY_ATI, &atiMemory);
+	glGetIntegerv(GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, nvidiaMemory);
+	glGetIntegerv(TEXTURE_FREE_MEMORY_ATI, atiMemory);
 
 	glGetError(); // clear error state
 
-	if (nvidiaMemory < 1)
-		return atiMemory;
+	if (nvidiaMemory[0] < 1)
+		return atiMemory[0];
 	else
-		return nvidiaMemory;
+		return nvidiaMemory[0];
 }
 
 void OpenGLES2Interface::onResolutionChange(Vector2 newResolution)
