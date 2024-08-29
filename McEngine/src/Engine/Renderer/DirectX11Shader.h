@@ -37,6 +37,8 @@ public:
 
 	// ILLEGAL:
 	void onJustBeforeDraw();
+	inline unsigned long getStatsNumConstantBufferUploadsPerFrame() const {return m_iStatsNumConstantBufferUploadsPerFrameCounter;}
+	inline unsigned long getStatsNumConstantBufferUploadsPerFrameEngineFrameCount() const {return m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount;}
 
 private:
 	struct INPUT_DESC_LINE
@@ -114,6 +116,10 @@ private:
 
 	std::unordered_map<std::string, CACHE_ENTRY> m_uniformLocationCache;
 	std::string m_sTempStringBuffer;
+
+	// stats
+	unsigned long m_iStatsNumConstantBufferUploadsPerFrameCounter;
+	unsigned long m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount;
 };
 
 #endif

@@ -138,6 +138,11 @@ void VisualProfiler::draw(Graphics *g)
 					addTextLine(UString::format("Time: %f", time), textFont, m_textLines);
 					addTextLine(UString::format("Realtime: %f", timeRunning), textFont, m_textLines);
 					addTextLine(UString::format("Time Dilation: %f", dilation), textFont, m_textLines);
+
+					for (size_t i=0; i<m_engineTextLines.size(); i++)
+					{
+						addTextLine(m_engineTextLines[i], textFont, m_textLines);
+					}
 				}
 				break;
 
@@ -206,6 +211,7 @@ void VisualProfiler::draw(Graphics *g)
 		}
 
 		m_textLines.clear();
+		m_engineTextLines.clear();
 		m_appTextLines.clear();
 	}
 
@@ -615,6 +621,13 @@ void VisualProfiler::decrementInfoBladeDisplayMode()
 		vprof_display_mode.setValue(INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_COUNT - 1);
 	else
 		vprof_display_mode.setValue(vprof_display_mode.getInt() - 1);
+}
+
+void VisualProfiler::addInfoBladeEngineTextLine(const UString &text)
+{
+	if (!m_vprof_ref->getBool() || !m_bVisible || vprof_display_mode.getInt() != INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_ENGINE_INFO) return;
+
+	m_engineTextLines.push_back(text);
 }
 
 void VisualProfiler::addInfoBladeAppTextLine(const UString &text)

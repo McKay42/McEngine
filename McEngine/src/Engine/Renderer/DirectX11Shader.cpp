@@ -44,6 +44,10 @@ DirectX11Shader::DirectX11Shader(UString shader, bool source)
 	{
 		m_prevConstantBuffers.push_back(NULL);
 	}
+
+	// stats
+	m_iStatsNumConstantBufferUploadsPerFrameCounter = 0;
+	m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount = 0;
 }
 
 DirectX11Shader::DirectX11Shader(UString vertexShader, UString fragmentShader, bool source)
@@ -65,6 +69,10 @@ DirectX11Shader::DirectX11Shader(UString vertexShader, UString fragmentShader, b
 	{
 		m_prevConstantBuffers.push_back(NULL);
 	}
+
+	// stats
+	m_iStatsNumConstantBufferUploadsPerFrameCounter = 0;
+	m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount = 0;
 }
 
 void DirectX11Shader::init()
@@ -543,6 +551,17 @@ void DirectX11Shader::onJustBeforeDraw()
 
 			// unlock
 			dx11->getDeviceContext()->Unmap(constantBuffer, 0);
+
+			// stats
+			{
+				if (engine->getFrameCount() == m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount)
+					m_iStatsNumConstantBufferUploadsPerFrameCounter++;
+				else
+				{
+					m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount = engine->getFrameCount();
+					m_iStatsNumConstantBufferUploadsPerFrameCounter = 1;
+				}
+			}
 		}
 
 		m_bConstantBuffersUpToDate = true;

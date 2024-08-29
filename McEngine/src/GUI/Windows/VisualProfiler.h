@@ -29,6 +29,7 @@ public:
 	void incrementInfoBladeDisplayMode();
 	void decrementInfoBladeDisplayMode();
 
+	void addInfoBladeEngineTextLine(const UString &text);
 	void addInfoBladeAppTextLine(const UString &text);
 
 	void setProfile(ProfilerProfile *profile);
@@ -116,6 +117,7 @@ private:
 	bool m_bRequiresAltShiftKeysToFreeze;
 
 	std::vector<TEXT_LINE> m_textLines;
+	std::vector<UString> m_engineTextLines;
 	std::vector<UString> m_appTextLines;
 };
 

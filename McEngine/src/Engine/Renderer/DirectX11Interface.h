@@ -174,6 +174,9 @@ private:
 
 	// clipping
 	std::stack<McRect> m_clipRectStack;
+
+	// stats
+	int m_iStatsNumDrawCalls;
 };
 
 #endif

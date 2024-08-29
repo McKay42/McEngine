@@ -13,7 +13,9 @@
 #include "ConVar.h"
 #include "Camera.h"
 
-#include "Font.h"
+#include "VisualProfiler.h"
+#include "ResourceManager.h"
+
 #include "DirectX11Image.h"
 #include "DirectX11Shader.h"
 #include "DirectX11RenderTarget.h"
@@ -55,6 +57,9 @@ DirectX11Interface::DirectX11Interface(HWND hwnd, bool minimalistContext) : Null
 	m_color = 0xffffffff;
 	m_bVSync = false;
 	m_activeShader = NULL;
+
+	// stats
+	m_iStatsNumDrawCalls = 0;
 }
 
 DirectX11Interface::~DirectX11Interface()
@@ -391,6 +396,37 @@ void DirectX11Interface::beginScene()
 
 	// enable default shader
 	m_shaderTexturedGeneric->enable();
+
+	// prev frame render stats
+	const int numDrawCallsPrevFrame = m_iStatsNumDrawCalls;
+	m_iStatsNumDrawCalls = 0;
+	if (vprof != NULL && vprof->isEnabled())
+	{
+		int numActiveShaders = 1;
+		for (const Resource *resource : engine->getResourceManager()->getResources())
+		{
+			const DirectX11Shader *dx11Shader = dynamic_cast<const DirectX11Shader*>(resource);
+			if (dx11Shader != NULL)
+			{
+				if (dx11Shader->getStatsNumConstantBufferUploadsPerFrameEngineFrameCount() == (engine->getFrameCount() - 1))
+					numActiveShaders++;
+			}
+		}
+
+		int shaderCounter = 0;
+		vprof->addInfoBladeEngineTextLine(UString::format("Draw Calls: %i", numDrawCallsPrevFrame));
+		vprof->addInfoBladeEngineTextLine(UString::format("Active Shaders: %i", numActiveShaders));
+		vprof->addInfoBladeEngineTextLine(UString::format("shader[%i]: shaderTexturedGeneric: %ic", shaderCounter++, (int)m_shaderTexturedGeneric->getStatsNumConstantBufferUploadsPerFrame()));
+		for (const Resource *resource : engine->getResourceManager()->getResources())
+		{
+			const DirectX11Shader *dx11Shader = dynamic_cast<const DirectX11Shader*>(resource);
+			if (dx11Shader != NULL)
+			{
+				if (dx11Shader->getStatsNumConstantBufferUploadsPerFrameEngineFrameCount() == (engine->getFrameCount() - 1))
+					vprof->addInfoBladeEngineTextLine(UString::format("shader[%i]: %s: %ic", shaderCounter++, resource->getName().toUtf8(), (int)dx11Shader->getStatsNumConstantBufferUploadsPerFrame()));
+			}
+		}
+	}
 }
 
 void DirectX11Interface::endScene()
@@ -536,6 +572,7 @@ void DirectX11Interface::drawPixel(int x, int y)
 		m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
 		m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 		m_deviceContext->Draw(m_vertices.size(), numVertexOffset);
+		m_iStatsNumDrawCalls++;
 	}
 }
 
@@ -949,6 +986,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 		m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
 		m_deviceContext->IASetPrimitiveTopology((D3D_PRIMITIVE_TOPOLOGY)primitiveToDirectX(primitive));
 		m_deviceContext->Draw(m_vertices.size(), numVertexOffset);
+		m_iStatsNumDrawCalls++;
 	}
 }
 
