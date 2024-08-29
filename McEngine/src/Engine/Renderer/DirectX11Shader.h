@@ -35,6 +35,11 @@ public:
 	virtual void setUniformMatrix4fv(UString name, Matrix4 &matrix);
 	virtual void setUniformMatrix4fv(UString name, float *v);
 
+	// ILLEGAL:
+	void onJustBeforeDraw();
+	inline unsigned long getStatsNumConstantBufferUploadsPerFrame() const {return m_iStatsNumConstantBufferUploadsPerFrameCounter;}
+	inline unsigned long getStatsNumConstantBufferUploadsPerFrameEngineFrameCount() const {return m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount;}
+
 private:
 	struct INPUT_DESC_LINE
 	{
@@ -98,7 +103,9 @@ private:
 	ID3D11PixelShader *m_ps;
 	ID3D11InputLayout *m_inputLayout;
 	std::vector<ID3D11Buffer*> m_constantBuffers;
+	bool m_bConstantBuffersUpToDate;
 
+	DirectX11Shader *m_prevShader;
 	ID3D11VertexShader *m_prevVS;
 	ID3D11PixelShader *m_prevPS;
 	ID3D11InputLayout *m_prevInputLayout;
@@ -109,6 +116,10 @@ private:
 
 	std::unordered_map<std::string, CACHE_ENTRY> m_uniformLocationCache;
 	std::string m_sTempStringBuffer;
+
+	// stats
+	unsigned long m_iStatsNumConstantBufferUploadsPerFrameCounter;
+	unsigned long m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount;
 };
 
 #endif

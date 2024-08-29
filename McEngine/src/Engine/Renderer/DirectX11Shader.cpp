@@ -6,7 +6,7 @@
 //===============================================================================//
 
 // TODO: prime full cache on load anyway
-// TODO: concatenate multiple sequential setUniform*() into one single whole memcpy if targeting the same bind/buffer
+// TODO: individually remember m_bConstantBuffersUpToDate per constant buffer
 
 #include "DirectX11Shader.h"
 
@@ -34,7 +34,9 @@ DirectX11Shader::DirectX11Shader(UString shader, bool source)
 	m_vs = NULL;
 	m_ps = NULL;
 	m_inputLayout = NULL;
+	m_bConstantBuffersUpToDate = false;
 
+	m_prevShader = NULL;
 	m_prevVS = NULL;
 	m_prevPS = NULL;
 	m_prevInputLayout = NULL;
@@ -42,6 +44,10 @@ DirectX11Shader::DirectX11Shader(UString shader, bool source)
 	{
 		m_prevConstantBuffers.push_back(NULL);
 	}
+
+	// stats
+	m_iStatsNumConstantBufferUploadsPerFrameCounter = 0;
+	m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount = 0;
 }
 
 DirectX11Shader::DirectX11Shader(UString vertexShader, UString fragmentShader, bool source)
@@ -53,7 +59,9 @@ DirectX11Shader::DirectX11Shader(UString vertexShader, UString fragmentShader, b
 	m_vs = NULL;
 	m_ps = NULL;
 	m_inputLayout = NULL;
+	m_bConstantBuffersUpToDate = false;
 
+	m_prevShader = NULL;
 	m_prevVS = NULL;
 	m_prevPS = NULL;
 	m_prevInputLayout = NULL;
@@ -61,6 +69,10 @@ DirectX11Shader::DirectX11Shader(UString vertexShader, UString fragmentShader, b
 	{
 		m_prevConstantBuffers.push_back(NULL);
 	}
+
+	// stats
+	m_iStatsNumConstantBufferUploadsPerFrameCounter = 0;
+	m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount = 0;
 }
 
 void DirectX11Shader::init()
@@ -360,13 +372,14 @@ void DirectX11Shader::destroy()
 
 void DirectX11Shader::enable()
 {
-	if (!m_bReady) return;
-
 	DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
+	if (!m_bReady || dx11->getActiveShader() == this) return;
 
 	// backup
 	// HACKHACK: slow af
 	{
+		m_prevShader = dx11->getActiveShader();
+
 		dx11->getDeviceContext()->IAGetInputLayout(&m_prevInputLayout);
 		dx11->getDeviceContext()->VSGetShader(&m_prevVS, NULL, NULL);
 		dx11->getDeviceContext()->PSGetShader(&m_prevPS, NULL, NULL);
@@ -378,13 +391,14 @@ void DirectX11Shader::enable()
 	dx11->getDeviceContext()->PSSetShader(m_ps, NULL, 0);
 
 	dx11->getDeviceContext()->VSSetConstantBuffers(0, (UINT)m_constantBuffers.size(), &m_constantBuffers[0]);
+
+	dx11->setActiveShader(this);
 }
 
 void DirectX11Shader::disable()
 {
-	if (!m_bReady) return;
-
 	DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
+	if (!m_bReady || dx11->getActiveShader() != this) return;
 
 	// restore
 	// HACKHACK: slow af
@@ -432,6 +446,8 @@ void DirectX11Shader::disable()
 				}
 			}
 		}
+
+		dx11->setActiveShader(m_prevShader);
 	}
 }
 
@@ -496,26 +512,59 @@ void DirectX11Shader::setUniform(const UString &name, void *src, size_t numBytes
 	if (cacheEntry.bindIndex > -1)
 	{
 		BIND_DESC &bindDesc = m_bindDescs[cacheEntry.bindIndex];
-		ID3D11Buffer *buffer = m_constantBuffers[cacheEntry.bindIndex];
 
-		DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
-
-		// lock
-		D3D11_MAPPED_SUBRESOURCE mappedResource;
-		if (FAILED(dx11->getDeviceContext()->Map(buffer, 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
-		{
-			debugLog("ERROR: DirectX11Shader::setUniform1f() failed to Map()!\n");
-			return;
-		}
-
-		// write
+		if (memcmp(src, &bindDesc.floats[cacheEntry.offsetBytes / sizeof(float)], numBytes) != 0) // NOTE: ignore redundant updates
 		{
 			memcpy(&bindDesc.floats[cacheEntry.offsetBytes / sizeof(float)], src, numBytes);
+
+			// NOTE: uniforms will be lazy updated later in onJustBeforeDraw() below
+			// NOTE: this way we concatenate multiple uniform updates into one single gpu memory transfer
+			m_bConstantBuffersUpToDate = false;
+		}
+	}
+}
+
+void DirectX11Shader::onJustBeforeDraw()
+{
+	if (!m_bReady) return;
+
+	// lazy update uniforms
+	if (!m_bConstantBuffersUpToDate)
+	{
+		DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
+
+		for (size_t i=0; i<m_constantBuffers.size(); i++)
+		{
+			ID3D11Buffer *constantBuffer = m_constantBuffers[i];
+			BIND_DESC &bindDesc = m_bindDescs[i];
+
+			// lock
+			D3D11_MAPPED_SUBRESOURCE mappedResource;
+			if (FAILED(dx11->getDeviceContext()->Map(constantBuffer, 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+			{
+				debugLog("ERROR: DirectX11Shader::setUniform1f() failed to Map()!\n");
+				continue;
+			}
+
+			// write
 			memcpy(mappedResource.pData, &bindDesc.floats[0], bindDesc.floats.size() * sizeof(float));
+
+			// unlock
+			dx11->getDeviceContext()->Unmap(constantBuffer, 0);
+
+			// stats
+			{
+				if (engine->getFrameCount() == m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount)
+					m_iStatsNumConstantBufferUploadsPerFrameCounter++;
+				else
+				{
+					m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount = engine->getFrameCount();
+					m_iStatsNumConstantBufferUploadsPerFrameCounter = 1;
+				}
+			}
 		}
 
-		// unlock
-		dx11->getDeviceContext()->Unmap(buffer, 0);
+		m_bConstantBuffersUpToDate = true;
 	}
 }
 
