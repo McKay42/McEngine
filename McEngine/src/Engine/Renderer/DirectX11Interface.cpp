@@ -27,9 +27,11 @@ DirectX11Interface::DirectX11Interface(HWND hwnd, bool minimalistContext) : Null
 {
 	m_bReady = false;
 
+	// device context
 	m_hwnd = hwnd;
 	m_bMinimalistContext = minimalistContext;
 
+	// d3d
 	m_device = NULL;
 	m_deviceContext = NULL;
 	m_swapChain = NULL;
@@ -52,6 +54,7 @@ DirectX11Interface::DirectX11Interface(HWND hwnd, bool minimalistContext) : Null
 	// persistent vars
 	m_color = 0xffffffff;
 	m_bVSync = false;
+	m_activeShader = NULL;
 }
 
 DirectX11Interface::~DirectX11Interface()
@@ -325,7 +328,6 @@ void DirectX11Interface::init()
 		"PS_OUTPUT psmain(in PS_INPUT In)\n"
 		"{\n"
 		"	PS_OUTPUT Out;\n"
-		//"	Out.col = float4(0.2f, 1.0f, 1.0f, 0.2f);\n"
 			"if (In.misc.x < 0.5f)\n"
 			"{\n"
 			"	Out.col = In.col;\n"
@@ -515,6 +517,13 @@ void DirectX11Interface::drawPixel(int x, int y)
 					uploadedSuccessfully = false;
 			}
 			m_iVertexBufferNumVertexOffsetCounter = writeOffsetNumVertices + m_vertices.size();
+		}
+
+		// shader update
+		if (uploadedSuccessfully)
+		{
+			if (m_activeShader != NULL)
+				m_activeShader->onJustBeforeDraw();
 		}
 	}
 
@@ -730,6 +739,12 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	// if baked, then we can directly draw the buffer
 	if (vao->isReady())
 	{
+		// shader update
+		{
+			if (m_activeShader != NULL)
+				m_activeShader->onJustBeforeDraw();
+		}
+
 		((DirectX11VertexArrayObject*)vao)->draw();
 		return;
 	}
@@ -914,6 +929,15 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 			}
 			m_iVertexBufferNumVertexOffsetCounter = writeOffsetNumVertices + m_vertices.size();
 		}
+
+		// shader update
+		if (uploadedSuccessfully)
+		{
+			m_shaderTexturedGeneric->setUniform1f("misc", (hasTexcoords0 ? 1.0f : 0.0f));
+
+			if (m_activeShader != NULL)
+				m_activeShader->onJustBeforeDraw();
+		}
 	}
 
 	// draw it
@@ -921,8 +945,6 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao)
 	{
 		const UINT stride = sizeof(SimpleVertex);
 		const UINT offset = 0;
-
-		m_shaderTexturedGeneric->setUniform1f("misc", (hasTexcoords0 ? 1.0f : 0.0f));
 
 		m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
 		m_deviceContext->IASetPrimitiveTopology((D3D_PRIMITIVE_TOPOLOGY)primitiveToDirectX(primitive));

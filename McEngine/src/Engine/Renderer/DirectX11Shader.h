@@ -35,6 +35,9 @@ public:
 	virtual void setUniformMatrix4fv(UString name, Matrix4 &matrix);
 	virtual void setUniformMatrix4fv(UString name, float *v);
 
+	// ILLEGAL:
+	void onJustBeforeDraw();
+
 private:
 	struct INPUT_DESC_LINE
 	{
@@ -98,7 +101,9 @@ private:
 	ID3D11PixelShader *m_ps;
 	ID3D11InputLayout *m_inputLayout;
 	std::vector<ID3D11Buffer*> m_constantBuffers;
+	bool m_bConstantBuffersUpToDate;
 
+	DirectX11Shader *m_prevShader;
 	ID3D11VertexShader *m_prevVS;
 	ID3D11PixelShader *m_prevPS;
 	ID3D11InputLayout *m_prevInputLayout;

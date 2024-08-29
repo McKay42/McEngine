@@ -113,11 +113,13 @@ public:
 	void resizeTarget(Vector2 newResolution);
 	bool enableFullscreen(bool borderlessWindowedFullscreen = false);
 	void disableFullscreen();
+	void setActiveShader(DirectX11Shader *shader) {m_activeShader = shader;}
 	inline bool isReady() const {return m_bReady;}
-	ID3D11Device *getDevice() const {return m_device;}
-	ID3D11DeviceContext *getDeviceContext() const {return m_deviceContext;}
-	IDXGISwapChain *getSwapChain() const {return m_swapChain;}
-	DirectX11Shader *getShaderGeneric() const {return m_shaderTexturedGeneric;}
+	inline ID3D11Device *getDevice() const {return m_device;}
+	inline ID3D11DeviceContext *getDeviceContext() const {return m_deviceContext;}
+	inline IDXGISwapChain *getSwapChain() const {return m_swapChain;}
+	inline DirectX11Shader *getShaderGeneric() const {return m_shaderTexturedGeneric;}
+	inline DirectX11Shader *getActiveShader() const {return m_activeShader;}
 
 protected:
 	virtual void init();
@@ -127,6 +129,7 @@ private:
 	static int primitiveToDirectX(Graphics::PRIMITIVE primitive);
 	static int compareFuncToDirectX(Graphics::COMPARE_FUNC compareFunc);
 
+private:
 	bool m_bReady;
 
 	// device context
@@ -167,6 +170,7 @@ private:
 	// persistent vars
 	bool m_bVSync;
 	Color m_color;
+	DirectX11Shader *m_activeShader;
 
 	// clipping
 	std::stack<McRect> m_clipRectStack;

@@ -243,13 +243,15 @@ void DirectX11RenderTarget::enable()
 {
 	if (!m_bReady) return;
 
+	DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
+
 	// backup
 	// HACKHACK: slow af
 	{
-		((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->OMGetRenderTargets(1, &m_prevRenderTargetView, &m_prevDepthStencilView);
+		dx11->getDeviceContext()->OMGetRenderTargets(1, &m_prevRenderTargetView, &m_prevDepthStencilView);
 	}
 
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
+	dx11->getDeviceContext()->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
 
 	// clear
 	Color clearColor = m_clearColor;
@@ -259,10 +261,10 @@ void DirectX11RenderTarget::enable()
 	float fClearColor[4] = {COLOR_GET_Rf(clearColor), COLOR_GET_Gf(clearColor), COLOR_GET_Bf(clearColor), COLOR_GET_Af(clearColor)};
 
 	if (m_bClearColorOnDraw)
-		((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->ClearRenderTargetView(m_renderTargetView, fClearColor);
+		dx11->getDeviceContext()->ClearRenderTargetView(m_renderTargetView, fClearColor);
 
 	if (m_bClearDepthOnDraw)
-		((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0); // yes, the 1.0f is correct
+		dx11->getDeviceContext()->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0); // yes, the 1.0f is correct
 }
 
 void DirectX11RenderTarget::disable()
@@ -295,18 +297,19 @@ void DirectX11RenderTarget::bind(unsigned int textureUnit)
 {
 	if (!m_bReady) return;
 
+	DirectX11Interface *dx11 = (DirectX11Interface*)engine->getGraphics();
+
 	m_iTextureUnitBackup = textureUnit;
 
 	// backup
 	// HACKHACK: slow af
 	{
-		((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSGetShaderResources(textureUnit, 1, &m_prevShaderResourceView);
+		dx11->getDeviceContext()->PSGetShaderResources(textureUnit, 1, &m_prevShaderResourceView);
 	}
 
-	((DirectX11Interface*)engine->getGraphics())->getDeviceContext()->PSSetShaderResources(textureUnit, 1, &m_shaderResourceView);
+	dx11->getDeviceContext()->PSSetShaderResources(textureUnit, 1, &m_shaderResourceView);
 
-	// HACKHACK: TEMP:
-	((DirectX11Interface*)engine->getGraphics())->getShaderGeneric()->setUniform1f("misc", 1.0f); // enable texturing
+	dx11->getShaderGeneric()->setUniform1f("misc", 1.0f); // enable texturing
 }
 
 void DirectX11RenderTarget::unbind()
