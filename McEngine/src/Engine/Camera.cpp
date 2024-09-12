@@ -6,7 +6,12 @@
 //===============================================================================//
 
 #include "Camera.h"
+
 #include "Engine.h"
+#include "ConVar.h"
+
+ConVar cl_pitchup("cl_pitchup", 89.0f, FCVAR_CHEAT);
+ConVar cl_pitchdown("cl_pitchdown", 89.0f, FCVAR_CHEAT);
 
 Matrix4 Camera::buildMatrixOrtho2D(float left, float right, float bottom, float top, float zn, float zf)
 {
@@ -330,10 +335,10 @@ void Camera::rotateX(float pitchDeg)
 {
 	m_fPitch += pitchDeg;
 
-	if (m_fPitch > 89.8f)
-		m_fPitch = 89.8f;
-	else if (m_fPitch < -89.8f)
-		m_fPitch = -89.8f;
+	if (m_fPitch > cl_pitchup.getFloat())
+		m_fPitch = cl_pitchup.getFloat();
+	else if (m_fPitch < -cl_pitchdown.getFloat())
+		m_fPitch = -cl_pitchdown.getFloat();
 
 	updateVectors();
 }
