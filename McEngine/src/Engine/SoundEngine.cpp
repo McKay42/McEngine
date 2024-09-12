@@ -650,6 +650,10 @@ SoundEngine::~SoundEngine()
 void SoundEngine::restart()
 {
 	setOutputDeviceForce(m_sCurrentOutputDevice);
+
+	// callback (reload sound buffers etc.)
+	if (m_outputDeviceChangeCallback != nullptr)
+		m_outputDeviceChangeCallback();
 }
 
 void SoundEngine::update()
