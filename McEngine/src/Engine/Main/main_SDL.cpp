@@ -176,6 +176,7 @@ int mainSDL(int argc, char *argv[], SDLEnvironment *customSDLEnvironment)
 #if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_OPENGLES)
 
 	SDL_GLContext context = SDL_GL_CreateContext(g_window);
+	SDL_GL_MakeCurrent(g_window, context);
 
 #endif
 
