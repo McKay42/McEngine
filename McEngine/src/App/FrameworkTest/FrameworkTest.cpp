@@ -13,8 +13,6 @@
 #include "ResourceManager.h"
 #include "ConVar.h"
 
-#include "File.h"
-
 #include "CBaseUIButton.h"
 
 class FrameworkTestButton : public CBaseUIButton
@@ -41,6 +39,9 @@ FrameworkTest::FrameworkTest()
 
 	// load resource
 	engine->getResourceManager()->loadImage("testimage.png", "TESTIMAGE");
+
+	// engine overrides
+	convar->getConVarByName("debug_mouse")->setValue(1.0f);
 }
 
 FrameworkTest::~FrameworkTest()
@@ -96,12 +97,37 @@ void FrameworkTest::draw(Graphics *g)
 	// test text
 	UString testText = "It's working!";
 	g->push3DScene(McRect(800, 300, testFont->getStringWidth(testText), testFont->getHeight()));
-	g->rotate3DScene(0, engine->getTime()*200, 0);
+	{
+		g->rotate3DScene(0, engine->getTime()*200, 0);
 		g->pushTransform();
+		{
 			g->translate(800, 300 + testFont->getHeight());
 			g->drawString(testFont, testText);
+		}
 		g->popTransform();
+	}
 	g->pop3DScene();
+
+	// test vao rgb triangle
+	const float triangleSizeMultiplier = 125.0f;
+	g->pushTransform();
+	{
+		g->translate(engine->getScreenWidth()*0.75f - triangleSizeMultiplier*0.5f, engine->getScreenHeight()*0.75f - triangleSizeMultiplier*0.5f);
+
+		VertexArrayObject vao;
+		{
+			vao.addVertex(-0.5f*triangleSizeMultiplier, 0.5f*triangleSizeMultiplier, 0.0f);
+			vao.addColor(0xffff0000);
+
+			vao.addVertex(0.0f, -0.5f*triangleSizeMultiplier, 0.0f);
+			vao.addColor(0xff00ff00);
+
+			vao.addVertex(0.5f*triangleSizeMultiplier, 0.5f*triangleSizeMultiplier, 0.0f);
+			vao.addColor(0xff0000ff);
+		}
+		g->drawVAO(&vao);
+	}
+	g->popTransform();
 }
 
 void FrameworkTest::update()
