@@ -87,7 +87,7 @@ void OpenGLRenderTarget::init()
 
 #else
 
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, (int)m_vSize.x, (int)m_vSize.y);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, (int)m_vSize.x, (int)m_vSize.y);
 
 #endif
 
